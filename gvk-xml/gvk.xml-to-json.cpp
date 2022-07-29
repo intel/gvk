@@ -1,0 +1,380 @@
+
+/******************************************************************************
+© Intel Corporation.
+
+This software and the related documents are Intel copyrighted materials,
+and your use of them is governed by the express license under which they
+were provided to you ("License"). Unless the License provides otherwise,
+you may not use, modify, copy, publish, distribute, disclose or transmit
+this software or the related documents without Intel's prior written
+permission.
+
+
+ This software and the related documents are provided as is, with no express
+or implied warranties, other than those that are expressly stated in the
+License.
+
+******************************************************************************/
+
+#include "gvk/xml/manifest.hpp"
+#include "gvk/printer.hpp"
+
+#include <iostream>
+
+inline void print_api_element_fields(gvk::Printer& printer, const gvk::xml::ApiElement& obj)
+{
+    printer.print_field("name", obj.name);
+    if (!obj.alias.empty()) {
+        printer.print_field("alias", obj.alias);
+    }
+    if (!obj.extension.empty()) {
+        printer.print_field("extension", obj.extension);
+    }
+    if (!obj.compileGuards.empty()) {
+        printer.print_collection("compileGuards", obj.compileGuards);
+    }
+}
+
+template <>
+void gvk::print<gvk::xml::Platform>(gvk::Printer& printer, const gvk::xml::Platform& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("name", obj.name);
+            if (!obj.compileGuards.empty()) {
+                printer.print_collection("compileGuards", obj.compileGuards);
+            }
+        }
+    );
+}
+
+template <>
+void gvk::print<gvk::xml::Handle>(gvk::Printer& printer, const gvk::xml::Handle& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            print_api_element_fields(printer, obj);
+            printer.print_field("isDispatchable", obj.isDispatchable);
+            if (!obj.vkObjectType.empty()) {
+                printer.print_field("vkObjectType", obj.vkObjectType);
+            }
+            if (!obj.parents.empty()) {
+                printer.print_collection("parents", obj.parents);
+            }
+            if (!obj.createInfos.empty()) {
+                printer.print_collection("createInfos", obj.createInfos);
+            }
+            if (!obj.createCommands.empty()) {
+                printer.print_collection("createCommands", obj.createCommands);
+            }
+            if (!obj.destroyCommands.empty()) {
+                printer.print_collection("destroyCommands", obj.destroyCommands);
+            }
+        }
+    );
+}
+
+template <>
+void gvk::print<gvk::xml::Enumerator>(gvk::Printer& printer, const gvk::xml::Enumerator& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            print_api_element_fields(printer, obj);
+            if (!obj.value.empty()) {
+                printer.print_field("value", obj.value);
+            }
+        }
+    );
+}
+
+template <>
+void gvk::print<gvk::xml::Enumeration>(gvk::Printer& printer, const gvk::xml::Enumeration& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            print_api_element_fields(printer, obj);
+            printer.print_field("isBitmask", obj.isBitmask);
+            printer.print_collection("enumerators", obj.enumerators);
+        }
+    );
+}
+
+template <>
+void gvk::print<gvk::xml::FlagBits>(
+    gvk::Printer& printer,
+    std::underlying_type_t<gvk::xml::FlagBits> flags
+)
+{
+    std::string flagsStr;
+    if (printer.get_flags() & Printer::EnumIdentifier) {
+        flagsStr = gvk::flags_to_string(flags,
+            std::initializer_list<std::pair<gvk::xml::FlagBits, const char*>> {
+                { gvk::xml::Optional, "gvk::xml::Optional" },
+                { gvk::xml::Dynamic,  "gvk::xml::Dynamic"  },
+                { gvk::xml::Static,   "gvk::xml::Static"   },
+                { gvk::xml::Const,    "gvk::xml::Const"    },
+                { gvk::xml::Pointer,  "gvk::xml::Pointer"  },
+                { gvk::xml::Array,    "gvk::xml::Array"    },
+                { gvk::xml::String,   "gvk::xml::String"   },
+                { gvk::xml::Void,     "gvk::xml::Void"     },
+                { gvk::xml::Function, "gvk::xml::Function" },
+            }
+        );
+    }
+    printer.print_enum(!flagsStr.empty() ? flagsStr.c_str() : nullptr, (gvk::xml::FlagBits)flags);
+}
+
+template <>
+void gvk::print<gvk::xml::Parameter>(gvk::Printer& printer, const gvk::xml::Parameter& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("type", obj.type);
+            if (obj.unqualifiedType != obj.type) {
+                printer.print_field("unqualifiedType", obj.unqualifiedType);
+            }
+            printer.print_field("name", obj.name);
+            if (!obj.length.empty()) {
+                printer.print_field("length", obj.length);
+            }
+            if (!obj.altLength.empty()) {
+                printer.print_field("altLength", obj.altLength);
+            }
+            if (1 < obj.dimensionCount) {
+                printer.print_field("dimensionCount", obj.dimensionCount);
+            }
+            if (obj.flags) {
+                printer.print_flags<gvk::xml::FlagBits>("flags", obj.flags);
+            }
+        }
+    );
+}
+
+template <>
+void gvk::print<gvk::xml::Structure>(gvk::Printer& printer, const gvk::xml::Structure& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            print_api_element_fields(printer, obj);
+            printer.print_field("isUnion", obj.isUnion);
+            if (!obj.vkStructureType.empty()) {
+                printer.print_field("vkStructureType", obj.vkStructureType);
+            }
+            printer.print_array("members", obj.members.size(), obj.members.data());
+        }
+    );
+}
+
+template <>
+void gvk::print<gvk::xml::Command::Type>(gvk::Printer& printer, const gvk::xml::Command::Type& value)
+{
+    switch (value) {
+    case gvk::xml::Command::Type::Common: printer.print_enum("gvk::xml::Command::Type::Common", value); break;
+    case gvk::xml::Command::Type::Cmd: printer.print_enum("gvk::xml::Command::Type::Cmd", value); break;
+    case gvk::xml::Command::Type::Create: printer.print_enum("gvk::xml::Command::Type::Create", value); break;
+    case gvk::xml::Command::Type::Destroy: printer.print_enum("gvk::xml::Command::Type::Destroy", value); break;
+    default: assert(false);
+    }
+}
+
+template <>
+void gvk::print<gvk::xml::Command>(gvk::Printer& printer, const gvk::xml::Command& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            print_api_element_fields(printer, obj);
+            printer.print_field("type", obj.type);
+            if (!obj.target.empty()) {
+                printer.print_field("target", obj.target);
+            }
+            printer.print_field("returnType", obj.returnType);
+            if (!obj.successCodes.empty()) {
+                printer.print_collection("successCodes", obj.successCodes);
+            }
+            if (!obj.errorCodes.empty()) {
+                printer.print_collection("errorCodes", obj.errorCodes);
+            }
+            if (!obj.parameters.empty()) {
+                printer.print_collection("parameters", obj.parameters);
+            }
+        }
+    );
+}
+
+template <>
+void gvk::print<gvk::xml::Extension::Type>(gvk::Printer& printer, const gvk::xml::Extension::Type& value)
+{
+    switch (value) {
+    case gvk::xml::Extension::Type::Instance: printer.print_enum("gvk::xml::Extension::Type::Instance", value); break;
+    case gvk::xml::Extension::Type::Device: printer.print_enum("gvk::xml::Extension::Type::Device", value); break;
+    default: assert(false);
+    }
+}
+
+template <>
+void gvk::print<gvk::xml::Extension>(gvk::Printer& printer, const gvk::xml::Extension& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            print_api_element_fields(printer, obj);
+            printer.print_field("type", obj.type);
+            if (!obj.platform.empty()) {
+                printer.print_field("platform", obj.platform);
+            }
+            if (!obj.supported.empty()) {
+                printer.print_field("supported", obj.supported);
+            }
+            if (!obj.deprecatedBy.empty()) {
+                printer.print_field("deprecatedBy", obj.deprecatedBy);
+            }
+            if (!obj.obsoletedBy.empty()) {
+                printer.print_field("obsoletedBy", obj.obsoletedBy);
+            }
+            if (!obj.promotedTo.empty()) {
+                printer.print_field("promotedTo", obj.promotedTo);
+            }
+            if (!obj.requirements.empty()) {
+                printer.print_collection("requirements", obj.requirements);
+            }
+            if (!obj.types.empty()) {
+                printer.print_collection("types", obj.types);
+            }
+            if (!obj.enumerations.empty()) {
+                printer.print_collection("enumerations", obj.enumerations, [](auto itr) { return itr.second; });
+            }
+            if (!obj.commands.empty()) {
+                printer.print_collection("commands", obj.commands);
+            }
+        }
+    );
+}
+
+template <>
+void gvk::print<gvk::xml::Feature>(gvk::Printer& printer, const gvk::xml::Feature& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            print_api_element_fields(printer, obj);
+            printer.print_field("api", obj.api);
+            printer.print_field("number", obj.number);
+            if (!obj.requirements.empty()) {
+                printer.print_collection("requirements", obj.requirements);
+            }
+            if (!obj.types.empty()) {
+                printer.print_collection("types", obj.types);
+            }
+            if (!obj.enumerations.empty()) {
+                printer.print_collection("enumerations", obj.enumerations, [](auto itr) { return itr.second; });
+            }
+            if (!obj.commands.empty()) {
+                printer.print_collection("commands", obj.commands);
+            }
+        }
+    );
+}
+
+template <>
+void gvk::print<gvk::xml::Plane>(gvk::Printer& printer, const gvk::xml::Plane& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("index", obj.index);
+            printer.print_field("widthDivisor", obj.widthDivisor);
+            printer.print_field("heightDivisor", obj.heightDivisor);
+            printer.print_field("compatible", obj.compatible);
+        }
+    );
+}
+
+template <>
+void gvk::print<gvk::xml::Component>(gvk::Printer& printer, const gvk::xml::Component& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("name", obj.name);
+            printer.print_field("bits", obj.bits);
+            printer.print_field("numericFormat", obj.numericFormat);
+            printer.print_field("planeIndex", obj.planeIndex);
+        }
+    );
+}
+
+template <>
+void gvk::print<gvk::xml::Format>(gvk::Printer& printer, const gvk::xml::Format& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            print_api_element_fields(printer, obj);
+            if (!obj.classes.empty()) {
+                printer.print_collection("classes", obj.classes);
+            }
+            printer.print_field("blockSize", obj.blockSize);
+            printer.print_field("texelsPerBlock", obj.texelsPerBlock);
+            if (obj.chroma) {
+                printer.print_field("chroma", obj.chroma);
+            }
+            if (obj.packed) {
+                printer.print_field("packed", obj.packed);
+            }
+            if (obj.blockExtent[0] || obj.blockExtent[1] || obj.blockExtent[2]) {
+                printer.print_collection("blockExtent", obj.blockExtent);
+            }
+            if (!obj.compressionType.empty()) {
+                printer.print_field("compressionType", obj.compressionType);
+            }
+            if (!obj.spirvImageFormat.empty()) {
+                printer.print_field("spirvImageFormat", obj.spirvImageFormat);
+            }
+            if (!obj.components.empty()) {
+                printer.print_collection("components", obj.components);
+            }
+            if (!obj.planes.empty()) {
+                printer.print_collection("planes", obj.planes);
+            }
+        }
+    );
+}
+
+template <>
+void gvk::print<gvk::xml::Manifest>(gvk::Printer& printer, const gvk::xml::Manifest& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            auto processItr = [](auto itr) { return itr.second; };
+            printer.print_collection("platforms", obj.platforms, processItr);
+            printer.print_collection("vendors", obj.vendors);
+            printer.print_field("apiConstants", obj.apiConstants);
+            printer.print_collection("handles", obj.handles, processItr);
+            printer.print_collection("enumerations", obj.enumerations, processItr);
+            printer.print_collection("structures", obj.structures, processItr);
+            printer.print_collection("commands", obj.commands, processItr);
+            printer.print_collection("extensions", obj.extensions, processItr);
+            printer.print_collection("features", obj.features, processItr);
+            printer.print_collection("formats", obj.formats, processItr);
+        }
+    );
+}
+
+int main(int argc, const char* pArgv[])
+{
+    tinyxml2::XMLDocument xmlDocument;
+    auto xmlResult = xmlDocument.LoadFile((argc > 1 ? pArgv[1] : GVK_XML_FILE_PATH));
+    if (xmlResult == tinyxml2::XML_SUCCESS) {
+        gvk::xml::Manifest manifest(xmlDocument);
+        std::cout << gvk::to_string(manifest) << std::endl;
+    }
+    return 0;
+}

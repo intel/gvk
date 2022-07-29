@@ -1,0 +1,102 @@
+
+/******************************************************************************
+© Intel Corporation.
+
+This software and the related documents are Intel copyrighted materials,
+and your use of them is governed by the express license under which they
+were provided to you ("License"). Unless the License provides otherwise,
+you may not use, modify, copy, publish, distribute, disclose or transmit
+this software or the related documents without Intel's prior written
+permission.
+
+
+ This software and the related documents are provided as is, with no express
+or implied warranties, other than those that are expressly stated in the
+License.
+
+******************************************************************************/
+
+#pragma once
+
+#if defined(_WIN32) || defined(_WIN64)
+#ifndef VK_USE_PLATFORM_WIN32_KHR
+#define VK_USE_PLATFORM_WIN32_KHR
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <Windows.h>
+#endif
+
+#ifndef VK_ENABLE_BETA_EXTENSIONS
+#define VK_ENABLE_BETA_EXTENSIONS
+#endif
+#include "vulkan/vulkan.h"
+
+#if 0
+#define VMA_DEBUG_LOG(format, ...) do { \
+    printf(format, __VA_ARGS__); \
+    printf("\n"); \
+} while(false)
+#endif
+
+#ifdef _MSVC_LANG
+#pragma warning(push, 0)
+#endif
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-compare"
+#pragma clang diagnostic ignored "-Wunused-private-field"
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#pragma clang diagnostic ignored "-Wmissing-field-initializers"
+#pragma clang diagnostic ignored "-Wnullability-completeness"
+#endif
+#define VMA_STATIC_VULKAN_FUNCTIONS 0
+#define VMA_DYNAMIC_VULKAN_FUNCTIONS 0
+#include "vk_mem_alloc.h"
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+#ifdef _MSVC_LANG
+#pragma warning(pop)
+#endif
+
+#define gvk_stringify(STR) #STR
+#define gvk_expand(STR) gvk_stringify(STR)
+#define gvk_file_line (__FILE__ "(" gvk_expand(__LINE__) ")")
+
+/**
+@example
+    VkResult example_function()
+    {
+        gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+            gvk_result(vkFunctionCall0(...));
+            gvk_result(vkFunctionCall1(...));
+            gvk_result(vkFunctionCall2(...));
+        } gvk_result_scope_end;
+        if (gvkResult == VK_ERROR_<...>) {
+            // ...recover...
+        }
+        return gvkResult;
+    }
+*/
+#define gvk_result_scope_begin(GVK_RESULT) VkResult gvkResult = GVK_RESULT; {
+#define gvk_result_scope_end } GVK_FAIL:
+#define gvk_result(GVK_CALL) \
+gvkResult = (GVK_CALL); \
+if (gvkResult != VK_SUCCESS) { \
+    assert(gvkResult == VK_SUCCESS && #GVK_CALL); \
+    goto GVK_FAIL; \
+}
+
+namespace gvk {
+
+inline const VkAllocationCallbacks* validate_allocator(const VkAllocationCallbacks& allocator)
+{
+    return (allocator.pfnAllocation && allocator.pfnFree) ? &allocator : nullptr;
+}
+
+} // namespace gvk
