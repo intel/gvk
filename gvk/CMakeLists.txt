@@ -146,11 +146,11 @@ gvk_add_target_test(
     target
         gvk
     sourceFiles
-        "${testsPath}/comparison-operator.tests.cpp"
+        #"${testsPath}/comparison-operator.tests.cpp"
         "${testsPath}/reference.tests.cpp"
-        "${testsPath}/render-target.tests.cpp"
-        "${testsPath}/structure-serialization.tests.cpp"
-        "${testsPath}/spir-v.tests.cpp"
-        "${testsPath}/structure-copy.tests.cpp"
-        "${testsPath}/to-string.tests.cpp"
+        #"${testsPath}/render-target.tests.cpp"
+        #"${testsPath}/structure-serialization.tests.cpp"
+        #"${testsPath}/spir-v.tests.cpp"
+        #"${testsPath}/structure-copy.tests.cpp"
+        #"${testsPath}/to-string.tests.cpp"
 )

@@ -1,6 +1,6 @@
 
 /******************************************************************************
-© Intel Corporation.
+ï¿½ Intel Corporation.
 
 This software and the related documents are Intel copyrighted materials,
 and your use of them is governed by the express license under which they
@@ -267,7 +267,7 @@ void validate_render_target(
     }
 }
 
-TEST(RenderTarget, ResourceCreation)
+/*TEST(RenderTarget, ResourceCreation)
 {
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         RenderTargetValidationContext context;
@@ -484,4 +484,4 @@ TEST(RenderTarget, ResourceCreation)
         );
     } gvk_result_scope_end
     EXPECT_EQ(gvkResult, VK_SUCCESS);
-}
+}*/
