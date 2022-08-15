@@ -18,6 +18,7 @@ License.
 
 #pragma once
 
+#include "gvk/generated/dispatch-table.hpp"
 #include "gvk/defines.hpp"
 #include "gvk/handles.hpp"
 #include "gvk/spir-v.hpp"
@@ -74,7 +75,9 @@ public:
                     {
                         auto bufferCopy = get_default<VkBufferCopy>();
                         bufferCopy.size = bufferCreateInfo.size;
-                        vkCmdCopyBuffer(vkCommandBuffer, mCpuBuffer, mGpuBuffer, 1, &bufferCopy);
+                        auto dispatchTable = DispatchTable::get_global_dispatch_table();
+                        assert(dispatchTable.gvkCmdCopyBuffer);
+                        dispatchTable.gvkCmdCopyBuffer(vkCommandBuffer, mCpuBuffer, mGpuBuffer, 1, &bufferCopy);
                     }
                 ));
             }

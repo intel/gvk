@@ -135,94 +135,6 @@ Creates a gvk::PipelineLayout from a given gvk::spirv::BindingInfo
 */
 VkResult create_pipeline_layout(const Device& device, const BindingInfo& bindingInfo, const VkAllocationCallbacks* pAllocator, gvk::PipelineLayout* pPipelineLayout);
 
-/**
-Gets SPIR-V byte code for a vertex shader that draws a full screen triangle
-@code
-    #version 450
-    layout(location = 0) out vec2 fsTexcoord;
-    out gl_PerVertex { vec4 gl_Position; };
-    void main()
-    {
-        fsTexcoord = vec2((gl_vertexIndex << 1) & 2, gl_VertexIndex & 2);
-        gl_Position = vec4(fsTexcoord * 2 - 1, 0, 1);
-    }
-@endcode
-@note
-    Normalized Device Coordinates (NDC)
-    -1,-1        1,-1
-      +-----------+
-      |           |
-      |           |
-      |           |
-      |           |
-      +-----------+
-    -1,1         1,1
-
-    Texture Coordinates (TC)
-     0,0         1,0
-      +-----------+
-      |           |
-      |           |
-      |           |
-      |           |
-      +-----------+
-     0,1         1,1
-
-    -1,-1              1,-1
-      +-----------------+
-      |(NDC)            |
-      |                 |
-      |       0,0      1,0
-      |        +--------+
-      |        |(TC)    |
-      |        |        |
-      |        |        |
-      +--------+--------+
-    -1,1      0,1      1,1
-
-             u = (i << 1) &   2   v = i &   2
-    =========================================
-    i = 0 :    (000 << 1) & 010
-                      000 & 010     000 & 010
-                            000           000
-                          -----         -----
-                          u = 0         v = 0
-    =========================================
-    i = 1 :    (001 << 1) & 010
-                      010 & 010     001 & 010
-                            010           000
-                          -----         -----
-                          u = 2         v = 0
-    =========================================
-    i = 2 :    (010 << 1) & 010
-                      100 & 010     010 & 010
-                            000           010
-                          -----         -----
-                          u = 0         v = 2
-
-    0,0 (TC)                                        2,0 (TC)
-    v0-----------------------+.......................v1
-     |                       |                    .
-     |                       |                 .
-     |                       |              .
-     |                       |           .
-     |                       |        .
-     |                       |     .
-     |                       |  .
-     +-----------------------+
-     .                    . 1,1 (TC)
-     .                 .
-     .              .
-     .           .
-     .        .
-     .     .
-     .  .
-    v2
-    0,2 (TC)
-@return The SPIR-V byte code
-*/
-const std::array<uint32_t, 240>& full_screen_triangle_vertex_shader();
-
 } // namespace spirv
 
 /**
@@ -486,3 +398,91 @@ inline VkDeviceSize get_index_size(VkIndexType indexType)
 }
 
 } // namespace gvk
+
+#if 0
+
+GLSL for a vertex shader that draws a full screen triangle
+@code
+    #version 450
+    layout(location = 0) out vec2 fsTexcoord;
+    out gl_PerVertex { vec4 gl_Position; };
+    void main()
+    {
+        fsTexcoord = vec2((gl_vertexIndex << 1) & 2, gl_VertexIndex & 2);
+        gl_Position = vec4(fsTexcoord * 2 - 1, 0, 1);
+    }
+@endcode
+@note
+    Normalized Device Coordinates (NDC)
+    -1,-1        1,-1
+      +-----------+
+      |           |
+      |           |
+      |           |
+      |           |
+      +-----------+
+    -1,1         1,1
+
+    Texture Coordinates (TC)
+     0,0         1,0
+      +-----------+
+      |           |
+      |           |
+      |           |
+      |           |
+      +-----------+
+     0,1         1,1
+
+    -1,-1              1,-1
+      +-----------------+
+      |(NDC)            |
+      |                 |
+      |       0,0      1,0
+      |        +--------+
+      |        |(TC)    |
+      |        |        |
+      |        |        |
+      +--------+--------+
+    -1,1      0,1      1,1
+
+             u = (i << 1) &   2   v = i &   2
+    =========================================
+    i = 0 :    (000 << 1) & 010
+                      000 & 010     000 & 010
+                            000           000
+                          -----         -----
+                          u = 0         v = 0
+    =========================================
+    i = 1 :    (001 << 1) & 010
+                      010 & 010     001 & 010
+                            010           000
+                          -----         -----
+                          u = 2         v = 0
+    =========================================
+    i = 2 :    (010 << 1) & 010
+                      100 & 010     010 & 010
+                            000           010
+                          -----         -----
+                          u = 0         v = 2
+
+    0,0 (TC)                                        2,0 (TC)
+    v0-----------------------+.......................v1
+     |                       |                    .
+     |                       |                 .
+     |                       |              .
+     |                       |           .
+     |                       |        .
+     |                       |     .
+     |                       |  .
+     +-----------------------+
+     .                    . 1,1 (TC)
+     .                 .
+     .              .
+     .           .
+     .        .
+     .     .
+     .  .
+    v2
+    0,2 (TC)
+
+#endif

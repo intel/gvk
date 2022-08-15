@@ -55,9 +55,8 @@ private:
         file << "#endif // VK_NO_PROTOTYPES" << std::endl;
         file << "    static void load_instance_entry_points(VkInstance vkInstance, DispatchTable* pDispatchTable);" << std::endl;
         file << "    static void load_device_entry_points(VkDevice vkDevkce, DispatchTable* pDispatchTable);" << std::endl;
+        file << "    static DispatchTable& get_global_dispatch_table();" << std::endl;
         file << "};" << std::endl;
-        file << std::endl;
-        file << "extern DispatchTable gDispatchTable;" << std::endl;
         file << std::endl;
     }
 
@@ -66,8 +65,7 @@ private:
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk");
         file << std::endl;
-        file << "DispatchTable gDispatchTable;" << std::endl;
-        file << std::endl;
+        file << "#ifndef VK_NO_PROTOTYPES" << std::endl;
         generate_load_entry_points_function(
             file, manifest,
             [](const xml::Command& command) { return command.extension.empty(); },
@@ -76,6 +74,8 @@ R"(        if (!pDispatchTable->g{commandName}) {
             pDispatchTable->g{commandName} = {commandName};
         })"
         );
+        file << "#endif // VK_NO_PROTOTYPES" << std::endl;
+        file << std::endl;
         generate_load_entry_points_function(
             file, manifest,
             "load_instance_entry_points(VkInstance vkInstance, DispatchTable* pDispatchTable)",
@@ -83,6 +83,7 @@ R"(        if (!pDispatchTable->g{commandName}) {
             pDispatchTable->g{commandName} = (PFN_{commandName})pDispatchTable->gvkGetInstanceProcAddr(vkInstance, "{commandName}");
         })"
         );
+        file << std::endl;
         generate_load_entry_points_function(
             file, manifest,
             "load_device_entry_points(VkDevice vkDevice, DispatchTable* pDispatchTable)",
@@ -90,6 +91,12 @@ R"(        if (!pDispatchTable->g{commandName}) {
             pDispatchTable->g{commandName} = (PFN_{commandName})pDispatchTable->gvkGetDeviceProcAddr(vkDevice, "{commandName}");
         })"
         );
+        file << "DispatchTable& DispatchTable::get_global_dispatch_table()" << std::endl;
+        file << "{" << std::endl;
+        file << "    static DispatchTable sDispatchTable;" << std::endl;
+        file << "    return sDispatchTable;" << std::endl;
+        file << "}" << std::endl;
+        file << std::endl;
     }
 
     template <typename PredicateType>
@@ -113,7 +120,6 @@ R"(        if (!pDispatchTable->g{commandName}) {
         }
         file << "    }" << std::endl;
         file << "}" << std::endl;
-        file << std::endl;
     }
 
     static void generate_load_entry_points_function(

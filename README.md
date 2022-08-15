@@ -21,10 +21,11 @@ GVK currently provides:
 NOTE : GVK currently supports Windows only, this limitation will be lifted very soon
 
 Ensure the following tools are installed...
+ - [Python](https://www.python.org/downloads/) v3+
  - [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) v1.3.216.0+
- - [CMake](https://cmake.org/download/)
+ - [CMake](https://cmake.org/download/) v3.3+
  - [Git](https://git-scm.com/)
- - [Visual Studio](https://visualstudio.microsoft.com/vs/community/)
+ - [Visual Studio](https://visualstudio.microsoft.com/vs/community/) 2019
 
 The following instructions are for a  `bash` like terminal (Git Bash comes with the Git install by default on Windows)...
 ```
@@ -43,9 +44,11 @@ On Windows, open `gvk/build/gvk.sln` in Visual Studio, navigate to `gvk/samples/
 Somewhere in your CMakeLists, add the following...
 ```
 include(FetchContent)
+set(GVK_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GVK_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     gvk
-    GIT_REPOSITORY "https://github.com/intel-innersource/applications.analyzers.gpa.backend.gvk.git"
+    GIT_REPOSITORY "https://github.com/intel/gvk.git"
     GIT_TAG <desired commit hash> # 0.0.1
 )
 FetchContent_MakeAvailable(gvk)

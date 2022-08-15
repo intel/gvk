@@ -1,6 +1,6 @@
 
 macro(gvk_add_sample target)
-    if(GVK_BUILD_SAMPLES)
+    if(GVK_BUILD_SAMPLES AND NOT GVK_NO_PROTOTYPES)
         gvk_add_executable(
             target ${target}
             folder "samples/"

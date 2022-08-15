@@ -21,6 +21,8 @@ License.
 
 #include "gtest/gtest.h"
 
+#include <iostream>
+
 TEST(spirv, Context)
 {
     // Create a gvk::spirv::Context...
@@ -72,7 +74,7 @@ TEST(spirv, Context)
     EXPECT_FALSE(shaderInfo.errors.empty());
 }
 
-void validate_pipeline_layout_creation(
+static void validate_pipeline_layout_creation(
     std::vector<gvk::spirv::ShaderInfo> shaderInfos,
     const std::vector<std::vector<VkDescriptorSetLayoutBinding>>& descriptorSetLayoutBindings,
     const std::vector<VkPushConstantRange>& pushConstantRanges

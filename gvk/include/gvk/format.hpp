@@ -113,8 +113,9 @@ inline void enumerate_formats(
                 auto formatProperties3 = get_default<VkFormatProperties3>();
                 auto formatProperties2 = get_default<VkFormatProperties2>();
                 formatProperties2.pNext = &formatProperties3;
-                assert(gDispatchTable.gvkGetPhysicalDeviceFormatProperties2);
-                gDispatchTable.gvkGetPhysicalDeviceFormatProperties2(vkPhysicalDevice, format, &formatProperties2);
+                auto dispatchTable = DispatchTable::get_global_dispatch_table();
+                assert(dispatchTable.gvkGetPhysicalDeviceFormatProperties2);
+                dispatchTable.gvkGetPhysicalDeviceFormatProperties2(vkPhysicalDevice, format, &formatProperties2);
                 switch (imageTiling) {
                 case VK_IMAGE_TILING_OPTIMAL: {
                     if (formatProperties3.optimalTilingFeatures & featureFlags) {

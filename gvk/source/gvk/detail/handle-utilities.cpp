@@ -92,6 +92,7 @@ void* get_transient_storage(size_t size)
 template <>
 VkResult initialize_control_block<DeviceControlBlock>(DeviceControlBlock& controlBlock)
 {
+    auto& dispatchTable = DispatchTable::get_global_dispatch_table();
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         const auto& deviceCreateInfo = *controlBlock.mDeviceCreateInfo;
         for (uint32_t queueCreateInfo_i = 0; queueCreateInfo_i < deviceCreateInfo.queueCreateInfoCount; ++queueCreateInfo_i) {
@@ -101,8 +102,8 @@ VkResult initialize_control_block<DeviceControlBlock>(DeviceControlBlock& contro
             queueFamily.queues.reserve(deviceQueueCreateInfo.queueCount);
             for (uint32_t queue_i = 0; queue_i < deviceQueueCreateInfo.queueCount; ++queue_i) {
                 Queue queue;
-                assert(gDispatchTable.gvkGetDeviceQueue);
-                gDispatchTable.gvkGetDeviceQueue(controlBlock.mVkDevice, deviceQueueCreateInfo.queueFamilyIndex, queue_i, &queue.mVkQueue);
+                assert(dispatchTable.gvkGetDeviceQueue);
+                dispatchTable.gvkGetDeviceQueue(controlBlock.mVkDevice, deviceQueueCreateInfo.queueFamilyIndex, queue_i, &queue.mVkQueue);
                 queue.mControlBlock.reset(newref, queue.mVkQueue);
                 auto& queueControlBlock = queue.mControlBlock.get_obj();
                 queueControlBlock.mVkQueue = queue.mVkQueue;
@@ -120,48 +121,48 @@ VkResult initialize_control_block<DeviceControlBlock>(DeviceControlBlock& contro
         //  correctly support multi device workloads...probably Instance and Device end
         //  up with DispatchTable members...however that ends up happening, we need to
         //  keep VMA hooked up to GVK's dispatch table(s)...not super high priority atm.
-        gvk::DispatchTable::load_device_entry_points(controlBlock.mVkDevice, &gvk::gDispatchTable);
+        DispatchTable::load_device_entry_points(controlBlock.mVkDevice, &DispatchTable::get_global_dispatch_table());
 
         VmaVulkanFunctions vulkanFunctions{ };
-        vulkanFunctions.vkGetInstanceProcAddr = gDispatchTable.gvkGetInstanceProcAddr;
-        vulkanFunctions.vkGetDeviceProcAddr = gDispatchTable.gvkGetDeviceProcAddr;
-        vulkanFunctions.vkGetPhysicalDeviceProperties = gDispatchTable.gvkGetPhysicalDeviceProperties;
-        vulkanFunctions.vkGetPhysicalDeviceMemoryProperties = gDispatchTable.gvkGetPhysicalDeviceMemoryProperties;
-        vulkanFunctions.vkAllocateMemory = gDispatchTable.gvkAllocateMemory;
-        vulkanFunctions.vkFreeMemory = gDispatchTable.gvkFreeMemory;
-        vulkanFunctions.vkMapMemory = gDispatchTable.gvkMapMemory;
-        vulkanFunctions.vkUnmapMemory = gDispatchTable.gvkUnmapMemory;
-        vulkanFunctions.vkFlushMappedMemoryRanges = gDispatchTable.gvkFlushMappedMemoryRanges;
-        vulkanFunctions.vkInvalidateMappedMemoryRanges = gDispatchTable.gvkInvalidateMappedMemoryRanges;
-        vulkanFunctions.vkBindBufferMemory = gDispatchTable.gvkBindBufferMemory;
-        vulkanFunctions.vkBindImageMemory = gDispatchTable.gvkBindImageMemory;
-        vulkanFunctions.vkGetBufferMemoryRequirements = gDispatchTable.gvkGetBufferMemoryRequirements;
-        vulkanFunctions.vkGetImageMemoryRequirements = gDispatchTable.gvkGetImageMemoryRequirements;
-        vulkanFunctions.vkCreateBuffer = gDispatchTable.gvkCreateBuffer;
-        vulkanFunctions.vkDestroyBuffer = gDispatchTable.gvkDestroyBuffer;
-        vulkanFunctions.vkCreateImage = gDispatchTable.gvkCreateImage;
-        vulkanFunctions.vkDestroyImage = gDispatchTable.gvkDestroyImage;
-        vulkanFunctions.vkCmdCopyBuffer = gDispatchTable.gvkCmdCopyBuffer;
+        vulkanFunctions.vkGetInstanceProcAddr = dispatchTable.gvkGetInstanceProcAddr;
+        vulkanFunctions.vkGetDeviceProcAddr = dispatchTable.gvkGetDeviceProcAddr;
+        vulkanFunctions.vkGetPhysicalDeviceProperties = dispatchTable.gvkGetPhysicalDeviceProperties;
+        vulkanFunctions.vkGetPhysicalDeviceMemoryProperties = dispatchTable.gvkGetPhysicalDeviceMemoryProperties;
+        vulkanFunctions.vkAllocateMemory = dispatchTable.gvkAllocateMemory;
+        vulkanFunctions.vkFreeMemory = dispatchTable.gvkFreeMemory;
+        vulkanFunctions.vkMapMemory = dispatchTable.gvkMapMemory;
+        vulkanFunctions.vkUnmapMemory = dispatchTable.gvkUnmapMemory;
+        vulkanFunctions.vkFlushMappedMemoryRanges = dispatchTable.gvkFlushMappedMemoryRanges;
+        vulkanFunctions.vkInvalidateMappedMemoryRanges = dispatchTable.gvkInvalidateMappedMemoryRanges;
+        vulkanFunctions.vkBindBufferMemory = dispatchTable.gvkBindBufferMemory;
+        vulkanFunctions.vkBindImageMemory = dispatchTable.gvkBindImageMemory;
+        vulkanFunctions.vkGetBufferMemoryRequirements = dispatchTable.gvkGetBufferMemoryRequirements;
+        vulkanFunctions.vkGetImageMemoryRequirements = dispatchTable.gvkGetImageMemoryRequirements;
+        vulkanFunctions.vkCreateBuffer = dispatchTable.gvkCreateBuffer;
+        vulkanFunctions.vkDestroyBuffer = dispatchTable.gvkDestroyBuffer;
+        vulkanFunctions.vkCreateImage = dispatchTable.gvkCreateImage;
+        vulkanFunctions.vkDestroyImage = dispatchTable.gvkDestroyImage;
+        vulkanFunctions.vkCmdCopyBuffer = dispatchTable.gvkCmdCopyBuffer;
         #if VMA_DEDICATED_ALLOCATION || VMA_VULKAN_VERSION >= 1001000
         /// Fetch "vkGetBufferMemoryRequirements2" on Vulkan >= 1.1, fetch "vkGetBufferMemoryRequirements2KHR" when using VK_KHR_dedicated_allocation extension.
-        vulkanFunctions.vkGetBufferMemoryRequirements2KHR = gDispatchTable.gvkGetBufferMemoryRequirements2;
+        vulkanFunctions.vkGetBufferMemoryRequirements2KHR = dispatchTable.gvkGetBufferMemoryRequirements2;
         /// Fetch "vkGetImageMemoryRequirements2" on Vulkan >= 1.1, fetch "vkGetImageMemoryRequirements2KHR" when using VK_KHR_dedicated_allocation extension.
-        vulkanFunctions.vkGetImageMemoryRequirements2KHR = gDispatchTable.gvkGetImageMemoryRequirements2;
+        vulkanFunctions.vkGetImageMemoryRequirements2KHR = dispatchTable.gvkGetImageMemoryRequirements2;
         #endif
         #if VMA_BIND_MEMORY2 || VMA_VULKAN_VERSION >= 1001000
         /// Fetch "vkBindBufferMemory2" on Vulkan >= 1.1, fetch "vkBindBufferMemory2KHR" when using VK_KHR_bind_memory2 extension.
-        vulkanFunctions.vkBindBufferMemory2KHR = gDispatchTable.gvkBindBufferMemory2;
+        vulkanFunctions.vkBindBufferMemory2KHR = dispatchTable.gvkBindBufferMemory2;
         /// Fetch "vkBindImageMemory2" on Vulkan >= 1.1, fetch "vkBindImageMemory2KHR" when using VK_KHR_bind_memory2 extension.
-        vulkanFunctions.vkBindImageMemory2KHR = gDispatchTable.gvkBindImageMemory2;
+        vulkanFunctions.vkBindImageMemory2KHR = dispatchTable.gvkBindImageMemory2;
         #endif
         #if VMA_MEMORY_BUDGET || VMA_VULKAN_VERSION >= 1001000
-        vulkanFunctions.vkGetPhysicalDeviceMemoryProperties2KHR = gDispatchTable.gvkGetPhysicalDeviceMemoryProperties2;
+        vulkanFunctions.vkGetPhysicalDeviceMemoryProperties2KHR = dispatchTable.gvkGetPhysicalDeviceMemoryProperties2;
         #endif
         #if VMA_VULKAN_VERSION >= 1003000
         /// Fetch from "vkGetDeviceBufferMemoryRequirements" on Vulkan >= 1.3, but you can also fetch it from "vkGetDeviceBufferMemoryRequirementsKHR" if you enabled extension VK_KHR_maintenance4.
-        vulkanFunctions.vkGetDeviceBufferMemoryRequirements = gDispatchTable.gvkGetDeviceBufferMemoryRequirements;
+        vulkanFunctions.vkGetDeviceBufferMemoryRequirements = dispatchTable.gvkGetDeviceBufferMemoryRequirements;
         /// Fetch from "vkGetDeviceImageMemoryRequirements" on Vulkan >= 1.3, but you can also fetch it from "vkGetDeviceImageMemoryRequirementsKHR" if you enabled extension VK_KHR_maintenance4.
-        vulkanFunctions.vkGetDeviceImageMemoryRequirements = gDispatchTable.gvkGetDeviceImageMemoryRequirements;
+        vulkanFunctions.vkGetDeviceImageMemoryRequirements = dispatchTable.gvkGetDeviceImageMemoryRequirements;
         #endif
 
         VmaAllocatorCreateInfo allocatorCreateInfo{ };
@@ -194,15 +195,16 @@ VkResult initialize_control_block<FramebufferControlBlock>(FramebufferControlBlo
 template <>
 VkResult initialize_control_block<InstanceControlBlock>(InstanceControlBlock& controlBlock)
 {
+    auto& dispatchTable = DispatchTable::get_global_dispatch_table();
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         auto vkInstance = controlBlock.mVkInstance;
-        gvk::DispatchTable::load_instance_entry_points(vkInstance, &gDispatchTable);
+        DispatchTable::load_instance_entry_points(vkInstance, &dispatchTable);
         uint32_t physicalDeviceCount = 0;
-        assert(gDispatchTable.gvkEnumeratePhysicalDevices);
-        gvk_result(gDispatchTable.gvkEnumeratePhysicalDevices(vkInstance, &physicalDeviceCount, nullptr));
+        assert(dispatchTable.gvkEnumeratePhysicalDevices);
+        gvk_result(dispatchTable.gvkEnumeratePhysicalDevices(vkInstance, &physicalDeviceCount, nullptr));
         auto pVkPhysicalDevices = (VkPhysicalDevice*)detail::get_transient_storage(physicalDeviceCount * sizeof(VkPhysicalDevice));
         std::vector<VkPhysicalDevice> vkPhysicalDevices(physicalDeviceCount);
-        gvk_result(gDispatchTable.gvkEnumeratePhysicalDevices(vkInstance, &physicalDeviceCount, pVkPhysicalDevices));
+        gvk_result(dispatchTable.gvkEnumeratePhysicalDevices(vkInstance, &physicalDeviceCount, pVkPhysicalDevices));
         controlBlock.mPhysicalDevices.reserve(physicalDeviceCount);
         for (uint32_t i = 0; i < physicalDeviceCount; ++i) {
             PhysicalDevice physicalDevice;
@@ -245,12 +247,13 @@ VkResult initialize_control_block<RenderPassControlBlock>(RenderPassControlBlock
 template <>
 VkResult initialize_control_block<SwapchainKHRControlBlock>(SwapchainKHRControlBlock& controlBlock)
 {
+    auto& dispatchTable = DispatchTable::get_global_dispatch_table();
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         uint32_t swapchainImageCount = 0;
-        assert(gDispatchTable.gvkGetSwapchainImagesKHR);
-        gvk_result(gDispatchTable.gvkGetSwapchainImagesKHR(controlBlock.mDevice, controlBlock.mVkSwapchainKHR, &swapchainImageCount, nullptr));
+        assert(dispatchTable.gvkGetSwapchainImagesKHR);
+        gvk_result(dispatchTable.gvkGetSwapchainImagesKHR(controlBlock.mDevice, controlBlock.mVkSwapchainKHR, &swapchainImageCount, nullptr));
         auto pVkImages = (VkImage*)detail::get_transient_storage(swapchainImageCount * sizeof(VkImage));
-        gvk_result(gDispatchTable.gvkGetSwapchainImagesKHR(controlBlock.mDevice, controlBlock.mVkSwapchainKHR, &swapchainImageCount, pVkImages));
+        gvk_result(dispatchTable.gvkGetSwapchainImagesKHR(controlBlock.mDevice, controlBlock.mVkSwapchainKHR, &swapchainImageCount, pVkImages));
         auto& images = controlBlock.mImages;
         images.resize(swapchainImageCount);
         const auto& swapchainCreateInfo = *controlBlock.mSwapchainCreateInfoKHR;
@@ -284,8 +287,9 @@ BufferControlBlock::~BufferControlBlock()
     if (mVmaAllocation) {
         vmaDestroyBuffer(mDevice.get<VmaAllocator>(), mVkBuffer, mVmaAllocation);
     } else {
-        assert(gDispatchTable.gvkDestroyBuffer);
-        gDispatchTable.gvkDestroyBuffer(mDevice, mVkBuffer, (mAllocator.pfnFree ? &mAllocator : nullptr));
+        auto dispatchTable = DispatchTable::get_global_dispatch_table();
+        assert(dispatchTable.gvkDestroyBuffer);
+        dispatchTable.gvkDestroyBuffer(mDevice, mVkBuffer, (mAllocator.pfnFree ? &mAllocator : nullptr));
     }
 }
 
@@ -294,10 +298,11 @@ DeviceControlBlock::~DeviceControlBlock()
     if (mVmaAllocator) {
         vmaDestroyAllocator(mVmaAllocator);
     }
-    assert(gDispatchTable.gvkDeviceWaitIdle);
-    gDispatchTable.gvkDeviceWaitIdle(mVkDevice);
-    assert(gDispatchTable.gvkDestroyDevice);
-    gDispatchTable.gvkDestroyDevice(mVkDevice, (mAllocator.pfnFree ? &mAllocator : nullptr));
+    auto dispatchTable = DispatchTable::get_global_dispatch_table();
+    assert(dispatchTable.gvkDeviceWaitIdle);
+    dispatchTable.gvkDeviceWaitIdle(mVkDevice);
+    assert(dispatchTable.gvkDestroyDevice);
+    dispatchTable.gvkDestroyDevice(mVkDevice, (mAllocator.pfnFree ? &mAllocator : nullptr));
 }
 
 ImageControlBlock::~ImageControlBlock()
@@ -306,8 +311,9 @@ ImageControlBlock::~ImageControlBlock()
         if (mVmaAllocation) {
             vmaDestroyImage(mDevice.get<VmaAllocator>(), mVkImage, mVmaAllocation);
         } else {
-            assert(gDispatchTable.gvkDestroyImage);
-            gDispatchTable.gvkDestroyImage(mDevice, mVkImage, (mAllocator.pfnFree ? &mAllocator : nullptr));
+            auto dispatchTable = DispatchTable::get_global_dispatch_table();
+            assert(dispatchTable.gvkDestroyImage);
+            dispatchTable.gvkDestroyImage(mDevice, mVkImage, (mAllocator.pfnFree ? &mAllocator : nullptr));
         }
     }
 }

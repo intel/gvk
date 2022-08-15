@@ -10,8 +10,10 @@ include(CTest)
 include(FetchContent)
 
 option                (GVK_BUILD_TESTS   "" ON)
+cmake_dependent_option(GVK_PACKAGE_TESTS "" ON GVK_BUILD_TESTS OFF)
 cmake_dependent_option(GVK_RUN_TESTS     "" ON GVK_BUILD_TESTS OFF)
 option                (GVK_BUILD_SAMPLES "" ON)
+option                (GVK_NO_PROTOTYPES "" OFF)
 
 set(Vulkan_SDK_DIR "${Vulkan_INCLUDE_DIRS}/../")
 set(Vulkan_XML "${Vulkan_SDK_DIR}/share/vulkan/registry/vk.xml")
@@ -38,6 +40,9 @@ function(gvk_setup_target)
     target_compile_options(${args_target} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX> $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror>)
     gvk_create_file_group("${args_includeFiles}")
     gvk_create_file_group("${args_sourceFiles}")
+    if(GVK_NO_PROTOTYPES)
+        target_compile_definitions(${args_target} PUBLIC VK_NO_PROTOTYPES)
+    endif()
     if(args_folder)
         set_target_properties(${args_target} PROPERTIES FOLDER "gvk/${args_folder}")
     else()
@@ -79,12 +84,22 @@ macro(gvk_add_target_test)
             includeFiles "${args_includeFiles}"
             sourceFiles "${args_sourceFiles}"
         )
-    endif()
-    if(GVK_RUN_TESTS)
-        add_test(NAME ${args_target}.test COMMAND ${args_target}.test)
-        add_custom_command(
-            TARGET ${args_target}.test POST_BUILD
-            COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --verbose --output-on-failures
-        )
+        if(GVK_PACKAGE_TESTS)
+            set(testPackage "${CMAKE_BINARY_DIR}/gvk-test-package/")
+            if(NOT EXISTS "${testPackage}")
+                file(MAKE_DIRECTORY "${testPackage}")
+            endif()
+            add_custom_command(
+                TARGET ${args_target}.test POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${args_target}.test> "${testPackage}"
+            )
+        endif()
+        if(GVK_RUN_TESTS)
+            add_test(NAME ${args_target}.test COMMAND ${args_target}.test)
+            add_custom_command(
+                TARGET ${args_target}.test POST_BUILD
+                COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --verbose --output-on-failures
+            )
+        endif()
     endif()
 endmacro()

@@ -18,6 +18,13 @@ License.
 
 #pragma once
 
+#ifdef __linux__
+#include <dlfcn.h>
+#define gvk_dlopen(LIBRARY_NAME) dlopen(LIBRARY_NAME, RTLD_LAZY | RTLD_LOCAL)
+#define gvk_dlsym(LIBRARY_HANDLE, SYMBOL_NAME) dlsym(LIBRARY_HANDLE, SYMBOL_NAME)
+#define gvk_dlclose(LIBRARY_HANDLE) dlclose(LIBRARY_HANDLE)
+#endif
+
 #if defined(_WIN32) || defined(_WIN64)
 #ifndef VK_USE_PLATFORM_WIN32_KHR
 #define VK_USE_PLATFORM_WIN32_KHR
@@ -29,12 +36,23 @@ License.
 #define NOMINMAX
 #endif
 #include <Windows.h>
+#define gvk_dlopen(LIBRARY_NAME) LoadLibraryA(LIBRARY_NAME)
+#define gvk_dlsym(LIBRARY_HANDLE, SYMBOL_NAME) GetProcAddress((HMODULE)LIBRARY_HANDLE, SYMBOL_NAME)
+#define gvk_dlclose(LIBRARY_HANDLE) FreeLibrary((HMODULE)LIBRARY_HANDLE)
 #endif
 
 #ifndef VK_ENABLE_BETA_EXTENSIONS
 #define VK_ENABLE_BETA_EXTENSIONS
 #endif
 #include "vulkan/vulkan.h"
+
+#if 0
+#ifdef VK_NO_PROTOTYPES
+extern "C" {
+VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(VkInstance vkInstance, const char* pName);
+}
+#endif
+#endif
 
 #if 0
 #define VMA_DEBUG_LOG(format, ...) do { \

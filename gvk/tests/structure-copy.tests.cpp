@@ -289,18 +289,21 @@ TEST(create_structure_copy, VkPipelineMultisampleStateCreateInfo)
 
 TEST(create_structure_copy, VkShaderModuleCreateInfo)
 {
+    std::array<uint32_t, 8> spirv{
+        8, 16, 32, 64, 128, 256, 512, 1024
+    };
     VkShaderModuleCreateInfo shaderModuleCreateInfo { };
     shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    shaderModuleCreateInfo.codeSize = (uint32_t)gvk::spirv::full_screen_triangle_vertex_shader().size() * sizeof(uint32_t);
-    shaderModuleCreateInfo.pCode = gvk::spirv::full_screen_triangle_vertex_shader().data();
+    shaderModuleCreateInfo.codeSize = (uint32_t)spirv.size() * sizeof(uint32_t);
+    shaderModuleCreateInfo.pCode = spirv.data();
     ValidationAllocator allocator;
     auto copy = gvk::detail::create_structure_copy(shaderModuleCreateInfo, &allocator.get_allocation_callbacks());
     EXPECT_EQ(shaderModuleCreateInfo, copy);
     shaderModuleCreateInfo.codeSize /= 2;
     EXPECT_NE(shaderModuleCreateInfo, copy);
-    auto codeSize = (uint32_t)gvk::spirv::full_screen_triangle_vertex_shader().size() * sizeof(uint32_t);
+    auto codeSize = (uint32_t)spirv.size() * sizeof(uint32_t);
     EXPECT_EQ(copy.codeSize, codeSize);
-    auto diff = memcmp(shaderModuleCreateInfo.pCode, gvk::spirv::full_screen_triangle_vertex_shader().data(), codeSize);
+    auto diff = memcmp(shaderModuleCreateInfo.pCode, spirv.data(), codeSize);
     EXPECT_EQ(diff, 0);
     gvk::detail::destroy_structure_copy(copy, &allocator.get_allocation_callbacks());
 }

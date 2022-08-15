@@ -267,7 +267,7 @@ void validate_render_target(
     }
 }
 
-/*TEST(RenderTarget, ResourceCreation)
+TEST(RenderTarget, ResourceCreation)
 {
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         RenderTargetValidationContext context;
@@ -484,4 +484,4 @@ void validate_render_target(
         );
     } gvk_result_scope_end
     EXPECT_EQ(gvkResult, VK_SUCCESS);
-}*/
+}

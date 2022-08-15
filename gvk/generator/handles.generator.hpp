@@ -291,9 +291,10 @@ R"({
             for (uint32_t i = 0; i < handleCount; ++i) {
                 {outArg}[i].reset();
             }
-            assert(gDispatchTable.g{vkCreateCommand});
+            auto dispatchTable = DispatchTable::get_global_dispatch_table();
+            assert(dispatchTable.g{vkCreateCommand});
             auto pVk{handleTypeName} = (Vk{handleTypeName}*)detail::get_transient_storage(handleCount * sizeof(Vk{handleTypeName}));
-            gvk_result(gDispatchTable.g{vkCreateCommand}({vkCreateCallArgs}));
+            gvk_result(dispatchTable.g{vkCreateCommand}({vkCreateCallArgs}));
             for (uint32_t i = 0; i < handleCount; ++i) {
                 {outArg}[i].mVk{handleTypeName} = pVk{handleTypeName}[i];
                 {outArg}[i].mControlBlock.reset(detail::newref, pVk{handleTypeName}[i]);
@@ -397,8 +398,9 @@ R"(void {handleTypeName}::reset()
             file << string::replace(
 R"({handleTypeName}ControlBlock::~{handleTypeName}ControlBlock()
 {
-    assert(gDispatchTable.g{vkDestroyCommand});
-    gDispatchTable.g{vkDestroyCommand}({vkDestroyCallArgs});
+    auto dispatchTable = DispatchTable::get_global_dispatch_table();
+    assert(dispatchTable.g{vkDestroyCommand});
+    dispatchTable.g{vkDestroyCommand}({vkDestroyCallArgs});
 }
 )", replacements);
         }

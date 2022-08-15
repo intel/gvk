@@ -240,27 +240,37 @@ inline VkResult execute_immediately(
     RecordCommandBufferFunctionType recordCommandBuffer
 )
 {
+    auto dispatchTable = DispatchTable::get_global_dispatch_table();
     gvk_result_scope_begin(VK_INCOMPLETE) {
         auto commandBufferBeginInfo = get_default<VkCommandBufferBeginInfo>();
         commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        assert(gDispatchTable.gvkBeginCommandBuffer);
-        gvk_result(gDispatchTable.gvkBeginCommandBuffer(vkCommandBuffer, &commandBufferBeginInfo));
+        assert(dispatchTable.gvkBeginCommandBuffer);
+        gvk_result(dispatchTable.gvkBeginCommandBuffer(vkCommandBuffer, &commandBufferBeginInfo));
         recordCommandBuffer(vkCommandBuffer);
-        assert(gDispatchTable.gvkEndCommandBuffer);
-        gvk_result(gDispatchTable.gvkEndCommandBuffer(vkCommandBuffer));
+        assert(dispatchTable.gvkEndCommandBuffer);
+        gvk_result(dispatchTable.gvkEndCommandBuffer(vkCommandBuffer));
 
         auto submitInfo = get_default<VkSubmitInfo>();
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &vkCommandBuffer;
-        assert(gDispatchTable.gvkQueueSubmit);
-        gvk_result(gDispatchTable.gvkQueueSubmit(vkQueue, 1, &submitInfo, vkFence));
+        assert(dispatchTable.gvkQueueSubmit);
+        gvk_result(dispatchTable.gvkQueueSubmit(vkQueue, 1, &submitInfo, vkFence));
 
         if (!vkFence) {
-            assert(gDispatchTable.gvkQueueWaitIdle);
-            gvk_result(gDispatchTable.gvkQueueWaitIdle(vkQueue));
+            assert(dispatchTable.gvkQueueWaitIdle);
+            gvk_result(dispatchTable.gvkQueueWaitIdle(vkQueue));
         }
     } gvk_result_scope_end
     return gvkResult;
 }
 
+namespace detail {
+
+#ifdef VK_NO_PROTOTYPES
+VkResult load_runtime();
+void unload_runtime();
+PFN_vkGetInstanceProcAddr load_get_instance_proc_addr();
+#endif
+
+} // namespace detail
 } // namespace gvk

@@ -178,8 +178,9 @@ VkImageMemoryBarrier2 RenderTarget::get_image_memory_barrier_2(uint32_t attachme
 VkSampleCountFlagBits get_max_framebuffer_sample_count(VkPhysicalDevice vkPhysicalDevice, VkBool32 color, VkBool32 depth, VkBool32 stencil)
 {
     VkPhysicalDeviceProperties physicalDeviceProperties{ };
-    assert(gDispatchTable.gvkGetPhysicalDeviceProperties);
-    gDispatchTable.gvkGetPhysicalDeviceProperties(vkPhysicalDevice, &physicalDeviceProperties);
+    auto dispatchTable = DispatchTable::get_global_dispatch_table();
+    assert(dispatchTable.gvkGetPhysicalDeviceProperties);
+    dispatchTable.gvkGetPhysicalDeviceProperties(vkPhysicalDevice, &physicalDeviceProperties);
     VkSampleCountFlags sampleCounts = (color || depth || stencil) ? (uint32_t)-1 : 0;
     if (color) {
         sampleCounts &= physicalDeviceProperties.limits.framebufferColorSampleCounts;

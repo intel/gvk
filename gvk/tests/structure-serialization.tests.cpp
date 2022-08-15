@@ -259,9 +259,11 @@ TEST(Serialization, VkPipelineMultisampleStateCreateInfo)
 
 TEST(Serialization, VkShaderModuleCreateInfo)
 {
-    auto spirv = gvk::spirv::full_screen_triangle_vertex_shader();
+    std::array<uint32_t, 8> spirv{
+        8, 16, 32, 64, 128, 256, 512, 1024
+    };
     auto shaderModuleCreateInfo = gvk::get_default<VkShaderModuleCreateInfo>();
     shaderModuleCreateInfo.codeSize = (uint32_t)spirv.size() * sizeof(uint32_t);
-    shaderModuleCreateInfo.pCode = (const uint32_t*)spirv.data();
+    shaderModuleCreateInfo.pCode = spirv.data();
     validate_structure_serialization(shaderModuleCreateInfo);
 }

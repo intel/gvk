@@ -18,8 +18,8 @@ License.
 
 #define _CRT_SECURE_NO_WARNINGS
 
+#include "gvk/generated/comparison-operators.hpp"
 #include "gvk/spir-v.hpp"
-#include "gvk/serialization.hpp"
 
 #include "gtest/gtest.h"
 
@@ -288,13 +288,13 @@ TEST(ComparisonOperators, StructureWithDynamicArrayOfStructureWithDynamicArray)
     std::array<VkDeviceQueueCreateInfo, DeviceQueueCreateInfoCount> deviceQueueCreateInfos1 { };
     auto createDeviceCreateInfo =
     [](
-        std::array<std::array<float, QueueCount>, DeviceQueueCreateInfoCount>& queuePrioritesCollection,
+        std::array<std::array<float, QueueCount>, DeviceQueueCreateInfoCount>& queuePrioritiesCollection,
         std::array<VkDeviceQueueCreateInfo, DeviceQueueCreateInfoCount>& deviceQueueCreateInfosCollection
     )
     {
         for (size_t deviceQueueCreateInfo_i = 0; deviceQueueCreateInfo_i < deviceQueueCreateInfosCollection.size(); ++deviceQueueCreateInfo_i) {
             auto& deviceQueueCreateInfo = deviceQueueCreateInfosCollection[deviceQueueCreateInfo_i];
-            auto& queuePriorites = queuePrioritesCollection[deviceQueueCreateInfo_i];
+            auto& queuePriorites = queuePrioritiesCollection[deviceQueueCreateInfo_i];
             for (size_t queuePriority_i = 0; queuePriority_i < queuePriorites.size(); ++queuePriority_i) {
                 queuePriorites[queuePriority_i] = (deviceQueueCreateInfo_i + queuePriority_i) * 3.14f;
             }
@@ -364,7 +364,7 @@ TEST(ComparisonOperators, VkPipelineMultisampleStateCreateInfo)
     // ...Then we'll set them back to equal and validate...
     sampleMask0.front() = value;
     EXPECT_EQ(pipelineMultiSampleCreateInfo0, pipelineMultiSampleCreateInfo1);
-    // ..Finally we'll break our second VkSampleMask and validate thet our
+    // ...Finally we'll break our second VkSampleMask and validate thet our
     //  structures are inequal...
     sampleMask0.back() = 0;
     EXPECT_NE(pipelineMultiSampleCreateInfo0, pipelineMultiSampleCreateInfo1);
@@ -372,15 +372,19 @@ TEST(ComparisonOperators, VkPipelineMultisampleStateCreateInfo)
 
 TEST(ComparisonOperators, VkShaderModuleCreateInfo)
 {
-    auto spirv0 = gvk::spirv::full_screen_triangle_vertex_shader();
+    std::array<uint32_t, 8> spirv0{
+        8, 16, 32, 64, 128, 256, 512, 1024
+    };
     auto shaderModuleCreateInfo0 = gvk::get_default<VkShaderModuleCreateInfo>();
     shaderModuleCreateInfo0.codeSize = (uint32_t)spirv0.size() * sizeof(uint32_t);
-    shaderModuleCreateInfo0.pCode = (const uint32_t*)spirv0.data();
+    shaderModuleCreateInfo0.pCode = spirv0.data();
 
-    auto spirv1 = gvk::spirv::full_screen_triangle_vertex_shader();
+    std::array<uint32_t, 8> spirv1{
+        8, 16, 32, 64, 128, 256, 512, 1024
+    };
     auto shaderModuleCreateInfo1 = gvk::get_default<VkShaderModuleCreateInfo>();
     shaderModuleCreateInfo1.codeSize = (uint32_t)spirv1.size() * sizeof(uint32_t);
-    shaderModuleCreateInfo1.pCode = (const uint32_t*)spirv1.data();
+    shaderModuleCreateInfo1.pCode = spirv1.data();
 
     EXPECT_EQ(shaderModuleCreateInfo0, shaderModuleCreateInfo1);
     shaderModuleCreateInfo0.codeSize /= 2;
