@@ -1,4 +1,5 @@
-# GVK (GPA Vk Utilities) v0.0.1
+
+# Intel GVK (GPA Vk Utilities) v0.0.1
 
 Intel GVK is a collection of Vulkan C++ utilities with a general focus on tools development, and a specific focus on supporting [Intel Graphics Performance Analyzers Framework](https://intel.github.io/gpasdk-doc/).
 
@@ -21,17 +22,17 @@ GVK currently provides:
 NOTE : GVK currently supports Windows only, this limitation will be lifted very soon
 
 Ensure the following tools are installed...
- - [Python](https://www.python.org/downloads/) v3+
- - [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) v1.3.216.0+
  - [CMake](https://cmake.org/download/) v3.3+
  - [Git](https://git-scm.com/)
+ - [Python](https://www.python.org/downloads/) v3+
  - [Visual Studio](https://visualstudio.microsoft.com/vs/community/) 2019
+ - [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) v1.3.216.0+
 
 The following instructions are for a  `bash` like terminal (Git Bash comes with the Git install by default on Windows)...
 ```
 cd c:
 cd <desired/directory/location/>
-git clone https://github.com/intel-innersource/applications.analyzers.gpa.backend.gvk.git
+git clone https://github.com/intel/gvk.git
 cd gvk/
 mkdir build
 cd build/

@@ -3,5 +3,9 @@
 [_-][Bb]uild/
 [Cc][Mm]ake[Bb]uild/
 [Cc][Mm]ake[_-][Bb]uild/
-documentation/html/
-documentation/latex/
+html/
+latex/
+_deps/
+_report/
+_scan-tools/
+__pycache__/

@@ -24,8 +24,8 @@ add_stb_file(stb_image STB_IMAGE_IMPLEMENTATION)
 
 gvk_add_static_library(
     target stb
+    folder "external/"
     includeDirectories "${stbBinaryDirectory}/"
     includeFiles "${includeFiles}"
     sourceFiles "${sourceFiles}"
 )
-set_target_properties(stb PROPERTIES FOLDER "gvk/external/")
