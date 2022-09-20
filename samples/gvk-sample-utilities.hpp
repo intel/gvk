@@ -33,8 +33,6 @@ License.
 #include "gvk/structures.hpp"
 #include "gvk/to-string.hpp"
 
-#include "stb/stb_image.h"
-
 #include <algorithm>
 #include <iostream>
 

@@ -189,6 +189,29 @@ Gets the vertex input attribute VkFormat for a given type
 @return The vertex input attribute VkFormat for the given type
 */
 template <>
+inline VkFormat get_vertex_input_attribute_format<uint32_t>()
+{
+    return VK_FORMAT_R32_UINT;
+}
+
+/**
+Gets the vertex input attribute VkFormat for a given type
+@param T The type to get the vertex input attribute VkFormat for
+@return The vertex input attribute VkFormat for the given type
+*/
+template <>
+inline VkFormat get_vertex_input_attribute_format<float>()
+{
+    return VK_FORMAT_R32_SFLOAT;
+}
+
+#ifdef GVK_GLM_ENABLED
+/**
+Gets the vertex input attribute VkFormat for a given type
+@param T The type to get the vertex input attribute VkFormat for
+@return The vertex input attribute VkFormat for the given type
+*/
+template <>
 inline VkFormat get_vertex_input_attribute_format<glm::u8vec2>()
 {
     return VK_FORMAT_R8G8_UNORM;
@@ -214,17 +237,6 @@ template <>
 inline VkFormat get_vertex_input_attribute_format<glm::u8vec4>()
 {
     return VK_FORMAT_R8G8B8A8_UNORM;
-}
-
-/**
-Gets the vertex input attribute VkFormat for a given type
-@param T The type to get the vertex input attribute VkFormat for
-@return The vertex input attribute VkFormat for the given type
-*/
-template <>
-inline VkFormat get_vertex_input_attribute_format<uint32_t>()
-{
-    return VK_FORMAT_R32_UINT;
 }
 
 /**
@@ -266,17 +278,6 @@ Gets the vertex input attribute VkFormat for a given type
 @return The vertex input attribute VkFormat for the given type
 */
 template <>
-inline VkFormat get_vertex_input_attribute_format<float>()
-{
-    return VK_FORMAT_R32_SFLOAT;
-}
-
-/**
-Gets the vertex input attribute VkFormat for a given type
-@param T The type to get the vertex input attribute VkFormat for
-@return The vertex input attribute VkFormat for the given type
-*/
-template <>
 inline VkFormat get_vertex_input_attribute_format<glm::vec2>()
 {
     return VK_FORMAT_R32G32_SFLOAT;
@@ -303,6 +304,7 @@ inline VkFormat get_vertex_input_attribute_format<glm::vec4>()
 {
     return VK_FORMAT_R32G32B32A32_SFLOAT;
 }
+#endif // GVK_GLM_ENABLED
 
 /**
 Gets an std::array<VkVertexInputAttributeDescription, N> for a given set of vertex input attribute types

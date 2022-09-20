@@ -18,6 +18,8 @@ License.
 
 #pragma once
 
+#ifdef GVK_GLM_ENABLED
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_SIZE_T_LENGTH
 #define GLM_ENABLE_EXPERIMENTAL
@@ -36,6 +38,9 @@ License.
 #pragma warning(pop)
 #endif
 
+#endif // GVK_GLM_ENABLED
+
 #include <algorithm>
+#include <array>
 #define _USE_MATH_DEFINES
 #include <cmath>

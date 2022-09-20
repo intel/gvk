@@ -20,6 +20,8 @@ License.
 
 #include "gvk/math/defines.hpp"
 
+#ifdef GVK_GLM_ENABLED
+
 namespace gvk {
 namespace math {
 
@@ -178,3 +180,5 @@ struct Color
 
 } // namespace math
 } // namespace gvk
+
+#endif // GVK_GLM_ENABLED

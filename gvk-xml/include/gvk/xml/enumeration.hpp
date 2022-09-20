@@ -34,7 +34,18 @@ public:
     Enumerator() = default;
     Enumerator(const tinyxml2::XMLElement& xmlElement);
 
+    static std::string get_offset_value(
+        const std::string& extensionNumber,
+        const std::string& offset,
+        const std::string& direction
+    );
+
     std::string value;
+    std::string bitPos;
+    std::string offset;
+    std::string direction;
+    std::string extends;
+    std::string extensionNumber;
 };
 
 bool operator==(const Enumerator& lhs, const Enumerator& rhs);

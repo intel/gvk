@@ -16,6 +16,8 @@ License.
 
 ******************************************************************************/
 
+#if defined(GVK_GLSLANG_ENABLED) && defined(GVK_SPIRV_CROSS_ENABLED)
+
 #include "gvk/spir-v.hpp"
 #include "gvk/context.hpp"
 
@@ -400,3 +402,5 @@ TEST(spirv, BindingInfo_PushConstants)
         }
     );
 }
+
+#endif // defined(GVK_GLSLANG_ENABLED) && defined(GVK_SPIRV_CROSS_ENABLED)

@@ -27,13 +27,26 @@ Extension::Extension(const tinyxml2::XMLElement& xmlElement)
     name = get_xml_attribute(xmlElement, "name");
     extension = name;
     vendor = get_xml_attribute(xmlElement, "author");
-    platform = get_xml_attribute(xmlElement, "platform");
+    number = get_xml_attribute(xmlElement, "number");
     type = get_xml_attribute(xmlElement, "type") == "instance" ? Type::Instance : Type::Device;
+    platform = get_xml_attribute(xmlElement, "platform");
     supported = get_xml_attribute(xmlElement, "supported");
     deprecatedBy = get_xml_attribute(xmlElement, "deprecatedby");
     obsoletedBy = get_xml_attribute(xmlElement, "obsoletedby");
     promotedTo = get_xml_attribute(xmlElement, "promotedto");
     process_requirements(xmlElement, *this);
+
+    for (auto& enumerationItr : enumerations) {
+        std::set<Enumerator> enumerators;
+        for (auto enumerator : enumerationItr.second.enumerators) {
+            if (enumerator.value.empty()) {
+                auto extensionNumber = !enumerator.extensionNumber.empty() ? enumerator.extensionNumber : number;
+                enumerator.value = Enumerator::get_offset_value(extensionNumber, enumerator.offset, enumerator.direction);
+            }
+            enumerators.insert(enumerator);
+        }
+        enumerationItr.second.enumerators = enumerators;
+    }
 }
 
 } // namespace xml

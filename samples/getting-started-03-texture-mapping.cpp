@@ -18,6 +18,10 @@ License.
 
 #include "gvk-sample-utilities.hpp"
 
+#ifdef GVK_STB_ENABLED
+#include "stb/stb_image.h"
+#endif
+
 #include <array>
 #include <cassert>
 #include <iostream>
@@ -165,9 +169,9 @@ VkResult create_mesh(const gvk::Context& context, const glm::vec2& extent, gvk::
 {
     assert(pMesh);
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
-        float a = 1.0f / std::max(extent.x, extent.y);
-        auto w = extent.x * a * 0.5f;
-        auto h = extent.y * a * 0.5f;
+        float a = 1.0f / std::max(extent[0], extent[1]);
+        auto w = extent[0] * a * 0.5f;
+        auto h = extent[1] * a * 0.5f;
         std::array<VertexPositionTexcoord, 4> vertices {
             VertexPositionTexcoord {{ -w, 0, -h }, { 0, 0 }},
             VertexPositionTexcoord {{  w, 0, -h }, { 1, 0 }},
@@ -265,7 +269,7 @@ int main(int, const char*[])
         gvk_result(gvk::Sampler::create(context.get_devices()[0], &gvk::get_default<VkSamplerCreateInfo>(), nullptr, &sampler));
 
         gvk::Mesh mesh;
-        gvk_result(create_mesh(context, { imageViewExtent.width, imageViewExtent.height }, &mesh));
+        gvk_result(create_mesh(context, { (float)imageViewExtent.width, (float)imageViewExtent.height }, &mesh));
 
         gvk::Buffer uniformBuffer;
         gvk_result(gvk_sample_create_uniform_buffer<Uniforms>(context, &uniformBuffer));

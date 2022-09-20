@@ -19,6 +19,7 @@ License.
 #pragma once
 
 #include <algorithm>
+#include <ios>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -110,6 +111,20 @@ Gets a copy of a string containing a path with back slashes replaced with forwar
 @return The resulting std::string
 */
 std::string scrub_path(const std::string& path);
+
+/**
+Gets a value indicating whether or not a specified char is a numeric character
+@param [in] c The char to check
+@return Whether or not the specified char is a numeric character
+*/
+bool is_number(char c);
+
+/**
+Gets a value indicating whether or not a given string is all numeric characters
+@param [in] str The string to check
+@return Whether or not the given string is all numeric characters
+*/
+bool is_number(const std::string& str);
 
 /**
 Gets a value indicating whether or not a specified char is a whitespace character
@@ -235,12 +250,16 @@ std::string strip_vk(const std::string& str);
 Converts a given string to a number of a specified type
 @typename T The type of number to convert the given string to
 @param [in] str The string to convert into a number
+    @NOTE : The given string may be prepended with "0x" (case insensitive) to indicate that the provided value is hexidecimal
 @return The number converted from the given string
 */
 template <typename T>
 inline T to_number(const std::string& str)
 {
     std::stringstream strStrm;
+    if (2 < str.size() && str[0] == '0' && to_lower(str[1]) == 'x') {
+        strStrm << std::hex;
+    }
     strStrm << str;
     T number{ };
     return strStrm >> number ? number : 0;

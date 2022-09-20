@@ -31,6 +31,11 @@ Parameter::Parameter(const tinyxml2::XMLElement& xmlElement)
     name = get_xml_text(xmlElement.FirstChildElement("name"));
     length = string::remove(get_xml_attribute(xmlElement, "len"), ",null-terminated");
     altLength = get_xml_attribute(xmlElement, "altlen");
+    selector = get_xml_attribute(xmlElement, "selector");
+    limitType = get_xml_attribute(xmlElement, "limittype");
+    for (const auto& value : string::split(get_xml_attribute(xmlElement, "values"), ",")) {
+        values.push_back(value);
+    }
     for (auto pNode = xmlElement.FirstChild(); pNode; pNode = pNode->NextSibling()) {
         auto value = string::trim_whitespace(pNode->Value() ? pNode->Value() : "");
         if (value == "const" || value == "const struct") {
@@ -59,6 +64,7 @@ Parameter::Parameter(const tinyxml2::XMLElement& xmlElement)
         } else if (value == "[") {
         } else if (value == "]") {
         } else if (value == ":24" || value == ":8") {
+            bitField = string::to_number<int>(string::remove(value, ":"));
         } else if (value == "struct") {
         } else if (value == "type") {
         } else if (value == "name") {

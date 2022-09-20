@@ -92,6 +92,16 @@ std::string scrub_path(const std::string& path)
     return reduce_sequence(replace(path, "\\", "/"), "/");
 }
 
+bool is_number(char c)
+{
+    return std::isdigit((int)c);
+}
+
+bool is_number(const std::string& str)
+{
+    return std::all_of(str.begin(), str.end(), [](char c) { return is_number(c); });
+}
+
 bool is_whitespace(char c)
 {
     return std::isspace((int)c);

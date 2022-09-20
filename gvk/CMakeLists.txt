@@ -81,21 +81,36 @@ gvk_add_code_generator(
 set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
 set(includePath "${includeDirectory}/gvk/")
 set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk/")
+list(APPEND linkLibraries
+    gvk-math
+    gvk-string
+    gvk-system
+    gvk-xml
+    Vulkan::Vulkan
+)
+if(GVK_ASIO_ENABLED)
+    list(APPEND linkLibraries asio_INTERFACE)
+endif()
+if(GVK_CEREAL_ENABLED)
+    list(APPEND linkLibraries cereal)
+endif()
+if(GVK_GLSLANG_ENABLED)
+    list(APPEND linkLibraries glslang_INTERFACE)
+endif()
+if(GVK_SPIRV_CROSS_ENABLED)
+    list(APPEND linkLibraries SPIRV-Cross_INTERFACE)
+endif()
+if(GVK_STB_ENABLED)
+    list(APPEND linkLibraries stb)
+endif()
+if(GVK_VMA_ENABLED)
+    list(APPEND linkLibraries VulkanMemoryAllocator)
+endif()
 gvk_add_static_library(
     target
         gvk
     linkLibraries
-        asio_INTERFACE
-        cereal
-        glslang_INTERFACE
-        gvk-math
-        gvk-string
-        gvk-system
-        gvk-xml
-        SPIRV-Cross_INTERFACE
-        stb
-        VulkanMemoryAllocator
-        Vulkan::Vulkan
+        ${linkLibraries}
     includeDirectories
         "${includeDirectory}"
         "${generatedIncludeDirectory}"

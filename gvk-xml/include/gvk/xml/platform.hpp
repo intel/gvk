@@ -18,6 +18,7 @@ License.
 
 #pragma once
 
+#include "gvk/xml/api-element.hpp"
 #include "gvk/xml/defines.hpp"
 
 #include <set>
@@ -27,13 +28,11 @@ namespace gvk {
 namespace xml {
 
 class Platform final
+    : public ApiElement
 {
 public:
     Platform() = default;
     Platform(const tinyxml2::XMLElement& xmlElement);
-
-    std::string name;
-    std::set<std::string> compileGuards;
 };
 
 } // namespace xml

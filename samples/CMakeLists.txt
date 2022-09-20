@@ -1,15 +1,13 @@
 
 macro(gvk_add_sample target)
-    if(GVK_BUILD_SAMPLES AND NOT GVK_NO_PROTOTYPES)
-        gvk_add_executable(
-            target ${target}
-            folder "samples/"
-            linkLibraries gvk
-            sourceFiles
-                "${CMAKE_CURRENT_LIST_DIR}/gvk-sample-utilities.hpp"
-                "${CMAKE_CURRENT_LIST_DIR}/${target}.cpp"
-        )
-    endif()
+    gvk_add_executable(
+        target ${target}
+        folder "samples/"
+        linkLibraries gvk
+        sourceFiles
+            "${CMAKE_CURRENT_LIST_DIR}/gvk-sample-utilities.hpp"
+            "${CMAKE_CURRENT_LIST_DIR}/${target}.cpp"
+    )
 endmacro()
 
 gvk_add_sample(getting-started-00-triangle)

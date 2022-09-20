@@ -22,6 +22,7 @@ License.
 #include "gvk/xml/defines.hpp"
 
 #include <string>
+#include <vector>
 
 namespace gvk {
 namespace xml {
@@ -37,7 +38,11 @@ public:
     std::string unqualifiedType;
     std::string length;
     std::string altLength;
+    std::string selector;
+    std::string limitType;
+    std::vector<std::string> values;
     int dimensionCount { };
+    int bitField { };
     Flags flags { };
 };
 

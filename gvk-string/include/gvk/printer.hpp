@@ -58,12 +58,14 @@ public:
     @param [in] flags (optional = Printer::FlagBits::Default) Bitmask of Printer::FlagBits configuring printer output
     @param [in] tabCount (optional = 0) The tab count to begin printing at
     @param [in] tabSize (optional = 4) The tab size to use when printing tabs
+    @param [in] pUserData (optional = nullptr) A pointer to user data to pass along while printing
     */
-    inline Printer(std::ostream& ostrm, Flags flags = Default, int tabCount = 0, int tabSize = 4)
+    inline Printer(std::ostream& ostrm, Flags flags = Default, int tabCount = 0, int tabSize = 4, const void* pUserData = nullptr)
         : mOstrm { ostrm }
         , mFlags { flags }
         , mTabCount { tabCount }
         , mTabSize { tabSize }
+        , mpUserData { pUserData }
     {
     }
 
@@ -104,7 +106,7 @@ public:
     {
         print_comma();
         print_name(pName);
-        Printer printer(mOstrm, mFlags, mTabCount, mTabSize);
+        Printer printer(mOstrm, mFlags, mTabCount, mTabSize, mpUserData);
         print(printer, obj);
     }
 
@@ -121,7 +123,7 @@ public:
         print_comma();
         print_name(pName);
         if (pObj) {
-            Printer printer(mOstrm, mFlags, mTabCount, mTabSize);
+            Printer printer(mOstrm, mFlags, mTabCount, mTabSize, mpUserData);
             print(printer, *pObj);
         } else {
             mOstrm << "null";
@@ -151,7 +153,7 @@ public:
                     for (CountType i = 0; i < count; ++i) {
                         print_comma(i);
                         print_newline();
-                        Printer printer(mOstrm, mFlags, mTabCount, mTabSize);
+                        Printer printer(mOstrm, mFlags, mTabCount, mTabSize, mpUserData);
                         processArrayElement(printer, pObjs[i]);
                     }
                 },
@@ -209,7 +211,7 @@ public:
                 for (const auto& element : collection) {
                     print_comma(elementCount++);
                     print_newline();
-                    Printer printer(mOstrm, mFlags, mTabCount, mTabSize);
+                    Printer printer(mOstrm, mFlags, mTabCount, mTabSize, mpUserData);
                     print(printer, processCollectionItr(element));
                 }
             },
@@ -267,8 +269,24 @@ public:
     {
         print_comma();
         print_name(pIdentifier);
-        Printer printer(mOstrm, mFlags, mTabCount, mTabSize);
+        Printer printer(mOstrm, mFlags, mTabCount, mTabSize, mpUserData);
         print<FlagBitsType>(printer, flags);
+    }
+
+    /**
+    TODO : Documentation
+    */
+    inline const void* get_user_data() const
+    {
+        return mpUserData;
+    }
+
+    /**
+    TODO : Documentation
+    */
+    inline void set_user_data(const void* pUserData)
+    {
+        mpUserData = pUserData;
     }
 
 private:
@@ -332,6 +350,7 @@ private:
     int mTabCount{ };
     int mTabSize{ 4 };
     int mFieldCount{ };
+    const void* mpUserData{ nullptr };
 
     template <typename ObjectType>
     friend void print(Printer&, const ObjectType&);

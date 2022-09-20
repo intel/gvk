@@ -26,22 +26,15 @@ namespace gvk {
 namespace xml {
 
 template <typename ApiElementType>
-static void create_api_element(
-    const tinyxml2::XMLElement& xmlElement,
-    std::map<std::string, ApiElementType>& apiElements
-)
+static void create_api_element(const tinyxml2::XMLElement& xmlElement, std::map<std::string, ApiElementType>& apiElements)
 {
     ApiElementType apiElement(xmlElement);
-    if (!apiElement.name.empty()) {
-        apiElements.insert({ apiElement.name, apiElement });
-    }
+    assert(!apiElement.name.empty());
+    apiElements.insert({ apiElement.name, apiElement });
 }
 
 template <typename ApiElementCollectionType>
-static void post_process_vendors(
-    const std::set<std::string>& vendors,
-    ApiElementCollectionType& apiElements
-)
+static void post_process_vendors(const std::set<std::string>& vendors, ApiElementCollectionType& apiElements)
 {
     for (auto& apiElementItr : apiElements) {
         auto& apiElement = apiElementItr.second;
@@ -140,6 +133,28 @@ static void post_process_handles(Manifest& manifest)
     }
 }
 
+static void post_process_enumerations(Manifest& manifest)
+{
+    for (auto& enumerationItr : manifest.enumerations) {
+        auto& enumeration = enumerationItr.second;
+        std::map<std::string, Enumerator> enumerators;
+        for (const auto& enumerator : enumeration.enumerators) {
+            enumerators.insert({ enumerator.name, enumerator });
+        }
+        enumeration.enumerators.clear();
+        for (auto enumeratorItr : enumerators) {
+            auto enumerator = enumeratorItr.second;
+            if (enumerator.value.empty() && !enumerator.alias.empty()) {
+                auto aliasEnumeratorItr = enumerators.find(enumerator.alias);
+                if (aliasEnumeratorItr != enumerators.end()) {
+                    enumerator.value = aliasEnumeratorItr->second.value;
+                }
+            }
+            enumeration.enumerators.insert(enumerator);
+        }
+    }
+}
+
 static Enumeration concatenate_enumerations(const Enumeration& lhs, const Enumeration& rhs)
 {
     auto result = lhs;
@@ -196,8 +211,8 @@ Manifest::Manifest(const tinyxml2::XMLDocument& xmlDocument)
         process_xml_elements(*pRegistryXml, "commands", "command", [&](const auto& xmlElement) { create_api_element(xmlElement, commands); });
         process_xml_elements(*pRegistryXml, "extensions", "extension", [&](const auto& xmlElement) { create_api_element(xmlElement, extensions); });
         process_xml_elements(*pRegistryXml, "feature", [&](const auto& xmlElement) { create_api_element(xmlElement, features); });
-
         process_xml_elements(*pRegistryXml, "formats", "format", [&](const auto& xmlElement) { create_api_element(xmlElement, formats); });
+
         Format undefined;
         undefined.name = "VK_FORMAT_UNDEFINED";
         formats.insert({ undefined.name, undefined });
@@ -206,13 +221,20 @@ Manifest::Manifest(const tinyxml2::XMLDocument& xmlDocument)
             [&](const auto& typeXmlElement)
             {
                 auto category = get_xml_attribute(typeXmlElement, "category");
-                if (get_xml_attribute(typeXmlElement, "category") == "handle") {
+                if (category == "handle") {
                     create_api_element(typeXmlElement, handles);
                 } else if (category == "struct" || category == "union") {
                     create_api_element(typeXmlElement, structures);
+                } else if (category == "enum") {
+                    Enumeration enumeration(typeXmlElement);
+                    assert(!enumeration.name.empty());
+                    if (!enumeration.alias.empty()) {
+                        enumerations.insert({ enumeration.name, enumeration });
+                    }
                 }
             }
         );
+
         post_process_vendors(vendors, handles);
         post_process_vendors(vendors, enumerations);
         post_process_vendors(vendors, structures);
@@ -224,6 +246,14 @@ Manifest::Manifest(const tinyxml2::XMLDocument& xmlDocument)
         post_process_object_types(*this);
         post_process_structure_types(*this);
         post_process_api_constants(*this);
+
+        // NOTE : post_process_enumerations() is called twice...this is because aliased
+        //  entries may be processed before the "real" entry gets processed.  If this
+        //  ever becomes a problem, a collection of all enumerations/enumerators should
+        //  be created from this->enumerations, extensions[...]enumerations, and
+        //  features[...]enumerations, process those together, then repopulate each.
+        post_process_enumerations(*this);
+        post_process_enumerations(*this);
     }
 }
 

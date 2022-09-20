@@ -42,6 +42,7 @@ public:
     Extension() = default;
     Extension(const tinyxml2::XMLElement& xmlElement);
 
+    std::string number;
     Type type { Type::Instance };
     std::string platform;
     std::string supported;

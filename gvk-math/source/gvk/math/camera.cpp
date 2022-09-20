@@ -18,6 +18,8 @@ License.
 
 #include "gvk/math/camera.hpp"
 
+#ifdef GVK_GLM_ENABLED
+
 namespace gvk {
 namespace math {
 
@@ -31,10 +33,10 @@ glm::mat4 Camera::view(const glm::vec3& lookAt) const
     return glm::lookAt(transform.translation, lookAt, transform.up());
 }
 
-glm::mat4 Camera::projection(bool flip_y) const
+glm::mat4 Camera::projection(bool flipY) const
 {
     auto m = glm::perspective(glm::radians(fieldOfView), aspectRatio, nearPlane, farPlane);
-    if (flip_y) {
+    if (flipY) {
         m[1][1] *= -1;
     }
     return m;
@@ -94,3 +96,5 @@ void FreeCameraController::update(const UpdateInfo& updateInfo)
 
 } // namespace math
 } // namespace gvk
+
+#endif // GVK_GLM_ENABLED

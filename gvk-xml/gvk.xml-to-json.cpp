@@ -18,6 +18,7 @@ License.
 
 #include "gvk/xml/manifest.hpp"
 #include "gvk/printer.hpp"
+#include "gvk/string.hpp"
 
 #include <iostream>
 
@@ -41,10 +42,7 @@ void gvk::print<gvk::xml::Platform>(gvk::Printer& printer, const gvk::xml::Platf
     printer.print_object(
         [&]()
         {
-            printer.print_field("name", obj.name);
-            if (!obj.compileGuards.empty()) {
-                printer.print_collection("compileGuards", obj.compileGuards);
-            }
+            print_api_element_fields(printer, obj);
         }
     );
 }
@@ -56,7 +54,9 @@ void gvk::print<gvk::xml::Handle>(gvk::Printer& printer, const gvk::xml::Handle&
         [&]()
         {
             print_api_element_fields(printer, obj);
-            printer.print_field("isDispatchable", obj.isDispatchable);
+            if (obj.isDispatchable) {
+                printer.print_field("isDispatchable", obj.isDispatchable);
+            }
             if (!obj.vkObjectType.empty()) {
                 printer.print_field("vkObjectType", obj.vkObjectType);
             }
@@ -86,6 +86,21 @@ void gvk::print<gvk::xml::Enumerator>(gvk::Printer& printer, const gvk::xml::Enu
             if (!obj.value.empty()) {
                 printer.print_field("value", obj.value);
             }
+            if (!obj.bitPos.empty()) {
+                printer.print_field("bitPos", obj.bitPos);
+            }
+            if (!obj.extensionNumber.empty()) {
+                printer.print_field("extensionNumber", obj.extensionNumber);
+            }
+            if (!obj.offset.empty()) {
+                printer.print_field("offset", obj.offset);
+            }
+            if (!obj.direction.empty()) {
+                printer.print_field("direction", obj.direction);
+            }
+            if (!obj.extends.empty()) {
+                printer.print_field("extends", obj.extends);
+            }
         }
     );
 }
@@ -97,8 +112,12 @@ void gvk::print<gvk::xml::Enumeration>(gvk::Printer& printer, const gvk::xml::En
         [&]()
         {
             print_api_element_fields(printer, obj);
-            printer.print_field("isBitmask", obj.isBitmask);
-            printer.print_collection("enumerators", obj.enumerators);
+            if (obj.isBitmask) {
+                printer.print_field("isBitmask", obj.isBitmask);
+            }
+            if (!obj.enumerators.empty()) {
+                printer.print_collection("enumerators", obj.enumerators);
+            }
         }
     );
 }
@@ -134,19 +153,31 @@ void gvk::print<gvk::xml::Parameter>(gvk::Printer& printer, const gvk::xml::Para
     printer.print_object(
         [&]()
         {
+            print_api_element_fields(printer, obj);
             printer.print_field("type", obj.type);
             if (obj.unqualifiedType != obj.type) {
                 printer.print_field("unqualifiedType", obj.unqualifiedType);
             }
-            printer.print_field("name", obj.name);
             if (!obj.length.empty()) {
-                printer.print_field("length", obj.length);
+                printer.print_field("length", string::replace(obj.length, "\\", "\\\\"));
             }
             if (!obj.altLength.empty()) {
                 printer.print_field("altLength", obj.altLength);
             }
+            if (!obj.selector.empty()) {
+                printer.print_field("selector", obj.selector);
+            }
+            if (!obj.limitType.empty()) {
+                printer.print_field("limitType", obj.limitType);
+            }
+            if (!obj.values.empty()) {
+                printer.print_collection("values", obj.values);
+            }
             if (1 < obj.dimensionCount) {
                 printer.print_field("dimensionCount", obj.dimensionCount);
+            }
+            if (obj.bitField) {
+                printer.print_field("bitField", obj.bitField);
             }
             if (obj.flags) {
                 printer.print_flags<gvk::xml::FlagBits>("flags", obj.flags);
@@ -162,11 +193,15 @@ void gvk::print<gvk::xml::Structure>(gvk::Printer& printer, const gvk::xml::Stru
         [&]()
         {
             print_api_element_fields(printer, obj);
-            printer.print_field("isUnion", obj.isUnion);
+            if (obj.isUnion) {
+                printer.print_field("isUnion", obj.isUnion);
+            }
             if (!obj.vkStructureType.empty()) {
                 printer.print_field("vkStructureType", obj.vkStructureType);
             }
-            printer.print_array("members", obj.members.size(), obj.members.data());
+            if (!obj.members.empty()) {
+                printer.print_collection("members", obj.members);
+            }
         }
     );
 }
@@ -225,6 +260,7 @@ void gvk::print<gvk::xml::Extension>(gvk::Printer& printer, const gvk::xml::Exte
         [&]()
         {
             print_api_element_fields(printer, obj);
+            printer.print_field("number", obj.number);
             printer.print_field("type", obj.type);
             if (!obj.platform.empty()) {
                 printer.print_field("platform", obj.platform);

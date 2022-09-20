@@ -19,6 +19,9 @@ License.
 #pragma once
 
 #include "gvk/math/defines.hpp"
+
+#ifdef GVK_GLM_ENABLED
+
 #include "gvk/math/transform.hpp"
 
 #include <algorithm>
@@ -32,7 +35,7 @@ struct Camera
 
     glm::mat4 view() const;
     glm::mat4 view(const glm::vec3& lookAt) const;
-    glm::mat4 projection(bool flip_y = true) const;
+    glm::mat4 projection(bool flipY = true) const;
 
     template <typename T>
     inline void set_aspect_ratio(T width, T height)
@@ -102,3 +105,5 @@ inline T aspect_ratio(const T& width, const T& height)
 
 } // namespace math
 } // namespace gvk
+
+#endif // GVK_GLM_ENABLED

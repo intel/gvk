@@ -47,14 +47,6 @@ License.
 #include "vulkan/vulkan.h"
 
 #if 0
-#ifdef VK_NO_PROTOTYPES
-extern "C" {
-VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vkGetInstanceProcAddr(VkInstance vkInstance, const char* pName);
-}
-#endif
-#endif
-
-#if 0
 #define VMA_DEBUG_LOG(format, ...) do { \
     printf(format, __VA_ARGS__); \
     printf("\n"); \

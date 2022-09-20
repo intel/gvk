@@ -18,6 +18,10 @@ License.
 
 #include "gvk/math/transform.hpp"
 
+#ifdef GVK_GLM_ENABLED
+
+#include <cassert>
+
 namespace gvk {
 namespace math {
 
@@ -63,3 +67,5 @@ glm::vec3 Transform::backward() const
 
 } // namespace math
 } // namespace gvk
+
+#endif // GVK_GLM_ENABLED

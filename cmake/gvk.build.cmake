@@ -1,17 +1,9 @@
 
 include_guard()
 
-include(CMakeDependentOption)
 include(CMakeParseArguments)
 include(CTest)
 include(FetchContent)
-
-option                (GVK_BUILD_TESTS            "" ON)
-cmake_dependent_option(GVK_RUN_TESTS              "" ON GVK_BUILD_TESTS OFF)
-option                (GVK_BUILD_SAMPLES          "" ON)
-option                (GVK_NO_PROTOTYPES          "" OFF)
-option                (GVK_CREATE_CI_SCAN_PACKAGE "" OFF)
-cmake_dependent_option(GVK_CREATE_CI_TEST_PACKAGE "" OFF GVK_BUILD_TESTS OFF)
 
 function(gvk_create_file_group files)
     set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -41,6 +33,12 @@ function(gvk_create_file_package target files destination)
     endforeach()
 endfunction()
 
+macro(gvk_set_target_option target option)
+    if(${option})
+        target_compile_definitions(${target} PUBLIC ${option})
+    endif()
+endmacro()
+
 function(gvk_setup_target)
     cmake_parse_arguments(args "" "target;folder" "linkLibraries;includeDirectories;includeFiles;sourceFiles;inputFiles;outputFiles;compileDefinitions" ${ARGN})
     target_include_directories(${args_target} PUBLIC "${args_includeDirectories}")
@@ -48,6 +46,11 @@ function(gvk_setup_target)
     target_link_libraries(${args_target} PUBLIC "${args_linkLibraries}")
     set_target_properties(${args_target} PROPERTIES LINKER_LANGUAGE CXX)
     target_compile_options(${args_target} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX> $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror>)
+    gvk_set_target_option(${args_target} GVK_GLFW_ENABLED)
+    gvk_set_target_option(${args_target} GVK_GLM_ENABLED)
+    gvk_set_target_option(${args_target} GVK_GLSLANG_ENABLED)
+    gvk_set_target_option(${args_target} GVK_SPIRV_CROSS_ENABLED)
+    gvk_set_target_option(${args_target} GVK_STB_ENABLED)
     gvk_create_file_group("${args_includeFiles}")
     gvk_create_file_group("${args_sourceFiles}")
     if(GVK_NO_PROTOTYPES)
@@ -98,7 +101,7 @@ endfunction()
 
 macro(gvk_add_target_test)
     cmake_parse_arguments(args "" "target;folder" "linkLibraries;includeDirectories;includeFiles;sourceFiles;compileDefinitions" ${ARGN})
-    if(GVK_BUILD_TESTS)
+    if(GVK_TESTS_ENABLED)
         gvk_add_executable(
             target ${args_target}.test
             folder "tests/"

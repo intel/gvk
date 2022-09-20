@@ -20,6 +20,7 @@ License.
 
 #include "gvk/xml/defines.hpp"
 
+#include <map>
 #include <set>
 #include <string>
 
@@ -37,6 +38,7 @@ public:
     std::string alias;
     std::string extension;
     std::set<std::string> compileGuards;
+    std::map<std::string, std::string> userData;
 };
 
 inline ApiElement::~ApiElement()

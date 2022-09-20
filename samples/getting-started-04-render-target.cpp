@@ -31,9 +31,9 @@ VkResult create_mesh(
     gvk::Mesh* pMesh
 )
 {
-    float w = dimensions.x * 0.5f;
-    float h = dimensions.y * 0.5f;
-    float d = dimensions.z * 0.5f;
+    float w = dimensions[0] * 0.5f;
+    float h = dimensions[1] * 0.5f;
+    float d = dimensions[2] * 0.5f;
     std::array<VertexPositionTexcoordColor, 24> vertices {
         // Top
         VertexPositionTexcoordColor {{ -w,  h, -d }, { 0, 0 }, { topColor }},
