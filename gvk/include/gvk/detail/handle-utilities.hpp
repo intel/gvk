@@ -1,20 +1,28 @@
 
-/******************************************************************************
-© Intel Corporation.
+/*******************************************************************************
 
-This software and the related documents are Intel copyrighted materials,
-and your use of them is governed by the express license under which they
-were provided to you ("License"). Unless the License provides otherwise,
-you may not use, modify, copy, publish, distribute, disclose or transmit
-this software or the related documents without Intel's prior written
-permission.
+MIT License
 
+Copyright (c) Intel Corporation
 
- This software and the related documents are provided as is, with no express
-or implied warranties, other than those that are expressly stated in the
-License.
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
 
-******************************************************************************/
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+*******************************************************************************/
 
 #pragma once
 
@@ -34,10 +42,10 @@ public:
 };
 
 /**
-Gets a gvk::QueueFamily given a gvk::Device and index
-@param [in] device The gvk::Device to get the gvk::QueueFamily from
-@param [in] queueFamilyIndex The index of the gvk::QueueFamily to get
-@return The given gvk::Device object's gvk::QueueFamily at the specified index
+Gets a QueueFamily given a Device and index
+@param [in] device The Device to get the QueueFamily from
+@param [in] queueFamilyIndex The index of the QueueFamily to get
+@return The given Device object's QueueFamily at the specified index
 */
 const QueueFamily& get_queue_family(const Device& device, uint32_t queueFamilyIndex);
 

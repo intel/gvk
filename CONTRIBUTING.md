@@ -1,13 +1,21 @@
+
 # Contributing
 
 ### License
 
-<PROJECT NAME> is licensed under the terms in [LICENSE]<link to license file in repo>. By contributing to the project, you agree to the license and copyright terms therein and release your contribution under these terms.
+Intel GVK (GPA Vk Utilities) is licensed under the terms of the [MIT License](LICENSE.txt).  By contributing to the project, you agree to the license and copyright terms therein and release your contribution under these terms.
+
+### Process
+
+Use the issue tracker to find/create a bugfix/feature to submit, and align design/implementation/testing goals with an Intel GVK maintainer.
+
+Create a fork of the GVK repo, develop your change, then submit a pull request.  If the pull request is accepted, it will be validated (possibly modified) internally by an Intel GVK maintainer.
+
+The *pull request description* (possibly edited by an Intel GVK maintainer) and your sign-off (required, described below) will appear in the project's release notes when the change is published.
 
 ### Sign your work
 
-Please use the sign-off line at the end of the patch. Your signature certifies that you wrote the patch or otherwise have the right to pass it on as an open-source patch. The rules are pretty simple: if you can certify
-the below (from [developercertificate.org](http://developercertificate.org/)):
+Your signature certifies that you wrote the patch or otherwise have the right to pass it on as an open-source patch.  You must be able to certify the below (from [developercertificate.org](http://developercertificate.org/)):
 
 ```
 Developer Certificate of Origin
@@ -47,11 +55,14 @@ By making a contribution to this project, I certify that:
     this project or the open source license(s) involved.
 ```
 
-Then you just add a line to every git commit message:
+Then you just add the following to your pull request description...
 
     Signed-off-by: Joe Smith <joe.smith@email.com>
 
-Use your real name (sorry, no pseudonyms or anonymous contributions.)
+Use your real name (sorry, no pseudonyms or anonymous contributions)
 
-If you set your `user.name` and `user.email` git configs, you can sign your
-commit automatically with `git commit -s`.
+# Style
+
+In general, make things look like the generated code in `gvk/build/gvk/include/gvk/generated/`
+
+Documentation guidelines can be found in the [documentation](documentation/README.md) directory.

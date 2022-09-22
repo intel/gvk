@@ -1,20 +1,28 @@
 
-/******************************************************************************
-© Intel Corporation.
+/*******************************************************************************
 
-This software and the related documents are Intel copyrighted materials,
-and your use of them is governed by the express license under which they
-were provided to you ("License"). Unless the License provides otherwise,
-you may not use, modify, copy, publish, distribute, disclose or transmit
-this software or the related documents without Intel's prior written
-permission.
+MIT License
 
+Copyright (c) Intel Corporation
 
- This software and the related documents are provided as is, with no express
-or implied warranties, other than those that are expressly stated in the
-License.
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
 
-******************************************************************************/
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+*******************************************************************************/
 
 #pragma once
 
@@ -31,7 +39,7 @@ class WsiManager final
 {
 public:
     /**
-    Creation parameters for gvk::WsiManager
+    Creation parameters for WsiManager
     */
     struct CreateInfo
     {
@@ -78,12 +86,12 @@ public:
 #endif // VK_USE_PLATFORM_XLIB_KHR
 
         /**
-        The family index of the gvk::Queue that gvk::WsiManager gvk::CommandBuffer objects will be submitted to
+        The family index of the Queue that WsiManager CommandBuffer objects will be submitted to
         */
         uint32_t queueFamilyIndex{ };
 
         /**
-        The VkPresentModeKHR to request for the gvk::WsiManager gvk::SwapchainKHR
+        The VkPresentModeKHR to request for the WsiManager SwapchainKHR
             @note If the requested VkPresentModeKHR is unavailable, VK_PRESENT_MODE_FIFO_KHR will be selected
         */
         VkPresentModeKHR presentMode{ VK_PRESENT_MODE_FIFO_KHR };
@@ -103,11 +111,11 @@ public:
     };
 
     /**
-    Creates an instance of gvk::WsiManager
-    @param [in] device The gvk::Device used to create gvk::WsiManager resources
-    @param [in] pCreateInfo A pointer to the gvk::WsiManager creation parameters
+    Creates an instance of WsiManager
+    @param [in] device The Device used to create WsiManager resources
+    @param [in] pCreateInfo A pointer to the WsiManager creation parameters
     @param [in] (optional) pAllocator A pointer to the VkAllocationCallbacks to use
-    @param [in,out] pRenderTarget A pointer to the gvk::WsiManager to create
+    @param [in,out] pRenderTarget A pointer to the WsiManager to create
     @return The VkResult
     */
     static VkResult create(const Device& device, const CreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, WsiManager* pWsiManager);
@@ -118,128 +126,128 @@ public:
     WsiManager() = default;
 
     /**
-    Moves an instance of gvk::WsiManager
-    @param [in] other The gvk::WsiManager to move from
+    Moves an instance of WsiManager
+    @param [in] other The WsiManager to move from
     */
     WsiManager(WsiManager&& other) = default;
 
     /**
-    Moves an instance of gvk::WsiManager
-    @param [in] other The gvk::WsiManager to move from
-    @return A reference to this gvk::WsiManager
+    Moves an instance of WsiManager
+    @param [in] other The WsiManager to move from
+    @return A reference to this WsiManager
     */
     WsiManager& operator=(WsiManager&& other) = default;
 
     /**
-    Destroys this instance of gvk::WsiManager
+    Destroys this instance of WsiManager
     */
     virtual ~WsiManager();
 
     /**
-    Destroys this instance of gvk::WsiManager
+    Destroys this instance of WsiManager
     */
     void reset();
 
     /**
-    Gets this gvk::WsiManager object's gvk::SurfaceKHR
-    @return This gvk::WsiManager object's gvk::SurfaceKHR object
+    Gets this WsiManager object's SurfaceKHR
+    @return This WsiManager object's SurfaceKHR object
     */
     const SurfaceKHR& get_surface() const;
 
     /**
-    Gets this gvk::WsiManager object's gvk::SwapchainKHR
-    @return This gvk::WsiManager object's gvk::SwapchainKHR object
+    Gets this WsiManager object's SwapchainKHR
+    @return This WsiManager object's SwapchainKHR object
     */
     const SwapchainKHR& get_swapchain() const;
 
     /**
-    Gets this gvk::WsiManager object's gvk::RenderPass
-    @return This gvk::WsiManager object's gvk::RenderPass object
+    Gets this WsiManager object's RenderPass
+    @return This WsiManager object's RenderPass object
     */
     const RenderPass& get_render_pass() const;
 
     /**
-    Gets this gvk::WsiManager object's gvk::CommandBuffer objects
-    @return This gvk::WsiManager object's gvk::CommandBuffer objects
+    Gets this WsiManager object's CommandBuffer objects
+    @return This WsiManager object's CommandBuffer objects
     */
     const std::vector<CommandBuffer>& get_command_buffers() const;
 
     /**
-    Gets this gvk::WsiManager object's gvk::RenderTarget objects
-    @return This gvk::WsiManager object's gvk::RenderTarget objects
+    Gets this WsiManager object's RenderTarget objects
+    @return This WsiManager object's RenderTarget objects
     */
     const std::vector<RenderTarget>& get_render_targets() const;
 
     /**
-    Gets this gvk::WsiManager object's gvk::Fence objects
-    @return This gvk::WsiManager object's gvk::Fence objects
+    Gets this WsiManager object's Fence objects
+    @return This WsiManager object's Fence objects
     */
     const std::vector<Fence>& get_fences() const;
 
     /**
-    Gets this gvk::WsiManager object's image acquired gvk::Semaphore
-    @return This gvk::WsiManager object's image acquired gvk::Semaphore
+    Gets this WsiManager object's image acquired Semaphore
+    @return This WsiManager object's image acquired Semaphore
     */
     const Semaphore& get_image_acquired_semaphore() const;
 
     /**
-    Gets this gvk::WsiManager object's image rendered gvk::Semaphore
-    @return This gvk::WsiManager object's image rendered gvk::Semaphore
+    Gets this WsiManager object's image rendered Semaphore
+    @return This WsiManager object's image rendered Semaphore
     */
     const Semaphore& get_image_rendered_semaphore() const;
 
     /**
-    Gets a value indicating whether or not this gvk::WsiManager object's resources are up to date
-    @return This gvk::WsiManager object's status
-        @note gvk::WsiManager resources may become out of date when the gvk::sys::Surface is resized, minimized, etc.
+    Gets a value indicating whether or not this WsiManager object's resources are up to date
+    @return This WsiManager object's status
+        @note WsiManager resources may become out of date when the sys::Surface is resized, minimized, etc.
     */
     VkResult get_status() const;
 
     /**
-    Gets a value indicating whether or not this gvk::WsiManager object's resources are valid
-    @return A value indicating whether or not this gvk::WsiManager object's resources are valid
-        @note gvk::WsiManager resource may become invalid when the gvk::sys::Surface is resized, minimzed, etc.
+    Gets a value indicating whether or not this WsiManager object's resources are valid
+    @return A value indicating whether or not this WsiManager object's resources are valid
+        @note WsiManager resource may become invalid when the sys::Surface is resized, minimzed, etc.
     */
     VkBool32 is_enabled() const;
 
     /**
-    Gets this gvk::WsiManager object's gvk::CommandPool queue family index
-    @return This gvk::WsiManager object's gvk::CommandPool queue family index
+    Gets this WsiManager object's CommandPool queue family index
+    @return This WsiManager object's CommandPool queue family index
     */
     uint32_t get_queue_family_index() const;
 
     /**
-    Gets this gvk::WsiManager object's VkPresentModeKHR
-    @return This gvk::WsiManager object's VkPresentModeKHR
+    Gets this WsiManager object's VkPresentModeKHR
+    @return This WsiManager object's VkPresentModeKHR
     */
     VkPresentModeKHR get_present_mode() const;
 
     /**
-    Gets this gvk::WsiManager object's VkSampleCountFlagBits
-    @return This gvk::WsiManager object's VkSampleCountFlagBits
+    Gets this WsiManager object's VkSampleCountFlagBits
+    @return This WsiManager object's VkSampleCountFlagBits
     */
     VkSampleCountFlagBits get_sample_count() const;
 
     /**
-    Gets this gvk::WsiManager object's color attachment VkFormat
-    @return This gvk::WsiManager object's color attachment VkFormat
+    Gets this WsiManager object's color attachment VkFormat
+    @return This WsiManager object's color attachment VkFormat
     */
     VkFormat get_color_format() const;
 
     /**
-    Gets this gvk::WsiManager object's depth attachment VkFormat
-    @return This gvk::WsiManager object's depth attachment VkFormat
+    Gets this WsiManager object's depth attachment VkFormat
+    @return This WsiManager object's depth attachment VkFormat
     */
     VkFormat get_depth_format() const;
 
     /**
-    Updates this gvk::WsiManager
-    @return Whether or not this gvk::WsiManager object is enabled and its resources have been recreated since the last call to update()
+    Updates this WsiManager
+    @return Whether or not this WsiManager object is enabled and its resources have been recreated since the last call to update()
     */
     VkBool32 update();
 
     /**
-    Acquires the next gvk::SwapchainKHR image
+    Acquires the next SwapchainKHR image
     @param [in] timeout How long to wait, in nanoseconds, if no image is available
     @param [in] vkFence The VkFence to signal or VK_NULL_HANDLE
     @param [out] pImageIndex A pointer to a uint32_t to populate with the acquired image index
@@ -248,16 +256,16 @@ public:
     VkResult acquire_next_image(uint64_t timeout, VkFence vkFence, uint32_t* pImageIndex);
 
     /**
-    Gets the VkSubmitInfo for the gvk::SwapchainKHR image at the specified index
-    @param [in] imageIndex The index of the gvk::SwapchainKHR image to get the VkSubmitInfo for
-    @return The VkSubmitInfo of the gvk::SwapchainKHR image at the specified index
+    Gets the VkSubmitInfo for the SwapchainKHR image at the specified index
+    @param [in] imageIndex The index of the SwapchainKHR image to get the VkSubmitInfo for
+    @return The VkSubmitInfo of the SwapchainKHR image at the specified index
     */
     VkSubmitInfo get_submit_info(uint32_t imageIndex) const;
 
     /**
-    Gets the VkPresentInfoKHR for the gvk::SwapchainKHR image at the specified index
-    @param [in] pImageIndex A pointer to a uint32_t populated with the index of the gvk::SwapchainKHR image to get the VkPresentInfoKHR for
-    @return The VkPresentInfoKHR of the gvk::SwapchainKHR image at the specified index
+    Gets the VkPresentInfoKHR for the SwapchainKHR image at the specified index
+    @param [in] pImageIndex A pointer to a uint32_t populated with the index of the SwapchainKHR image to get the VkPresentInfoKHR for
+    @return The VkPresentInfoKHR of the SwapchainKHR image at the specified index
     */
     VkPresentInfoKHR get_present_info(const uint32_t* pImageIndex) const;
 
@@ -285,7 +293,7 @@ private:
     VkSampleCountFlagBits mSampleCount{ VK_SAMPLE_COUNT_1_BIT };
     VkFormat mDepthFormat{ VK_FORMAT_UNDEFINED };
     VkResult mStatus{ VK_ERROR_OUT_OF_DATE_KHR };
-    VkAllocationCallbacks mAllocator{ gvk::get_default<VkAllocationCallbacks>() };
+    VkAllocationCallbacks mAllocator{ get_default<VkAllocationCallbacks>() };
 
     WsiManager(const WsiManager&) = delete;
     WsiManager& operator=(const WsiManager&) = delete;

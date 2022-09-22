@@ -1,5 +1,5 @@
 
-# Intel GVK (GPA Vk Utilities) v0.0.1
+# Intel GVK (GPA Vk Utilities)
 
 Intel GVK is a collection of Vulkan C++ utilities with a general focus on tools development, and a specific focus on supporting [Intel Graphics Performance Analyzers Framework](https://intel.github.io/gpasdk-doc/).
 
@@ -50,7 +50,7 @@ set(GVK_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     gvk
     GIT_REPOSITORY "https://github.com/intel/gvk.git"
-    GIT_TAG <desired commit hash> # 0.0.1
+    GIT_TAG <desired commit hash/tag>
 )
 FetchContent_MakeAvailable(gvk)
 ```

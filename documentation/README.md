@@ -1,11 +1,7 @@
 
 # Documentation
 
-In general, when writing doucmentation for GVK, follow Microsoft's technical
-writing style for .NET/C# documentation.  Use Doxygen syntax, in general any tag
-is fine as long as it's readable in the generated docs.
-
-https://docs.microsoft.com/en-us/contribute/style-quick-start
+When writing documentation for GVK, use Doxygen syntax/tags and follow [Microsoft's Docs style](https://docs.microsoft.com/en-us/contribute/style-quick-start).
 
 # Examples
 
@@ -45,3 +41,13 @@ is in the gvk namespace...in general treat the docs like code in the current
 namespace for the purposes of qualifying names.  The second is that optional
 arguments are called out in the docs with an indicator after the parameter's
 name of what the default value is.
+
+From `gvk/include/gvk/render-target.hpp`:
+
+    /**
+    Gets this RenderTarget object's Framebuffer
+    @return This RenderTarget object's Framebuffer
+    */
+    const Framebuffer& get_framebuffer() const;
+
+Avoid appending "'s" directly to a type name, it breaks Doxygen hyperlinks.

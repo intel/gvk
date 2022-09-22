@@ -1,20 +1,28 @@
 
-/******************************************************************************
-© Intel Corporation.
+/*******************************************************************************
 
-This software and the related documents are Intel copyrighted materials,
-and your use of them is governed by the express license under which they
-were provided to you ("License"). Unless the License provides otherwise,
-you may not use, modify, copy, publish, distribute, disclose or transmit
-this software or the related documents without Intel's prior written
-permission.
+MIT License
 
+Copyright (c) Intel Corporation
 
- This software and the related documents are provided as is, with no express
-or implied warranties, other than those that are expressly stated in the
-License.
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
 
-******************************************************************************/
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+*******************************************************************************/
 
 #pragma once
 
@@ -61,38 +69,38 @@ class Context final
 {
 public:
     /**
-    Creation parameters for gvk::spirv::Context
+    Creation parameters for spirv::Context
     */
     struct CreateInfo final
     {
     };
 
     /**
-    Creates an instance of gvk::spirv::Context
-    @param [in] pCreateInfo A pointer to the gvk::spirv::Context creation parameters
-    @param [out] pContext A pointer to the gvk::spirv::Context to create
+    Creates an instance of spirv::Context
+    @param [in] pCreateInfo A pointer to the spirv::Context creation parameters
+    @param [out] pContext A pointer to the spirv::Context to create
     @return the VkResult
     */
     static VkResult create(const CreateInfo* pCreateInfo, Context* pContext);
 
     /**
-    Destroys this instance of gvk::spirv::Context
+    Destroys this instance of spirv::Context
     */
     ~Context();
 
     /**
-    Destroys this instance of gvk::spirv::Context
+    Destroys this instance of spirv::Context
     */
     void reset();
 
     /**
-    Gets a value indicating whether or not this gvk::spirv::Context is valid
-    @return A value indicating whether or not this gvk::spirv::Context is valid
+    Gets a value indicating whether or not this spirv::Context is valid
+    @return A value indicating whether or not this spirv::Context is valid
     */
     operator bool() const;
 
     /**
-    Compiles SPIR-V from a given gvk::spirv::ShaderInfo
+    Compiles SPIR-V from a given spirv::ShaderInfo
     @param [in] pShaderInfo
     */
     VkResult compile(ShaderInfo* pShaderInfo);
@@ -114,26 +122,26 @@ public:
 };
 
 /**
-Creates gvk::DescriptorSetLayout objects from a given gvk::spirv::BindingInfo
-@param [in] device The gvk::Device used to create gvk::DescriptorSetLayout objects from
-@param [in] bindingInfo The gvk::BindingInfo to create gvk::DescriptorSetLayout objects from
+Creates DescriptorSetLayout objects from a given spirv::BindingInfo
+@param [in] device The Device used to create DescriptorSetLayout objects from
+@param [in] bindingInfo The BindingInfo to create DescriptorSetLayout objects from
 @param [in] (optional) pAllocator A pointer to the VkAllocationCallbacks to use
-@param [in,out] pDescriptorSetLayoutCount The number of gvk::DescriptorSetLayout objects to create
-    @note if pDescriptorSetLayouts is nullptr, this parameter will be populated with the number of gvk::DescriptorSetLayout objects
-@param [out] pDescriptorSetLayouts A pointer to an array of gvk::DescriptorSetLayout objects to create
+@param [in,out] pDescriptorSetLayoutCount The number of DescriptorSetLayout objects to create
+    @note if pDescriptorSetLayouts is nullptr, this parameter will be populated with the number of DescriptorSetLayout objects
+@param [out] pDescriptorSetLayouts A pointer to an array of DescriptorSetLayout objects to create
 @return the VkResult
 */
 VkResult create_descriptor_set_layouts(const Device& device, const BindingInfo& bindingInfo, const VkAllocationCallbacks* pAllocator, uint32_t* pDescriptorSetLayoutCount, DescriptorSetLayout* pDescriptorSetLayouts);
 
 /**
-Creates a gvk::PipelineLayout from a given gvk::spirv::BindingInfo
-@param [in] device The gvk::Device used to create gvk::DescriptorSetLayout objects from
-@param [in] bindingInfo The gvk::BindingInfo to create the gvk::PipelineLayout from
+Creates a PipelineLayout from a given spirv::BindingInfo
+@param [in] device The Device used to create DescriptorSetLayout objects from
+@param [in] bindingInfo The BindingInfo to create the PipelineLayout from
 @param [in] (optional) pAllocator A pointer to the VkAllocationCallbacks to use
-@param [out] pPipelineLayout A pointer to the gvk::PipelineLayout to create
+@param [out] pPipelineLayout A pointer to the PipelineLayout to create
 @return the VkResult
 */
-VkResult create_pipeline_layout(const Device& device, const BindingInfo& bindingInfo, const VkAllocationCallbacks* pAllocator, gvk::PipelineLayout* pPipelineLayout);
+VkResult create_pipeline_layout(const Device& device, const BindingInfo& bindingInfo, const VkAllocationCallbacks* pAllocator, PipelineLayout* pPipelineLayout);
 
 } // namespace spirv
 
