@@ -118,7 +118,6 @@ gvk_add_static_library(
         "${includePath}/detail/cerealization-utilities.hpp"
         "${includePath}/detail/comparison-operator-utilities.hpp"
         "${includePath}/detail/handle-utilities.hpp"
-        "${includePath}/detail/intel-logo.hpp"
         "${includePath}/detail/make-tuple-utilities.hpp"
         "${includePath}/detail/reference.hpp"
         "${includePath}/detail/structure-copy-utilities.hpp"
@@ -139,7 +138,6 @@ gvk_add_static_library(
     sourceFiles
         "${sourcePath}/detail/comparison-operator-utilities.cpp"
         "${sourcePath}/detail/handle-utilities.cpp"
-        "${sourcePath}/detail/intel-logo.cpp"
         "${sourcePath}/detail/make-tuple-utilities.cpp"
         "${sourcePath}/detail/reference.cpp"
         "${sourcePath}/detail/structure-copy-utilities.cpp"

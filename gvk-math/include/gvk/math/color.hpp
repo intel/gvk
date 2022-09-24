@@ -184,6 +184,132 @@ struct Color
     inline static const glm::vec4 WhiteSmoke           { 0.960784f,  0.960784f,  0.960784f,  1.0f }; //!< Constant color WhiteSmoke { 0.960784f, 0.960784f, 0.960784f, 1.0f }
     inline static const glm::vec4 Yellow               { 1.0f,       1.0f,       0.0f,       1.0f }; //!< Constant color Yellow { 1.0f, 1.0f, 0.0f, 1.0f }
     inline static const glm::vec4 YellowGreen          { 0.603922f,  0.803922f,  0.196078f,  1.0f }; //!< Constant color YellowGreen { 0.603922f, 0.803922f, 0.196078f, 1.0f }
+
+    struct BlueSteel
+    {
+        inline static const glm::vec4 base { 0.329412f, 0.560784f, 0.678431f, 1.0f };
+        inline static const std::array<glm::vec4, 2> shades {
+            glm::vec4 { 0.254902f, 0.447059f, 0.541176f, 1.0f },
+            glm::vec4 { 0.094118f, 0.207843f, 0.266667f, 1.0f },
+        };
+        inline static const std::array<glm::vec4, 2> tints {
+            glm::vec4 { 0.525490f, 0.701961f, 0.792157f, 1.0f },
+            glm::vec4 { 0.725490f, 0.839216f, 0.898039f, 1.0f },
+        };
+    };
+
+    struct Carbon
+    {
+        inline static const glm::vec4 base { 0.501961f, 0.501961f, 0.501961f, 1.0f };
+        inline static const std::array<glm::vec4, 2> shades {
+            glm::vec4 { 0.321569f, 0.321569f, 0.321569f, 1.0f },
+            glm::vec4 { 0.149020f, 0.149020f, 0.149020f, 1.0f },
+        };
+        inline static const std::array<glm::vec4, 2> tints {
+            glm::vec4 { 0.682353f, 0.682353f, 0.682353f, 1.0f },
+            glm::vec4 { 0.913725f, 0.913725f, 0.913725f, 1.0f },
+        };
+    };
+
+    struct ClassicBlue
+    {
+        inline static const glm::vec4 base { 0.0f, 0.407843f, 0.709804f, 1.0f };
+        inline static const std::array<glm::vec4, 2> shades {
+            glm::vec4 { 0.0f, 0.290196f, 0.525490f, 1.0f },
+            glm::vec4 { 0.0f, 0.156863f, 0.352941f, 1.0f },
+        };
+        inline static const std::array<glm::vec4, 2> tints {
+            glm::vec4 { 0.0f, 0.639216f, 0.964706f, 1.0f },
+            glm::vec4 { 0.462745f, 0.807843f, 1.0f, 1.0f },
+        };
+    };
+
+    struct Cobalt
+    {
+        inline static const glm::vec4 base { 0.117647f, 0.180392f, 0.721569f, 1.0f };
+        inline static const std::array<glm::vec4, 2> shades {
+            glm::vec4 { 0.0f, 0.058824f, 0.541176f, 1.0f },
+            glm::vec4 { 0.0f, 0.031373f, 0.392157f, 1.0f },
+        };
+        inline static const std::array<glm::vec4, 2> tints {
+            glm::vec4 { 0.356863f, 0.411765f, 1.0f, 1.0f },
+            glm::vec4 { 0.596078f, 0.631373f, 1.0f, 1.0f },
+        };
+    };
+
+    struct Coral
+    {
+        inline static const glm::vec4 base { 1.0f, 0.337255f, 0.384314f, 1.0f };
+        inline static const std::array<glm::vec4, 1> shades {
+            glm::vec4 { 0.784314f, 0.074510f, 0.149020f, 1.0f },
+        };
+        inline static const std::array<glm::vec4, 2> tints {
+            glm::vec4 { 1.0f, 0.517647f, 0.541176f, 1.0f },
+            glm::vec4 { 1.0f, 0.713726f, 0.725490f, 1.0f },
+        };
+    };
+
+    struct Daisy
+    {
+        inline static const glm::vec4 base { 0.996078f, 0.788235f, 0.105882f, 1.0f };
+        inline static const std::array<glm::vec4, 2> shades {
+            glm::vec4 { 0.929412f, 0.698039f, 0.0f, 1.0f },
+            glm::vec4 { 0.788235f, 0.560784f, 0.0f, 1.0f },
+        };
+        inline static const std::array<glm::vec4, 1> tints {
+            glm::vec4 { 1.0f, 0.882353f, 0.478431f, 1.0f },
+        };
+    };
+
+    struct EnergyBlue
+    {
+        inline static const glm::vec4 base { 0.0f, 0.780392f, 0.992157f, 1.0f };
+        inline static const std::array<glm::vec4, 2> shades {
+            glm::vec4 { 0.0f, 0.584314f, 0.792157f, 1.0f },
+            glm::vec4 { 0.0f, 0.356863f, 0.521569f, 1.0f },
+        };
+        inline static const std::array<glm::vec4, 2> tints {
+            glm::vec4 { 0.482353f, 0.870588f, 1.0f, 1.0f },
+            glm::vec4 { 0.705882f, 0.941176f, 1.0f, 1.0f },
+        };
+    };
+
+    struct Geode
+    {
+        inline static const glm::vec4 base { 0.560784f, 0.364706f, 0.635294f, 1.0f };
+        inline static const std::array<glm::vec4, 1> shades {
+            glm::vec4 { 0.396078f, 0.192157f, 0.443137f, 1.0f },
+        };
+        inline static const std::array<glm::vec4, 2> tints {
+            glm::vec4 { 0.800000f, 0.580392f, 0.854902f, 1.0f },
+            glm::vec4 { 0.933333f, 0.764706f, 0.968627f, 1.0f },
+        };
+    };
+
+    struct Moss
+    {
+        inline static const glm::vec4 base { 0.545098f, 0.682353f, 0.274510f, 1.0f };
+        inline static const std::array<glm::vec4, 2> shades {
+            glm::vec4 { 0.439216f, 0.521569f, 0.254902f, 1.0f },
+            glm::vec4 { 0.317647f, 0.352941f, 0.239216f, 1.0f },
+        };
+        inline static const std::array<glm::vec4, 2> tints {
+            glm::vec4 { 0.694118f, 0.823529f, 0.447059f, 1.0f },
+            glm::vec4 { 0.843137f, 0.952941f, 0.635294f, 1.0f },
+        };
+    };
+
+    struct Rust
+    {
+        inline static const glm::vec4 base { 0.913725f, 0.380392f, 0.082353f, 1.0f };
+        inline static const std::array<glm::vec4, 1> shades {
+            glm::vec4 { 0.698039f, 0.270588f, 0.003922f, 1.0f },
+        };
+        inline static const std::array<glm::vec4, 2> tints {
+            glm::vec4 { 1.0f, 0.560784f, 0.317647f, 1.0f },
+            glm::vec4 { 1.0f, 0.772549f, 0.600000f, 1.0f },
+        };
+    };
 };
 
 } // namespace math

@@ -26,7 +26,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk/detail/intel-logo.hpp"
 #include "gvk/math/camera.hpp"
 #include "gvk/math/color.hpp"
 #include "gvk/math/transform.hpp"
@@ -40,6 +39,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk/spir-v.hpp"
 #include "gvk/structures.hpp"
 #include "gvk/to-string.hpp"
+#include "gvk-sample-png.hpp"
 
 #include <algorithm>
 #include <iostream>

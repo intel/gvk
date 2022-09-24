@@ -52,7 +52,7 @@ VkResult create_image_and_view(const gvk::Context& context, gvk::ImageView* pIma
         int height = 0;
         int channels = 0;
 #if 1
-        pImageData = stbi_load_from_memory(gvk::IntelLogoPng.data(), (int)gvk::IntelLogoPng.size(), &width, &height, &channels, 4);
+        pImageData = stbi_load_from_memory(gvk_sample_get_png().data(), (int)gvk_sample_get_png().size(), &width, &height, &channels, 4);
 #else
         pImageData = stbi_load("path/to/image.png", &width, &height, &channels, 4);
 #endif
