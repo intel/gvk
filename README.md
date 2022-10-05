@@ -22,9 +22,9 @@ GVK currently provides:
 NOTE : GVK currently supports Windows only, this limitation will be lifted very soon
 
 Ensure the following tools are installed...
- - [CMake](https://cmake.org/download/) v3.3+
+ - [CMake](https://cmake.org/download/) v3.3+ (Make sure to select "Add to PATH" when prompted)
  - [Git](https://git-scm.com/)
- - [Python](https://www.python.org/downloads/) v3+
+ - [Python](https://www.python.org/downloads/) v3+ (Make sure to select "Add to PATH" when prompted)
  - [Visual Studio](https://visualstudio.microsoft.com/vs/community/) 2019
  - [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) v1.3.216.0+
 
