@@ -77,31 +77,6 @@ public:
         }
     }
 
-    VkFormat get_color_attachment_format()
-    {
-        auto colorAttachmentFormat = VK_FORMAT_UNDEFINED;
-        gvk::enumerate_formats(
-            mDevices[0].get<gvk::PhysicalDevice>(),
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT,
-            [&](VkFormat format)
-            {
-                const auto& formatInfo = gvk::get_format_info(format);
-                if (formatInfo.components.size() == 4 &&
-                    formatInfo.classes.count(gvk::FormatClass::FC_32_bit) &&
-                    formatInfo.numericFormat == gvk::NumericFormat::NF_UNORM &&
-                    formatInfo.compressionType == gvk::CompressionType::CT_None &&
-                    !formatInfo.chroma &&
-                    !formatInfo.packed) {
-                    colorAttachmentFormat = format;
-                }
-                return colorAttachmentFormat == VK_FORMAT_UNDEFINED;
-            }
-        );
-        EXPECT_NE(colorAttachmentFormat, VK_FORMAT_UNDEFINED);
-        return colorAttachmentFormat;
-    }
-
 private:
     std::vector<std::string> mValidationMessages;
 };
@@ -282,11 +257,12 @@ TEST(RenderTarget, ResourceCreation)
             [&](VkFormat format)
             {
                 const auto& formatInfo = gvk::get_format_info(format);
-                if (formatInfo.compressionType == gvk::CompressionType::CT_None &&
-                    formatInfo.numericFormat == gvk::NumericFormat::NF_UNORM &&
-                    formatInfo.components.size() == 4 &&
+                if (formatInfo.components.size() == 4 &&
                     formatInfo.bits_per_pixel() == 32 &&
-                    !formatInfo.packed
+                    formatInfo.compressionType == gvk::CompressionType::CT_None &&
+                    formatInfo.numericFormat == gvk::NumericFormat::NF_UNORM &&
+                    !formatInfo.packed &&
+                    !formatInfo.chroma
                 ) {
                     colorFormat = format;
                 }
