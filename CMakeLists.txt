@@ -39,7 +39,9 @@ cmake_dependent_option(GVK_SAMPLES_ENABLED        "" ON
 )
 # CI options
 option                (GVK_CREATE_CI_SCAN_PACKAGE "" OFF)
-cmake_dependent_option(GVK_CREATE_CI_TEST_PACKAGE "" OFF GVK_TESTS_ENABLED OFF)
+cmake_dependent_option(GVK_CREATE_CI_TEST_PACKAGE "" OFF
+    "GVK_TESTS_ENABLED" OFF
+)
 
 ################################################################################
 # GVK CMake utilities
@@ -52,7 +54,7 @@ set(Vulkan_SDK_DIR "${Vulkan_INCLUDE_DIRS}/../")
 set(Vulkan_XML "${Vulkan_SDK_DIR}/share/vulkan/registry/vk.xml")
 
 if(GVK_TESTS_ENABLED)
-    include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/gtest.cmake")
+    include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/googletest.cmake")
 endif()
 if(GVK_ASIO_ENABLED)
     include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/asio.cmake")

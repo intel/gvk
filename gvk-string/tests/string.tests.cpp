@@ -30,6 +30,25 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 static const std::string TheQuickBrownFox{ "The quick brown fox jumps over the lazy dog!" };
 
+TEST(string, to_number)
+{
+    // Non number results in zero
+    EXPECT_EQ(gvk::string::to_number<int>(TheQuickBrownFox), 0);
+    EXPECT_EQ(gvk::string::to_number<float>(TheQuickBrownFox), 0.0f);
+
+    // Integers are returned correctly
+    EXPECT_EQ(gvk::string::to_number<int>("0.0"), 0);
+    EXPECT_EQ(gvk::string::to_number<int>("1.0"), 1);
+    EXPECT_EQ(gvk::string::to_number<int>("32"), 32);
+    EXPECT_EQ(gvk::string::to_number<int>("-64"), -64);
+
+    // Floats are returned correctly
+    EXPECT_EQ(gvk::string::to_number<float>("0.0f"), 0.0f);
+    EXPECT_EQ(gvk::string::to_number<float>("1.0f"), 1.0f);
+    EXPECT_EQ(gvk::string::to_number<float>("3.14f"), 3.14f);
+    EXPECT_EQ(gvk::string::to_number<float>("-3.14f"), -3.14f);
+}
+
 TEST(string, contains)
 {
     // Successful true

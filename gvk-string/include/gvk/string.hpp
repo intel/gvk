@@ -270,7 +270,8 @@ inline T to_number(const std::string& str)
     }
     strStrm << str;
     T number{ };
-    return strStrm >> number ? number : 0;
+    strStrm >> number;
+    return number;
 }
 
 } // namespace string

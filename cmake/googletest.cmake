@@ -2,7 +2,7 @@
 FetchContent_Declare(
     googletest
     GIT_REPOSITORY "https://github.com/google/googletest.git"
-    GIT_TAG b1f84bf1763b1010597bff13c79b5388eebdf205
+    GIT_TAG 58d77fa8070e8cec2dc1ed015d66b454c8d78850
     GIT_PROGRESS TRUE
     FETCHCONTENT_UPDATES_DISCONNECTED
 )
