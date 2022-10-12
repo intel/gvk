@@ -26,11 +26,22 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
+/**
+NOTE : gvk_dl<open/sym/close> may be overriden to use a different system call (LoadLibraryEx(), for example)
+NOTE : Best practices for loading dll/so libraries (ie. full paths instead of relative paths) should be exercised
+*/
+
 #ifdef __linux__
 #include <dlfcn.h>
+#ifndef gvk_dlopen
 #define gvk_dlopen(LIBRARY_NAME) dlopen(LIBRARY_NAME, RTLD_LAZY | RTLD_LOCAL)
+#endif
+#ifndef gvk_dlsym
 #define gvk_dlsym(LIBRARY_HANDLE, SYMBOL_NAME) dlsym(LIBRARY_HANDLE, SYMBOL_NAME)
+#endif
+#ifndef gvk_dlclose
 #define gvk_dlclose(LIBRARY_HANDLE) dlclose(LIBRARY_HANDLE)
+#endif
 #endif
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -44,9 +55,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define NOMINMAX
 #endif
 #include <Windows.h>
+#ifndef gvk_dlopen
 #define gvk_dlopen(LIBRARY_NAME) LoadLibraryA(LIBRARY_NAME)
+#endif
+#ifndef gvk_dlsym
 #define gvk_dlsym(LIBRARY_HANDLE, SYMBOL_NAME) GetProcAddress((HMODULE)LIBRARY_HANDLE, SYMBOL_NAME)
+#endif
+#ifndef gvk_dlclose
 #define gvk_dlclose(LIBRARY_HANDLE) FreeLibrary((HMODULE)LIBRARY_HANDLE)
+#endif
 #endif
 
 #ifndef VK_ENABLE_BETA_EXTENSIONS

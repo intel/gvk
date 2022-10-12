@@ -3,15 +3,15 @@
 
 ### License
 
-Intel GVK (GPA Vk Utilities) is licensed under the terms of the [MIT License](LICENSE.txt).  By contributing to the project, you agree to the license and copyright terms therein and release your contribution under these terms.
+Intel® Graphics Performance Analyzer Utilities for Vulkan* is licensed under the terms of the [MIT License](LICENSE.txt).  By contributing to the project, you agree to the license and copyright terms therein and release your contribution under these terms.
 
 ### Process
 
-Use the issue tracker to find/create a bugfix/feature to submit, and align design/implementation/testing goals with an Intel GVK maintainer.
+Use the issue tracker to find/create a bugfix/feature to submit, and align design/implementation/testing goals with an Intel maintainer.
 
-Create a fork of the GVK repo, develop your change, then submit a pull request.  If the pull request is accepted, it will be validated (possibly modified) internally by an Intel GVK maintainer.
+Create a fork of the repo, develop your change, then submit a pull request.  If the pull request is accepted, it will be validated (possibly modified) internally by an Intel maintainer.
 
-The *pull request description* (possibly edited by an Intel GVK maintainer) and your sign-off (required, described below) will appear in the project's release notes when the change is published.
+The *pull request description* (possibly edited by an Intel maintainer) and your sign-off (required, described below) will appear in the project's release notes when the change is published.
 
 ### Sign your work
 
@@ -63,6 +63,6 @@ Use your real name (sorry, no pseudonyms or anonymous contributions)
 
 # Style
 
-In general, make things look like the generated code in `gvk/build/gvk/include/gvk/generated/`
+In general, make things look like the generated code in `gvk/build/gvk/[include|source]/gvk/generated/`
 
 Documentation guidelines can be found in the [documentation](documentation/README.md) directory.

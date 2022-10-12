@@ -1,7 +1,7 @@
 
 # Documentation
 
-When writing documentation for GVK, use Doxygen syntax/tags and follow [Microsoft's Docs style](https://docs.microsoft.com/en-us/contribute/style-quick-start).
+When writing documentation, use Doxygen syntax/tags and follow [Microsoft's Docs style](https://docs.microsoft.com/en-us/contribute/style-quick-start).
 
 # Examples
 
@@ -21,7 +21,7 @@ following
 - [out]
 - [in,out]
 
-...to indicate how the parameter is used, in general gvk is `const` correct, so
+...to indicate how the parameter is used, in general `gvk` is `const` correct, so
 it should be easy to understand from the docs how something should be used
 
 From `gvk-string/include/printer.hpp`:
@@ -37,7 +37,7 @@ From `gvk-string/include/printer.hpp`:
 
 There are a copule of things to note in the example above.  The first is that
 everything is fully qualified up to the current namespace.  For example, Printer
-is in the gvk namespace...in general treat the docs like code in the current
+is in the `gvk` namespace...in general treat the docs like code in the current
 namespace for the purposes of qualifying names.  The second is that optional
 arguments are called out in the docs with an indicator after the parameter's
 name of what the default value is.
