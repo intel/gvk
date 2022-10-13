@@ -111,7 +111,13 @@ static void post_process_extensions(Manifest& manifest)
             post_process_extension(extension, command, manifest.commands);
         }
     }
-    std::erase_if(manifest.extensions, [](const auto& itr) { return itr.second.supported == "disabled"; });
+    for (auto extensionItr = manifest.extensions.begin(); extensionItr != manifest.extensions.end();) {
+        if (extensionItr->second.supported == "disabled") {
+            manifest.extensions.erase(extensionItr++);
+        } else {
+            ++extensionItr;
+        }
+    }
 }
 
 static void post_process_handles(Manifest& manifest)

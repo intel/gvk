@@ -28,6 +28,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <cassert>
 #include <initializer_list>
+#include <iterator>
 #include <iomanip>
 #include <ostream>
 #include <sstream>
@@ -36,6 +37,25 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <utility>
 
 namespace gvk {
+
+class Printer;
+
+/**
+Prints a given object using a given Printer
+@typename <ObjectType> The type of the object to print
+@param [in] printer The Printer to print the given object with
+@param [in] obj The object to print
+*/
+template <typename ObjectType>
+void print(Printer& printer, const ObjectType& obj);
+
+/**
+Prints a specified bitmask
+@typename <FlagBitsType> The enum type of the specified bitmask
+@param [in] flags The std::underlying_type_t<FlagBitsType> value to print
+*/
+template <typename FlagBitsType>
+void print(gvk::Printer& printer, std::underlying_type_t<FlagBitsType> flags);
 
 /**
 Provides an interface for writing objects composed of name/value pairs to a std::ostream
@@ -371,7 +391,7 @@ Prints a given object using a given Printer
 @param [in] obj The object to print
 */
 template <typename ObjectType>
-inline void print(Printer& printer, const ObjectType& obj)
+void print(Printer& printer, const ObjectType& obj)
 {
     printer.mOstrm << obj;
 }
@@ -382,7 +402,7 @@ Prints a specified bitmask
 @param [in] flags The std::underlying_type_t<FlagBitsType> value to print
 */
 template <typename FlagBitsType>
-inline void print(gvk::Printer& printer, std::underlying_type_t<FlagBitsType> flags)
+void print(gvk::Printer& printer, std::underlying_type_t<FlagBitsType> flags)
 {
     (void)printer;
     (void)flags;

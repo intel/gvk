@@ -36,12 +36,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 #if defined(__linux__)
-#ifndef GLFW_EXPOSE_NATIVE_GLX
-#define GLFW_EXPOSE_NATIVE_GLX
-#endif
 #ifndef GLFW_EXPOSE_NATIVE_X11
 #define GLFW_EXPOSE_NATIVE_X11
 #endif
+#endif
+
+#ifndef GLFW_INCLUDE_NONE
+#define GLFW_INCLUDE_NONE
 #endif
 
 #include "GLFW/glfw3.h"
