@@ -32,6 +32,9 @@ NOTE : Best practices for loading dll/so libraries (ie. full paths instead of re
 */
 
 #ifdef __linux__
+#ifndef VK_USE_PLATFORM_XLIB_KHR
+#define VK_USE_PLATFORM_XLIB_KHR
+#endif
 #include <dlfcn.h>
 #ifndef gvk_dlopen
 #define gvk_dlopen(LIBRARY_NAME) dlopen(LIBRARY_NAME, RTLD_LAZY | RTLD_LOCAL)

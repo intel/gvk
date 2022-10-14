@@ -185,6 +185,20 @@ const std::array<int, 2>& Surface::get_extent() const
     return mExtent;
 }
 
+#if defined(__linux__)
+void* Surface::get_display() const
+{
+    assert(mpGlfwWindow);
+    return glfwGetX11Display();
+}
+
+unsigned long Surface::get_window() const
+{
+    assert(mpGlfwWindow);
+    return glfwGetX11Window(mpGlfwWindow);
+}
+#endif
+
 #if defined(_WIN32) || defined(_WIN64)
 void* Surface::get_hwnd() const
 {

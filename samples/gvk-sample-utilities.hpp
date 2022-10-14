@@ -125,7 +125,7 @@ protected:
         // The order of layers matters, if you're trying to debug with both api dump
         //  and validation for instance, ensure that api dump is listed first so that
         //  both layers output matching handle id's...
-#if 0
+#if 1
         layers.push_back("VK_LAYER_LUNARG_api_dump");
 #endif
         layers.push_back("VK_LAYER_KHRONOS_validation");

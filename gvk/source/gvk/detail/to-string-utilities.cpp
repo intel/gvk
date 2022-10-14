@@ -35,6 +35,12 @@ namespace gvk {
 template <> void print<VK_STRUCTURE_TYPE>(Printer&, const VK_STRUCTURE_TYPE&) { }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Linux
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+GVK_STUB_TO_STRING_DEFINITION(VkXlibSurfaceCreateInfoKHR)
+#endif // VK_USE_PLATFORM_XLIB_KHR
+
+////////////////////////////////////////////////////////////////////////////////
 // Win32
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 GVK_STUB_TO_STRING_DEFINITION(LPCWSTR)

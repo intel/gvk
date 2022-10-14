@@ -207,6 +207,12 @@ bool operator>=(const StringArrayTupleElementWrapper& lhs, const StringArrayTupl
 inline auto make_tuple(const VK_STRUCTURE_TYPE&) { return std::make_tuple(0); }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Linux
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkXlibSurfaceCreateInfoKHR)
+#endif // VK_USE_PLATFORM_XLIB_KHR
+
+////////////////////////////////////////////////////////////////////////////////
 // Win32
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 GVK_STUB_MAKE_TUPLE_DEFINITION(SECURITY_ATTRIBUTES)

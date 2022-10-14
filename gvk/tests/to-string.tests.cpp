@@ -27,6 +27,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk/to-string.hpp"
 #include "gvk/system/random.hpp"
 
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+#undef None
+#undef Bool
+#endif
 #include "gtest/gtest.h"
 
 TEST(to_string, to_string)

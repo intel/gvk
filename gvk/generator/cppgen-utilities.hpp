@@ -41,6 +41,9 @@ namespace cppgen {
 inline bool structure_requires_custom_implementation(const std::string& name)
 {
     static const std::set<std::string> sStructures{
+        // Linux
+        "VkXlibSurfaceCreateInfoKHR",
+
         // Win32
         "VkExportFenceWin32HandleInfoKHR",
         "VkExportMemoryWin32HandleInfoKHR",

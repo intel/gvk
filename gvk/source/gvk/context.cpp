@@ -59,11 +59,12 @@ VkResult Context::create(const CreateInfo* pCreateInfo, const VkAllocationCallba
         }
         if (pCreateInfo->pSysSurfaceCreateInfo) {
             instanceExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-            #ifdef VK_USE_PLATFORM_WIN32_KHR
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+            instanceExtensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
+#endif
+#ifdef VK_USE_PLATFORM_WIN32_KHR
             instanceExtensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
-            #elif VK_USE_PLATFORM_XLIB_KHR
-            enabledExtensionNames.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
-            #endif
+#endif
         }
         auto applicationInfo = pCreateInfo->pApplicationInfo ? *pCreateInfo->pApplicationInfo : get_default<VkApplicationInfo>();
         auto instanceCreateInfo = get_default<VkInstanceCreateInfo>();
@@ -114,12 +115,20 @@ VkResult Context::create(const CreateInfo* pCreateInfo, const VkAllocationCallba
             gvk_result(pContext->create_sys_surface(&sysSurfaceCreateInfo));
 
             auto wsiManagerCreateInfo = get_default<WsiManager::CreateInfo>();
+
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+            auto xlibSurfaceCreateInfo = get_default<VkXlibSurfaceCreateInfoKHR>();
+            xlibSurfaceCreateInfo.dpy = (Display*)pContext->mSysSurface.get_display();
+            xlibSurfaceCreateInfo.window = (Window)pContext->mSysSurface.get_window();
+            wsiManagerCreateInfo.pXlibSurfaceCreateInfoKHR = &xlibSurfaceCreateInfo;
+#endif
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-            auto surfaceCreateInfo = get_default<VkWin32SurfaceCreateInfoKHR>();
-            surfaceCreateInfo.hinstance = GetModuleHandle(NULL);
-            surfaceCreateInfo.hwnd = (HWND)pContext->mSysSurface.get_hwnd();
-            wsiManagerCreateInfo.pWin32SurfaceCreateInfoKHR = &surfaceCreateInfo;
-#endif // VK_USE_PLATFORM_WIN32_KHR
+            auto win32SurfaceCreateInfo = get_default<VkWin32SurfaceCreateInfoKHR>();
+            win32SurfaceCreateInfo.hinstance = GetModuleHandle(NULL);
+            win32SurfaceCreateInfo.hwnd = (HWND)pContext->mSysSurface.get_hwnd();
+            wsiManagerCreateInfo.pWin32SurfaceCreateInfoKHR = &win32SurfaceCreateInfo;
+#endif
+
             wsiManagerCreateInfo.queueFamilyIndex = get_queue_family(pContext->mDevices[0], 0).queues[0].get<VkDeviceQueueCreateInfo>().queueFamilyIndex;
             gvk_result(pContext->create_wsi_manager(&wsiManagerCreateInfo, pAllocator));
         }
