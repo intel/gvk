@@ -95,12 +95,14 @@ VkResult RenderTarget::create(const Device& device, const RenderTarget::CreateIn
             // Prepare VkClearValue array
             pRenderTarget->mClearValues.reserve(pRenderTarget->mFramebuffer.get<ImageViews>().size());
             for (const auto& imageView : pRenderTarget->mFramebuffer.get<ImageViews>()) {
+                auto clearValue = get_default<VkClearValue>();
                 auto imageAspectFlags = get_image_aspect_flags(imageView.get<VkImageViewCreateInfo>().format);
                 if (imageAspectFlags & VK_IMAGE_ASPECT_COLOR_BIT) {
-                    pRenderTarget->mClearValues.push_back({ .color = { 0, 0, 0, 1 } });
+                    clearValue.color = { 0, 0, 0, 1 };
                 } else {
-                    pRenderTarget->mClearValues.push_back({ .depthStencil = { 1, 0 } });
+                    clearValue.depthStencil = { 1, 0 };
                 }
+                pRenderTarget->mClearValues.push_back(clearValue);
             }
         }
     } gvk_result_scope_end;
@@ -136,12 +138,13 @@ VkRenderPassBeginInfo RenderTarget::get_render_pass_begin_info() const
 {
     auto framebufferCreateInfo = mFramebuffer.get<VkFramebufferCreateInfo>();
     return VkRenderPassBeginInfo {
-        .sType           = get_stype<VkRenderPassBeginInfo>(),
-        .renderPass      = mFramebuffer.get<RenderPass>(),
-        .framebuffer     = mFramebuffer,
-        .renderArea      = VkRect2D { .extent = { framebufferCreateInfo.width, framebufferCreateInfo.height } },
-        .clearValueCount = (uint32_t)mClearValues.size(),
-        .pClearValues    = mClearValues.data(),
+        /* .sType           = */ get_stype<VkRenderPassBeginInfo>(),
+        /* .pNext           = */ nullptr,
+        /* .renderPass      = */ mFramebuffer.get<RenderPass>(),
+        /* .framebuffer     = */ mFramebuffer,
+        /* .renderArea      = */ VkRect2D { { }, { framebufferCreateInfo.width, framebufferCreateInfo.height } },
+        /* .clearValueCount = */ (uint32_t)mClearValues.size(),
+        /* .pClearValues    = */ mClearValues.data(),
     };
 }
 

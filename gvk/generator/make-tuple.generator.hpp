@@ -64,17 +64,17 @@ private:
 
         std::string generate_dynamic_handle_array_processor() const override final
         {
-            return "detail::ArrayTupleElementWrapper { obj.{memberLength}, obj.{memberName} }";
+            return "detail::ArrayTupleElementWrapper(obj.{memberLength}, obj.{memberName})";
         }
 
         std::string generate_dynamic_structure_array_processor() const override final
         {
-            return "detail::ArrayTupleElementWrapper { obj.{memberLength}, obj.{memberName} }";
+            return "detail::ArrayTupleElementWrapper(obj.{memberLength}, obj.{memberName})";
         }
 
         std::string generate_dynamic_enumeration_array_processor() const override final
         {
-            return "detail::ArrayTupleElementWrapper { obj.{memberLength}, obj.{memberName} }";
+            return "detail::ArrayTupleElementWrapper(obj.{memberLength}, obj.{memberName})";
         }
 
         std::string generate_dynamic_string_processor() const override final
@@ -89,52 +89,52 @@ private:
 
         std::string generate_dynamic_primitive_array_processor() const override final
         {
-            return "detail::ArrayTupleElementWrapper { obj.{memberLength}, obj.{memberName} }";
+            return "detail::ArrayTupleElementWrapper(obj.{memberLength}, obj.{memberName})";
         }
 
         std::string generate_handle_pointer_processor() const override final
         {
-            return "detail::ArrayTupleElementWrapper { 1, obj.{memberName} }";
+            return "detail::ArrayTupleElementWrapper(1, obj.{memberName})";
         }
 
         std::string generate_structure_pointer_processor() const override final
         {
-            return "detail::ArrayTupleElementWrapper { 1, obj.{memberName} }";
+            return "detail::ArrayTupleElementWrapper(1, obj.{memberName})";
         }
 
         std::string generate_enumeration_pointer_processor() const override final
         {
-            return "detail::ArrayTupleElementWrapper { 1, obj.{memberName} }";
+            return "detail::ArrayTupleElementWrapper(1, obj.{memberName})";
         }
 
         std::string generate_primitive_pointer_processor() const override final
         {
-            return "detail::ArrayTupleElementWrapper { 1, obj.{memberName} }";
+            return "detail::ArrayTupleElementWrapper(1, obj.{memberName})";
         }
 
         std::string generate_static_handle_array_processor() const override final
         {
-            return "detail::ArrayTupleElementWrapper { {memberLength}, obj.{memberName} }";
+            return "detail::ArrayTupleElementWrapper({memberLength}, obj.{memberName})";
         }
 
         std::string generate_static_structure_array_processor() const override final
         {
-            return "detail::ArrayTupleElementWrapper { {memberLength}, obj.{memberName} }";
+            return "detail::ArrayTupleElementWrapper({memberLength}, obj.{memberName})";
         }
 
         std::string generate_static_enumeration_array_processor() const override final
         {
-            return "detail::ArrayTupleElementWrapper { {memberLength}, obj.{memberName} }";
+            return "detail::ArrayTupleElementWrapper({memberLength}, obj.{memberName})";
         }
 
         std::string generate_static_string_processor() const override final
         {
-            return "detail::ArrayTupleElementWrapper { {memberLength}, obj.{memberName} }";
+            return "detail::ArrayTupleElementWrapper({memberLength}, obj.{memberName})";
         }
 
         std::string generate_static_primitive_array_processor() const override final
         {
-            return "detail::ArrayTupleElementWrapper { {memberLength}, obj.{memberName} }";
+            return "detail::ArrayTupleElementWrapper({memberLength}, obj.{memberName})";
         }
 
         std::string generate_handle_processor() const override final

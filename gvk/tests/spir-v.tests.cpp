@@ -43,9 +43,10 @@ TEST(spirv, Context)
 
     // Compile a shader from GLSL...
     gvk::spirv::ShaderInfo shaderInfo{
-        .language = gvk::spirv::ShadingLanguage::Glsl,
-        .stage = VK_SHADER_STAGE_VERTEX_BIT,
-        .source = R"(
+        /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
+        /* .stage      = */ VK_SHADER_STAGE_VERTEX_BIT,
+        /* .lineOffset = */ __LINE__,
+        /* .source     = */ R"(
             #version 450
 
             out gl_PerVertex
@@ -57,7 +58,9 @@ TEST(spirv, Context)
             {
                 gl_Position = vec4(0, 0, 0, 1);
             }
-        )"
+        )",
+        /*.spirv  = */ { },
+        /*.errors = */ { }
     };
     EXPECT_EQ(spirvContext.compile(&shaderInfo), VK_SUCCESS);
     EXPECT_FALSE(shaderInfo.spirv.empty());
@@ -140,10 +143,10 @@ TEST(spirv, BindingInfo_UniformBuffer)
     validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
-                .language = gvk::spirv::ShadingLanguage::Glsl,
-                .stage = VK_SHADER_STAGE_VERTEX_BIT,
-                .lineOffset = __LINE__,
-                .source = R"(
+                /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
+                /* .stage      = */ VK_SHADER_STAGE_VERTEX_BIT,
+                /* .lineOffset = */ __LINE__,
+                /* .source     = */ R"(
                     #version 450
 
                     layout(set = 0, binding = 0)
@@ -155,18 +158,20 @@ TEST(spirv, BindingInfo_UniformBuffer)
                     void main()
                     {
                     }
-                )"
+                )",
+                /*.spirv  = */ { },
+                /*.errors = */ { }
             },
         },
         std::vector<std::vector<VkDescriptorSetLayoutBinding>>{
             std::vector<VkDescriptorSetLayoutBinding>{
                 std::vector<VkDescriptorSetLayoutBinding>{
                     VkDescriptorSetLayoutBinding{
-                        .binding            = 0,
-                        .descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                        .descriptorCount    = 1,
-                        .stageFlags         = VK_SHADER_STAGE_VERTEX_BIT,
-                        .pImmutableSamplers = nullptr
+                        /* .binding            = */ 0,
+                        /* .descriptorType     = */ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                        /* .descriptorCount    = */ 1,
+                        /* .stageFlags         = */ VK_SHADER_STAGE_VERTEX_BIT,
+                        /* .pImmutableSamplers = */ nullptr
                     },
                 },
             },
@@ -181,10 +186,10 @@ TEST(spirv, BindingInfo_StorageBuffer)
     validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
-                .language = gvk::spirv::ShadingLanguage::Glsl,
-                .stage = VK_SHADER_STAGE_VERTEX_BIT,
-                .lineOffset = __LINE__,
-                .source = R"(
+                /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
+                /* .stage      = */ VK_SHADER_STAGE_VERTEX_BIT,
+                /* .lineOffset = */ __LINE__,
+                /* .source     = */ R"(
                     #version 450
 
                     layout(set = 0, binding = 0)
@@ -196,18 +201,20 @@ TEST(spirv, BindingInfo_StorageBuffer)
                     void main()
                     {
                     }
-                )"
+                )",
+                /*.spirv  = */ { },
+                /*.errors = */ { }
             },
         },
         std::vector<std::vector<VkDescriptorSetLayoutBinding>>{
+            std::vector<VkDescriptorSetLayoutBinding>{
                 std::vector<VkDescriptorSetLayoutBinding>{
-                    std::vector<VkDescriptorSetLayoutBinding>{
-                        VkDescriptorSetLayoutBinding{
-                        .binding            = 0,
-                        .descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                        .descriptorCount    = 1,
-                        .stageFlags         = VK_SHADER_STAGE_VERTEX_BIT,
-                        .pImmutableSamplers = nullptr
+                    VkDescriptorSetLayoutBinding{
+                        /* .binding            = */ 0,
+                        /* .descriptorType     = */ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                        /* .descriptorCount    = */ 1,
+                        /* .stageFlags         = */ VK_SHADER_STAGE_VERTEX_BIT,
+                        /* .pImmutableSamplers = */ nullptr
                     },
                 },
             },
@@ -222,10 +229,10 @@ TEST(spirv, BindingInfo_StorageImage)
     validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
-                .language = gvk::spirv::ShadingLanguage::Glsl,
-                .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-                .lineOffset = __LINE__,
-                .source = R"(
+                /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
+                /* .stage      = */ VK_SHADER_STAGE_FRAGMENT_BIT,
+                /* .lineOffset = */ __LINE__,
+                /* .source     = */ R"(
                     #version 450
 
                     layout(set = 0, binding = 0, rgba32f)
@@ -237,29 +244,31 @@ TEST(spirv, BindingInfo_StorageImage)
                     void main()
                     {
                     }
-                )"
+                )",
+                /*.spirv  = */ { },
+                /*.errors = */ { }
             },
         },
         std::vector<std::vector<VkDescriptorSetLayoutBinding>>{
             std::vector<VkDescriptorSetLayoutBinding>{
                 std::vector<VkDescriptorSetLayoutBinding>{
                     VkDescriptorSetLayoutBinding{
-                        .binding            = 0,
-                        .descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-                        .descriptorCount    = 1,
-                        .stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT,
-                        .pImmutableSamplers = nullptr
+                        /* .binding            = */ 0,
+                        /* .descriptorType     = */ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                        /* .descriptorCount    = */ 1,
+                        /* .stageFlags         = */ VK_SHADER_STAGE_FRAGMENT_BIT,
+                        /* .pImmutableSamplers = */ nullptr
                     },
                 },
             },
             std::vector<VkDescriptorSetLayoutBinding>{
                 std::vector<VkDescriptorSetLayoutBinding>{
                     VkDescriptorSetLayoutBinding{
-                        .binding            = 0,
-                        .descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-                        .descriptorCount    = 1,
-                        .stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT,
-                        .pImmutableSamplers = nullptr
+                        /* .binding            = */ 0,
+                        /* .descriptorType     = */ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                        /* .descriptorCount    = */ 1,
+                        /* .stageFlags         = */ VK_SHADER_STAGE_FRAGMENT_BIT,
+                        /* .pImmutableSamplers = */ nullptr
                     },
                 },
             },
@@ -274,10 +283,10 @@ TEST(spirv, BindingInfo_CombinedImageSampler)
     validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
-                .language = gvk::spirv::ShadingLanguage::Glsl,
-                .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-                .lineOffset = __LINE__,
-                .source = R"(
+                /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
+                /* .stage      = */ VK_SHADER_STAGE_FRAGMENT_BIT,
+                /* .lineOffset = */ __LINE__,
+                /* .source     = */ R"(
                     #version 450
 
                     layout(set = 0, binding = 0)
@@ -289,25 +298,27 @@ TEST(spirv, BindingInfo_CombinedImageSampler)
                     void main()
                     {
                     }
-                )"
+                )",
+                /*.spirv  = */ { },
+                /*.errors = */ { }
             },
         },
         std::vector<std::vector<VkDescriptorSetLayoutBinding>>{
             std::vector<VkDescriptorSetLayoutBinding>{
                 std::vector<VkDescriptorSetLayoutBinding>{
                     VkDescriptorSetLayoutBinding{
-                        .binding            = 0,
-                        .descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                        .descriptorCount    = 1,
-                        .stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT,
-                        .pImmutableSamplers = nullptr
+                        /* .binding            = */ 0,
+                        /* .descriptorType     = */ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                        /* .descriptorCount    = */ 1,
+                        /* .stageFlags         = */ VK_SHADER_STAGE_FRAGMENT_BIT,
+                        /* .pImmutableSamplers = */ nullptr
                     },
                     VkDescriptorSetLayoutBinding{
-                        .binding            = 1,
-                        .descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                        .descriptorCount    = 1,
-                        .stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT,
-                        .pImmutableSamplers = nullptr
+                        /* .binding            = */ 1,
+                        /* .descriptorType     = */ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                        /* .descriptorCount    = */ 1,
+                        /* .stageFlags         = */ VK_SHADER_STAGE_FRAGMENT_BIT,
+                        /* .pImmutableSamplers = */ nullptr
                     },
                 },
             },
@@ -322,10 +333,10 @@ TEST(spirv, BindingInfo_AccelerationStructure)
     validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
-                .language = gvk::spirv::ShadingLanguage::Glsl,
-                .stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR,
-                .lineOffset = __LINE__,
-                .source = R"(
+                /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
+                /* .stage      = */ VK_SHADER_STAGE_RAYGEN_BIT_KHR,
+                /* .lineOffset = */ __LINE__,
+                /* .source     = */ R"(
 
                     // FROM : https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VK_KHR_ray_tracing_pipeline.html
 
@@ -345,25 +356,27 @@ TEST(spirv, BindingInfo_AccelerationStructure)
                        col.y = payload;
                        imageStore(image, ivec2(gl_LaunchIDEXT.xy), col);
                     }
-                )"
+                )",
+                /*.spirv  = */ { },
+                /*.errors = */ { }
             },
         },
         std::vector<std::vector<VkDescriptorSetLayoutBinding>>{
             std::vector<VkDescriptorSetLayoutBinding>{
                 std::vector<VkDescriptorSetLayoutBinding>{
                     VkDescriptorSetLayoutBinding{
-                        .binding            = 0,
-                        .descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-                        .descriptorCount    = 1,
-                        .stageFlags         = VK_SHADER_STAGE_RAYGEN_BIT_KHR,
-                        .pImmutableSamplers = nullptr
+                        /* .binding            = */ 0,
+                        /* .descriptorType     = */ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                        /* .descriptorCount    = */ 1,
+                        /* .stageFlags         = */ VK_SHADER_STAGE_RAYGEN_BIT_KHR,
+                        /* .pImmutableSamplers = */ nullptr
                     },
                     VkDescriptorSetLayoutBinding{
-                        .binding            = 1,
-                        .descriptorType     = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
-                        .descriptorCount    = 1,
-                        .stageFlags         = VK_SHADER_STAGE_RAYGEN_BIT_KHR,
-                        .pImmutableSamplers = nullptr
+                        /* .binding            = */ 1,
+                        /* .descriptorType     = */ VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
+                        /* .descriptorCount    = */ 1,
+                        /* .stageFlags         = */ VK_SHADER_STAGE_RAYGEN_BIT_KHR,
+                        /* .pImmutableSamplers = */ nullptr
                     },
                 },
             },
@@ -378,10 +391,10 @@ TEST(spirv, BindingInfo_PushConstants)
     validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
-                .language = gvk::spirv::ShadingLanguage::Glsl,
-                .stage = VK_SHADER_STAGE_VERTEX_BIT,
-                .lineOffset = __LINE__,
-                .source = R"(
+                /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
+                /* .stage      = */ VK_SHADER_STAGE_VERTEX_BIT,
+                /* .lineOffset = */ __LINE__,
+                /* .source     = */ R"(
                     #version 450
 
                     layout(push_constant)
@@ -397,15 +410,18 @@ TEST(spirv, BindingInfo_PushConstants)
                         //  when it's reflected...
                         matrix = pc.matrix;
                     }
-                )"
+                )",
+                /*.spirv  = */ { },
+                /*.errors = */ { }
             },
         },
         std::vector<std::vector<VkDescriptorSetLayoutBinding>>{
         },
         std::vector<VkPushConstantRange>{
             VkPushConstantRange{
-                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-                .size = sizeof(glm::mat4),
+                /* .stageFlags = */ VK_SHADER_STAGE_VERTEX_BIT,
+                /* .offset     = */ 0,
+                /* .size       = */ sizeof(glm::mat4),
             }
         }
     );

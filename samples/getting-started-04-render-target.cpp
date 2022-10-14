@@ -130,62 +130,60 @@ int main(int, const char*[])
         gvk::Buffer cubeUniformBuffer;
         gvk_result(gvk_sample_create_uniform_buffer<ObjectUniforms>(context, &cubeUniformBuffer));
         gvk::math::Transform cubeTransform;
-        gvk::spirv::ShaderInfo vertexShaderInfo{
-            .language = gvk::spirv::ShadingLanguage::Glsl,
-            .stage = VK_SHADER_STAGE_VERTEX_BIT,
-            .lineOffset = __LINE__,
-            .source = R"(
-                #version 450
+        gvk::spirv::ShaderInfo vertexShaderInfo{ };
+        vertexShaderInfo.language = gvk::spirv::ShadingLanguage::Glsl;
+        vertexShaderInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+        vertexShaderInfo.lineOffset = __LINE__;
+        vertexShaderInfo.source = R"(
+            #version 450
 
-                layout(set = 0, binding = 0)
-                uniform CameraUniformBuffer
-                {
-                    mat4 view;
-                    mat4 projection;
-                } camera;
+            layout(set = 0, binding = 0)
+            uniform CameraUniformBuffer
+            {
+                mat4 view;
+                mat4 projection;
+            } camera;
 
-                layout(set = 1, binding = 0)
-                uniform ObjectUniformBuffer
-                {
-                    mat4 world;
-                } object;
+            layout(set = 1, binding = 0)
+            uniform ObjectUniformBuffer
+            {
+                mat4 world;
+            } object;
 
-                layout(location = 0) in vec3 vsPosition;
-                layout(location = 1) in vec2 vsTexCoord;
-                layout(location = 2) in vec4 vsColor;
-                layout(location = 0) out vec2 fsTexCoord;
-                layout(location = 1) out vec4 fsColor;
+            layout(location = 0) in vec3 vsPosition;
+            layout(location = 1) in vec2 vsTexCoord;
+            layout(location = 2) in vec4 vsColor;
+            layout(location = 0) out vec2 fsTexCoord;
+            layout(location = 1) out vec4 fsColor;
 
-                out gl_PerVertex
-                {
-                    vec4 gl_Position;
-                };
+            out gl_PerVertex
+            {
+                vec4 gl_Position;
+            };
 
-                void main()
-                {
-                    gl_Position = camera.projection * camera.view * object.world * vec4(vsPosition, 1);
-                    fsTexCoord = vsTexCoord;
-                    fsColor = vsColor;
-                }
-            )"
-        };
-        gvk::spirv::ShaderInfo fragmentShaderInfo{
-            .language = gvk::spirv::ShadingLanguage::Glsl,
-            .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-            .lineOffset = __LINE__,
-            .source = R"(
-                #version 450
+            void main()
+            {
+                gl_Position = camera.projection * camera.view * object.world * vec4(vsPosition, 1);
+                fsTexCoord = vsTexCoord;
+                fsColor = vsColor;
+            }
+        )";
+        gvk::spirv::ShaderInfo fragmentShaderInfo{ };
+        fragmentShaderInfo.language = gvk::spirv::ShadingLanguage::Glsl;
+        fragmentShaderInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        fragmentShaderInfo.lineOffset = __LINE__;
+        fragmentShaderInfo.source = R"(
+            #version 450
 
-                layout(location = 0) in vec2 fsTexCoord;
-                layout(location = 1) in vec4 fsColor;
-                layout(location = 0) out vec4 fragColor;
+            layout(location = 0) in vec2 fsTexCoord;
+            layout(location = 1) in vec4 fsColor;
+            layout(location = 0) out vec4 fragColor;
 
-                void main()
-                {
-                    fragColor = fsColor;
-                }
-            )"
-        };
+            void main()
+            {
+                fragColor = fsColor;
+            }
+        )";
         gvk::Pipeline cubePipeline;
         gvk_result(gvk_sample_create_pipeline<VertexPositionTexcoordColor>(
             renderTarget.get_render_pass(),
@@ -202,81 +200,77 @@ int main(int, const char*[])
         gvk::Buffer floorUniformBuffer;
         gvk_result(gvk_sample_create_uniform_buffer<ObjectUniforms>(context, &floorUniformBuffer));
         gvk::math::Transform floorTransform;
-        vertexShaderInfo = gvk::spirv::ShaderInfo{
-            .language = gvk::spirv::ShadingLanguage::Glsl,
-            .stage = VK_SHADER_STAGE_VERTEX_BIT,
-            .lineOffset = __LINE__,
-            .source = R"(
-                #version 450
+        vertexShaderInfo.language = gvk::spirv::ShadingLanguage::Glsl;
+        vertexShaderInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+        vertexShaderInfo.lineOffset = __LINE__;
+        vertexShaderInfo.source = R"(
+            #version 450
 
-                layout(set = 0, binding = 0)
-                uniform CameraUniformBuffer
-                {
-                    mat4 view;
-                    mat4 projection;
-                } camera;
+            layout(set = 0, binding = 0)
+            uniform CameraUniformBuffer
+            {
+                mat4 view;
+                mat4 projection;
+            } camera;
 
-                layout(set = 1, binding = 0)
-                uniform ObjectUniformBuffer
-                {
-                    mat4 world;
-                } object;
+            layout(set = 1, binding = 0)
+            uniform ObjectUniformBuffer
+            {
+                mat4 world;
+            } object;
 
-                layout(location = 0) in vec3 vsPosition;
-                layout(location = 1) in vec2 vsTexcoord;
-                layout(location = 2) in vec4 vsColor;
-                layout(location = 0) out vec4 fsPosition;
-                layout(location = 1) out vec2 fsTexcoord;
-                layout(location = 2) out vec4 fsColor;
+            layout(location = 0) in vec3 vsPosition;
+            layout(location = 1) in vec2 vsTexcoord;
+            layout(location = 2) in vec4 vsColor;
+            layout(location = 0) out vec4 fsPosition;
+            layout(location = 1) out vec2 fsTexcoord;
+            layout(location = 2) out vec4 fsColor;
 
-                out gl_PerVertex
-                {
-                    vec4 gl_Position;
-                };
-                
-                void main()
-                {
-                    fsPosition = camera.projection * camera.view * object.world * vec4(vsPosition, 1);
-                    gl_Position = fsPosition;
-                    fsTexcoord = vsTexcoord;
-                    fsColor = vsColor;
-                }
-            )"
-        };
-        fragmentShaderInfo = gvk::spirv::ShaderInfo{
-            .language = gvk::spirv::ShadingLanguage::Glsl,
-            .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-            .lineOffset = __LINE__,
-            .source = R"(
-                #version 450
+            out gl_PerVertex
+            {
+                vec4 gl_Position;
+            };
+            
+            void main()
+            {
+                fsPosition = camera.projection * camera.view * object.world * vec4(vsPosition, 1);
+                gl_Position = fsPosition;
+                fsTexcoord = vsTexcoord;
+                fsColor = vsColor;
+            }
+        )";
+        fragmentShaderInfo.language = gvk::spirv::ShadingLanguage::Glsl;
+        fragmentShaderInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        fragmentShaderInfo.lineOffset = __LINE__;
+        fragmentShaderInfo.source = R"(
+            #version 450
 
-                layout(set = 1, binding = 1) uniform sampler2D reflectionImage;
-                layout(location = 0) in vec4 fsPosition;
-                layout(location = 1) in vec2 fsTexcoord;
-                layout(location = 2) in vec4 fsColor;
-                layout(location = 0) out vec4 fragColor;
+            layout(set = 1, binding = 1) uniform sampler2D reflectionImage;
+            layout(location = 0) in vec4 fsPosition;
+            layout(location = 1) in vec2 fsTexcoord;
+            layout(location = 2) in vec4 fsColor;
+            layout(location = 0) out vec4 fragColor;
 
-                void main()
-                {
-                    // Calculate surface color
-                    vec4 surfaceColor;
-                    surfaceColor.rb = fsTexcoord;
-                    surfaceColor.g = dot(surfaceColor.rb, vec2(0.5));
+            void main()
+            {
+                // Calculate surface color
+                vec4 surfaceColor;
+                surfaceColor.rb = fsTexcoord;
+                surfaceColor.g = dot(surfaceColor.rb, vec2(0.5));
 
-                    // Calculate reflection texcoord
-                    vec2 reflectionTexcoord = fsPosition.xy * (1.0 / fsPosition.w);
-                    reflectionTexcoord += vec2(1, 1);
-                    reflectionTexcoord *= 0.5;
+                // Calculate reflection texcoord
+                vec2 reflectionTexcoord = fsPosition.xy * (1.0 / fsPosition.w);
+                reflectionTexcoord += vec2(1, 1);
+                reflectionTexcoord *= 0.5;
 
-                    // Calculate reflection color
-                    vec4 reflectionColor = texture(reflectionImage, reflectionTexcoord);
-                    reflectionColor.a *= 0.34;
-                    reflectionColor.rgb *= reflectionColor.a;
-                    fragColor.rgb = surfaceColor.rgb + reflectionColor.rgb;
-                    fragColor.a = 1;
-                }
-            )"
-        };
+                // Calculate reflection color
+                vec4 reflectionColor = texture(reflectionImage, reflectionTexcoord);
+                reflectionColor.a *= 0.34;
+                reflectionColor.rgb *= reflectionColor.a;
+                fragColor.rgb = surfaceColor.rgb + reflectionColor.rgb;
+                fragColor.a = 1;
+            }
+        )";
         gvk::Pipeline floorPipeline;
         gvk_result(gvk_sample_create_pipeline<VertexPositionTexcoordColor>(
             renderTarget.get_render_pass(),
@@ -334,44 +328,64 @@ int main(int, const char*[])
         // Write the descriptors...
         std::array<VkWriteDescriptorSet, 5> writeDescriptorSets{
             VkWriteDescriptorSet {
-                .sType           = gvk::get_stype<VkWriteDescriptorSet>(),
-                .dstSet          = cubeDescriptorSet,
-                .dstBinding      = 0,
-                .descriptorCount = 1,
-                .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .pBufferInfo     = &cubeUniformBufferDescriptorInfo,
+                /* .sType            = */ gvk::get_stype<VkWriteDescriptorSet>(),
+                /* .pNext            = */ nullptr,
+                /* .dstSet           = */ cubeDescriptorSet,
+                /* .dstBinding       = */ 0,
+                /* .dstArrayElement  = */ 0,
+                /* .descriptorCount  = */ 1,
+                /* .descriptorType   = */ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                /* .pImageInfo       = */ nullptr,
+                /* .pBufferInfo      = */ &cubeUniformBufferDescriptorInfo,
+                /* .pTexelBufferView = */ nullptr,
             },
             VkWriteDescriptorSet {
-                .sType           = gvk::get_stype<VkWriteDescriptorSet>(),
-                .dstSet          = floorDescriptorSet,
-                .dstBinding      = 0,
-                .descriptorCount = 1,
-                .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .pBufferInfo     = &floorUniformBufferDescriptorInfo,
+                /* .sType            = */ gvk::get_stype<VkWriteDescriptorSet>(),
+                /* .pNext            = */ nullptr,
+                /* .dstSet           = */ floorDescriptorSet,
+                /* .dstBinding       = */ 0,
+                /* .dstArrayElement  = */ 0,
+                /* .descriptorCount  = */ 1,
+                /* .descriptorType   = */ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                /* .pImageInfo       = */ nullptr,
+                /* .pBufferInfo      = */ &floorUniformBufferDescriptorInfo,
+                /* .pTexelBufferView = */ nullptr,
             },
             VkWriteDescriptorSet {
-                .sType           = gvk::get_stype<VkWriteDescriptorSet>(),
-                .dstSet          = floorDescriptorSet,
-                .dstBinding      = 1,
-                .descriptorCount = 1,
-                .descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                .pImageInfo      = &renderTargetColorAttachmentDescriptorInfo,
+                /* .sType            = */ gvk::get_stype<VkWriteDescriptorSet>(),
+                /* .pNext            = */ nullptr,
+                /* .dstSet           = */ floorDescriptorSet,
+                /* .dstBinding       = */ 1,
+                /* .dstArrayElement  = */ 0,
+                /* .descriptorCount  = */ 1,
+                /* .descriptorType   = */ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                /* .pImageInfo       = */ &renderTargetColorAttachmentDescriptorInfo,
+                /* .pBufferInfo      = */ nullptr,
+                /* .pTexelBufferView = */ nullptr,
             },
             VkWriteDescriptorSet {
-                .sType           = gvk::get_stype<VkWriteDescriptorSet>(),
-                .dstSet          = cameraDescriptorSet,
-                .dstBinding      = 0,
-                .descriptorCount = 1,
-                .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .pBufferInfo     = &cameraUniformBufferDescriptorInfo,
+                /* .sType            = */ gvk::get_stype<VkWriteDescriptorSet>(),
+                /* .pNext            = */ nullptr,
+                /* .dstSet           = */ cameraDescriptorSet,
+                /* .dstBinding       = */ 0,
+                /* .dstArrayElement  = */ 0,
+                /* .descriptorCount  = */ 1,
+                /* .descriptorType   = */ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                /* .pImageInfo       = */ nullptr,
+                /* .pBufferInfo      = */ &cameraUniformBufferDescriptorInfo,
+                /* .pTexelBufferView = */ nullptr,
             },
             VkWriteDescriptorSet {
-                .sType           = gvk::get_stype<VkWriteDescriptorSet>(),
-                .dstSet          = reflectionCameraDescriptorSet,
-                .dstBinding      = 0,
-                .descriptorCount = 1,
-                .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .pBufferInfo     = &reflectionCameraUniformBufferDescriptorInfo,
+                /* .sType            = */ gvk::get_stype<VkWriteDescriptorSet>(),
+                /* .pNext            = */ nullptr,
+                /* .dstSet           = */ reflectionCameraDescriptorSet,
+                /* .dstBinding       = */ 0,
+                /* .dstArrayElement  = */ 0,
+                /* .descriptorCount  = */ 1,
+                /* .descriptorType   = */ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                /* .pImageInfo       = */ nullptr,
+                /* .pBufferInfo      = */ &reflectionCameraUniformBufferDescriptorInfo,
+                /* .pTexelBufferView = */ nullptr,
             },
         };
         vkUpdateDescriptorSets(context.get_devices()[0], (uint32_t)writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
@@ -392,16 +406,16 @@ int main(int, const char*[])
             auto deltaTime = clock.elapsed<gvk::sys::Seconds<float>>();
             const auto& input = context.get_sys_surface().get_input();
             gvk::math::FreeCameraController::UpdateInfo cameraControllerUpdateInfo {
-                .deltaTime           = deltaTime,
-                .moveUp              = input.keyboard.down(gvk::sys::Key::Q),
-                .moveDown            = input.keyboard.down(gvk::sys::Key::E),
-                .moveLeft            = input.keyboard.down(gvk::sys::Key::A),
-                .moveRight           = input.keyboard.down(gvk::sys::Key::D),
-                .moveForward         = input.keyboard.down(gvk::sys::Key::W),
-                .moveBackward        = input.keyboard.down(gvk::sys::Key::S),
-                .moveSpeedMultiplier = input.keyboard.down(gvk::sys::Key::LeftShift) ? 2.0f : 1.0f,
-                .lookDelta           = { input.mouse.position.delta()[0], input.mouse.position.delta()[1] },
-                .fieldOfViewDelta    = input.mouse.scroll.delta()[1],
+                /* .deltaTime           = */ deltaTime,
+                /* .moveUp              = */ input.keyboard.down(gvk::sys::Key::Q),
+                /* .moveDown            = */ input.keyboard.down(gvk::sys::Key::E),
+                /* .moveLeft            = */ input.keyboard.down(gvk::sys::Key::A),
+                /* .moveRight           = */ input.keyboard.down(gvk::sys::Key::D),
+                /* .moveForward         = */ input.keyboard.down(gvk::sys::Key::W),
+                /* .moveBackward        = */ input.keyboard.down(gvk::sys::Key::S),
+                /* .moveSpeedMultiplier = */ input.keyboard.down(gvk::sys::Key::LeftShift) ? 2.0f : 1.0f,
+                /* .lookDelta           = */ { input.mouse.position.delta()[0], input.mouse.position.delta()[1] },
+                /* .fieldOfViewDelta    = */ input.mouse.scroll.delta()[1],
             };
             cameraController.lookEnabled = input.mouse.buttons.down(gvk::sys::Mouse::Button::Left);
             if (input.mouse.buttons.pressed(gvk::sys::Mouse::Button::Right)) {
@@ -460,9 +474,9 @@ int main(int, const char*[])
                     auto renderPassBeginInfo = renderTarget.get_render_pass_begin_info();
                     vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
                     {
-                        VkRect2D scissor{ .extent = renderPassBeginInfo.renderArea.extent };
+                        VkRect2D scissor{ { }, renderPassBeginInfo.renderArea.extent };
                         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-                        VkViewport viewport{ .width = (float)scissor.extent.width, .height = (float)scissor.extent.height, .minDepth = 0, .maxDepth = 1 };
+                        VkViewport viewport{ 0, 0, (float)scissor.extent.width, (float)scissor.extent.height, 0, 1 };
                         vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
                         // Bind cube gvk::Pipeline, reflection gvk::math::Camera uniform gvk::Buffer,
@@ -483,9 +497,9 @@ int main(int, const char*[])
                     renderPassBeginInfo = wsiManager.get_render_targets()[i].get_render_pass_begin_info();
                     vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
                     {
-                        VkRect2D scissor{ .extent = renderPassBeginInfo.renderArea.extent };
+                        VkRect2D scissor{ { }, renderPassBeginInfo.renderArea.extent };
                         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-                        VkViewport viewport{ .width = (float)scissor.extent.width, .height = (float)scissor.extent.height, .minDepth = 0, .maxDepth = 1 };
+                        VkViewport viewport{ 0, 0, (float)scissor.extent.width, (float)scissor.extent.height, 0, 1 };
                         vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
                         // Bind the gvk::math::Camera uniform gvk::Buffer and the floor resources then

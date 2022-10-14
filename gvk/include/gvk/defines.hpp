@@ -99,6 +99,14 @@ NOTE : Best practices for loading dll/so libraries (ie. full paths instead of re
 #pragma warning(pop)
 #endif
 
+#if defined(__clang__)
+#define GVK_COMPILER_CLANG
+#elif defined(__GNUC__)
+#define GVK_COMPILER_GCC
+#elif defined(_MSVC_LANG)
+#define GVK_COMPILER_MSVC
+#endif
+
 #define gvk_stringify(STR) #STR
 #define gvk_expand(STR) gvk_stringify(STR)
 #define gvk_file_line (__FILE__ "(" gvk_expand(__LINE__) ")")

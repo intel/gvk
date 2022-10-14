@@ -37,6 +37,8 @@ bool operator> (const VK_STRUCTURE_TYPE& lhs, const VK_STRUCTURE_TYPE& rhs) { re
 bool operator<=(const VK_STRUCTURE_TYPE& lhs, const VK_STRUCTURE_TYPE& rhs) { return !(rhs < lhs); }; \
 bool operator>=(const VK_STRUCTURE_TYPE& lhs, const VK_STRUCTURE_TYPE& rhs) { return !(rhs < lhs); };
 
+#ifdef VK_USE_PLATFORM_WIN32_KHR
 GVK_STUB_COMPARISON_OPERATOR_DEFINITIONS(SECURITY_ATTRIBUTES)
+#endif
 
 } // namespace gvk

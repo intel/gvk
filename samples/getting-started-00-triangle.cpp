@@ -45,59 +45,57 @@ int main(int, const char*[])
         gvk_result(GvkSampleContext::create("Intel GVK - Getting Started - 00 - Triangle", &context));
 
         // We'll prepare two very simple shaders...
-        gvk::spirv::ShaderInfo vertexShaderInfo{
-            .language = gvk::spirv::ShadingLanguage::Glsl,
-            .stage = VK_SHADER_STAGE_VERTEX_BIT,
-            .lineOffset = __LINE__,
-            .source = R"(
-                #version 450
+        gvk::spirv::ShaderInfo vertexShaderInfo{ };
+        vertexShaderInfo.language = gvk::spirv::ShadingLanguage::Glsl;
+        vertexShaderInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+        vertexShaderInfo.lineOffset = __LINE__;
+        vertexShaderInfo.source = R"(
+            #version 450
 
-                layout(location = 0) out vec4 fsColor;
+            layout(location = 0) out vec4 fsColor;
 
-                out gl_PerVertex
-                {
-                    vec4 gl_Position;
-                };
+            out gl_PerVertex
+            {
+                vec4 gl_Position;
+            };
 
-                vec2 positions[3] = vec2[](
-                    vec2( 0.0, -0.5),
-                    vec2( 0.5,  0.5),
-                    vec2(-0.5,  0.5)
-                );
+            vec2 positions[3] = vec2[](
+                vec2( 0.0, -0.5),
+                vec2( 0.5,  0.5),
+                vec2(-0.5,  0.5)
+            );
 
-                vec4 colors[3] = vec4[](
-                    vec4(1, 0, 0, 1),
-                    vec4(0, 1, 0, 1),
-                    vec4(0, 0, 1, 1)
-                );
+            vec4 colors[3] = vec4[](
+                vec4(1, 0, 0, 1),
+                vec4(0, 1, 0, 1),
+                vec4(0, 0, 1, 1)
+            );
 
-                void main()
-                {
-                    // Use gl_VertexIndex to index into our positions[3] vec2 array...
-                    gl_Position = vec4(positions[gl_VertexIndex], 0, 1);
+            void main()
+            {
+                // Use gl_VertexIndex to index into our positions[3] vec2 array...
+                gl_Position = vec4(positions[gl_VertexIndex], 0, 1);
 
-                    // Use gl_VertexIndex to index into our colors[3] vec4 array...
-                    fsColor = colors[gl_VertexIndex];
-                }
-            )"
-        };
-        gvk::spirv::ShaderInfo fragmentShaderInfo{
-            .language = gvk::spirv::ShadingLanguage::Glsl,
-            .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-            .lineOffset = __LINE__,
-            .source = R"(
-                #version 450
+                // Use gl_VertexIndex to index into our colors[3] vec4 array...
+                fsColor = colors[gl_VertexIndex];
+            }
+        )";
+        gvk::spirv::ShaderInfo fragmentShaderInfo{ };
+        fragmentShaderInfo.language = gvk::spirv::ShadingLanguage::Glsl;
+        fragmentShaderInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        fragmentShaderInfo.lineOffset = __LINE__;
+        fragmentShaderInfo.source = R"(
+            #version 450
 
-                layout(location = 0) in vec4 fsColor;
-                layout(location = 0) out vec4 fragColor;
+            layout(location = 0) in vec4 fsColor;
+            layout(location = 0) out vec4 fragColor;
 
-                void main()
-                {
-                    // Simply output the interpolated color...
-                    fragColor = fsColor;
-                }
-            )"
-        };
+            void main()
+            {
+                // Simply output the interpolated color...
+                fragColor = fsColor;
+            }
+        )";
 
         // With our GLSL shaders prepared, we'll create a gvk::Pipeline...
         gvk::Pipeline pipeline;
@@ -129,7 +127,6 @@ int main(int, const char*[])
             if (wsiManager.update()) {
 
                 // Record command buffers to render to swapchain images...
-                auto extent = wsiManager.get_swapchain().get<VkSwapchainCreateInfoKHR>().imageExtent;
                 for (size_t i = 0; i < wsiManager.get_command_buffers().size(); ++i) {
 
                     // To render the triangle we'll start by beginning command buffer recording and
@@ -144,9 +141,9 @@ int main(int, const char*[])
                     vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
                     // Set our scissor and viewport to match our renderPassBeginInfo.renderArea...
-                    VkRect2D scissor{ .extent = renderPassBeginInfo.renderArea.extent };
+                    VkRect2D scissor{ { }, renderPassBeginInfo.renderArea.extent };
                     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-                    VkViewport viewport{ .width = (float)scissor.extent.width, .height = (float)scissor.extent.height, .minDepth = 0, .maxDepth = 1 };
+                    VkViewport viewport{ 0, 0, (float)scissor.extent.width, (float)scissor.extent.height, 0, 1 };
                     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
                     // Bind our pipeline and draw.  We're not binding a vertex buffer because our

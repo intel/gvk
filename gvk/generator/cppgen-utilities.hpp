@@ -248,7 +248,9 @@ std::set<std::string> get_inner_scope_compile_guards(
     std::set<std::string> innerScopeCompileGuards
 )
 {
-    std::erase_if(innerScopeCompileGuards, [&](const auto& compileGuard) { return outerScopeCompileGuards.count(compileGuard) == 1; });
+    for (const auto& compileGuard : outerScopeCompileGuards) {
+        innerScopeCompileGuards.erase(compileGuard);
+    }
     return innerScopeCompileGuards;
 }
 

@@ -77,9 +77,9 @@ TEST(Serialization, Basic)
 {
     validate_structure_serialization(
         VkExtent3D{
-            .width = 256,
-            .height = 512,
-            .depth = 1024,
+            /* .width  = */ 256,
+            /* .height = */ 512,
+            /* .depth  = */ 1024,
         }
     );
 }
@@ -208,7 +208,7 @@ TEST(Serialization, StructureWithPNextMember)
     importMemoryHostPointerInfo.sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT;
     importMemoryHostPointerInfo.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT;
     memoryAllocateInfo.pNext = &importMemoryHostPointerInfo;
-    validate_structure_serialization(importMemoryHostPointerInfo);
+    validate_structure_serialization(memoryAllocateInfo);
 }
 
 TEST(Serialization, StructureWithDynamicArrayOfStructureWithDynamicArray)

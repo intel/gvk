@@ -152,6 +152,10 @@ void apply_operation(
         //  ...reference destroyed outside the lock for the reason described above...
         reference = gvk::detail::nullref;
     } break;
+    case Operation::Type::Count:
+    {
+        assert(false);
+    } break;
     }
 }
 

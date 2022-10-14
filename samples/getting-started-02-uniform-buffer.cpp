@@ -66,54 +66,52 @@ int main(int, const char*[])
         GvkSampleContext context;
         gvk_result(GvkSampleContext::create("Intel GVK - Getting Started - 02 - Uniform Buffer", &context));
 
-        gvk::spirv::ShaderInfo vertexShaderInfo{
-            .language = gvk::spirv::ShadingLanguage::Glsl,
-            .stage = VK_SHADER_STAGE_VERTEX_BIT,
-            .lineOffset = __LINE__,
-            .source = R"(
-                #version 450
+        gvk::spirv::ShaderInfo vertexShaderInfo{ };
+        vertexShaderInfo.language = gvk::spirv::ShadingLanguage::Glsl;
+        vertexShaderInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+        vertexShaderInfo.lineOffset = __LINE__;
+        vertexShaderInfo.source = R"(
+            #version 450
 
-                layout(binding = 0)
+            layout(binding = 0)
 
-                uniform UniformBuffer
-                {
-                    mat4 world;
-                    mat4 view;
-                    mat4 projection;
-                } ubo;
+            uniform UniformBuffer
+            {
+                mat4 world;
+                mat4 view;
+                mat4 projection;
+            } ubo;
 
-                layout(location = 0) in vec3 vsPosition;
-                layout(location = 1) in vec4 vsColor;
-                layout(location = 0) out vec4 fsColor;
+            layout(location = 0) in vec3 vsPosition;
+            layout(location = 1) in vec4 vsColor;
+            layout(location = 0) out vec4 fsColor;
 
-                out gl_PerVertex
-                {
-                    vec4 gl_Position;
-                };
+            out gl_PerVertex
+            {
+                vec4 gl_Position;
+            };
 
-                void main()
-                {
-                    gl_Position = ubo.projection * ubo.view * ubo.world * vec4(vsPosition, 1);
-                    fsColor = vsColor;
-                }
-            )"
-        };
-        gvk::spirv::ShaderInfo fragmentShaderInfo{
-            .language = gvk::spirv::ShadingLanguage::Glsl,
-            .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-            .lineOffset = __LINE__,
-            .source = R"(
-                #version 450
+            void main()
+            {
+                gl_Position = ubo.projection * ubo.view * ubo.world * vec4(vsPosition, 1);
+                fsColor = vsColor;
+            }
+        )";
+        gvk::spirv::ShaderInfo fragmentShaderInfo{ };
+        fragmentShaderInfo.language = gvk::spirv::ShadingLanguage::Glsl;
+        fragmentShaderInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        fragmentShaderInfo.lineOffset = __LINE__;
+        fragmentShaderInfo.source = R"(
+            #version 450
 
-                layout(location = 0) in vec4 fsColor;
-                layout(location = 0) out vec4 fragColor;
+            layout(location = 0) in vec4 fsColor;
+            layout(location = 0) out vec4 fragColor;
 
-                void main()
-                {
-                    fragColor = fsColor;
-                }
-            )"
-        };
+            void main()
+            {
+                fragColor = fsColor;
+            }
+        )";
         gvk::Pipeline pipeline;
         gvk_result(gvk_sample_create_pipeline<VertexPositionColor>(
             context.get_wsi_manager().get_render_pass(),
@@ -188,9 +186,9 @@ int main(int, const char*[])
                     auto renderPassBeginInfo = wsiManager.get_render_targets()[i].get_render_pass_begin_info();
                     vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-                    VkRect2D scissor{ .extent = extent };
+                    VkRect2D scissor{ { }, renderPassBeginInfo.renderArea.extent };
                     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-                    VkViewport viewport{ .width = (float)extent.width, .height = (float)extent.height, .minDepth = 0, .maxDepth = 1 };
+                    VkViewport viewport{ 0, 0, (float)scissor.extent.width, (float)scissor.extent.height, 0, 1 };
                     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
                     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);

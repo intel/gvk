@@ -176,7 +176,9 @@ Gets the vertex input attribute VkFormat for a given type
 template <typename T>
 inline VkFormat get_vertex_input_attribute_format()
 {
+#ifndef GVK_COMPILER_GCC
     static_assert(false, "template <> VkFormat gvk::get_vertex_input_attribute_format<UserType>() must be specialized for the given type");
+#endif
     return VK_FORMAT_UNDEFINED;
 }
 
@@ -323,12 +325,15 @@ Gets an std::array<VkVertexInputAttributeDescription, N> for a given set of vert
 template <typename ...VertexInputAttributeTypes>
 inline std::array<VkVertexInputAttributeDescription, sizeof...(VertexInputAttributeTypes)> get_vertex_input_attribute_descriptions(uint32_t binding)
 {
+    (void)binding;
     size_t offset = 0;
     std::array<size_t, sizeof...(VertexInputAttributeTypes)> sizes{ sizeof(VertexInputAttributeTypes)... };
     std::array<VkVertexInputAttributeDescription, sizeof...(VertexInputAttributeTypes)> vertexInputAttributeDescriptions{
         VkVertexInputAttributeDescription{
-            .binding = binding,
-            .format = get_vertex_input_attribute_format<VertexInputAttributeTypes>()
+            /*.location = */ 0,
+            /*.binding  = */ binding,
+            /*.format   = */ get_vertex_input_attribute_format<VertexInputAttributeTypes>(),
+            /*.offset   = */ 0,
         }...
     };
     for (size_t i = 0; i < vertexInputAttributeDescriptions.size(); ++i) {
@@ -370,7 +375,9 @@ template <typename VertexType>
 inline auto get_vertex_description(uint32_t binding)
 {
     (void)binding;
+#ifndef GVK_COMPILER_GCC
     static_assert(false, "template <> auto gvk::get_vertex_description<UserType>() must be specialized for the given type");
+#endif
 }
 
 /**

@@ -37,6 +37,12 @@ namespace detail {
 template <typename T>
 struct ArrayTupleElementWrapper final
 {
+    inline ArrayTupleElementWrapper(size_t countArg, const T* ptrArg)
+        : count { countArg }
+        , ptr { ptrArg }
+    {
+    }
+
     inline const T* begin() const
     {
         return count && ptr ? ptr : nullptr;
@@ -90,6 +96,12 @@ inline bool operator>=(const ArrayTupleElementWrapper<T>& lhs, const ArrayTupleE
 template <typename T>
 struct PointerArrayTupleElementWrapper final
 {
+    inline PointerArrayTupleElementWrapper(size_t countArg, const T* ptrArg)
+        : count { countArg }
+        , ptr { ptrArg }
+    {
+    }
+    
     inline const T* begin() const
     {
         return count && ptr ? ptr : nullptr;
@@ -241,8 +253,8 @@ inline auto make_tuple(const VkAccelerationStructureBuildGeometryInfoKHR& obj)
         obj.srcAccelerationStructure,
         obj.dstAccelerationStructure,
         obj.geometryCount,
-        detail::ArrayTupleElementWrapper{ (size_t)obj.geometryCount, obj.pGeometries },
-        detail::PointerArrayTupleElementWrapper{ (size_t)obj.geometryCount, obj.ppGeometries }
+        detail::ArrayTupleElementWrapper((size_t)obj.geometryCount, obj.pGeometries),
+        detail::PointerArrayTupleElementWrapper((size_t)obj.geometryCount, obj.ppGeometries)
         // NOTE : We're ignoring scratchData for comparisons...this can be revisited if
         //  it becomes necessary to differentiate objects by scratchData...
         // obj.scratchData
@@ -270,7 +282,7 @@ inline auto make_tuple(const VkPipelineMultisampleStateCreateInfo& obj)
         obj.rasterizationSamples,
         obj.sampleShadingEnable,
         obj.minSampleShading,
-        detail::ArrayTupleElementWrapper{ ((size_t)obj.rasterizationSamples + 31) / 32, obj.pSampleMask },
+        detail::ArrayTupleElementWrapper(((size_t)obj.rasterizationSamples + 31) / 32, obj.pSampleMask),
         obj.alphaToCoverageEnable,
         obj.alphaToOneEnable
     );
@@ -283,14 +295,14 @@ inline auto make_tuple(const VkShaderModuleCreateInfo& obj)
         detail::PNextTupleElementWrapper{ obj.pNext },
         obj.flags,
         obj.codeSize,
-        detail::ArrayTupleElementWrapper{ obj.codeSize / sizeof(uint32_t), obj.pCode }
+        detail::ArrayTupleElementWrapper(obj.codeSize / sizeof(uint32_t), obj.pCode)
     );
 }
 
 inline auto make_tuple(const VkTransformMatrixKHR& obj)
 {
     return std::make_tuple(
-        detail::ArrayTupleElementWrapper{ 12, (const float*)obj.matrix }
+        detail::ArrayTupleElementWrapper(12, (const float*)obj.matrix)
     );
 }
 

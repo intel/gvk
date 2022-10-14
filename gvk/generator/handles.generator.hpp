@@ -222,7 +222,6 @@ public:
     {
         std::vector<string::Replacement> replacements{
             { "{handleTypeName}", string::strip_vk(mHandle.name) },
-            { "{vkObjectType}", !mHandle.vkObjectType.empty() ? mHandle.vkObjectType : "{ }"},
         };
         file << std::endl;
         CompileGuardGenerator compileGuardGenerator(file, mHandle.compileGuards);
@@ -253,28 +252,44 @@ R"(    {handleTypeName}() = default;
     inline operator const Vk{handleTypeName}&() const { return mVk{handleTypeName}; }
     void reset();
     static {handleTypeName} get(Vk{handleTypeName} vk{handleTypeName});
-    template <typename ObjectType> inline ObjectType get() const { static_assert(false, "gvk::{handleTypeName} does not provide an accessor for the specified type"); }
-    template <> inline VkObjectType get<VkObjectType>() const { return {vkObjectType}; }
-    template <> inline Vk{handleTypeName} get<Vk{handleTypeName}>() const { return mVk{handleTypeName}; }
-)", replacements);
-        for (const auto& member : mMembers) {
-            if (member.type != mHandle.name) {
-                CompileGuardGenerator memberCompileGuardGenerator(file, member.compileGuards);
-                file << string::replace("    template <> {accessorType} get<{accessorType}>() const;",
-                    get_inner_scope_replacements(replacements, {
-                        { "{accessorType}", get_accessor_type(manifest, member) },
-                    })
-                ) << std::endl;
-            }
-        }
-        file << string::replace(
-R"(private:
+    template <typename ObjectType> ObjectType get() const;
+
+private:
     Vk{handleTypeName} mVk{handleTypeName} { VK_NULL_HANDLE };
     detail::Reference<detail::{handleTypeName}ControlBlock, Vk{handleTypeName}> mControlBlock;
     template <typename ControlBlockType>
     friend VkResult detail::initialize_control_block(ControlBlockType&);
 };
 )", replacements);
+    }
+
+    inline void generate_accessor_definition(File& file, const xml::Manifest& manifest) const
+    {
+        std::vector<string::Replacement> replacements{
+            { "{handleTypeName}", string::strip_vk(mHandle.name) },
+            { "{vkObjectType}", !mHandle.vkObjectType.empty() ? mHandle.vkObjectType : "{ }"},
+        };
+        file << std::endl;
+        CompileGuardGenerator compileGuardGenerator(file, mHandle.compileGuards);
+        file << string::replace(
+R"(template <typename ObjectType>
+ObjectType {handleTypeName}::get() const
+{
+    if constexpr (std::is_same_v<ObjectType, VkObjectType>) { return {vkObjectType}; }
+    if constexpr (std::is_same_v<ObjectType, Vk{handleTypeName}>) { return mVk{handleTypeName}; }
+)", replacements);
+        for (const auto& member : mMembers) {
+            if (member.type != mHandle.name) {
+                CompileGuardGenerator memberCompileGuardGenerator(file, member.compileGuards);
+                file << string::replace("    if constexpr (std::is_same_v<ObjectType, {accessorType}>) { return {accessorExpression}; }",
+                    get_inner_scope_replacements(replacements, {
+                        { "{accessorType}", get_accessor_type(manifest, member) },
+                        { "{accessorExpression}", get_accessor_expression(manifest, member) },
+                    })
+                ) << std::endl;
+            }
+        }
+        file << "}" << std::endl;
     }
 
     inline void generate_ctor_definition(File& file, const xml::Manifest& manifest, const xml::Command& command) const
@@ -360,7 +375,7 @@ R"(void {handleTypeName}::reset()
         for (const auto& member : mMembers) {
             if (member.type != mHandle.name) {
                 CompileGuardGenerator memberCompileGuardGenerator(file, member.compileGuards);
-                file << string::replace("template <> {accessorType} {handleTypeName}::get<{accessorType}>() const { return {accessorExpression}; }",
+                file << string::replace("// template <> {accessorType} {handleTypeName}::get<{accessorType}>() const { return {accessorExpression}; }",
                     get_inner_scope_replacements(replacements, {
                         { "{accessorType}", get_accessor_type(manifest, member) },
                         { "{accessorExpression}", get_accessor_expression(manifest, member) },
@@ -610,6 +625,7 @@ private:
         file << "#include \"gvk/structures.hpp\"" << std::endl;
         file << std::endl;
         file << "#include <map>" << std::endl;
+        file << "#include <type_traits>" << std::endl;
         file << "#include <vector>" << std::endl;
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk");
@@ -617,9 +633,15 @@ private:
             handleGenerator.generate_handle_declaration(file, manifest);
         }
         file << std::endl;
-        NamespaceGenerator detailNamespaceGenerator(file, "detail");
+        {
+            NamespaceGenerator detailNamespaceGenerator(file, "detail");
+            for (const auto& handleGenerator : handleGenerators) {
+                handleGenerator.generate_control_block_declaration(file, manifest);
+            }
+            file << std::endl;
+        }
         for (const auto& handleGenerator : handleGenerators) {
-            handleGenerator.generate_control_block_declaration(file, manifest);
+            handleGenerator.generate_accessor_definition(file, manifest);
         }
         file << std::endl;
     }

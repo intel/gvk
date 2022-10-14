@@ -210,6 +210,10 @@ uint32_t Context::get_physical_device_rating(const PhysicalDevice& physicalDevic
     VkPhysicalDeviceFeatures physicalDeviceFeatures { };
     dispatchTable.gvkGetPhysicalDeviceFeatures(physicalDevice, &physicalDeviceFeatures);
     uint32_t rating = 0;
+#ifdef GVK_COMPILER_GCC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#endif
     switch (physicalDeviceProperties.deviceType) {
     case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:   ++rating;
     case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU: ++rating;
@@ -219,6 +223,9 @@ uint32_t Context::get_physical_device_rating(const PhysicalDevice& physicalDevic
     default: {
     } break;
     }
+#ifdef GVK_COMPILER_GCC
+#pragma GCC diagnostic pop
+#endif
     return rating;
 }
 
