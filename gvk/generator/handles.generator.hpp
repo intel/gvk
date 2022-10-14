@@ -371,18 +371,6 @@ R"(void {handleTypeName}::reset()
     return result;
 }
 )", replacements);
-        file << std::endl;
-        for (const auto& member : mMembers) {
-            if (member.type != mHandle.name) {
-                CompileGuardGenerator memberCompileGuardGenerator(file, member.compileGuards);
-                file << string::replace("// template <> {accessorType} {handleTypeName}::get<{accessorType}>() const { return {accessorExpression}; }",
-                    get_inner_scope_replacements(replacements, {
-                        { "{accessorType}", get_accessor_type(manifest, member) },
-                        { "{accessorExpression}", get_accessor_expression(manifest, member) },
-                    })
-                ) << std::endl;
-            }
-        }
     }
 
     inline void generate_control_block_declaration(File& file, const xml::Manifest& manifest) const
