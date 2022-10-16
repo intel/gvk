@@ -119,7 +119,7 @@ struct Operation
     Operation() = default;
 
     Operation(size_t referenceCount, gvk::sys::RandomNumberGenerator& rng)
-        : type { (Operation::Type)rng.die_roll((size_t)Operation::Type::Count) }
+        : type { (Operation::Type)rng.index((size_t)Operation::Type::Count) }
         , index { rng.index(referenceCount) }
     {
     }

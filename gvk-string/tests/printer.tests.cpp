@@ -373,5 +373,4 @@ TEST(Printer, print_flags)
 TEST(Printer, to_hex_string)
 {
     EXPECT_EQ(gvk::to_hex_string(3735928559), "0xdeadbeef");
-    EXPECT_EQ(gvk::to_hex_string(3735928559, false), "deadbeef");
 }

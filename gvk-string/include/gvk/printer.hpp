@@ -500,16 +500,15 @@ inline std::string to_string(const ObjectType& obj, Printer::Flags flags = Print
 Gets the std::string representation of a specified value in hexadecimal
 @typename T The type of value to get the hexadecimal string representation of
 @param [in] value The value to get the hexadecimal string representation of
-@param [in] prepend0x (optional = true) Whether or not to prepend the resulting string with "0x"
 @return The resulting std::string
 */
 template <typename T>
-inline std::string to_hex_string(const T& value, bool prepend0x = true)
+inline std::string to_hex_string(const T& value)
 {
     std::stringstream strStr;
-    if (prepend0x) {
-        strStr << "0x";
-    }
+#if defined(_WIN32) || defined(_WIN64)
+    strStr << "0x";
+#endif
     strStr << std::hex << value;
     return strStr.str();
 }

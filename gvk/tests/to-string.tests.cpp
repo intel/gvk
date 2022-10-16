@@ -141,7 +141,7 @@ TEST(to_string, to_string)
     },
     "pNext": null,
     "flags": 0,
-    "buffer": "0x0000000000000040",
+    "buffer": "0x40",
     "format": {
         "identifier": "VK_FORMAT_R8G8B8A8_UNORM",
         "value": 37
