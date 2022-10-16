@@ -204,7 +204,7 @@ std::vector<PhysicalDevice> Context::sort_physical_devices() const
     std::sort(physicalDevices.begin(), physicalDevices.end(),
         [this](const auto& lhs, const auto& rhs)
         {
-            return get_physical_device_rating(lhs) < get_physical_device_rating(rhs);
+            return get_physical_device_rating(lhs) > get_physical_device_rating(rhs);
         }
     );
     return physicalDevices;
