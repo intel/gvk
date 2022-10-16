@@ -243,7 +243,7 @@ public:
         }
         file << string::replace(
 R"(    {handleTypeName}() = default;
-    inline {handleTypeName}(nullptr_t) { }
+    inline {handleTypeName}(std::nullptr_t) { }
     inline {handleTypeName}(Vk{handleTypeName} vk{handleTypeName}) { *this = {handleTypeName}::get(vk{handleTypeName}); };
     {handleTypeName}(const {handleTypeName}&) = default;
     {handleTypeName}({handleTypeName}&&) = default;

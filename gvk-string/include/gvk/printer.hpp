@@ -506,10 +506,7 @@ template <typename T>
 inline std::string to_hex_string(const T& value)
 {
     std::stringstream strStr;
-#if defined(_WIN32) || defined(_WIN64)
-    strStr << "0x";
-#endif
-    strStr << std::hex << value;
+    strStr << (const void*)value;
     return strStr.str();
 }
 

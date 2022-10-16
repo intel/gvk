@@ -98,9 +98,9 @@ VkResult RenderTarget::create(const Device& device, const RenderTarget::CreateIn
                 auto clearValue = get_default<VkClearValue>();
                 auto imageAspectFlags = get_image_aspect_flags(imageView.get<VkImageViewCreateInfo>().format);
                 if (imageAspectFlags & VK_IMAGE_ASPECT_COLOR_BIT) {
-                    clearValue.color = { 0, 0, 0, 1 };
+                    clearValue.color.float32[3] = 1;
                 } else {
-                    clearValue.depthStencil = { 1, 0 };
+                    clearValue.depthStencil.depth = 1;
                 }
                 pRenderTarget->mClearValues.push_back(clearValue);
             }

@@ -176,7 +176,7 @@ Gets the vertex input attribute VkFormat for a given type
 template <typename T>
 inline VkFormat get_vertex_input_attribute_format()
 {
-#ifndef GVK_COMPILER_GCC
+#ifdef GVK_COMPILER_MSVC
     static_assert(false, "template <> VkFormat gvk::get_vertex_input_attribute_format<UserType>() must be specialized for the given type");
 #endif
     return VK_FORMAT_UNDEFINED;
@@ -375,7 +375,7 @@ template <typename VertexType>
 inline auto get_vertex_description(uint32_t binding)
 {
     (void)binding;
-#ifndef GVK_COMPILER_GCC
+#ifdef GVK_COMPILER_MSVC
     static_assert(false, "template <> auto gvk::get_vertex_description<UserType>() must be specialized for the given type");
 #endif
 }
