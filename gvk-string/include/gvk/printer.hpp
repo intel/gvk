@@ -505,9 +505,9 @@ Gets the std::string representation of a specified value in hexadecimal
 template <typename T>
 inline std::string to_hex_string(const T& value)
 {
-    std::stringstream strStr;
-    strStr << (const void*)(uint64_t)value;
-    return strStr.str();
+    char str[] = "0x0000000000000000";
+    snprintf(str + 2, 16, "%llx", (uint64_t)value);
+    return str;
 }
 
 /**
