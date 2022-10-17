@@ -103,7 +103,7 @@ bool operator==(const StringArrayTupleElementWrapper& lhs, const StringArrayTupl
     static_assert(sizeof(StringTupleElementWrapper) == sizeof(const char*));
     auto pLhsWrapper = (const StringTupleElementWrapper*)lhs.ppStrs;
     auto pRhsWrapper = (const StringTupleElementWrapper*)rhs.ppStrs;
-    return ArrayTupleElementWrapper { lhs.count, pLhsWrapper } == ArrayTupleElementWrapper { rhs.count, pRhsWrapper };
+    return ArrayTupleElementWrapper<StringTupleElementWrapper> { lhs.count, pLhsWrapper } == ArrayTupleElementWrapper<StringTupleElementWrapper> { rhs.count, pRhsWrapper };
 }
 
 bool operator!=(const StringArrayTupleElementWrapper& lhs, const StringArrayTupleElementWrapper& rhs)
@@ -116,7 +116,7 @@ bool operator<(const StringArrayTupleElementWrapper& lhs, const StringArrayTuple
     static_assert(sizeof(StringTupleElementWrapper) == sizeof(const char*));
     auto pLhsWrapper = (const StringTupleElementWrapper*)lhs.ppStrs;
     auto pRhsWrapper = (const StringTupleElementWrapper*)rhs.ppStrs;
-    return ArrayTupleElementWrapper { lhs.count, pLhsWrapper } < ArrayTupleElementWrapper { rhs.count, pRhsWrapper };
+    return ArrayTupleElementWrapper<StringTupleElementWrapper> { lhs.count, pLhsWrapper } < ArrayTupleElementWrapper<StringTupleElementWrapper> { rhs.count, pRhsWrapper };
 }
 
 bool operator>(const StringArrayTupleElementWrapper& lhs, const StringArrayTupleElementWrapper& rhs)

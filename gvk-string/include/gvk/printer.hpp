@@ -506,7 +506,7 @@ template <typename T>
 inline std::string to_hex_string(const T& value)
 {
     std::stringstream strStr;
-    strStr << (const void*)value;
+    strStr << (const void*)(uint64_t)value;
     return strStr.str();
 }
 
