@@ -506,7 +506,7 @@ template <typename T>
 inline std::string to_hex_string(const T& value)
 {
     char str[] = "0x0000000000000000";
-    snprintf(str + 2, 16, "%llx", (uint64_t)value);
+    snprintf(str + 2, 16, "%llx", (long long unsigned int)value);
     return str;
 }
 
