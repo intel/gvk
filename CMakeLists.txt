@@ -89,22 +89,26 @@ if(GVK_VMA_ENABLED)
 endif()
 
 ################################################################################
-# GVK targets
-if(GVK_STRING_ENABLED)
-    add_subdirectory(gvk-string)
-endif()
-if(GVK_XML_ENABLED)
-    add_subdirectory(gvk-xml)
-endif()
-if(GVK_MATH_ENABLED)
-    add_subdirectory(gvk-math)
-endif()
-if(GVK_SYSTEM_ENABLED)
-    add_subdirectory(gvk-system)
-endif()
-if(GVK_CORE_ENABLED)
-    add_subdirectory(gvk)
-endif()
+# GVK modules
+add_library(gvk INTERFACE)
+macro(gvk_add_module module)
+    string(TOUPPER ${module} moduleEnabledOptionName)
+    string(REPLACE "-" "_" moduleEnabledOptionName ${moduleEnabledOptionName})
+    string(APPEND moduleEnabledOptionName "_ENABLED")
+    if(${${moduleEnabledOptionName}})
+        add_subdirectory(${module})
+        target_link_libraries(gvk INTERFACE ${module})
+    endif()
+endmacro()
+
+gvk_add_module(gvk-core)
+gvk_add_module(gvk-math)
+gvk_add_module(gvk-string)
+gvk_add_module(gvk-system)
+gvk_add_module(gvk-xml)
+
+################################################################################
+# GVK samples
 if(GVK_SAMPLES_ENABLED AND NOT GVK_NO_PROTOTYPES)
     add_subdirectory(samples)
 endif()

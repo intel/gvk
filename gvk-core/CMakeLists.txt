@@ -1,6 +1,6 @@
 
 ################################################################################
-# gvk.generator
+# gvk-core.generator
 set(generatedIncludeDirectory "${CMAKE_CURRENT_BINARY_DIR}/include/")
 set(generatedIncludePath "${generatedIncludeDirectory}/gvk/generated/")
 set(generatedSourcePath "${CMAKE_CURRENT_BINARY_DIR}/source/gvk/generated/")
@@ -39,7 +39,7 @@ set(generatedSourceFiles
 set(generatorSourcePath "${CMAKE_CURRENT_LIST_DIR}/generator/")
 gvk_add_code_generator(
     target
-        gvk.generator
+        gvk-core.generator
     folder
         "tools/"
     linkLibraries
@@ -80,7 +80,7 @@ if(MSVC)
 endif()
 
 ################################################################################
-# gvk
+# gvk-core
 set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
 set(includePath "${includeDirectory}/gvk/")
 set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk/")
@@ -111,7 +111,7 @@ if(GVK_VMA_ENABLED)
 endif()
 gvk_add_static_library(
     target
-        gvk
+        gvk-core
     linkLibraries
         ${linkLibraries}
     includeDirectories
@@ -156,11 +156,11 @@ gvk_add_static_library(
 )
 
 ################################################################################
-# gvk.test
+# gvk-core.test
 set(testsPath "${CMAKE_CURRENT_LIST_DIR}/tests/")
 gvk_add_target_test(
     target
-        gvk
+        gvk-core
     sourceFiles
         "${testsPath}/comparison-operator.tests.cpp"
         "${testsPath}/reference.tests.cpp"
