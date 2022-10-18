@@ -28,6 +28,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk/system/random.hpp"
 
 #include "asio.hpp"
+
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+#undef None
+#undef Bool
+#endif
 #include "gtest/gtest.h"
 
 constexpr size_t TestCount = 256;
@@ -114,7 +119,7 @@ struct Operation
     Operation() = default;
 
     Operation(size_t referenceCount, gvk::sys::RandomNumberGenerator& rng)
-        : type { (Operation::Type)rng.die_roll((size_t)Operation::Type::Count) }
+        : type { (Operation::Type)rng.index((size_t)Operation::Type::Count) }
         , index { rng.index(referenceCount) }
     {
     }
@@ -151,6 +156,10 @@ void apply_operation(
         lock.unlock();
         //  ...reference destroyed outside the lock for the reason described above...
         reference = gvk::detail::nullref;
+    } break;
+    case Operation::Type::Count:
+    {
+        assert(false);
     } break;
     }
 }

@@ -424,8 +424,8 @@ inline VkResult gvk_sample_allocate_descriptor_sets(const gvk::Pipeline& pipelin
             for (uint32_t i = 0; i < descriptorSetLayoutCreateInfo.bindingCount; ++i) {
                 const auto& descriptorSetLayoutBinding = descriptorSetLayoutCreateInfo.pBindings[i];
                 descriptorPoolSizes.push_back({
-                    .type = descriptorSetLayoutBinding.descriptorType,
-                    .descriptorCount = descriptorSetLayoutBinding.descriptorCount
+                    /* .type            = */ descriptorSetLayoutBinding.descriptorType,
+                    /* .descriptorCount = */ descriptorSetLayoutBinding.descriptorCount
                 });
             }
         }

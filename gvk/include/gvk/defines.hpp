@@ -32,6 +32,9 @@ NOTE : Best practices for loading dll/so libraries (ie. full paths instead of re
 */
 
 #ifdef __linux__
+#ifndef VK_USE_PLATFORM_XLIB_KHR
+#define VK_USE_PLATFORM_XLIB_KHR
+#endif
 #include <dlfcn.h>
 #ifndef gvk_dlopen
 #define gvk_dlopen(LIBRARY_NAME) dlopen(LIBRARY_NAME, RTLD_LAZY | RTLD_LOCAL)
@@ -71,13 +74,6 @@ NOTE : Best practices for loading dll/so libraries (ie. full paths instead of re
 #endif
 #include "vulkan/vulkan.h"
 
-#if 0
-#define VMA_DEBUG_LOG(format, ...) do { \
-    printf(format, __VA_ARGS__); \
-    printf("\n"); \
-} while(false)
-#endif
-
 #ifdef _MSVC_LANG
 #pragma warning(push, 0)
 #endif
@@ -88,6 +84,7 @@ NOTE : Best practices for loading dll/so libraries (ie. full paths instead of re
 #pragma clang diagnostic ignored "-Wunused-parameter"
 #pragma clang diagnostic ignored "-Wmissing-field-initializers"
 #pragma clang diagnostic ignored "-Wnullability-completeness"
+#pragma clang diagnostic ignored "-Wnullability-extension"
 #endif
 #define VMA_STATIC_VULKAN_FUNCTIONS 0
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 0
@@ -97,6 +94,14 @@ NOTE : Best practices for loading dll/so libraries (ie. full paths instead of re
 #endif
 #ifdef _MSVC_LANG
 #pragma warning(pop)
+#endif
+
+#if defined(__clang__)
+#define GVK_COMPILER_CLANG
+#elif defined(__GNUC__)
+#define GVK_COMPILER_GCC
+#elif defined(_MSVC_LANG)
+#define GVK_COMPILER_MSVC
 #endif
 
 #define gvk_stringify(STR) #STR

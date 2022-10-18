@@ -36,12 +36,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 #if defined(__linux__)
-#ifndef GLFW_EXPOSE_NATIVE_GLX
-#define GLFW_EXPOSE_NATIVE_GLX
-#endif
 #ifndef GLFW_EXPOSE_NATIVE_X11
 #define GLFW_EXPOSE_NATIVE_X11
 #endif
+#endif
+
+#ifndef GLFW_INCLUDE_NONE
+#define GLFW_INCLUDE_NONE
 #endif
 
 #include "GLFW/glfw3.h"
@@ -183,6 +184,20 @@ const std::array<int, 2>& Surface::get_extent() const
 {
     return mExtent;
 }
+
+#if defined(__linux__)
+void* Surface::get_display() const
+{
+    assert(mpGlfwWindow);
+    return glfwGetX11Display();
+}
+
+unsigned long Surface::get_window() const
+{
+    assert(mpGlfwWindow);
+    return glfwGetX11Window(mpGlfwWindow);
+}
+#endif
 
 #if defined(_WIN32) || defined(_WIN64)
 void* Surface::get_hwnd() const

@@ -37,6 +37,12 @@ template <> VK_STRUCTURE_TYPE create_structure_copy<VK_STRUCTURE_TYPE>(const VK_
 template <> void destroy_structure_copy<VK_STRUCTURE_TYPE>(const VK_STRUCTURE_TYPE&, const VkAllocationCallbacks*) { }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Linux
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkXlibSurfaceCreateInfoKHR)
+#endif // VK_USE_PLATFORM_XLIB_KHR
+
+////////////////////////////////////////////////////////////////////////////////
 // Win32
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkExportFenceWin32HandleInfoKHR)

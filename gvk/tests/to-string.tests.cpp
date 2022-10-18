@@ -27,6 +27,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk/to-string.hpp"
 #include "gvk/system/random.hpp"
 
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+#undef None
+#undef Bool
+#endif
 #include "gtest/gtest.h"
 
 TEST(to_string, to_string)
@@ -137,7 +141,7 @@ TEST(to_string, to_string)
     },
     "pNext": null,
     "flags": 0,
-    "buffer": "0x0000000000000040",
+    "buffer": "0x40",
     "format": {
         "identifier": "VK_FORMAT_R8G8B8A8_UNORM",
         "value": 37
@@ -214,11 +218,12 @@ TEST(to_string, to_string)
         strStrm >> value;
         return value;
     };
-    VkTransformMatrixKHR transformMatrix{
-                                  0,                           0, makeFloat("7.00214748e+37"), makeFloat("3.77726971e+37"),
-        makeFloat("1.44432763e+38"),                           0,                           0,                           0,
-                                  0, makeFloat("1.00168219e+38"),                           0, makeFloat("1.97888940e+38"),
-    };
+    VkTransformMatrixKHR transformMatrix{ };
+    transformMatrix.matrix[0][2] = makeFloat("7.00214748e+37");
+    transformMatrix.matrix[0][3] = makeFloat("3.77726971e+37");
+    transformMatrix.matrix[1][0] = makeFloat("1.44432763e+38");
+    transformMatrix.matrix[2][1] = makeFloat("1.00168219e+38");
+    transformMatrix.matrix[2][3] = makeFloat("1.97888940e+38");
     EXPECT_EQ(gvk::to_string(transformMatrix), R"({
     "matrix": [
         [ 0.00000000e+00, 0.00000000e+00, 7.00214748e+37, 3.77726971e+37 ],

@@ -219,6 +219,12 @@ template <typename ArchiveType> inline void load(ArchiveType&, VK_STRUCTURE_TYPE
 namespace cereal {
 
 ////////////////////////////////////////////////////////////////////////////////
+// Linux
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkXlibSurfaceCreateInfoKHR)
+#endif // VK_USE_PLATFORM_XLIB_KHR
+
+////////////////////////////////////////////////////////////////////////////////
 // Win32
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 GVK_STUB_CEREALIZATION_FUNCTIONS(SECURITY_ATTRIBUTES)

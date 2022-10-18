@@ -82,9 +82,13 @@ public:
     const Input& get_input() const;
     StatusFlags get_status() const;
     const std::array<int, 2>& get_extent() const;
-    #if defined(_WIN32) || defined(_WIN64)
+#if defined(__linux__)
+    void* get_display() const;
+    unsigned long get_window() const;
+#endif
+#if defined(_WIN32) || defined(_WIN64)
     void* get_hwnd() const;
-    #endif
+#endif
     static void update();
 
 private:

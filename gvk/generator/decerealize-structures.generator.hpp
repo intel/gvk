@@ -113,7 +113,7 @@ private:
 
         std::string generate_void_pointer_processor() const override final
         {
-            return "// NOPE : Void pointer '{memberName}' not serialized";
+            return "obj.{memberName} = gvk::detail::decerealize_handle<{memberType}>(archive);";
         }
 
         std::string generate_function_pointer_processor() const override final

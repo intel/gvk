@@ -31,6 +31,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk/structures.hpp"
 #include "gvk/to-string.hpp"
 
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+#undef None
+#undef Bool
+#endif
 #include "gtest/gtest.h"
 
 #include <array>
@@ -75,13 +79,7 @@ inline void validate_structure_serialization(const VulkanStructureType& obj)
 
 TEST(Serialization, Basic)
 {
-    validate_structure_serialization(
-        VkExtent3D{
-            .width = 256,
-            .height = 512,
-            .depth = 1024,
-        }
-    );
+    validate_structure_serialization(VkExtent3D{  256, 512, 1024 });
 }
 
 TEST(Serialization, Union)
@@ -204,11 +202,12 @@ TEST(Serialization, StructureWithArrayOfStringsMember)
 TEST(Serialization, StructureWithPNextMember)
 {
     VkMemoryAllocateInfo memoryAllocateInfo { };
+    memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     VkImportMemoryHostPointerInfoEXT importMemoryHostPointerInfo { };
     importMemoryHostPointerInfo.sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT;
     importMemoryHostPointerInfo.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT;
     memoryAllocateInfo.pNext = &importMemoryHostPointerInfo;
-    validate_structure_serialization(importMemoryHostPointerInfo);
+    validate_structure_serialization(memoryAllocateInfo);
 }
 
 TEST(Serialization, StructureWithDynamicArrayOfStructureWithDynamicArray)

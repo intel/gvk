@@ -18,9 +18,6 @@ Features:
  - Vulkan XML parsing utilities (used to keep the project up to date with the vk.xml)
 
 # Getting Started
-
-NOTE : Currently only Windows only, this limitation will be lifted very soon
-
 Ensure the following tools are installed...
  - [CMake](https://cmake.org/download/) v3.3+ (Make sure to select "Add to PATH" when prompted)
  - [Git](https://git-scm.com/)
@@ -66,7 +63,6 @@ target_link_libraries(someTarget PUBLIC gvk)
  - glTF save/load https://www.khronos.org/gltf/
  - imgui integration https://github.com/ocornut/imgui
  - Android support
- - Linux support
  - HLSL support
  - CMake functionality to add shader compilation to build (both for gvk itself and consuming libraries)
  - Break direct dependency on GLFW (so gvk::sys::Surface can be created from an SDL_Window, for instance)

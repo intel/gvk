@@ -1,6 +1,6 @@
 
 cmake_minimum_required(VERSION 3.3 FATAL_ERROR)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 project(gvk)
 
 ################################################################################
@@ -50,8 +50,12 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/gvk.build.cmake")
 ################################################################################
 # External dependencies
 find_package(Vulkan REQUIRED)
-set(Vulkan_SDK_DIR "${Vulkan_INCLUDE_DIRS}/../")
-set(Vulkan_XML "${Vulkan_SDK_DIR}/share/vulkan/registry/vk.xml")
+if(MSVC)
+    set(Vulkan_SDK_DIR "${Vulkan_INCLUDE_DIRS}/../")
+    set(Vulkan_XML "${Vulkan_SDK_DIR}/share/vulkan/registry/vk.xml")
+else()
+    set(Vulkan_XML "$ENV{VULKAN_SDK}/share/vulkan/registry/vk.xml")
+endif()
 
 if(GVK_TESTS_ENABLED)
     include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/googletest.cmake")

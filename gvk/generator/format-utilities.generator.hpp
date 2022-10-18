@@ -143,87 +143,74 @@ private:
             file << "        static const FormatInfo sFormatInfo {" << std::endl;
 
             // Generate FormatInfo classes array
-            if (!format.classes.empty()) {
-                file << tab << ".classes = {" << std::endl;
-                for (const auto& formatClass : format.classes) {
-                    file << tab << "    FormatClass::FC_" << string::replace(formatClass, "-", "_") << "," << std::endl;
-                }
-                file << tab << "}," << std::endl;
+            file << tab << "/* .classes          = */ std::set<FormatClass> {" << std::endl;
+            for (const auto& formatClass : format.classes) {
+                file << tab << "    FormatClass::FC_" << string::replace(formatClass, "-", "_") << "," << std::endl;
             }
+            file << tab << "}," << std::endl;
 
             // Generate FormatInfo fields
-            if (format.blockSize) {
-                file << tab << ".blockSize = " << format.blockSize << "," << std::endl;
-            }
-            if (format.texelsPerBlock) {
-                file << tab << ".texelsPerBlock = " << format.texelsPerBlock << "," << std::endl;
-            }
-            if (format.chroma) {
-                file << tab << ".chroma = " << format.chroma << "," << std::endl;
-            }
-            if (format.packed) {
-                file << tab << ".packed = " << format.packed << "," << std::endl;
-            }
+            file << tab << "/* .blockSize        = */ " << format.blockSize << "," << std::endl;
+            file << tab << "/* .texelsPerBlock   = */ " << format.texelsPerBlock << "," << std::endl;
+            file << tab << "/* .chroma           = */ " << format.chroma << "," << std::endl;
+            file << tab << "/* .packed           = */ " << format.packed << "," << std::endl;
 
             // Generate FormatInfo blockExtent field
+            file << tab << "/* .blockExtent      = */ std::array<uint32_t, 3> {" << std::endl;
             if (format.blockExtent[0] || format.blockExtent[1] || format.blockExtent[2]) {
-                file << tab << ".blockExtent = {" << std::endl;
                 for (const auto& dimension : format.blockExtent) {
                     file << tab << "    " << dimension << "," << std::endl;
                 }
-                file << tab <<"}," << std::endl;
             }
+            file << tab <<"}," << std::endl;
 
             // Generate FormatInfo compressionType field
+            std::string compressionType = "CompressionType::CT_None";
             if (!format.compressionType.empty()) {
-                file << tab << ".compressionType = CompressionType::CT_" << string::replace(format.compressionType, " ", "_") << "," << std::endl;
+                compressionType = "CompressionType::CT_" + string::replace(format.compressionType, " ", "_");
             }
+            file << tab << "/* .compressionType  = */ " << compressionType << "," << std::endl;
 
             // Generate FormatInfo numericFormat
+            std::string numericFormat = "None";
             if (!format.components.empty()) {
-                auto numericFormat = format.components.front().numericFormat;
+                numericFormat = format.components.front().numericFormat;
                 for (const auto& component : format.components) {
                     if (component.numericFormat != numericFormat) {
                         numericFormat = "None";
                         break;
                     }
                 }
-                file << tab << ".numericFormat = NumericFormat::NF_" << numericFormat << "," << std::endl;
             }
+            file << tab << "/* .numericFormat    = */ NumericFormat::NF_" << numericFormat << "," << std::endl;
 
             // Generate FormatInfo spirvImageFormat field
-            if (!format.spirvImageFormat.empty()) {
-                file << tab << ".spirvImageFormat = " << format.spirvImageFormat << "," << std::endl;
-            }
+            auto spirvImageFormat = !format.spirvImageFormat.empty() ? format.spirvImageFormat : "{ }";
+            file << tab << "/* .spirvImageFormat = */ " << spirvImageFormat << "," << std::endl;
 
             // Generate FormatInfo planes array
-            if (!format.planes.empty()) {
-                file << tab << ".planes = {" << std::endl;
-                for (const auto& plane : format.planes) {
-                    file << tab << "    {" << std::endl;
-                    file << tab << "        .index = " << plane.index << "," << std::endl;
-                    file << tab << "        .widthDivisor = " << plane.widthDivisor << "," << std::endl;
-                    file << tab << "        .heightDivisor = " << plane.heightDivisor << "," << std::endl;
-                    file << tab << "        .compatible = " << plane.compatible << "," << std::endl;
-                    file << tab << "    }," << std::endl;
-                }
-                file << tab << "}," << std::endl;
+            file << tab << "/* .planes           = */ std::vector<FormatInfo::Plane> {" << std::endl;
+            for (const auto& plane : format.planes) {
+                file << tab << "    {" << std::endl;
+                file << tab << "        /* .index         = */ " << plane.index << "," << std::endl;
+                file << tab << "        /* .widthDivisor  = */ " << plane.widthDivisor << "," << std::endl;
+                file << tab << "        /* .heightDivisor = */ " << plane.heightDivisor << "," << std::endl;
+                file << tab << "        /* .compatible    = */ " << plane.compatible << "," << std::endl;
+                file << tab << "    }," << std::endl;
             }
+            file << tab << "}," << std::endl;
 
             // Generate FormatInfo components array
-            if (!format.components.empty()) {
-                file << tab << ".components = {" << std::endl;
-                for (const auto& component : format.components) {
-                    file << tab << "    {" << std::endl;
-                    file << tab << "        .name = ComponentName::CN_" << component.name << "," << std::endl;
-                    file << tab << "        .bits = " << component.bits << "," << std::endl;
-                    file << tab << "        .numericFormat = NumericFormat::NF_" << component.numericFormat << "," << std::endl;
-                    file << tab << "        .planeIndex = " << component.planeIndex << "," << std::endl;
-                    file << tab << "    }," << std::endl;
-                }
-                file << tab << "}," << std::endl;
+            file << tab << "/* .components       = */ std::vector<FormatInfo::Component> {" << std::endl;
+            for (const auto& component : format.components) {
+                file << tab << "    {" << std::endl;
+                file << tab << "        /* .name          = */ ComponentName::CN_" << component.name << "," << std::endl;
+                file << tab << "        /* .bits          = */ " << component.bits << "," << std::endl;
+                file << tab << "        /* .numericFormat = */ NumericFormat::NF_" << component.numericFormat << "," << std::endl;
+                file << tab << "        /* .planeIndex    = */ " << component.planeIndex << "," << std::endl;
+                file << tab << "    }," << std::endl;
             }
-
+            file << tab << "}," << std::endl;
             file << "        };" << std::endl;
             file << "        return sFormatInfo;" << std::endl;
             file << "    } break;" << std::endl;

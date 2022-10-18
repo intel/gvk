@@ -75,6 +75,9 @@ gvk_add_code_generator(
         GVK_GENERATED_INCLUDE_PREFIX="gvk/generated/"
         GVK_GENERATED_SOURCE_PATH="${generatedSourcePath}"
 )
+if(MSVC)
+    set_source_files_properties("${generatedSourcePath}/comparison-operators.cpp" PROPERTIES COMPILE_FLAGS "/bigobj")
+endif()
 
 ################################################################################
 # gvk

@@ -153,7 +153,7 @@ Gets a copy of string with all leading whitespace characters removed
 @param [in] str The string to remove leading whitespace characters from
 @return The resulting std::string
 */
-inline std::string trim_leading_whitespace(const std::string& str);
+std::string trim_leading_whitespace(const std::string& str);
 
 /**
 Gets a copy of string with all trailing whitespace characters removed

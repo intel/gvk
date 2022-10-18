@@ -28,6 +28,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk/generated/dispatch-table.hpp"
 #include "gvk/generated/format-utilities.hpp"
+#include "gvk/defaults.hpp"
 #include "gvk/defines.hpp"
 
 #include <array>

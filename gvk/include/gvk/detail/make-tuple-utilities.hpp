@@ -90,18 +90,18 @@ inline bool operator>=(const ArrayTupleElementWrapper<T>& lhs, const ArrayTupleE
 template <typename T>
 struct PointerArrayTupleElementWrapper final
 {
-    inline const T* begin() const
+    inline const T* const* begin() const
     {
         return count && ptr ? ptr : nullptr;
     }
 
-    inline const T* end() const
+    inline const T* const* end() const
     {
         return count && ptr ? ptr + count : nullptr;
     }
 
     size_t count{ };
-    const T* ptr{ };
+    const T* const* ptr{ };
 };
 
 template <typename T>
@@ -111,7 +111,7 @@ inline bool operator==(const PointerArrayTupleElementWrapper<T>& lhs, const Poin
         lhs.begin(), lhs.end(), rhs.begin(), rhs.end(),
         [](auto lhsPtr, auto rhsPtr)
         {
-            return ArrayTupleElementWrapper{ 1, lhsPtr } == ArrayTupleElementWrapper{ 1, rhsPtr };
+            return ArrayTupleElementWrapper<T> { 1, lhsPtr } == ArrayTupleElementWrapper<T> { 1, rhsPtr };
         }
     );
 }
@@ -129,7 +129,7 @@ inline bool operator<(const PointerArrayTupleElementWrapper<T>& lhs, const Point
         lhs.begin(), lhs.end(), rhs.begin(), rhs.end(),
         [](auto lhsPtr, auto rhsPtr)
         {
-            return ArrayTupleElementWrapper{ 1, lhsPtr } < ArrayTupleElementWrapper{ 1, rhsPtr };
+            return ArrayTupleElementWrapper<T> { 1, lhsPtr } < ArrayTupleElementWrapper<T> { 1, rhsPtr };
         }
     );
 }
@@ -195,6 +195,12 @@ bool operator>=(const StringArrayTupleElementWrapper& lhs, const StringArrayTupl
 inline auto make_tuple(const VK_STRUCTURE_TYPE&) { return std::make_tuple(0); }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Linux
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkXlibSurfaceCreateInfoKHR)
+#endif // VK_USE_PLATFORM_XLIB_KHR
+
+////////////////////////////////////////////////////////////////////////////////
 // Win32
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 GVK_STUB_MAKE_TUPLE_DEFINITION(SECURITY_ATTRIBUTES)
@@ -241,8 +247,8 @@ inline auto make_tuple(const VkAccelerationStructureBuildGeometryInfoKHR& obj)
         obj.srcAccelerationStructure,
         obj.dstAccelerationStructure,
         obj.geometryCount,
-        detail::ArrayTupleElementWrapper{ (size_t)obj.geometryCount, obj.pGeometries },
-        detail::PointerArrayTupleElementWrapper{ (size_t)obj.geometryCount, obj.ppGeometries }
+        detail::ArrayTupleElementWrapper<VkAccelerationStructureGeometryKHR>{ (size_t)obj.geometryCount, obj.pGeometries },
+        detail::PointerArrayTupleElementWrapper<VkAccelerationStructureGeometryKHR>{ (size_t)obj.geometryCount, obj.ppGeometries }
         // NOTE : We're ignoring scratchData for comparisons...this can be revisited if
         //  it becomes necessary to differentiate objects by scratchData...
         // obj.scratchData
@@ -270,7 +276,7 @@ inline auto make_tuple(const VkPipelineMultisampleStateCreateInfo& obj)
         obj.rasterizationSamples,
         obj.sampleShadingEnable,
         obj.minSampleShading,
-        detail::ArrayTupleElementWrapper{ ((size_t)obj.rasterizationSamples + 31) / 32, obj.pSampleMask },
+        detail::ArrayTupleElementWrapper<VkSampleMask>{ ((size_t)obj.rasterizationSamples + 31) / 32, obj.pSampleMask },
         obj.alphaToCoverageEnable,
         obj.alphaToOneEnable
     );
@@ -283,14 +289,14 @@ inline auto make_tuple(const VkShaderModuleCreateInfo& obj)
         detail::PNextTupleElementWrapper{ obj.pNext },
         obj.flags,
         obj.codeSize,
-        detail::ArrayTupleElementWrapper{ obj.codeSize / sizeof(uint32_t), obj.pCode }
+        detail::ArrayTupleElementWrapper<uint32_t>{ obj.codeSize / sizeof(uint32_t), obj.pCode }
     );
 }
 
 inline auto make_tuple(const VkTransformMatrixKHR& obj)
 {
     return std::make_tuple(
-        detail::ArrayTupleElementWrapper{ 12, (const float*)obj.matrix }
+        detail::ArrayTupleElementWrapper<float>{ 12, (const float*)obj.matrix }
     );
 }
 
