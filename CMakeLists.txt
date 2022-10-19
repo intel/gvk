@@ -31,11 +31,14 @@ cmake_dependent_option(GVK_XML_ENABLED            "" ON
 option                (GVK_MATH_ENABLED           "" ON)
 option                (GVK_SYSTEM_ENABLED         "" ON)
 cmake_dependent_option(GVK_CORE_ENABLED           "" ON
-    "GVK_STRING_ENABLED;GVK_XML_ENABLED;GVK_MATH_ENABLED;GVK_SYSTEM_ENABLED;GVK_ASIO_ENABLED;GVK_CEREAL_ENABLED;GVK_VMA_ENABLED" OFF
+    "GVK_STRING_ENABLED;GVK_XML_ENABLED;GVK_SYSTEM_ENABLED;GVK_ASIO_ENABLED;GVK_CEREAL_ENABLED;GVK_VMA_ENABLED" OFF
+)
+cmake_dependent_option(GVK_SPIRV_ENABLED          "" ON
+    "GVK_CORE_ENABLED;GVK_GLSLANG_ENABLED;GVK_SPIRV_CROSS_ENABLED" OFF
 )
 # Samples options
 cmake_dependent_option(GVK_SAMPLES_ENABLED        "" ON
-    "GVK_CORE_ENABLED;GVK_GLFW_ENABLED;GVK_GLM_ENABLED;GVK_GLSLANG_ENABLED;GVK_SPIRV_CROSS_ENABLED;GVK_STB_ENABLED" OFF
+    "GVK_CORE_ENABLED;GVK_SPIRV_ENABLED;GVK_GLFW_ENABLED;GVK_GLM_ENABLED;GVK_STB_ENABLED" OFF
 )
 # CI options
 option                (GVK_CREATE_CI_SCAN_PACKAGE "" OFF)
@@ -103,6 +106,7 @@ endmacro()
 
 gvk_add_module(gvk-core)
 gvk_add_module(gvk-math)
+gvk_add_module(gvk-spirv)
 gvk_add_module(gvk-string)
 gvk_add_module(gvk-system)
 gvk_add_module(gvk-xml)

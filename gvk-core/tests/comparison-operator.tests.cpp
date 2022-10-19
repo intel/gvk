@@ -27,7 +27,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define _CRT_SECURE_NO_WARNINGS
 
 #include "gvk/generated/comparison-operators.hpp"
-#include "gvk/spir-v.hpp"
+#include "gvk/defaults.hpp"
 
 #ifdef VK_USE_PLATFORM_XLIB_KHR
 #undef None

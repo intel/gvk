@@ -29,6 +29,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk/math/camera.hpp"
 #include "gvk/math/color.hpp"
 #include "gvk/math/transform.hpp"
+#include "gvk/spirv/context.hpp"
 #include "gvk/system/time.hpp"
 #include "gvk/context.hpp"
 #include "gvk/defaults.hpp"
@@ -36,7 +37,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk/handles.hpp"
 #include "gvk/mesh.hpp"
 #include "gvk/render-target.hpp"
-#include "gvk/spir-v.hpp"
 #include "gvk/structures.hpp"
 #include "gvk/to-string.hpp"
 #include "gvk-sample-png.hpp"
@@ -174,24 +174,56 @@ protected:
 };
 
 // Following are the vertex types used in gvk samples.  Each vertex type has a
-//  corresponding gvk::get_vertex_description<>() specialization that is used
-//  to create VkVertexInputBindingDescriptions when creating pipelines...
+//  gvk::get_vertex_description<>() specialization, and each member type has a
+//  gvk::get_vertex_input_attribute_format<>() specialization.  These are used
+//  to prepare VkVertexInputBindingDescriptions when creating pipelines...
 
 struct EmptyVertex
 {
 };
-
-template <>
-inline auto gvk::get_vertex_description<EmptyVertex>(uint32_t binding)
-{
-    return gvk::get_vertex_input_attribute_descriptions<>(binding);
-}
 
 struct VertexPositionColor
 {
     glm::vec3 position;
     glm::vec4 color;
 };
+
+struct VertexPositionTexcoord
+{
+    glm::vec3 position;
+    glm::vec2 texcoord;
+};
+
+struct VertexPositionTexcoordColor
+{
+    glm::vec3 position;
+    glm::vec2 texcoord;
+    glm::vec4 color;
+};
+
+template <>
+inline VkFormat gvk::get_vertex_input_attribute_format<glm::vec2>()
+{
+    return VK_FORMAT_R32G32_SFLOAT;
+}
+
+template <>
+inline VkFormat gvk::get_vertex_input_attribute_format<glm::vec3>()
+{
+    return VK_FORMAT_R32G32B32_SFLOAT;
+}
+
+template <>
+inline VkFormat gvk::get_vertex_input_attribute_format<glm::vec4>()
+{
+    return VK_FORMAT_R32G32B32A32_SFLOAT;
+}
+
+template <>
+inline auto gvk::get_vertex_description<EmptyVertex>(uint32_t binding)
+{
+    return gvk::get_vertex_input_attribute_descriptions<>(binding);
+}
 
 template <>
 inline auto gvk::get_vertex_description<VertexPositionColor>(uint32_t binding)
@@ -202,12 +234,6 @@ inline auto gvk::get_vertex_description<VertexPositionColor>(uint32_t binding)
     >(binding);
 }
 
-struct VertexPositionTexcoord
-{
-    glm::vec3 position;
-    glm::vec2 texcoord;
-};
-
 template <>
 inline auto gvk::get_vertex_description<VertexPositionTexcoord>(uint32_t binding)
 {
@@ -216,13 +242,6 @@ inline auto gvk::get_vertex_description<VertexPositionTexcoord>(uint32_t binding
         glm::vec2
     >(binding);
 }
-
-struct VertexPositionTexcoordColor
-{
-    glm::vec3 position;
-    glm::vec2 texcoord;
-    glm::vec4 color;
-};
 
 template <>
 inline auto gvk::get_vertex_description<VertexPositionTexcoordColor>(uint32_t binding)

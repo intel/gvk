@@ -24,7 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "gvk/spir-v.hpp"
+#include "gvk/spirv/context.hpp"
 #include "gvk/defaults.hpp"
 
 #ifdef GVK_GLSLANG_ENABLED

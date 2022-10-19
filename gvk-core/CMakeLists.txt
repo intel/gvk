@@ -85,10 +85,8 @@ set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
 set(includePath "${includeDirectory}/gvk/")
 set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk/")
 list(APPEND linkLibraries
-    gvk-math
     gvk-string
     gvk-system
-    gvk-xml
     Vulkan::Vulkan
 )
 if(GVK_ASIO_ENABLED)
@@ -96,12 +94,6 @@ if(GVK_ASIO_ENABLED)
 endif()
 if(GVK_CEREAL_ENABLED)
     list(APPEND linkLibraries cereal)
-endif()
-if(GVK_GLSLANG_ENABLED)
-    list(APPEND linkLibraries glslang_INTERFACE)
-endif()
-if(GVK_SPIRV_CROSS_ENABLED)
-    list(APPEND linkLibraries SPIRV-Cross_INTERFACE)
 endif()
 if(GVK_STB_ENABLED)
     list(APPEND linkLibraries stb)
@@ -133,7 +125,6 @@ gvk_add_static_library(
         "${includePath}/mesh.hpp"
         "${includePath}/render-target.hpp"
         "${includePath}/serialization.hpp"
-        "${includePath}/spir-v.hpp"
         "${includePath}/structures.hpp"
         "${includePath}/to-string.hpp"
         "${includePath}/wsi-manager.hpp"
@@ -150,7 +141,6 @@ gvk_add_static_library(
         "${sourcePath}/format.cpp"
         "${sourcePath}/mesh.cpp"
         "${sourcePath}/render-target.cpp"
-        "${sourcePath}/spir-v.cpp"
         "${sourcePath}/wsi-manager.cpp"
         "${generatedSourceFiles}"
 )
@@ -166,7 +156,6 @@ gvk_add_target_test(
         "${testsPath}/reference.tests.cpp"
         "${testsPath}/render-target.tests.cpp"
         "${testsPath}/structure-serialization.tests.cpp"
-        "${testsPath}/spir-v.tests.cpp"
         "${testsPath}/structure-copy.tests.cpp"
         "${testsPath}/to-string.tests.cpp"
 )

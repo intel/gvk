@@ -26,7 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(GVK_GLSLANG_ENABLED) && defined(GVK_SPIRV_CROSS_ENABLED)
 
-#include "gvk/spir-v.hpp"
+#include "gvk/spirv/context.hpp"
 #include "gvk/context.hpp"
 
 #ifdef VK_USE_PLATFORM_XLIB_KHR
@@ -425,7 +425,7 @@ TEST(spirv, BindingInfo_PushConstants)
             VkPushConstantRange{
                 /* .stageFlags = */ VK_SHADER_STAGE_VERTEX_BIT,
                 /* .offset     = */ 0,
-                /* .size       = */ sizeof(glm::mat4),
+                /* .size       = */ sizeof(float) * 16,
             }
         }
     );

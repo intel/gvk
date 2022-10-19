@@ -42,8 +42,8 @@ On Windows, open `gvk/build/gvk.sln` in Visual Studio, navigate to `gvk/samples/
 Somewhere in your CMakeLists, add the following...
 ```
 include(FetchContent)
-set(GVK_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(GVK_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
+set(GVK_TESTS_ENABLED OFF CACHE BOOL "" FORCE)
+set(GVK_SAMPLES_ENABLED OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     gvk
     GIT_REPOSITORY "https://github.com/intel/gvk.git"
@@ -54,6 +54,10 @@ FetchContent_MakeAvailable(gvk)
 ...then...
 ```
 target_link_libraries(someTarget PUBLIC gvk)
+```
+...or link individual modules...
+```
+target_link_libraries(someTarget PUBLIC gvk-core gvk-xml)
 ```
 
 # TODO : (in no particular order)
