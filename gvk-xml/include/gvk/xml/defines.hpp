@@ -26,7 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "tinyxml2.h"
+#include "tinyxml2/tinyxml2.h"
 
 #include <cstdint>
 
