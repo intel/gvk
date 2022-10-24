@@ -57,4 +57,4 @@ add_custom_target(
   gvk.xml-to-json.runner ALL
   COMMAND gvk.xml-to-json > gvk.json
 )
-set_target_properties(gvk.xml-to-json.runner PROPERTIES FOLDER "gvk/tools/")
+set_target_properties(gvk.xml-to-json.runner PROPERTIES FOLDER "${GVK_IDE_FOLDER}/tools/")

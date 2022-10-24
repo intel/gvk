@@ -11,5 +11,5 @@ FetchContent_Declare(
     FETCHCONTENT_UPDATES_DISCONNECTED
 )
 FetchContent_MakeAvailable(glfw)
-set_target_properties(glfw PROPERTIES FOLDER "gvk/external/glfw/")
-set_target_properties(update_mappings PROPERTIES FOLDER "gvk/external/glfw/")
+set_target_properties(glfw PROPERTIES FOLDER "${GVK_IDE_FOLDER}/external/glfw/")
+set_target_properties(update_mappings PROPERTIES FOLDER "${GVK_IDE_FOLDER}/external/glfw/")

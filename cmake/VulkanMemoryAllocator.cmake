@@ -8,4 +8,4 @@ FetchContent_Declare(
     FETCHCONTENT_UPDATES_DISCONNECTED
 )
 FetchContent_MakeAvailable(VulkanMemoryAllocator)
-set_target_properties(VulkanMemoryAllocator PROPERTIES FOLDER "gvk/external/")
+set_target_properties(VulkanMemoryAllocator PROPERTIES FOLDER "${GVK_IDE_FOLDER}/external/")

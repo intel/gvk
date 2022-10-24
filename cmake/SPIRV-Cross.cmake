@@ -11,7 +11,7 @@ FetchContent_Declare(
     FETCHCONTENT_UPDATES_DISCONNECTED
 )
 FetchContent_MakeAvailable(SPIRV-Cross)
-set(folder "gvk/external/spirv-cross/")
+set(folder "${GVK_IDE_FOLDER}/external/spirv-cross/")
 set_target_properties(spirv-cross-c       PROPERTIES FOLDER "${folder}")
 set_target_properties(spirv-cross-core    PROPERTIES FOLDER "${folder}")
 set_target_properties(spirv-cross-cpp     PROPERTIES FOLDER "${folder}")

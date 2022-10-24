@@ -12,7 +12,7 @@ FetchContent_Declare(
     FETCHCONTENT_UPDATES_DISCONNECTED
 )
 FetchContent_MakeAvailable(glslang)
-set(folder "gvk/external/glslang/")
+set(folder "${GVK_IDE_FOLDER}/external/glslang/")
 set_target_properties(GenericCodeGen     PROPERTIES FOLDER "${folder}")
 set_target_properties(glslang            PROPERTIES FOLDER "${folder}")
 set_target_properties(MachineIndependent PROPERTIES FOLDER "${folder}")
