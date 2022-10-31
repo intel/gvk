@@ -26,7 +26,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#endif
+
 #include "tinyxml2/tinyxml2.h"
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 #include <cstdint>
 

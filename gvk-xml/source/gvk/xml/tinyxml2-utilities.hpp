@@ -29,8 +29,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk/xml/defines.hpp"
 #include "gvk/string.hpp"
 
-#include "tinyxml2/tinyxml2.h"
-
 #include <string>
 
 namespace gvk {
