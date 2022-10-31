@@ -1,4 +1,8 @@
 
+include_guard()
+
+include(FetchContent)
+
 set(JUST_INSTALL_CEREAL ON CACHE BOOL "" FORCE)
 FetchContent_Declare(
     cereal

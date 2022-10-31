@@ -1,4 +1,8 @@
 
+include_guard()
+
+include(FetchContent)
+
 set(VMA_STATIC_VULKAN_FUNCTIONS OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     VulkanMemoryAllocator

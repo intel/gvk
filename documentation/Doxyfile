@@ -41,7 +41,7 @@ DOXYFILE_ENCODING      = UTF-8
 # title of most generated pages and in a few other places.
 # The default value is: My Project.
 
-PROJECT_NAME           = "Intel GVK"
+PROJECT_NAME           = "Intel® Graphics Performance Analyzer Utilities for Vulkan*"
 
 # The PROJECT_NUMBER tag can be used to enter a project or revision number. This
 # could be handy for archiving the generated documentation or if some version
@@ -906,8 +906,10 @@ WARN_LOGFILE           =
 # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = ../gvk/include/
+INPUT                  = ../build/gvk-core/include/
+INPUT                 += ../gvk-core/include/
 INPUT                 += ../gvk-math/include/
+INPUT                 += ../gvk-spirv/include/
 INPUT                 += ../gvk-string/include/
 INPUT                 += ../gvk-system/include/
 INPUT                 += ../gvk-xml/include/

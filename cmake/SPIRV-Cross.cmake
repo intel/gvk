@@ -1,4 +1,8 @@
 
+include_guard()
+
+include(FetchContent)
+
 set(SPIRV_CROSS_CLI          OFF CACHE BOOL "" FORCE)
 set(SPIRV_CROSS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
 set(SPIRV_CROSS_FORCE_PIC    ON  CACHE BOOL "" FORCE)

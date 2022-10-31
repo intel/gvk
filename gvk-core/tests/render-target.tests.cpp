@@ -39,60 +39,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <iostream>
 #include <sstream>
 
-class RenderTargetValidationContext final
-    : public gvk::Context
-{
-public:
-    static VkBool32 debug_utils_messenger_callback(
-        VkDebugUtilsMessageSeverityFlagBitsEXT,
-        VkDebugUtilsMessageTypeFlagsEXT,
-        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-        void* pUserData
-    )
-    {
-        assert(pCallbackData);
-        assert(pCallbackData->pMessage);
-        assert(pUserData);
-        std::cerr << pCallbackData->pMessage << std::endl;
-        ((RenderTargetValidationContext*)pUserData)->mValidationMessages.push_back(pCallbackData->pMessage);
-        return VK_FALSE;
-    }
-
-    static VkResult create(RenderTargetValidationContext* pContext)
-    {
-        auto debugUtilsMessengerCreateInfo = gvk::get_default<VkDebugUtilsMessengerCreateInfoEXT>();
-        debugUtilsMessengerCreateInfo.messageSeverity =
-            VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-            VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-        debugUtilsMessengerCreateInfo.messageType =
-            VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-            VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-            VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-        debugUtilsMessengerCreateInfo.pfnUserCallback = debug_utils_messenger_callback;
-        debugUtilsMessengerCreateInfo.pUserData = pContext;
-        gvk::Context::CreateInfo contextCreateInfo{ };
-        contextCreateInfo.pDebugUtilsMessengerCreateInfo = &debugUtilsMessengerCreateInfo;
-        return gvk::Context::create(&contextCreateInfo, nullptr, pContext);
-    }
-
-    ~RenderTargetValidationContext()
-    {
-        if (!mValidationMessages.empty()) {
-            std::stringstream strStrm;
-            strStrm << "===============================================================================" << std::endl;
-            for (const auto& validationMessage : mValidationMessages) {
-                strStrm << validationMessage << std::endl;
-                strStrm << "-------------------------------------------------------------------------------" << std::endl;
-            }
-            strStrm << "===============================================================================" << std::endl;
-            ADD_FAILURE() << strStrm.str();
-        }
-    }
-
-private:
-    std::vector<std::string> mValidationMessages;
-};
-
 struct RenderTargetValidationCreateInfo
 {
     VkExtent2D extent{ };
@@ -265,252 +211,251 @@ void validate_render_target(
 
 TEST(RenderTarget, ResourceCreation)
 {
-    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
-        RenderTargetValidationContext context;
-        gvk_result(RenderTargetValidationContext::create(&context));
+    gvk::Context context;
+    ASSERT_EQ(gvk::Context::create(&gvk::get_default<gvk::Context::CreateInfo>(), nullptr, &context), VK_SUCCESS);
 
-        // Get color VkFormat
-        auto colorFormat = VK_FORMAT_UNDEFINED;
-        gvk::enumerate_formats(
-            context.get_devices()[0].get<gvk::PhysicalDevice>(),
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT,
-            [&](VkFormat format)
-            {
-                const auto& formatInfo = gvk::get_format_info(format);
-                if (formatInfo.components.size() == 4 &&
-                    formatInfo.bits_per_pixel() == 32 &&
-                    formatInfo.compressionType == gvk::CompressionType::CT_None &&
-                    formatInfo.numericFormat == gvk::NumericFormat::NF_UNORM &&
-                    !formatInfo.packed &&
-                    !formatInfo.chroma
-                ) {
-                    colorFormat = format;
-                }
-                return colorFormat == VK_FORMAT_UNDEFINED;
+    // Get color VkFormat
+    auto colorFormat = VK_FORMAT_UNDEFINED;
+    gvk::enumerate_formats(
+        context.get_devices()[0].get<gvk::PhysicalDevice>(),
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT,
+        [&](VkFormat format)
+        {
+            std::cout << gvk::to_string(format) << std::endl;
+            const auto& formatInfo = gvk::get_format_info(format);
+            if (formatInfo.components.size() == 4 &&
+                formatInfo.bits_per_pixel() == 32 &&
+                formatInfo.compressionType == gvk::CompressionType::CT_None &&
+                formatInfo.numericFormat == gvk::NumericFormat::NF_UNORM &&
+                !formatInfo.packed &&
+                !formatInfo.chroma
+            ) {
+                colorFormat = format;
             }
-        );
-        EXPECT_EQ(colorFormat, VK_FORMAT_R8G8B8A8_UNORM);
+            return colorFormat == VK_FORMAT_UNDEFINED;
+        }
+    );
+    EXPECT_EQ(colorFormat, VK_FORMAT_R8G8B8A8_UNORM);
 
-        // Get depth VkFormat
-        auto depthFormat = VK_FORMAT_UNDEFINED;
-        auto requestedDepthFormat = VK_FORMAT_D32_SFLOAT;
-        auto requestedDepthBits = gvk::get_format_info(requestedDepthFormat).components[0].bits;
-        gvk::enumerate_formats(
-            context.get_devices()[0].get<gvk::PhysicalDevice>(),
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT,
-            [&](VkFormat format)
-            {
-                if (format == requestedDepthFormat) {
-                    depthFormat = requestedDepthFormat;
-                } else {
-                    auto actualDepthBits = depthFormat ? gvk::get_format_info(depthFormat).components[0].bits : 0;
-                    auto formatDepthBits = gvk::get_format_info(format).components[0].bits;
-                    if (actualDepthBits < formatDepthBits && formatDepthBits <= requestedDepthBits) {
-                        depthFormat = format;
-                    }
-                }
-                return depthFormat != requestedDepthFormat;
-            }
-        );
-        EXPECT_NE(depthFormat, VK_FORMAT_UNDEFINED);
-
-        // Get VkSampleCountFlagBits
-        const auto& physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
-        auto sampleCount = gvk::get_max_framebuffer_sample_count(physicalDevice, VK_TRUE, VK_TRUE, VK_FALSE);
-
-        // Prepare RenderTargetValidationCreateInfo
-        auto renderTargetValidationCreateInfo = gvk::get_default<RenderTargetValidationCreateInfo>();
-        renderTargetValidationCreateInfo.extent = { 1024, 1024 };
-
-        // MSAA  : No
-        // Color : Yes
-        // Depth : No
-        renderTargetValidationCreateInfo.sampleCount = VK_SAMPLE_COUNT_1_BIT;
-        renderTargetValidationCreateInfo.colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
-        renderTargetValidationCreateInfo.depthFormat = VK_FORMAT_UNDEFINED;
-        validate_render_target(
-            context,
-            renderTargetValidationCreateInfo,
-            {
-                VkImageCreateInfo{
-                    /* .sType                 = */ gvk::get_stype<VkImageCreateInfo>(),
-                    /* .pNext                 = */ nullptr,
-                    /* .flags                 = */ 0,
-                    /* .imageType             = */ VK_IMAGE_TYPE_2D,
-                    /* .format                = */ VK_FORMAT_R8G8B8A8_UNORM,
-                    /* .extent                = */ { 1024, 1024, 1 },
-                    /* .mipLevels             = */ 1,
-                    /* .arrayLayers           = */ 1,
-                    /* .samples               = */ VK_SAMPLE_COUNT_1_BIT,
-                    /* .tiling                = */ VK_IMAGE_TILING_OPTIMAL,
-                    /* .usage                 = */ VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                    /* .sharingMode           = */ VK_SHARING_MODE_EXCLUSIVE,
-                    /* .queueFamilyIndexCount = */ 0,
-                    /* .pQueueFamilyIndices   = */ nullptr,
-                    /* .initialLayout         = */ VK_IMAGE_LAYOUT_UNDEFINED,
+    // Get depth VkFormat
+    auto depthFormat = VK_FORMAT_UNDEFINED;
+    auto requestedDepthFormat = VK_FORMAT_D32_SFLOAT;
+    auto requestedDepthBits = gvk::get_format_info(requestedDepthFormat).components[0].bits;
+    gvk::enumerate_formats(
+        context.get_devices()[0].get<gvk::PhysicalDevice>(),
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT,
+        [&](VkFormat format)
+        {
+            std::cout << gvk::to_string(format) << std::endl;
+            if (format == requestedDepthFormat) {
+                depthFormat = requestedDepthFormat;
+            } else {
+                auto actualDepthBits = depthFormat ? gvk::get_format_info(depthFormat).components[0].bits : 0;
+                auto formatDepthBits = gvk::get_format_info(format).components[0].bits;
+                if (actualDepthBits < formatDepthBits && formatDepthBits <= requestedDepthBits) {
+                    depthFormat = format;
                 }
             }
-        );
+            return depthFormat != requestedDepthFormat;
+        }
+    );
+    EXPECT_NE(depthFormat, VK_FORMAT_UNDEFINED);
 
-        // MSAA  : Yes
-        // Color : Yes
-        // Depth : No
-        renderTargetValidationCreateInfo.sampleCount = sampleCount;
-        renderTargetValidationCreateInfo.colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
-        renderTargetValidationCreateInfo.depthFormat = VK_FORMAT_UNDEFINED;
-        validate_render_target(
-            context,
-            renderTargetValidationCreateInfo,
-            {
-                VkImageCreateInfo{
-                    /* .sType                 = */ gvk::get_stype<VkImageCreateInfo>(),
-                    /* .pNext                 = */ nullptr,
-                    /* .flags                 = */ 0,
-                    /* .imageType             = */ VK_IMAGE_TYPE_2D,
-                    /* .format                = */ VK_FORMAT_R8G8B8A8_UNORM,
-                    /* .extent                = */ { 1024, 1024, 1 },
-                    /* .mipLevels             = */ 1,
-                    /* .arrayLayers           = */ 1,
-                    /* .samples               = */ sampleCount,
-                    /* .tiling                = */ VK_IMAGE_TILING_OPTIMAL,
-                    /* .usage                 = */ VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                    /* .sharingMode           = */ VK_SHARING_MODE_EXCLUSIVE,
-                    /* .queueFamilyIndexCount = */ 0,
-                    /* .pQueueFamilyIndices   = */ nullptr,
-                    /* .initialLayout         = */ VK_IMAGE_LAYOUT_UNDEFINED,
-                },
-                VkImageCreateInfo{
-                    /* .sType                 = */ gvk::get_stype<VkImageCreateInfo>(),
-                    /* .pNext                 = */ nullptr,
-                    /* .flags                 = */ 0,
-                    /* .imageType             = */ VK_IMAGE_TYPE_2D,
-                    /* .format                = */ VK_FORMAT_R8G8B8A8_UNORM,
-                    /* .extent                = */ { 1024, 1024, 1 },
-                    /* .mipLevels             = */ 1,
-                    /* .arrayLayers           = */ 1,
-                    /* .samples               = */ VK_SAMPLE_COUNT_1_BIT,
-                    /* .tiling                = */ VK_IMAGE_TILING_OPTIMAL,
-                    /* .usage                 = */ VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                    /* .sharingMode           = */ VK_SHARING_MODE_EXCLUSIVE,
-                    /* .queueFamilyIndexCount = */ 0,
-                    /* .pQueueFamilyIndices   = */ nullptr,
-                    /* .initialLayout         = */ VK_IMAGE_LAYOUT_UNDEFINED,
-                }
-            }
-        );
+    // Get VkSampleCountFlagBits
+    const auto& physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
+    auto sampleCount = gvk::get_max_framebuffer_sample_count(physicalDevice, VK_TRUE, VK_TRUE, VK_FALSE);
 
-        // MSAA  : No
-        // Color : Yes
-        // Depth : Yes
-        renderTargetValidationCreateInfo.sampleCount = VK_SAMPLE_COUNT_1_BIT;
-        renderTargetValidationCreateInfo.colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
-        renderTargetValidationCreateInfo.depthFormat = depthFormat;
-        validate_render_target(
-            context,
-            renderTargetValidationCreateInfo,
-            {
-                VkImageCreateInfo{
-                    /* .sType                 = */ gvk::get_stype<VkImageCreateInfo>(),
-                    /* .pNext                 = */ nullptr,
-                    /* .flags                 = */ 0,
-                    /* .imageType             = */ VK_IMAGE_TYPE_2D,
-                    /* .format                = */ VK_FORMAT_R8G8B8A8_UNORM,
-                    /* .extent                = */ { 1024, 1024, 1 },
-                    /* .mipLevels             = */ 1,
-                    /* .arrayLayers           = */ 1,
-                    /* .samples               = */ VK_SAMPLE_COUNT_1_BIT,
-                    /* .tiling                = */ VK_IMAGE_TILING_OPTIMAL,
-                    /* .usage                 = */ VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                    /* .sharingMode           = */ VK_SHARING_MODE_EXCLUSIVE,
-                    /* .queueFamilyIndexCount = */ 0,
-                    /* .pQueueFamilyIndices   = */ nullptr,
-                    /* .initialLayout         = */ VK_IMAGE_LAYOUT_UNDEFINED,
-                },
-                VkImageCreateInfo{
-                    /* .sType                 = */ gvk::get_stype<VkImageCreateInfo>(),
-                    /* .pNext                 = */ nullptr,
-                    /* .flags                 = */ 0,
-                    /* .imageType             = */ VK_IMAGE_TYPE_2D,
-                    /* .format                = */ depthFormat,
-                    /* .extent                = */ { 1024, 1024, 1 },
-                    /* .mipLevels             = */ 1,
-                    /* .arrayLayers           = */ 1,
-                    /* .samples               = */ VK_SAMPLE_COUNT_1_BIT,
-                    /* .tiling                = */ VK_IMAGE_TILING_OPTIMAL,
-                    /* .usage                 = */ VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                    /* .sharingMode           = */ VK_SHARING_MODE_EXCLUSIVE,
-                    /* .queueFamilyIndexCount = */ 0,
-                    /* .pQueueFamilyIndices   = */ nullptr,
-                    /* .initialLayout         = */ VK_IMAGE_LAYOUT_UNDEFINED,
-                }
-            }
-        );
+    // Prepare RenderTargetValidationCreateInfo
+    auto renderTargetValidationCreateInfo = gvk::get_default<RenderTargetValidationCreateInfo>();
+    renderTargetValidationCreateInfo.extent = { 1024, 1024 };
 
-        // MSAA  : Yes
-        // Color : Yes
-        // Depth : Yes
-        renderTargetValidationCreateInfo.sampleCount = sampleCount;
-        renderTargetValidationCreateInfo.colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
-        renderTargetValidationCreateInfo.depthFormat = depthFormat;
-        validate_render_target(
-            context,
-            renderTargetValidationCreateInfo,
-            {
-                VkImageCreateInfo{
-                    /* .sType                 = */ gvk::get_stype<VkImageCreateInfo>(),
-                    /* .pNext                 = */ nullptr,
-                    /* .flags                 = */ 0,
-                    /* .imageType             = */ VK_IMAGE_TYPE_2D,
-                    /* .format                = */ VK_FORMAT_R8G8B8A8_UNORM,
-                    /* .extent                = */ { 1024, 1024, 1 },
-                    /* .mipLevels             = */ 1,
-                    /* .arrayLayers           = */ 1,
-                    /* .samples               = */ sampleCount,
-                    /* .tiling                = */ VK_IMAGE_TILING_OPTIMAL,
-                    /* .usage                 = */ VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                    /* .sharingMode           = */ VK_SHARING_MODE_EXCLUSIVE,
-                    /* .queueFamilyIndexCount = */ 0,
-                    /* .pQueueFamilyIndices   = */ nullptr,
-                    /* .initialLayout         = */ VK_IMAGE_LAYOUT_UNDEFINED,
-                },
-                VkImageCreateInfo{
-                    /* .sType                 = */ gvk::get_stype<VkImageCreateInfo>(),
-                    /* .pNext                 = */ nullptr,
-                    /* .flags                 = */ 0,
-                    /* .imageType             = */ VK_IMAGE_TYPE_2D,
-                    /* .format                = */ VK_FORMAT_R8G8B8A8_UNORM,
-                    /* .extent                = */ { 1024, 1024, 1 },
-                    /* .mipLevels             = */ 1,
-                    /* .arrayLayers           = */ 1,
-                    /* .samples               = */ VK_SAMPLE_COUNT_1_BIT,
-                    /* .tiling                = */ VK_IMAGE_TILING_OPTIMAL,
-                    /* .usage                 = */ VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                    /* .sharingMode           = */ VK_SHARING_MODE_EXCLUSIVE,
-                    /* .queueFamilyIndexCount = */ 0,
-                    /* .pQueueFamilyIndices   = */ nullptr,
-                    /* .initialLayout         = */ VK_IMAGE_LAYOUT_UNDEFINED,
-                },
-                VkImageCreateInfo{
-                    /* .sType                 = */ gvk::get_stype<VkImageCreateInfo>(),
-                    /* .pNext                 = */ nullptr,
-                    /* .flags                 = */ 0,
-                    /* .imageType             = */ VK_IMAGE_TYPE_2D,
-                    /* .format                = */ depthFormat,
-                    /* .extent                = */ { 1024, 1024, 1 },
-                    /* .mipLevels             = */ 1,
-                    /* .arrayLayers           = */ 1,
-                    /* .samples               = */ sampleCount,
-                    /* .tiling                = */ VK_IMAGE_TILING_OPTIMAL,
-                    /* .usage                 = */ VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                    /* .sharingMode           = */ VK_SHARING_MODE_EXCLUSIVE,
-                    /* .queueFamilyIndexCount = */ 0,
-                    /* .pQueueFamilyIndices   = */ nullptr,
-                    /* .initialLayout         = */ VK_IMAGE_LAYOUT_UNDEFINED,
-                }
+    // MSAA  : No
+    // Color : Yes
+    // Depth : No
+    renderTargetValidationCreateInfo.sampleCount = VK_SAMPLE_COUNT_1_BIT;
+    renderTargetValidationCreateInfo.colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    renderTargetValidationCreateInfo.depthFormat = VK_FORMAT_UNDEFINED;
+    validate_render_target(
+        context,
+        renderTargetValidationCreateInfo,
+        {
+            VkImageCreateInfo{
+                /* .sType                 = */ gvk::get_stype<VkImageCreateInfo>(),
+                /* .pNext                 = */ nullptr,
+                /* .flags                 = */ 0,
+                /* .imageType             = */ VK_IMAGE_TYPE_2D,
+                /* .format                = */ VK_FORMAT_R8G8B8A8_UNORM,
+                /* .extent                = */ { 1024, 1024, 1 },
+                /* .mipLevels             = */ 1,
+                /* .arrayLayers           = */ 1,
+                /* .samples               = */ VK_SAMPLE_COUNT_1_BIT,
+                /* .tiling                = */ VK_IMAGE_TILING_OPTIMAL,
+                /* .usage                 = */ VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                /* .sharingMode           = */ VK_SHARING_MODE_EXCLUSIVE,
+                /* .queueFamilyIndexCount = */ 0,
+                /* .pQueueFamilyIndices   = */ nullptr,
+                /* .initialLayout         = */ VK_IMAGE_LAYOUT_UNDEFINED,
             }
-        );
-    } gvk_result_scope_end
-    EXPECT_EQ(gvkResult, VK_SUCCESS);
+        }
+    );
+
+    // MSAA  : Yes
+    // Color : Yes
+    // Depth : No
+    renderTargetValidationCreateInfo.sampleCount = sampleCount;
+    renderTargetValidationCreateInfo.colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    renderTargetValidationCreateInfo.depthFormat = VK_FORMAT_UNDEFINED;
+    validate_render_target(
+        context,
+        renderTargetValidationCreateInfo,
+        {
+            VkImageCreateInfo{
+                /* .sType                 = */ gvk::get_stype<VkImageCreateInfo>(),
+                /* .pNext                 = */ nullptr,
+                /* .flags                 = */ 0,
+                /* .imageType             = */ VK_IMAGE_TYPE_2D,
+                /* .format                = */ VK_FORMAT_R8G8B8A8_UNORM,
+                /* .extent                = */ { 1024, 1024, 1 },
+                /* .mipLevels             = */ 1,
+                /* .arrayLayers           = */ 1,
+                /* .samples               = */ sampleCount,
+                /* .tiling                = */ VK_IMAGE_TILING_OPTIMAL,
+                /* .usage                 = */ VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                /* .sharingMode           = */ VK_SHARING_MODE_EXCLUSIVE,
+                /* .queueFamilyIndexCount = */ 0,
+                /* .pQueueFamilyIndices   = */ nullptr,
+                /* .initialLayout         = */ VK_IMAGE_LAYOUT_UNDEFINED,
+            },
+            VkImageCreateInfo{
+                /* .sType                 = */ gvk::get_stype<VkImageCreateInfo>(),
+                /* .pNext                 = */ nullptr,
+                /* .flags                 = */ 0,
+                /* .imageType             = */ VK_IMAGE_TYPE_2D,
+                /* .format                = */ VK_FORMAT_R8G8B8A8_UNORM,
+                /* .extent                = */ { 1024, 1024, 1 },
+                /* .mipLevels             = */ 1,
+                /* .arrayLayers           = */ 1,
+                /* .samples               = */ VK_SAMPLE_COUNT_1_BIT,
+                /* .tiling                = */ VK_IMAGE_TILING_OPTIMAL,
+                /* .usage                 = */ VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                /* .sharingMode           = */ VK_SHARING_MODE_EXCLUSIVE,
+                /* .queueFamilyIndexCount = */ 0,
+                /* .pQueueFamilyIndices   = */ nullptr,
+                /* .initialLayout         = */ VK_IMAGE_LAYOUT_UNDEFINED,
+            }
+        }
+    );
+
+    // MSAA  : No
+    // Color : Yes
+    // Depth : Yes
+    renderTargetValidationCreateInfo.sampleCount = VK_SAMPLE_COUNT_1_BIT;
+    renderTargetValidationCreateInfo.colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    renderTargetValidationCreateInfo.depthFormat = depthFormat;
+    validate_render_target(
+        context,
+        renderTargetValidationCreateInfo,
+        {
+            VkImageCreateInfo{
+                /* .sType                 = */ gvk::get_stype<VkImageCreateInfo>(),
+                /* .pNext                 = */ nullptr,
+                /* .flags                 = */ 0,
+                /* .imageType             = */ VK_IMAGE_TYPE_2D,
+                /* .format                = */ VK_FORMAT_R8G8B8A8_UNORM,
+                /* .extent                = */ { 1024, 1024, 1 },
+                /* .mipLevels             = */ 1,
+                /* .arrayLayers           = */ 1,
+                /* .samples               = */ VK_SAMPLE_COUNT_1_BIT,
+                /* .tiling                = */ VK_IMAGE_TILING_OPTIMAL,
+                /* .usage                 = */ VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                /* .sharingMode           = */ VK_SHARING_MODE_EXCLUSIVE,
+                /* .queueFamilyIndexCount = */ 0,
+                /* .pQueueFamilyIndices   = */ nullptr,
+                /* .initialLayout         = */ VK_IMAGE_LAYOUT_UNDEFINED,
+            },
+            VkImageCreateInfo{
+                /* .sType                 = */ gvk::get_stype<VkImageCreateInfo>(),
+                /* .pNext                 = */ nullptr,
+                /* .flags                 = */ 0,
+                /* .imageType             = */ VK_IMAGE_TYPE_2D,
+                /* .format                = */ depthFormat,
+                /* .extent                = */ { 1024, 1024, 1 },
+                /* .mipLevels             = */ 1,
+                /* .arrayLayers           = */ 1,
+                /* .samples               = */ VK_SAMPLE_COUNT_1_BIT,
+                /* .tiling                = */ VK_IMAGE_TILING_OPTIMAL,
+                /* .usage                 = */ VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                /* .sharingMode           = */ VK_SHARING_MODE_EXCLUSIVE,
+                /* .queueFamilyIndexCount = */ 0,
+                /* .pQueueFamilyIndices   = */ nullptr,
+                /* .initialLayout         = */ VK_IMAGE_LAYOUT_UNDEFINED,
+            }
+        }
+    );
+
+    // MSAA  : Yes
+    // Color : Yes
+    // Depth : Yes
+    renderTargetValidationCreateInfo.sampleCount = sampleCount;
+    renderTargetValidationCreateInfo.colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    renderTargetValidationCreateInfo.depthFormat = depthFormat;
+    validate_render_target(
+        context,
+        renderTargetValidationCreateInfo,
+        {
+            VkImageCreateInfo{
+                /* .sType                 = */ gvk::get_stype<VkImageCreateInfo>(),
+                /* .pNext                 = */ nullptr,
+                /* .flags                 = */ 0,
+                /* .imageType             = */ VK_IMAGE_TYPE_2D,
+                /* .format                = */ VK_FORMAT_R8G8B8A8_UNORM,
+                /* .extent                = */ { 1024, 1024, 1 },
+                /* .mipLevels             = */ 1,
+                /* .arrayLayers           = */ 1,
+                /* .samples               = */ sampleCount,
+                /* .tiling                = */ VK_IMAGE_TILING_OPTIMAL,
+                /* .usage                 = */ VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                /* .sharingMode           = */ VK_SHARING_MODE_EXCLUSIVE,
+                /* .queueFamilyIndexCount = */ 0,
+                /* .pQueueFamilyIndices   = */ nullptr,
+                /* .initialLayout         = */ VK_IMAGE_LAYOUT_UNDEFINED,
+            },
+            VkImageCreateInfo{
+                /* .sType                 = */ gvk::get_stype<VkImageCreateInfo>(),
+                /* .pNext                 = */ nullptr,
+                /* .flags                 = */ 0,
+                /* .imageType             = */ VK_IMAGE_TYPE_2D,
+                /* .format                = */ VK_FORMAT_R8G8B8A8_UNORM,
+                /* .extent                = */ { 1024, 1024, 1 },
+                /* .mipLevels             = */ 1,
+                /* .arrayLayers           = */ 1,
+                /* .samples               = */ VK_SAMPLE_COUNT_1_BIT,
+                /* .tiling                = */ VK_IMAGE_TILING_OPTIMAL,
+                /* .usage                 = */ VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                /* .sharingMode           = */ VK_SHARING_MODE_EXCLUSIVE,
+                /* .queueFamilyIndexCount = */ 0,
+                /* .pQueueFamilyIndices   = */ nullptr,
+                /* .initialLayout         = */ VK_IMAGE_LAYOUT_UNDEFINED,
+            },
+            VkImageCreateInfo{
+                /* .sType                 = */ gvk::get_stype<VkImageCreateInfo>(),
+                /* .pNext                 = */ nullptr,
+                /* .flags                 = */ 0,
+                /* .imageType             = */ VK_IMAGE_TYPE_2D,
+                /* .format                = */ depthFormat,
+                /* .extent                = */ { 1024, 1024, 1 },
+                /* .mipLevels             = */ 1,
+                /* .arrayLayers           = */ 1,
+                /* .samples               = */ sampleCount,
+                /* .tiling                = */ VK_IMAGE_TILING_OPTIMAL,
+                /* .usage                 = */ VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                /* .sharingMode           = */ VK_SHARING_MODE_EXCLUSIVE,
+                /* .queueFamilyIndexCount = */ 0,
+                /* .pQueueFamilyIndices   = */ nullptr,
+                /* .initialLayout         = */ VK_IMAGE_LAYOUT_UNDEFINED,
+            }
+        }
+    );
 }

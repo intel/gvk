@@ -74,28 +74,6 @@ NOTE : Best practices for loading dll/so libraries (ie. full paths instead of re
 #endif
 #include "vulkan/vulkan.h"
 
-#ifdef _MSVC_LANG
-#pragma warning(push, 0)
-#endif
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wtautological-compare"
-#pragma clang diagnostic ignored "-Wunused-private-field"
-#pragma clang diagnostic ignored "-Wunused-parameter"
-#pragma clang diagnostic ignored "-Wmissing-field-initializers"
-#pragma clang diagnostic ignored "-Wnullability-completeness"
-#pragma clang diagnostic ignored "-Wnullability-extension"
-#endif
-#define VMA_STATIC_VULKAN_FUNCTIONS 0
-#define VMA_DYNAMIC_VULKAN_FUNCTIONS 0
-#include "vk_mem_alloc.h"
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
-#ifdef _MSVC_LANG
-#pragma warning(pop)
-#endif
-
 #if defined(__clang__)
 #define GVK_COMPILER_CLANG
 #elif defined(__GNUC__)
@@ -103,6 +81,35 @@ NOTE : Best practices for loading dll/so libraries (ie. full paths instead of re
 #elif defined(_MSVC_LANG)
 #define GVK_COMPILER_MSVC
 #endif
+
+#ifdef GVK_COMPILER_MSVC
+#pragma warning(push, 0)
+#endif // GVK_COMPILER_MSVC
+#ifdef GVK_COMPILER_GCC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif // GVK_COMPILER_GCC
+#ifdef GVK_COMPILER_CLANG
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-compare"
+#pragma clang diagnostic ignored "-Wunused-private-field"
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#pragma clang diagnostic ignored "-Wmissing-field-initializers"
+#pragma clang diagnostic ignored "-Wnullability-completeness"
+#pragma clang diagnostic ignored "-Wnullability-extension"
+#endif // GVK_COMPILER_CLANG
+#define VMA_DYNAMIC_VULKAN_FUNCTIONS 0
+#define VMA_STATIC_VULKAN_FUNCTIONS 0
+#include "vk_mem_alloc.h"
+#ifdef GVK_COMPILER_CLANG
+#pragma clang diagnostic pop
+#endif // GVK_COMPILER_CLANG
+#ifdef GVK_COMPILER_GCC
+#pragma GCC diagnostic pop
+#endif // GVK_COMPILER_GCC
+#ifdef GVK_COMPILER_MSVC
+#pragma warning(pop)
+#endif // GVK_COMPILER_MSVC
 
 #define gvk_stringify(STR) #STR
 #define gvk_expand(STR) gvk_stringify(STR)

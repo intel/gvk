@@ -1,4 +1,8 @@
 
+include_guard()
+
+include(FetchContent)
+
 FetchContent_Declare(
     tinyxml2_content
     GIT_REPOSITORY "https://github.com/leethomason/tinyxml2.git"

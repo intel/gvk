@@ -25,7 +25,7 @@ Ensure the following tools are installed...
  - [Visual Studio](https://visualstudio.microsoft.com/vs/community/) 2019 (Make sure to select "Desktop development with C++" when prompted)
  - [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) v1.3.216.0+
 
-The following instructions are for a  `bash` like terminal (Git Bash comes with the Git install by default on Windows)...
+The following command lines are for configuring a Visual Studio solution using a  `bash` like terminal (Git Bash comes with the Git install by default on Windows)...
 ```
 cd c:
 cd <desired/directory/location/>
@@ -36,14 +36,14 @@ cd build/
 cmake -G "Visual Studio 16 2019" -A x64 ..
 cmake --build .
 ```
-On Windows, open `gvk/build/gvk.sln` in Visual Studio, navigate to `gvk/samples/getting-started-00-triangle`, right click and select "Set as Startup Project", run.
+...open `gvk/build/gvk.sln` in Visual Studio, navigate to `gvk/samples/getting-started-00-triangle`, right click and select "Set as Startup Project", run.
 
 # External use
 Somewhere in your CMakeLists, add the following...
 ```
 include(FetchContent)
-set(GVK_TESTS_ENABLED OFF CACHE BOOL "" FORCE)
-set(GVK_SAMPLES_ENABLED OFF CACHE BOOL "" FORCE)
+set(GVK_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GVK_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     gvk
     GIT_REPOSITORY "https://github.com/intel/gvk.git"

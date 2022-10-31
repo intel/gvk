@@ -1,4 +1,8 @@
 
+include_guard()
+
+include(FetchContent)
+
 set(BUILD_TESTING           OFF CACHE BOOL "" FORCE)
 set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "" FORCE)
 set(ENABLE_GLSLANG_INSTALL  OFF CACHE BOOL "" FORCE)

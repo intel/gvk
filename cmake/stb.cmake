@@ -1,4 +1,8 @@
 
+include_guard()
+
+include(FetchContent)
+
 FetchContent_Declare(
     stb
     GIT_REPOSITORY "https://github.com/nothings/stb.git"
