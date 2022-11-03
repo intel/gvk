@@ -24,37 +24,27 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#pragma once
-
-#include "gvk/cppgen.hpp"
+#include "gvk/cppgen/namespace-generator.hpp"
+#include "gvk/string.hpp"
 
 namespace gvk {
 namespace cppgen {
 
-class ForwardDeclarationsGenerator final
+NamespaceGenerator::NamespaceGenerator(std::ostream& ostream, const std::string& namespaces)
+    : mOstream { ostream }
+    , mNamespaces { string::split(namespaces, "::") }
 {
-public:
-    static void generate(const gvk::xml::Manifest& manifest)
-    {
-        FileGenerator file(GVK_CORE_GENERATED_INCLUDE_PATH "/forward-declarations.hpp");
-        file << "#include \"gvk/defines.hpp\"" << std::endl;
-        file << std::endl;
-        NamespaceGenerator gvkNamespaceGenerator(file, "gvk");
-        file << std::endl;
-        for (const auto& handleItr : manifest.handles) {
-            CompileGuardGenerator compileGuardGenerator(file, handleItr.second.compileGuards);
-            file << "class " << gvk::string::strip_vk(handleItr.second.name) << ";" << std::endl;
-        }
-        file << std::endl;
-        NamespaceGenerator detailNamespaceGenerator(file, "detail");
-        file << std::endl;
-        for (const auto& handleItr : manifest.handles) {
-            CompileGuardGenerator compileGuardGenerator(file, handleItr.second.compileGuards);
-            file << "class " << gvk::string::strip_vk(handleItr.second.name) << "ControlBlock;" << std::endl;
-        }
-        file << std::endl;
+    for (auto itr = mNamespaces.begin(); itr != mNamespaces.end(); ++itr) {
+        mOstream << "namespace " << *itr << " {\n";
     }
-};
+}
+
+NamespaceGenerator::~NamespaceGenerator()
+{
+    for (auto ritr = mNamespaces.rbegin(); ritr != mNamespaces.rend(); ++ritr) {
+        mOstream << "} // namespace " << *ritr << '\n';
+    }
+}
 
 } // namespace cppgen
 } // namespace gvk

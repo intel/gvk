@@ -302,7 +302,8 @@ public:
     }
 
     /**
-    TODO : Documentation
+    Gets this Printer object's user data pointer
+    @return This Printer Object's user data pointer
     */
     inline const void* get_user_data() const
     {
@@ -310,7 +311,9 @@ public:
     }
 
     /**
-    TODO : Documentation
+    Sets this Printer object's user data pointer
+    @param pUserData The pointer to user data
+        @note This pointer is not used by Printer; it's intended as a mechanism for user provided context while printing
     */
     inline void set_user_data(const void* pUserData)
     {

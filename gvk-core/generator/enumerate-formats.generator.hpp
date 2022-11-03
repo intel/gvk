@@ -26,8 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk/xml/manifest.hpp"
-#include "cppgen-utilities.hpp"
+#include "gvk/cppgen.hpp"
 
 namespace gvk {
 namespace cppgen {

@@ -1,4 +1,7 @@
 
+#pragma once
+
+namespace gvk { constexpr char LicenseHeader[] = R"(
 /*******************************************************************************
 
 MIT License
@@ -23,37 +26,24 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
+)";
+}
 
-#pragma once
-
-#include "gvk/cppgen.hpp"
+#include <filesystem>
+#include <sstream>
 
 namespace gvk {
 namespace cppgen {
 
-class ForwardDeclarationsGenerator final
+class FileGenerator final
+    : public std::stringstream
 {
 public:
-    static void generate(const gvk::xml::Manifest& manifest)
-    {
-        FileGenerator file(GVK_CORE_GENERATED_INCLUDE_PATH "/forward-declarations.hpp");
-        file << "#include \"gvk/defines.hpp\"" << std::endl;
-        file << std::endl;
-        NamespaceGenerator gvkNamespaceGenerator(file, "gvk");
-        file << std::endl;
-        for (const auto& handleItr : manifest.handles) {
-            CompileGuardGenerator compileGuardGenerator(file, handleItr.second.compileGuards);
-            file << "class " << gvk::string::strip_vk(handleItr.second.name) << ";" << std::endl;
-        }
-        file << std::endl;
-        NamespaceGenerator detailNamespaceGenerator(file, "detail");
-        file << std::endl;
-        for (const auto& handleItr : manifest.handles) {
-            CompileGuardGenerator compileGuardGenerator(file, handleItr.second.compileGuards);
-            file << "class " << gvk::string::strip_vk(handleItr.second.name) << "ControlBlock;" << std::endl;
-        }
-        file << std::endl;
-    }
+    FileGenerator(const std::filesystem::path& filePath, const std::string& licenseHeader = LicenseHeader);
+    ~FileGenerator();
+
+private:
+    std::filesystem::path mFilePath;
 };
 
 } // namespace cppgen

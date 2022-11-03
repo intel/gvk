@@ -26,10 +26,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk/xml/manifest.hpp"
-#include "cppgen-utilities.hpp"
+#include "gvk/cppgen.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <set>
 #include <sstream>
 
@@ -218,7 +218,7 @@ public:
         mAdditionalCtors.push_back(additionalCtor);
     }
 
-    inline void generate_handle_declaration(File& file, const xml::Manifest& manifest) const
+    inline void generate_handle_declaration(FileGenerator& file, const xml::Manifest& manifest) const
     {
         std::vector<string::Replacement> replacements{
             { "{handleTypeName}", string::strip_vk(mHandle.name) },
@@ -263,7 +263,7 @@ private:
 )", replacements);
     }
 
-    inline void generate_accessor_definition(File& file, const xml::Manifest& manifest) const
+    inline void generate_accessor_definition(FileGenerator& file, const xml::Manifest& manifest) const
     {
         std::vector<string::Replacement> replacements{
             { "{handleTypeName}", string::strip_vk(mHandle.name) },
@@ -292,7 +292,7 @@ ObjectType {handleTypeName}::get() const
         file << "}" << std::endl;
     }
 
-    inline void generate_ctor_definition(File& file, const xml::Manifest& manifest, const xml::Command& command) const
+    inline void generate_ctor_definition(FileGenerator& file, const xml::Manifest& manifest, const xml::Command& command) const
     {
         auto handleCountExpression = command.parameters.back().length;
         std::vector<string::Replacement> replacements{
@@ -344,7 +344,7 @@ R"({
         file << "}" << std::endl;
     }
 
-    inline void generate_handle_definition(File& file, const xml::Manifest& manifest) const
+    inline void generate_handle_definition(FileGenerator& file, const xml::Manifest& manifest) const
     {
         std::vector<string::Replacement> replacements{
             { "{handleTypeName}", string::strip_vk(mHandle.name) },
@@ -373,7 +373,7 @@ R"(void {handleTypeName}::reset()
 )", replacements);
     }
 
-    inline void generate_control_block_declaration(File& file, const xml::Manifest& manifest) const
+    inline void generate_control_block_declaration(FileGenerator& file, const xml::Manifest& manifest) const
     {
         std::vector<string::Replacement> replacements{
             { "{handleTypeName}", string::strip_vk(mHandle.name) },
@@ -396,7 +396,7 @@ R"(void {handleTypeName}::reset()
         file << "};" << std::endl;
     }
 
-    inline void generate_control_block_definition(File& file) const
+    inline void generate_control_block_definition(FileGenerator& file) const
     {
         if (!mDtor.name.empty() && !custom_dtor_required(mHandle.name)) {
             std::vector<string::Replacement> replacements{
@@ -583,7 +583,12 @@ class HandlesGenerator final
 public:
     static inline void generate(const gvk::xml::Manifest& manifest)
     {
-        Module module("handles");
+        ModuleGenerator module(
+            GVK_CORE_GENERATED_INCLUDE_PATH,
+            GVK_CORE_GENERATED_INCLUDE_PREFIX,
+            GVK_CORE_GENERATED_SOURCE_PATH,
+            "handles"
+        );
         std::vector<HandleGenerator> handleGenerators;
         handleGenerators.reserve(manifest.handles.size());
         for (const auto& handleItr : manifest.handles) {
@@ -605,11 +610,12 @@ public:
     }
 
 private:
-    static inline void generate_header(File& file, const xml::Manifest& manifest, const std::vector<HandleGenerator>& handleGenerators)
+    static inline void generate_header(FileGenerator& file, const xml::Manifest& manifest, const std::vector<HandleGenerator>& handleGenerators)
     {
         file << "#include \"gvk/detail/handle-utilities.hpp\"" << std::endl;
         file << "#include \"gvk/detail/reference.hpp\"" << std::endl;
         file << "#include \"gvk/generated/forward-declarations.hpp\"" << std::endl;
+        file << "#include \"gvk/defines.hpp\"" << std::endl;
         file << "#include \"gvk/structures.hpp\"" << std::endl;
         file << std::endl;
         file << "#include <map>" << std::endl;
@@ -634,7 +640,7 @@ private:
         file << std::endl;
     }
 
-    static inline void generate_source(File& file, const xml::Manifest& manifest, const std::vector<HandleGenerator>& handleGenerators)
+    static inline void generate_source(FileGenerator& file, const xml::Manifest& manifest, const std::vector<HandleGenerator>& handleGenerators)
     {
         file << "#include \"gvk/generated/dispatch-table.hpp\"" << std::endl;
         file << std::endl;

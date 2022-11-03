@@ -26,8 +26,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk/xml/manifest.hpp"
-#include "cppgen-utilities.hpp"
+#include "gvk/cppgen.hpp"
+
+#include <cassert>
 
 namespace gvk {
 namespace cppgen {
@@ -37,14 +38,20 @@ class FormatUtilitiesGenerator final
 public:
     static void generate(const xml::Manifest& manifest)
     {
-        Module module("format-utilities");
+        ModuleGenerator module(
+            GVK_CORE_GENERATED_INCLUDE_PATH,
+            GVK_CORE_GENERATED_INCLUDE_PREFIX,
+            GVK_CORE_GENERATED_SOURCE_PATH,
+            "format-utilities"
+        );
         generate_header(module.header, manifest);
         generate_source(module.source, manifest);
     }
 
 private:
-    static void generate_header(File& file, const xml::Manifest& manifest)
+    static void generate_header(FileGenerator& file, const xml::Manifest& manifest)
     {
+        file << "#include \"gvk/defines.hpp\"" << std::endl;
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk");
         file << std::endl;
@@ -123,7 +130,7 @@ private:
         file << std::endl;
     }
 
-    static void generate_source(File& file, const xml::Manifest& manifest)
+    static void generate_source(FileGenerator& file, const xml::Manifest& manifest)
     {
         file << "#include \"gvk/format.hpp\"" << std::endl;
         file << std::endl;

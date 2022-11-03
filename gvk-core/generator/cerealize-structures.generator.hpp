@@ -26,8 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk/xml/manifest.hpp"
-#include "cppgen-utilities.hpp"
+#include "gvk/cppgen.hpp"
 
 namespace gvk {
 namespace cppgen {
@@ -37,8 +36,9 @@ class CerealizeStructuresGenerator final
 public:
     static void generate(const xml::Manifest& manifest)
     {
-        File file("cerealize-structures.hpp");
+        FileGenerator file(GVK_CORE_GENERATED_INCLUDE_PATH "/cerealize-structures.hpp");
         file << "#include \"gvk/detail/cerealization-utilities.hpp\"" << std::endl;
+        file << "#include \"gvk/defines.hpp\"" << std::endl;
         file << std::endl;
         file << "#include <cassert>" << std::endl;
         file << std::endl;
@@ -97,7 +97,7 @@ public:
 
 private:
     class CerealizeStructureMemberGenerator final
-        : public StructureMemberGenerator
+        : public BasicStructureMemberProcessorGenerator
     {
     protected:
         std::string generate_pnext_processor() const override final

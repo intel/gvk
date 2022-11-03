@@ -26,35 +26,40 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk/cppgen.hpp"
+#include "gvk/cppgen/file-generator.hpp"
+#include "gvk/xml/command.hpp"
+#include "gvk/xml/manifest.hpp"
+#include "gvk/string.hpp"
+
+#include <string>
 
 namespace gvk {
 namespace cppgen {
 
-class ForwardDeclarationsGenerator final
-{
-public:
-    static void generate(const gvk::xml::Manifest& manifest)
-    {
-        FileGenerator file(GVK_CORE_GENERATED_INCLUDE_PATH "/forward-declarations.hpp");
-        file << "#include \"gvk/defines.hpp\"" << std::endl;
-        file << std::endl;
-        NamespaceGenerator gvkNamespaceGenerator(file, "gvk");
-        file << std::endl;
-        for (const auto& handleItr : manifest.handles) {
-            CompileGuardGenerator compileGuardGenerator(file, handleItr.second.compileGuards);
-            file << "class " << gvk::string::strip_vk(handleItr.second.name) << ";" << std::endl;
-        }
-        file << std::endl;
-        NamespaceGenerator detailNamespaceGenerator(file, "detail");
-        file << std::endl;
-        for (const auto& handleItr : manifest.handles) {
-            CompileGuardGenerator compileGuardGenerator(file, handleItr.second.compileGuards);
-            file << "class " << gvk::string::strip_vk(handleItr.second.name) << "ControlBlock;" << std::endl;
-        }
-        file << std::endl;
-    }
-};
+bool is_static_const_value(const std::string& apiElementName);
+bool is_strongly_typed_bitmask(const xml::Manifest& manifest, const std::string& apiElementName);
+bool structure_requires_custom_implementation(const std::string& name);
+bool structure_requires_custom_serialization(const std::string& name);
+std::string get_command_args(const xml::Command& command, bool types = true, bool names = true);
+
+std::set<std::string> get_inner_scope_compile_guards(
+    const std::set<std::string>& outerScopeCompileGuards,
+    std::set<std::string> innerScopeCompileGuards
+);
+
+std::vector<string::Replacement> get_inner_scope_replacements(
+    const std::vector<string::Replacement>& outerScopeReplacements,
+    std::vector<string::Replacement> innerScopeReplacements
+);
+
+void generate_pnext_switch(
+    FileGenerator& file,
+    const xml::Manifest& manifest,
+    const std::string& indentation,
+    const std::string& evaluation,
+    const std::string& caseProcessor,
+    const std::string& defaultProcessor
+);
 
 } // namespace cppgen
 } // namespace gvk

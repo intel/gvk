@@ -26,8 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk/xml/manifest.hpp"
-#include "cppgen-utilities.hpp"
+#include "gvk/cppgen.hpp"
 
 namespace gvk {
 namespace cppgen {
@@ -37,14 +36,20 @@ class DispatchTableGenerator final
 public:
     static void generate(const xml::Manifest& manifest)
     {
-        gvk::cppgen::Module module("dispatch-table");
+        ModuleGenerator module(
+            GVK_CORE_GENERATED_INCLUDE_PATH,
+            GVK_CORE_GENERATED_INCLUDE_PREFIX,
+            GVK_CORE_GENERATED_SOURCE_PATH,
+            "dispatch-table"
+        );
         generate_header(module.header, manifest);
         generate_source(module.source, manifest);
     }
 
 private:
-    static void generate_header(File& file, const xml::Manifest& manifest)
+    static void generate_header(FileGenerator& file, const xml::Manifest& manifest)
     {
+        file << "#include \"gvk/defines.hpp\"" << std::endl;
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk");
         file << std::endl;
@@ -68,7 +73,7 @@ private:
         file << std::endl;
     }
 
-    static void generate_source(File& file, const xml::Manifest& manifest)
+    static void generate_source(FileGenerator& file, const xml::Manifest& manifest)
     {
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk");
@@ -109,7 +114,7 @@ R"(        if (!pDispatchTable->g{commandName}) {
 
     template <typename PredicateType>
     static void generate_load_entry_points_function(
-        File& file,
+        FileGenerator& file,
         const xml::Manifest& manifest,
         PredicateType predicate,
         const std::string& signature,
@@ -131,7 +136,7 @@ R"(        if (!pDispatchTable->g{commandName}) {
     }
 
     static void generate_load_entry_points_function(
-        File& file,
+        FileGenerator& file,
         const xml::Manifest& manifest,
         const std::string& signature,
         const std::string& source

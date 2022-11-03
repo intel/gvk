@@ -26,7 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "cppgen-utilities.hpp"
+#include "gvk/cppgen.hpp"
 
 namespace gvk {
 namespace cppgen {
@@ -36,7 +36,8 @@ class GetSTypeGenerator final
 public:
     static void generate(const gvk::xml::Manifest& manifest)
     {
-        File file("get-stype.hpp");
+        FileGenerator file(GVK_CORE_GENERATED_INCLUDE_PATH "/get-stype.hpp");
+        file << "#include \"gvk/defines.hpp\"" << std::endl;
         file << std::endl;
         file << "#include <type_traits>" << std::endl;
         file << std::endl;

@@ -26,8 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk/xml/manifest.hpp"
-#include "cppgen-utilities.hpp"
+#include "gvk/cppgen.hpp"
 
 namespace gvk {
 namespace cppgen {
@@ -37,21 +36,27 @@ class EnumToStringGenerator final
 public:
     static void generate(const xml::Manifest& manifest)
     {
-        Module module("enum-to-string");
+        ModuleGenerator module(
+            GVK_CORE_GENERATED_INCLUDE_PATH,
+            GVK_CORE_GENERATED_INCLUDE_PREFIX,
+            GVK_CORE_GENERATED_SOURCE_PATH,
+            "enum-to-string"
+        );
         generate_header(module.header, manifest);
         generate_source(module.source, manifest);
     }
 
 private:
-    static void generate_header(File& file, const xml::Manifest& manifest)
+    static void generate_header(FileGenerator& file, const xml::Manifest& manifest)
     {
         file << "#include \"gvk/detail/to-string-utilities.hpp\"" << std::endl;
+        file << "#include \"gvk/defines.hpp\"" << std::endl;
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk");
         file << std::endl;
         for (const auto& enumerationItr : manifest.enumerations) {
             const auto& enumeration = enumerationItr.second;
-            if (enumeration.alias.empty() && !enumeration.enumerators.empty() && !static_const_values(enumeration.name)) {
+            if (enumeration.alias.empty() && !enumeration.enumerators.empty() && !is_static_const_value(enumeration.name)) {
                 CompileGuardGenerator compileGuardGenerator(file, enumeration.compileGuards);
 
                 ////////////////////////////////////////////////////////////////////////////////
@@ -68,13 +73,13 @@ private:
         file << std::endl;
     }
 
-    static void generate_source(File& file, const xml::Manifest& manifest)
+    static void generate_source(FileGenerator& file, const xml::Manifest& manifest)
     {
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk");
         for (const auto& enumerationItr : manifest.enumerations) {
             const auto& enumeration = enumerationItr.second;
-            if (enumeration.alias.empty() && !enumeration.enumerators.empty() && !static_const_values(enumeration.name)) {
+            if (enumeration.alias.empty() && !enumeration.enumerators.empty() && !is_static_const_value(enumeration.name)) {
                 file << std::endl;
                 CompileGuardGenerator compileGuardGenerator(file, enumeration.compileGuards);
 

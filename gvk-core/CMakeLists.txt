@@ -43,13 +43,11 @@ gvk_add_code_generator(
     folder
         "tools/"
     linkLibraries
-        gvk-string
-        gvk-xml
+        gvk-cppgen
     includeDirectories
         "${generatorSourcePath}/"
     includeFiles
         "${generatorSourcePath}/comparison-operators.generator.hpp"
-        "${generatorSourcePath}/cppgen-utilities.hpp"
         "${generatorSourcePath}/cerealize-structures.generator.hpp"
         "${generatorSourcePath}/create-structure-copy.generator.hpp"
         "${generatorSourcePath}/decerealize-structures.generator.hpp"
@@ -71,9 +69,9 @@ gvk_add_code_generator(
         "${generatedIncludeFiles}"
         "${generatedSourceFiles}"
     compileDefinitions
-        GVK_GENERATED_INCLUDE_PATH="${generatedIncludePath}"
-        GVK_GENERATED_INCLUDE_PREFIX="gvk/generated/"
-        GVK_GENERATED_SOURCE_PATH="${generatedSourcePath}"
+        GVK_CORE_GENERATED_INCLUDE_PATH="${generatedIncludePath}"
+        GVK_CORE_GENERATED_INCLUDE_PREFIX="gvk/generated/"
+        GVK_CORE_GENERATED_SOURCE_PATH="${generatedSourcePath}"
 )
 if(MSVC)
     set_source_files_properties("${generatedSourcePath}/comparison-operators.cpp" PROPERTIES COMPILE_FLAGS "/bigobj")

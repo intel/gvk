@@ -26,8 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk/xml/manifest.hpp"
-#include "cppgen-utilities.hpp"
+#include "gvk/cppgen.hpp"
 
 namespace gvk {
 namespace cppgen {
@@ -37,14 +36,19 @@ class CreateStructureCopyGenerator final
 public:
     static void generate(const xml::Manifest& manifest)
     {
-        Module module("create-structure-copy");
+        ModuleGenerator module(
+            GVK_CORE_GENERATED_INCLUDE_PATH,
+            GVK_CORE_GENERATED_INCLUDE_PREFIX,
+            GVK_CORE_GENERATED_SOURCE_PATH,
+            "create-structure-copy"
+        );
         generate_header(module.header, manifest);
         generate_source(module.source, manifest);
     }
 
 private:
     class StructureMemberCreateCopyGenerator final
-        : public StructureMemberGenerator
+        : public BasicStructureMemberProcessorGenerator
     {
     protected:
         std::string generate_pnext_processor() const override final
@@ -163,9 +167,10 @@ private:
         }
     };
 
-    static void generate_header(File& file, const xml::Manifest& manifest)
+    static void generate_header(FileGenerator& file, const xml::Manifest& manifest)
     {
         file << "#include \"gvk/detail/structure-copy-utilities.hpp\"" << std::endl;
+        file << "#include \"gvk/defines.hpp\"" << std::endl;
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk::detail");
         file << std::endl;
@@ -186,7 +191,7 @@ private:
         file << std::endl;
     }
 
-    static void generate_source(File& file, const xml::Manifest& manifest)
+    static void generate_source(FileGenerator& file, const xml::Manifest& manifest)
     {
         file << std::endl;
         file << "#include <cassert>" << std::endl;

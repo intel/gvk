@@ -42,8 +42,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "serialize-structures.generator.hpp"
 #include "structure-to-string.generator.hpp"
 
-#include "tinyxml2/tinyxml2.h"
-
 int main(int, const char*[])
 {
     tinyxml2::XMLDocument xmlDocument;

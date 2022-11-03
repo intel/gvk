@@ -24,37 +24,34 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#pragma once
+#include "gvk/cppgen/file-generator.hpp"
 
-#include "gvk/cppgen.hpp"
+#include <cassert>
+#include <fstream>
 
 namespace gvk {
 namespace cppgen {
 
-class ForwardDeclarationsGenerator final
+FileGenerator::FileGenerator(const std::filesystem::path& filePath, const std::string& licenseHeader)
+    : mFilePath { filePath }
 {
-public:
-    static void generate(const gvk::xml::Manifest& manifest)
-    {
-        FileGenerator file(GVK_CORE_GENERATED_INCLUDE_PATH "/forward-declarations.hpp");
-        file << "#include \"gvk/defines.hpp\"" << std::endl;
-        file << std::endl;
-        NamespaceGenerator gvkNamespaceGenerator(file, "gvk");
-        file << std::endl;
-        for (const auto& handleItr : manifest.handles) {
-            CompileGuardGenerator compileGuardGenerator(file, handleItr.second.compileGuards);
-            file << "class " << gvk::string::strip_vk(handleItr.second.name) << ";" << std::endl;
-        }
-        file << std::endl;
-        NamespaceGenerator detailNamespaceGenerator(file, "detail");
-        file << std::endl;
-        for (const auto& handleItr : manifest.handles) {
-            CompileGuardGenerator compileGuardGenerator(file, handleItr.second.compileGuards);
-            file << "class " << gvk::string::strip_vk(handleItr.second.name) << "ControlBlock;" << std::endl;
-        }
-        file << std::endl;
+    *this << licenseHeader << "\n// NOTE : This file contains generated code\n";
+    if (mFilePath.extension() == ".h" || mFilePath.extension() == ".hpp") {
+        *this << "\n#pragma once\n\n";
     }
-};
+}
+
+FileGenerator::~FileGenerator()
+{
+    assert(!mFilePath.empty());
+    std::filesystem::create_directories(mFilePath.parent_path());
+    auto content = str();
+    std::ifstream file(mFilePath);
+    if (content != std::string(std::istreambuf_iterator<char>(file), { })) {
+        file.close();
+        std::ofstream(mFilePath) << content;
+    }
+}
 
 } // namespace cppgen
 } // namespace gvk

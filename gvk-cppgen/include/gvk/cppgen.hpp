@@ -26,35 +26,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk/cppgen.hpp"
-
-namespace gvk {
-namespace cppgen {
-
-class ForwardDeclarationsGenerator final
-{
-public:
-    static void generate(const gvk::xml::Manifest& manifest)
-    {
-        FileGenerator file(GVK_CORE_GENERATED_INCLUDE_PATH "/forward-declarations.hpp");
-        file << "#include \"gvk/defines.hpp\"" << std::endl;
-        file << std::endl;
-        NamespaceGenerator gvkNamespaceGenerator(file, "gvk");
-        file << std::endl;
-        for (const auto& handleItr : manifest.handles) {
-            CompileGuardGenerator compileGuardGenerator(file, handleItr.second.compileGuards);
-            file << "class " << gvk::string::strip_vk(handleItr.second.name) << ";" << std::endl;
-        }
-        file << std::endl;
-        NamespaceGenerator detailNamespaceGenerator(file, "detail");
-        file << std::endl;
-        for (const auto& handleItr : manifest.handles) {
-            CompileGuardGenerator compileGuardGenerator(file, handleItr.second.compileGuards);
-            file << "class " << gvk::string::strip_vk(handleItr.second.name) << "ControlBlock;" << std::endl;
-        }
-        file << std::endl;
-    }
-};
-
-} // namespace cppgen
-} // namespace gvk
+#include "gvk/cppgen/basic-structure-member-processor-generator.hpp"
+#include "gvk/cppgen/compile-guard-generator.hpp"
+#include "gvk/cppgen/file-generator.hpp"
+#include "gvk/cppgen/module-generator.hpp"
+#include "gvk/cppgen/namespace-generator.hpp"
+#include "gvk/cppgen/utilities.hpp"
+#include "gvk/xml/manifest.hpp"
+#include "gvk/string.hpp"
