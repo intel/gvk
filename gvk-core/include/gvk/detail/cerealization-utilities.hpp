@@ -64,6 +64,19 @@ inline void cerealize_dynamic_array(ArchiveType& archive, size_t count, const Ob
     }
 }
 
+template <typename ArchiveType, typename ObjectType>
+inline void cerealize_dynamic_pointer_array(ArchiveType& archive, size_t count, const ObjectType* const* ppObjs)
+{
+    if (count && ppObjs) {
+        archive(count);
+        for (size_t i = 0; i < count; ++i) {
+            cerealize_dynamic_array(archive, 1, ppObjs[i]);
+        }
+    } else {
+        archive(size_t{ 0 });
+    }
+}
+
 template <typename ArchiveType, typename HandleType>
 inline void cerealize_dynamic_handle_array(ArchiveType& archive, size_t count, const HandleType* pHandles)
 {
@@ -133,14 +146,32 @@ inline ObjectType* decerealize_dynamic_array(ArchiveType& archive)
     size_t count = 0;
     archive(count);
     if (count) {
-        assert(detail::tlpDecerealizationAllocator);
-        auto pAllocator = detail::tlpDecerealizationAllocator;
+        assert(tlpDecerealizationAllocator);
+        auto pAllocator = tlpDecerealizationAllocator;
         pObjs = (ObjectType*)pAllocator->pfnAllocation(pAllocator->pUserData, count * sizeof(ObjectType), 0, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
         for (size_t i = 0; i < count; ++i) {
             archive(pObjs[i]);
         }
     }
     return pObjs;
+}
+
+template <typename ObjectType, typename ArchiveType>
+inline ObjectType** decerealize_dynamic_pointer_array(ArchiveType& archive)
+{
+    ObjectType** ppObjs = nullptr;
+    size_t count = 0;
+    archive(count);
+    if (count) {
+        assert(tlpDecerealizationAllocator);
+        auto pAllocator = tlpDecerealizationAllocator;
+        auto size = count * sizeof(ObjectType*);
+        ppObjs = (ObjectType**)pAllocator->pfnAllocation(pAllocator->pUserData, size, 0, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+        for (uint32_t i = 0; i < count; ++i) {
+            ppObjs[i] = decerealize_dynamic_array<ObjectType>(archive);
+        }
+    }
+    return ppObjs;
 }
 
 template <typename HandleType, typename ArchiveType>
@@ -150,8 +181,8 @@ inline HandleType* decerealize_dynamic_handle_array(ArchiveType& archive)
     size_t count = 0;
     archive(count);
     if (count) {
-        assert(detail::tlpDecerealizationAllocator);
-        auto pAllocator = detail::tlpDecerealizationAllocator;
+        assert(tlpDecerealizationAllocator);
+        auto pAllocator = tlpDecerealizationAllocator;
         pHandles = (HandleType*)pAllocator->pfnAllocation(pAllocator->pUserData, count * sizeof(HandleType), 0, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
         for (size_t i = 0; i < count; ++i) {
             pHandles[i] = decerealize_handle<HandleType>(archive);
@@ -167,8 +198,8 @@ inline char* decerealize_dynamic_string(ArchiveType& archive)
     size_t strLen = 0;
     archive(strLen);
     if (strLen) {
-        assert(detail::tlpDecerealizationAllocator);
-        auto pAllocator = detail::tlpDecerealizationAllocator;
+        assert(tlpDecerealizationAllocator);
+        auto pAllocator = tlpDecerealizationAllocator;
         pStr = (char*)pAllocator->pfnAllocation(pAllocator->pUserData, strLen + 1, 0, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
         archive(cereal::binary_data(pStr, strLen));
         pStr[strLen] = '\0';
@@ -183,8 +214,8 @@ inline char** decerealize_dynamic_string_array(ArchiveType& archive)
     size_t count = 0;
     archive(count);
     if (count) {
-        assert(detail::tlpDecerealizationAllocator);
-        auto pAllocator = detail::tlpDecerealizationAllocator;
+        assert(tlpDecerealizationAllocator);
+        auto pAllocator = tlpDecerealizationAllocator;
         ppStrs = (char**)pAllocator->pfnAllocation(pAllocator->pUserData, count * sizeof(char*), 0, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
         for (size_t i = 0; i < count; ++i) {
             ppStrs[i] = decerealize_dynamic_string(archive);
@@ -276,23 +307,47 @@ inline void load(ArchiveType& archive, VkWin32SurfaceCreateInfoKHR& obj)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Video encode/decode
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoDecodeH264DpbSlotInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoDecodeH264MvcEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoDecodeH264PictureInfoEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoDecodeH264ProfileInfoEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoDecodeH264CapabilitiesEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoDecodeH264SessionParametersAddInfoEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoDecodeH264SessionParametersCreateInfoEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoDecodeH264PictureInfoEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoDecodeH264DpbSlotInfoEXT)
+// Decode H265
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoDecodeH265ProfileInfoEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoDecodeH265CapabilitiesEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoDecodeH265SessionParametersAddInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoDecodeH265DpbSlotInfoEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoDecodeH265SessionParametersCreateInfoEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoDecodeH265PictureInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264DpbSlotInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264NaluSliceEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264ReferenceListsEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoDecodeH265DpbSlotInfoEXT)
+// Encode H264
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264CapabilitiesEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264SessionParametersAddInfoEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264SessionParametersCreateInfoEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264DpbSlotInfoEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264ReferenceListsInfoEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264NaluSliceInfoEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264VclFrameInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265DpbSlotInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265NaluSliceSegmentEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265ReferenceListsEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264EmitPictureParametersInfoEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264ProfileInfoEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264RateControlInfoEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264QpEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264FrameSizeEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264RateControlLayerInfoEXT)
+// Encode H265
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265CapabilitiesEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265SessionParametersAddInfoEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265SessionParametersCreateInfoEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265DpbSlotInfoEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265ReferenceListsInfoEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265NaluSliceSegmentInfoEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265VclFrameInfoEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265EmitPictureParametersInfoEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265ProfileInfoEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265RateControlInfoEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265QpEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265FrameSizeEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265RateControlLayerInfoEXT)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Special case members
@@ -308,14 +363,7 @@ inline void save(ArchiveType& archive, const VkAccelerationStructureBuildGeometr
     gvk::detail::cerealize_handle(archive, obj.dstAccelerationStructure);
     archive(obj.geometryCount);
     gvk::detail::cerealize_dynamic_array(archive, obj.geometryCount, obj.pGeometries);
-    if (obj.ppGeometries) {
-        archive(true);
-        for (uint32_t i = 0; i < obj.geometryCount; ++i) {
-            gvk::detail::cerealize_dynamic_array(archive, 1, obj.ppGeometries[i]);
-        }
-    } else {
-        archive(false);
-    }
+    gvk::detail::cerealize_dynamic_pointer_array(archive, obj.geometryCount, obj.ppGeometries);
     // NOTE : Not serializing scratchData...this can be revisited if it becomes necessary
 }
 
@@ -331,19 +379,39 @@ inline void load(ArchiveType& archive, VkAccelerationStructureBuildGeometryInfoK
     obj.dstAccelerationStructure = gvk::detail::decerealize_handle<VkAccelerationStructureKHR>(archive);
     archive(obj.geometryCount);
     obj.pGeometries = gvk::detail::decerealize_dynamic_array<VkAccelerationStructureGeometryKHR>(archive);
-    bool serialized_ppGeometries = false;
-    archive(serialized_ppGeometries);
-    if (obj.geometryCount && serialized_ppGeometries) {
-        assert(gvk::detail::tlpDecerealizationAllocator);
-        auto pAllocator = gvk::detail::tlpDecerealizationAllocator;
-        auto size = obj.geometryCount * sizeof(VkAccelerationStructureGeometryKHR*);
-        auto ppGeometries = (VkAccelerationStructureGeometryKHR**)pAllocator->pfnAllocation(pAllocator->pUserData, size, 0, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
-        obj.ppGeometries = ppGeometries;
-        for (uint32_t i = 0; i < obj.geometryCount; ++i) {
-            ppGeometries[i] = gvk::detail::decerealize_dynamic_array<VkAccelerationStructureGeometryKHR>(archive);
-        }
-    }
+    obj.ppGeometries = gvk::detail::decerealize_dynamic_pointer_array<VkAccelerationStructureGeometryKHR>(archive);
     // NOTE : Not serializing scratchData...this can be revisited if it becomes necessary
+    obj.scratchData = { };
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkAccelerationStructureTrianglesOpacityMicromapEXT& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+    archive(obj.indexType);
+    archive(obj.indexBuffer);
+    archive(obj.indexStride);
+    archive(obj.baseTriangle);
+    archive(obj.usageCountsCount);
+    gvk::detail::cerealize_dynamic_array(archive, obj.usageCountsCount, obj.pUsageCounts);
+    gvk::detail::cerealize_dynamic_pointer_array(archive, obj.usageCountsCount, obj.ppUsageCounts);
+    gvk::detail::cerealize_handle(archive, obj.micromap);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkAccelerationStructureTrianglesOpacityMicromapEXT& obj)
+{
+    archive(obj.sType);
+    obj.pNext = gvk::detail::decerealize_pnext(archive);
+    archive(obj.indexType);
+    archive(obj.indexBuffer);
+    archive(obj.indexStride);
+    archive(obj.baseTriangle);
+    archive(obj.usageCountsCount);
+    obj.pUsageCounts = gvk::detail::decerealize_dynamic_array<VkMicromapUsageEXT>(archive);
+    obj.ppUsageCounts = gvk::detail::decerealize_dynamic_pointer_array<VkMicromapUsageEXT>(archive);
+    obj.micromap = gvk::detail::decerealize_handle<VkMicromapEXT>(archive);
 }
 
 template <typename ArchiveType>
@@ -360,6 +428,60 @@ inline void load(ArchiveType& archive, VkAccelerationStructureVersionInfoKHR& ob
     archive(obj.sType);
     obj.pNext = gvk::detail::decerealize_pnext(archive);
     // NOTE : Not serializing pVersionData...this can be revisited if it becomes necessary
+    obj.pVersionData = nullptr;
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkMicromapBuildInfoEXT& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+    archive(obj.type);
+    archive(obj.flags);
+    archive(obj.mode);
+    gvk::detail::cerealize_handle(archive, obj.dstMicromap);
+    archive(obj.usageCountsCount);
+    gvk::detail::cerealize_dynamic_array(archive, obj.usageCountsCount, obj.pUsageCounts);
+    gvk::detail::cerealize_dynamic_pointer_array(archive, obj.usageCountsCount, obj.ppUsageCounts);
+    archive(obj.data);
+    archive(obj.scratchData);
+    archive(obj.triangleArray);
+    archive(obj.triangleArrayStride);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkMicromapBuildInfoEXT& obj)
+{
+    archive(obj.sType);
+    obj.pNext = gvk::detail::decerealize_pnext(archive);
+    archive(obj.type);
+    archive(obj.flags);
+    archive(obj.mode);
+    obj.dstMicromap = gvk::detail::decerealize_handle<VkMicromapEXT>(archive);
+    archive(obj.usageCountsCount);
+    obj.pUsageCounts = gvk::detail::decerealize_dynamic_array<VkMicromapUsageEXT>(archive);
+    obj.ppUsageCounts = gvk::detail::decerealize_dynamic_pointer_array<VkMicromapUsageEXT>(archive);
+    archive(obj.data);
+    archive(obj.scratchData);
+    archive(obj.triangleArray);
+    archive(obj.triangleArrayStride);
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkMicromapVersionInfoEXT& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+    // NOTE : Not serializing pVersionData...this can be revisited if it becomes necessary
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkMicromapVersionInfoEXT& obj)
+{
+    archive(obj.sType);
+    obj.pNext = gvk::detail::decerealize_pnext(archive);
+    // NOTE : Not serializing pVersionData...this can be revisited if it becomes necessary
+    obj.pVersionData = nullptr;
 }
 
 template <typename ArchiveType>

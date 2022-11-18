@@ -57,23 +57,48 @@ GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkImportSemaphoreWin32HandleInfoKHR)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Video encode/decode
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoDecodeH264DpbSlotInfoEXT)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoDecodeH264MvcEXT)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoDecodeH264PictureInfoEXT)
+// Decode H264
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoDecodeH264ProfileInfoEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoDecodeH264CapabilitiesEXT)
 GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoDecodeH264SessionParametersAddInfoEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoDecodeH264SessionParametersCreateInfoEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoDecodeH264PictureInfoEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoDecodeH264DpbSlotInfoEXT)
+// Decode H265
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoDecodeH265ProfileInfoEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoDecodeH265CapabilitiesEXT)
 GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoDecodeH265SessionParametersAddInfoEXT)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoDecodeH265DpbSlotInfoEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoDecodeH265SessionParametersCreateInfoEXT)
 GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoDecodeH265PictureInfoEXT)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH264DpbSlotInfoEXT)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH264NaluSliceEXT)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH264ReferenceListsEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoDecodeH265DpbSlotInfoEXT)
+// Encode H264
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH264CapabilitiesEXT)
 GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH264SessionParametersAddInfoEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH264SessionParametersCreateInfoEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH264DpbSlotInfoEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH264ReferenceListsInfoEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH264NaluSliceInfoEXT)
 GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH264VclFrameInfoEXT)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH265DpbSlotInfoEXT)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH265NaluSliceSegmentEXT)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH265ReferenceListsEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH264EmitPictureParametersInfoEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH264ProfileInfoEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH264RateControlInfoEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH264QpEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH264FrameSizeEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH264RateControlLayerInfoEXT)
+// Encode H265
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH265CapabilitiesEXT)
 GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH265SessionParametersAddInfoEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH265SessionParametersCreateInfoEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH265DpbSlotInfoEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH265ReferenceListsInfoEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH265NaluSliceSegmentInfoEXT)
 GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH265VclFrameInfoEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH265EmitPictureParametersInfoEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH265ProfileInfoEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH265RateControlInfoEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH265QpEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH265FrameSizeEXT)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoEncodeH265RateControlLayerInfoEXT)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Special case members
@@ -82,17 +107,8 @@ VkAccelerationStructureBuildGeometryInfoKHR create_structure_copy<VkAcceleration
 {
     auto result = obj;
     result.pNext = (const void*)create_pnext_copy(obj.pNext, pAllocator);
-    if (obj.geometryCount) {
-        if (obj.pGeometries) {
-            result.pGeometries = create_dynamic_array_copy(obj.geometryCount, obj.pGeometries, pAllocator);
-        } else if (obj.ppGeometries) {
-            auto ppGeometries = create_dynamic_array_copy(obj.geometryCount, obj.ppGeometries, pAllocator);
-            result.ppGeometries = ppGeometries;
-            for (uint32_t i = 0; i < obj.geometryCount; ++i) {
-                ppGeometries[i] = create_dynamic_array_copy(1, obj.ppGeometries[i], pAllocator);
-            }
-        }
-    }
+    result.pGeometries = create_dynamic_array_copy(obj.geometryCount, obj.pGeometries, pAllocator);
+    result.ppGeometries = create_dynamic_pointer_array_copy(obj.geometryCount, obj.ppGeometries, pAllocator);
     // NOTE : We're not copying obj.scratchData...this can be revisited if it
     //  becomes necessary.
     result.scratchData = get_default<VkDeviceOrHostAddressKHR>();
@@ -104,12 +120,25 @@ void destroy_structure_copy<VkAccelerationStructureBuildGeometryInfoKHR>(const V
 {
     destroy_pnext_copy(obj.pNext, pAllocator);
     destroy_dynamic_array_copy(obj.geometryCount, obj.pGeometries, pAllocator);
-    if (obj.geometryCount && obj.ppGeometries) {
-        for (uint32_t i = 0; i < obj.geometryCount; ++i) {
-            destroy_dynamic_array_copy(1, obj.ppGeometries[i], pAllocator);
-        }
-    }
-    destroy_dynamic_array_copy(obj.geometryCount, obj.ppGeometries, pAllocator);
+    destroy_dynamic_pointer_array_copy(obj.geometryCount, obj.ppGeometries, pAllocator);
+}
+
+template <>
+VkAccelerationStructureTrianglesOpacityMicromapEXT create_structure_copy<VkAccelerationStructureTrianglesOpacityMicromapEXT>(const VkAccelerationStructureTrianglesOpacityMicromapEXT& obj, const VkAllocationCallbacks* pAllocator)
+{
+    auto result = obj;
+    result.pNext = create_pnext_copy(obj.pNext, pAllocator);
+    result.pUsageCounts = create_dynamic_array_copy(obj.usageCountsCount, obj.pUsageCounts, pAllocator);
+    result.ppUsageCounts = create_dynamic_pointer_array_copy(obj.usageCountsCount, obj.ppUsageCounts, pAllocator);
+    return result;
+}
+
+template <>
+void destroy_structure_copy<VkAccelerationStructureTrianglesOpacityMicromapEXT>(const VkAccelerationStructureTrianglesOpacityMicromapEXT& obj, const VkAllocationCallbacks* pAllocator)
+{
+    destroy_pnext_copy(obj.pNext, pAllocator);
+    destroy_dynamic_array_copy(obj.usageCountsCount, obj.pUsageCounts, pAllocator);
+    destroy_dynamic_pointer_array_copy(obj.usageCountsCount, obj.ppUsageCounts, pAllocator);
 }
 
 template <>
@@ -125,6 +154,41 @@ VkAccelerationStructureVersionInfoKHR create_structure_copy<VkAccelerationStruct
 
 template <>
 void destroy_structure_copy<VkAccelerationStructureVersionInfoKHR>(const VkAccelerationStructureVersionInfoKHR& obj, const VkAllocationCallbacks* pAllocator)
+{
+    destroy_pnext_copy(obj.pNext, pAllocator);
+}
+
+template <>
+VkMicromapBuildInfoEXT create_structure_copy<VkMicromapBuildInfoEXT>(const VkMicromapBuildInfoEXT& obj, const VkAllocationCallbacks* pAllocator)
+{
+    auto result = obj;
+    result.pNext = (const void*)create_pnext_copy(obj.pNext, pAllocator);
+    result.pUsageCounts = create_dynamic_array_copy(obj.usageCountsCount, obj.pUsageCounts, pAllocator);
+    result.ppUsageCounts = create_dynamic_pointer_array_copy(obj.usageCountsCount, obj.ppUsageCounts, pAllocator);
+    return result;
+}
+
+template <>
+void destroy_structure_copy<VkMicromapBuildInfoEXT>(const VkMicromapBuildInfoEXT& obj, const VkAllocationCallbacks* pAllocator)
+{
+    destroy_pnext_copy(obj.pNext, pAllocator);
+    destroy_dynamic_array_copy(obj.usageCountsCount, obj.pUsageCounts, pAllocator);
+    destroy_dynamic_pointer_array_copy(obj.usageCountsCount, obj.ppUsageCounts, pAllocator);
+}
+
+template <>
+VkMicromapVersionInfoEXT create_structure_copy<VkMicromapVersionInfoEXT>(const VkMicromapVersionInfoEXT& obj, const VkAllocationCallbacks* pAllocator)
+{
+    auto result = obj;
+    result.pNext = (const void*)create_pnext_copy(obj.pNext, pAllocator);
+    // NOTE : pVersionData is expected to point to the header of a previously
+    //  serialized micromap, so this comparison just uses the address...this can be
+    //  revisited if deep comparisons become necessary.
+    return result;
+}
+
+template <>
+void destroy_structure_copy<VkMicromapVersionInfoEXT>(const VkMicromapVersionInfoEXT& obj, const VkAllocationCallbacks* pAllocator)
 {
     destroy_pnext_copy(obj.pNext, pAllocator);
 }

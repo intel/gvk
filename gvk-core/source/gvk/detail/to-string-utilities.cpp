@@ -57,23 +57,48 @@ GVK_STUB_TO_STRING_DEFINITION(VkImportSemaphoreWin32HandleInfoKHR)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Video encode/decode
-GVK_STUB_TO_STRING_DEFINITION(VkVideoDecodeH264DpbSlotInfoEXT)
-GVK_STUB_TO_STRING_DEFINITION(VkVideoDecodeH264MvcEXT)
-GVK_STUB_TO_STRING_DEFINITION(VkVideoDecodeH264PictureInfoEXT)
+// Decode H264
+GVK_STUB_TO_STRING_DEFINITION(VkVideoDecodeH264ProfileInfoEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoDecodeH264CapabilitiesEXT)
 GVK_STUB_TO_STRING_DEFINITION(VkVideoDecodeH264SessionParametersAddInfoEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoDecodeH264SessionParametersCreateInfoEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoDecodeH264PictureInfoEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoDecodeH264DpbSlotInfoEXT)
+// Decode H265
+GVK_STUB_TO_STRING_DEFINITION(VkVideoDecodeH265ProfileInfoEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoDecodeH265CapabilitiesEXT)
 GVK_STUB_TO_STRING_DEFINITION(VkVideoDecodeH265SessionParametersAddInfoEXT)
-GVK_STUB_TO_STRING_DEFINITION(VkVideoDecodeH265DpbSlotInfoEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoDecodeH265SessionParametersCreateInfoEXT)
 GVK_STUB_TO_STRING_DEFINITION(VkVideoDecodeH265PictureInfoEXT)
-GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH264DpbSlotInfoEXT)
-GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH264NaluSliceEXT)
-GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH264ReferenceListsEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoDecodeH265DpbSlotInfoEXT)
+// Encode H264
+GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH264CapabilitiesEXT)
 GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH264SessionParametersAddInfoEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH264SessionParametersCreateInfoEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH264DpbSlotInfoEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH264ReferenceListsInfoEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH264NaluSliceInfoEXT)
 GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH264VclFrameInfoEXT)
-GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH265DpbSlotInfoEXT)
-GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH265NaluSliceSegmentEXT)
-GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH265ReferenceListsEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH264EmitPictureParametersInfoEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH264ProfileInfoEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH264RateControlInfoEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH264QpEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH264FrameSizeEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH264RateControlLayerInfoEXT)
+// Encode H265
+GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH265CapabilitiesEXT)
 GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH265SessionParametersAddInfoEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH265SessionParametersCreateInfoEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH265DpbSlotInfoEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH265ReferenceListsInfoEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH265NaluSliceSegmentInfoEXT)
 GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH265VclFrameInfoEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH265EmitPictureParametersInfoEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH265ProfileInfoEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH265RateControlInfoEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH265QpEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH265FrameSizeEXT)
+GVK_STUB_TO_STRING_DEFINITION(VkVideoEncodeH265RateControlLayerInfoEXT)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Special case members
@@ -108,7 +133,81 @@ void print<VkAccelerationStructureBuildGeometryInfoKHR>(Printer& printer, const 
 }
 
 template <>
+void print<VkAccelerationStructureTrianglesOpacityMicromapEXT>(Printer& printer, const VkAccelerationStructureTrianglesOpacityMicromapEXT& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            print_pnext(printer, obj.pNext);
+            printer.print_field("indexType", obj.indexType);
+            printer.print_field("indexBuffer", obj.indexBuffer);
+            printer.print_field("indexStride", obj.indexStride);
+            printer.print_field("baseTriangle", obj.baseTriangle);
+            printer.print_field("usageCountsCount", obj.usageCountsCount);
+            printer.print_array("pGeometries", obj.usageCountsCount, obj.pUsageCounts);
+            printer.print_array("ppGeometries", obj.usageCountsCount, obj.ppUsageCounts,
+                [&](auto, auto pUsageCount)
+                {
+                    if (pUsageCount) {
+                        print(printer, *pUsageCount);
+                    } else {
+                        printer.mOstrm << "null";
+                    }
+                }
+            );
+            printer.print_field("micromap", obj.micromap);
+        }
+    );
+}
+
+template <>
 void print<VkAccelerationStructureVersionInfoKHR>(Printer& printer, const VkAccelerationStructureVersionInfoKHR& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            print_pnext(printer, obj.pNext);
+            printer.print_field("pVersionData", obj.pVersionData);
+        }
+    );
+}
+
+template <>
+void print<VkMicromapBuildInfoEXT>(Printer& printer, const VkMicromapBuildInfoEXT& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            print_pnext(printer, obj.pNext);
+            printer.print_field("type", obj.type);
+            printer.print_field("flags", obj.flags);
+            printer.print_field("mode", obj.mode);
+            printer.print_field("dstMicromap", obj.dstMicromap);
+            printer.print_field("usageCountsCount", obj.usageCountsCount);
+            printer.print_array("pGeometries", obj.usageCountsCount, obj.pUsageCounts);
+            printer.print_array("ppGeometries", obj.usageCountsCount, obj.ppUsageCounts,
+                [&](auto, auto pUsageCount)
+                {
+                    if (pUsageCount) {
+                        print(printer, *pUsageCount);
+                    } else {
+                        printer.mOstrm << "null";
+                    }
+                }
+            );
+            printer.print_field("data", obj.data);
+            printer.print_field("scratchData", obj.scratchData);
+            printer.print_field("triangleArray", obj.triangleArray);
+            printer.print_field("triangleArrayStride", obj.triangleArrayStride);
+        }
+    );
+}
+
+template <>
+void print<VkMicromapVersionInfoEXT>(Printer& printer, const VkMicromapVersionInfoEXT& obj)
 {
     printer.print_object(
         [&]()

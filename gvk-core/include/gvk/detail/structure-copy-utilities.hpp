@@ -65,12 +65,28 @@ inline ObjectType* create_dynamic_array_copy(CountType objCount, const ObjectTyp
     ObjectType* pResult = nullptr;
     if (objCount && pObjs) {
         pAllocator = validate_allocation_callbacks(pAllocator);
-        pResult = (ObjectType*)pAllocator->pfnAllocation(pAllocator->pUserData, sizeof(ObjectType) * objCount, 0, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+        auto size = objCount * sizeof(ObjectType);
+        pResult = (ObjectType*)pAllocator->pfnAllocation(pAllocator->pUserData, size, 0, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
         for (CountType i = 0; i < objCount; ++i) {
             pResult[i] = create_structure_copy(pObjs[i], pAllocator);
         }
     }
     return pResult;
+}
+
+template <typename CountType, typename ObjectType>
+inline ObjectType** create_dynamic_pointer_array_copy(CountType objCount, const ObjectType* const* ppObjs, const VkAllocationCallbacks* pAllocator)
+{
+    ObjectType** ppResult = nullptr;
+    if (objCount && ppObjs) {
+        pAllocator = validate_allocation_callbacks(pAllocator);
+        auto size = objCount * sizeof(ObjectType*);
+        ppResult = (ObjectType**)pAllocator->pfnAllocation(pAllocator->pUserData, size, 0, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+        for (CountType i = 0; i < objCount; ++i) {
+            ppResult[i] = create_dynamic_array_copy(1, ppObjs[i], pAllocator);
+        }
+    }
+    return ppResult;
 }
 
 inline char* create_dynamic_string_copy(const char* pStr, const VkAllocationCallbacks* pAllocator)
@@ -130,6 +146,18 @@ inline void destroy_dynamic_array_copy(CountType objCount, const ObjectType* pOb
             destroy_structure_copy(pObjs[i], pAllocator);
         }
         pAllocator->pfnFree(pAllocator->pUserData, (void*)pObjs);
+    }
+}
+
+template <typename CountType, typename ObjectType>
+inline void destroy_dynamic_pointer_array_copy(CountType objCount, const ObjectType* const* ppObjs, const VkAllocationCallbacks* pAllocator)
+{
+    if (objCount && ppObjs) {
+        pAllocator = validate_allocation_callbacks(pAllocator);
+        for (CountType i = 0; i < objCount; ++i) {
+            destroy_dynamic_array_copy(1, ppObjs[i], pAllocator);
+        }
+        pAllocator->pfnFree(pAllocator->pUserData, (void*)ppObjs);
     }
 }
 

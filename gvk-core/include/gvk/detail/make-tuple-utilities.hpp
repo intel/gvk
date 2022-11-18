@@ -216,23 +216,47 @@ GVK_STUB_MAKE_TUPLE_DEFINITION(VkImportSemaphoreWin32HandleInfoKHR)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Video encode/decode
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoDecodeH264DpbSlotInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoDecodeH264MvcEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoDecodeH264PictureInfoEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoDecodeH264ProfileInfoEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoDecodeH264CapabilitiesEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoDecodeH264SessionParametersAddInfoEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoDecodeH264SessionParametersCreateInfoEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoDecodeH264PictureInfoEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoDecodeH264DpbSlotInfoEXT)
+// Decode H265
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoDecodeH265ProfileInfoEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoDecodeH265CapabilitiesEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoDecodeH265SessionParametersAddInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoDecodeH265DpbSlotInfoEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoDecodeH265SessionParametersCreateInfoEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoDecodeH265PictureInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264DpbSlotInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264NaluSliceEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264ReferenceListsEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoDecodeH265DpbSlotInfoEXT)
+// Encode H264
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264CapabilitiesEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264SessionParametersAddInfoEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264SessionParametersCreateInfoEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264DpbSlotInfoEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264ReferenceListsInfoEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264NaluSliceInfoEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264VclFrameInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265DpbSlotInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265NaluSliceSegmentEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265ReferenceListsEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264EmitPictureParametersInfoEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264ProfileInfoEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264RateControlInfoEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264QpEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264FrameSizeEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264RateControlLayerInfoEXT)
+// Encode H265
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265CapabilitiesEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265SessionParametersAddInfoEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265SessionParametersCreateInfoEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265DpbSlotInfoEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265ReferenceListsInfoEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265NaluSliceSegmentInfoEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265VclFrameInfoEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265EmitPictureParametersInfoEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265ProfileInfoEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265RateControlInfoEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265QpEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265FrameSizeEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265RateControlLayerInfoEXT)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Special case members
@@ -255,6 +279,22 @@ inline auto make_tuple(const VkAccelerationStructureBuildGeometryInfoKHR& obj)
     );
 }
 
+inline auto make_tuple(const VkAccelerationStructureTrianglesOpacityMicromapEXT& obj)
+{
+    return std::make_tuple(
+        obj.sType,
+        detail::PNextTupleElementWrapper{ obj.pNext },
+        obj.indexType,
+        obj.indexBuffer,
+        obj.indexStride,
+        obj.baseTriangle,
+        obj.usageCountsCount,
+        detail::ArrayTupleElementWrapper<VkMicromapUsageEXT>{ (size_t)obj.usageCountsCount, obj.pUsageCounts },
+        detail::PointerArrayTupleElementWrapper<VkMicromapUsageEXT>{ (size_t)obj.usageCountsCount, obj.ppUsageCounts },
+        obj.micromap
+    );
+}
+
 inline auto make_tuple(const VkAccelerationStructureVersionInfoKHR& obj)
 {
     return std::make_tuple(
@@ -263,6 +303,37 @@ inline auto make_tuple(const VkAccelerationStructureVersionInfoKHR& obj)
         // NOTE : pVersionData is expected to point to the header of a previously
         //  serialized acceleration structure, so this comparison just uses the
         //  address...this can be revisited if deep comparisons become necessary.
+        obj.pVersionData
+    );
+}
+
+inline auto make_tuple(const VkMicromapBuildInfoEXT& obj)
+{
+    return std::make_tuple(
+        obj.sType,
+        detail::PNextTupleElementWrapper { obj.pNext },
+        obj.type,
+        obj.flags,
+        obj.mode,
+        obj.dstMicromap,
+        obj.usageCountsCount,
+        detail::ArrayTupleElementWrapper<VkMicromapUsageEXT>{ (size_t)obj.usageCountsCount, obj.pUsageCounts },
+        detail::PointerArrayTupleElementWrapper<VkMicromapUsageEXT>{ (size_t)obj.usageCountsCount, obj.ppUsageCounts },
+        obj.data,
+        obj.scratchData,
+        obj.triangleArray,
+        obj.triangleArrayStride
+    );
+}
+
+inline auto make_tuple(const VkMicromapVersionInfoEXT& obj)
+{
+    return std::make_tuple(
+        obj.sType,
+        detail::PNextTupleElementWrapper { obj.pNext },
+        // NOTE : pVersionData is expected to point to the header of a previously
+        //  serialized micromap, so this comparison just uses the address...this can be
+        //  revisited if deep comparisons become necessary.
         obj.pVersionData
     );
 }
