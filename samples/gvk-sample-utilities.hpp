@@ -48,7 +48,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //  of gvk::Instance, gvk::Device(s)/gvk::Queue(s), gvk::WsiManager (Window
 //  System Integration) and several other utility objects.  GvkSampleContext is
 //  able to customize creation logic for these objects via virtual calls.
-class GvkSampleContext
+class GvkSampleContext final
     : public gvk::Context
 {
 private:
@@ -122,16 +122,16 @@ protected:
         auto ppEnabledLayerNames = pInstanceCreateInfo->ppEnabledLayerNames;
         std::vector<const char*> layers(ppEnabledLayerNames, ppEnabledLayerNames + enabledLayerCount);
 
-        // The order of layers matters, if you're trying to debug with both api dump
-        //  and validation for instance, ensure that api dump is listed first so that
-        //  both layers output matching handle id's...
+        // The order of layers matters, if you're using both VK_LAYER_LUNARG_api_dump
+        //  and VK_LAYER_KHRONOS_validation for instance, ensure that api dump is
+        //  listed first so that both layers output matching handle id's...
 #if 0
-        layers.push_back("VK_LAYER_LUNARG_api_dump");
-#endif
         layers.push_back("VK_LAYER_KHRONOS_validation");
+#endif
+
         auto instanceCreateInfo = *pInstanceCreateInfo;
         instanceCreateInfo.enabledLayerCount = (uint32_t)layers.size();
-        instanceCreateInfo.ppEnabledLayerNames = layers.data();
+        instanceCreateInfo.ppEnabledLayerNames = !layers.empty() ? layers.data() : nullptr;
 
         // Call the base implmentation of gvk::Context::create_instance() with the
         //  modified VkInstanceCreateInfo...
@@ -333,7 +333,7 @@ inline VkResult gvk_sample_create_pipeline(
         // Create a gvk::ShaderModule for the vertex shader...
         auto vertexShaderModuleCreateInfo = gvk::get_default<VkShaderModuleCreateInfo>();
         vertexShaderModuleCreateInfo.codeSize = vertexShaderInfo.spirv.size() * sizeof(uint32_t);
-        vertexShaderModuleCreateInfo.pCode = vertexShaderInfo.spirv.data();
+        vertexShaderModuleCreateInfo.pCode = !vertexShaderInfo.spirv.empty() ? vertexShaderInfo.spirv.data() : nullptr;
         gvk::ShaderModule vertexShaderModule;
         gvk_result(gvk::ShaderModule::create(renderPass.get<gvk::Device>(), &vertexShaderModuleCreateInfo, nullptr, &vertexShaderModule));
         auto vertexPipelineShaderStageCreateInfo = gvk::get_default<VkPipelineShaderStageCreateInfo>();
@@ -343,7 +343,7 @@ inline VkResult gvk_sample_create_pipeline(
         // Create a gvk::ShaderModule for the fragment shader...
         auto fragmentShaderModuleCreateInfo = gvk::get_default<VkShaderModuleCreateInfo>();
         fragmentShaderModuleCreateInfo.codeSize = fragmentShaderInfo.spirv.size() * sizeof(uint32_t);
-        fragmentShaderModuleCreateInfo.pCode = fragmentShaderInfo.spirv.data();
+        fragmentShaderModuleCreateInfo.pCode = !fragmentShaderInfo.spirv.empty() ? fragmentShaderInfo.spirv.data() : nullptr;
         gvk::ShaderModule fragmentShaderModule;
         gvk_result(gvk::ShaderModule::create(renderPass.get<gvk::Device>(), &fragmentShaderModuleCreateInfo, nullptr, &fragmentShaderModule));
         auto fragmentPipelineShaderStageCreateInfo = gvk::get_default<VkPipelineShaderStageCreateInfo>();
@@ -368,7 +368,7 @@ inline VkResult gvk_sample_create_pipeline(
         pipelineVertexInputStateCreateInfo.vertexBindingDescriptionCount = 1;
         pipelineVertexInputStateCreateInfo.pVertexBindingDescriptions = &vertexInputBindingDescription;
         pipelineVertexInputStateCreateInfo.vertexAttributeDescriptionCount = (uint32_t)vertexInputAttributeDescriptions.size();
-        pipelineVertexInputStateCreateInfo.pVertexAttributeDescriptions = vertexInputAttributeDescriptions.data();
+        pipelineVertexInputStateCreateInfo.pVertexAttributeDescriptions = !vertexInputAttributeDescriptions.empty() ? vertexInputAttributeDescriptions.data() : nullptr;
 
         // VkPipelineRasterizationStateCreateInfo describes how rasterization should
         //  occur...this includes parameters for polygon mode, winding order, face
@@ -411,7 +411,7 @@ inline VkResult gvk_sample_create_pipeline(
         //  gvk::Pipeline that are purposefully configured will have an effect.
         auto graphicsPipelineCreateInfo = gvk::get_default<VkGraphicsPipelineCreateInfo>();
         graphicsPipelineCreateInfo.stageCount = (uint32_t)pipelineShaderStageCreateInfos.size();
-        graphicsPipelineCreateInfo.pStages = pipelineShaderStageCreateInfos.data();
+        graphicsPipelineCreateInfo.pStages = !pipelineShaderStageCreateInfos.empty() ? pipelineShaderStageCreateInfos.data() : nullptr;
         if (pipelineVertexInputStateCreateInfo.vertexAttributeDescriptionCount) {
             graphicsPipelineCreateInfo.pVertexInputState = &pipelineVertexInputStateCreateInfo;
         }
@@ -454,7 +454,7 @@ inline VkResult gvk_sample_allocate_descriptor_sets(const gvk::Pipeline& pipelin
         descriptorPoolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
         descriptorPoolCreateInfo.maxSets = (uint32_t)vkDescriptorSetLayouts.size();
         descriptorPoolCreateInfo.poolSizeCount = (uint32_t)descriptorPoolSizes.size();
-        descriptorPoolCreateInfo.pPoolSizes = descriptorPoolSizes.data();
+        descriptorPoolCreateInfo.pPoolSizes = !descriptorPoolSizes.empty() ? descriptorPoolSizes.data() : nullptr;
         gvk::DescriptorPool descriptorPool;
         gvk_result(gvk::DescriptorPool::create(pipeline.get<gvk::Device>(), &descriptorPoolCreateInfo, nullptr, &descriptorPool));
 
@@ -469,7 +469,7 @@ inline VkResult gvk_sample_allocate_descriptor_sets(const gvk::Pipeline& pipelin
         auto descriptorSetAllocateInfo = gvk::get_default<VkDescriptorSetAllocateInfo>();
         descriptorSetAllocateInfo.descriptorPool = descriptorPool;
         descriptorSetAllocateInfo.descriptorSetCount = (uint32_t)vkDescriptorSetLayouts.size();
-        descriptorSetAllocateInfo.pSetLayouts = vkDescriptorSetLayouts.data();
+        descriptorSetAllocateInfo.pSetLayouts = !vkDescriptorSetLayouts.empty() ? vkDescriptorSetLayouts.data() : nullptr;
         pDescriptorSets->resize(vkDescriptorSetLayouts.size());
         gvk_result(gvk::DescriptorSet::allocate(pipeline.get<gvk::Device>(), &descriptorSetAllocateInfo, pDescriptorSets->data()));
     } gvk_result_scope_end

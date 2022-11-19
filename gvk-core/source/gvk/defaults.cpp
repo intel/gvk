@@ -36,9 +36,9 @@ const VkApplicationInfo& get_default<VkApplicationInfo>()
     static const VkApplicationInfo DefaultApplicationInfo {
         /* .sType              = */ get_stype<VkApplicationInfo>(),
         /* .pNext              = */ nullptr,
-        /* .pApplicationName   = */ "Intel GVK Application",
+        /* .pApplicationName   = */ "Intel(R) GPA Utilities for Vulkan*",
         /* .applicationVersion = */ 0,
-        /* .pEngineName        = */ "Intel GVK",
+        /* .pEngineName        = */ "Intel(R) GPA Utilities for Vulkan*",
         /* .engineVersion      = */ 0,
         /* .apiVersion         = */ VK_API_VERSION_1_3,
     };

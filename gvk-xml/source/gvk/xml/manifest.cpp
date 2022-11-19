@@ -122,7 +122,7 @@ static void post_process_extensions(Manifest& manifest)
 
 static void post_process_handles(Manifest& manifest)
 {
-    for (auto commandItr : manifest.commands) {
+    for (const auto& commandItr : manifest.commands) {
         const auto& command = commandItr.second;
         if (1 < command.parameters.size()) {
             auto handleItr = manifest.handles.find(command.target);
@@ -143,6 +143,25 @@ static void post_process_handles(Manifest& manifest)
                 default: break;
                 }
             }
+        }
+    }
+}
+
+static void post_process_commands(Manifest& manifest)
+{
+    for (auto& commandItr : manifest.commands) {
+        auto& command = commandItr.second;
+        assert(!command.returnType.empty());
+        if (!command.alias.empty()) {
+            const auto& aliasItr = manifest.commands.find(command.alias);
+            assert(aliasItr != manifest.commands.end());
+            auto name = command.name;
+            auto alias = command.alias;
+            auto extension = command.extension;
+            command = aliasItr->second;
+            command.name = name;
+            command.alias = alias;
+            command.extension = extension;
         }
     }
 }
@@ -256,6 +275,7 @@ Manifest::Manifest(const tinyxml2::XMLDocument& xmlDocument)
         post_process_vendors(vendors, extensions);
         post_process_extensions(*this);
         post_process_handles(*this);
+        post_process_commands(*this);
         post_process_features(*this);
         post_process_object_types(*this);
         post_process_structure_types(*this);

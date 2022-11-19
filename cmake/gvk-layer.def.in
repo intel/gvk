@@ -1,0 +1,4 @@
+
+LIBRARY @args_target@
+EXPORTS
+vkNegotiateLoaderLayerInterfaceVersion

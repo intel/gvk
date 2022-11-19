@@ -57,17 +57,15 @@ private:
         file << "{" << std::endl;
         for (const auto& commandItr : manifest.commands) {
             const auto& command = commandItr.second;
-            if (command.alias.empty()) {
-                CompileGuardGenerator compileGuards(file, command.compileGuards);
-                file << string::replace("    PFN_{commandName} g{commandName} { nullptr };", "{commandName}", command.name) << std::endl;
-            }
+            CompileGuardGenerator compileGuards(file, command.compileGuards);
+            file << string::replace("    PFN_{commandName} g{commandName} { nullptr };", "{commandName}", command.name) << std::endl;
         }
         file << std::endl;
         file << "#ifndef VK_NO_PROTOTYPES" << std::endl;
         file << "    static void load_static_entry_points(DispatchTable* pDispatchTable);" << std::endl;
         file << "#endif // VK_NO_PROTOTYPES" << std::endl;
         file << "    static void load_instance_entry_points(VkInstance vkInstance, DispatchTable* pDispatchTable);" << std::endl;
-        file << "    static void load_device_entry_points(VkDevice vkDevkce, DispatchTable* pDispatchTable);" << std::endl;
+        file << "    static void load_device_entry_points(VkDevice vkDevice, DispatchTable* pDispatchTable);" << std::endl;
         file << "    static DispatchTable& get_global_dispatch_table();" << std::endl;
         file << "};" << std::endl;
         file << std::endl;
@@ -75,6 +73,7 @@ private:
 
     static void generate_source(FileGenerator& file, const xml::Manifest& manifest)
     {
+        file << "#include <cassert>" << std::endl;
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk");
         file << std::endl;
@@ -93,6 +92,7 @@ R"(        if (!pDispatchTable->g{commandName}) {
             file, manifest,
             "load_instance_entry_points(VkInstance vkInstance, DispatchTable* pDispatchTable)",
 R"(        if (!pDispatchTable->g{commandName}) {
+            assert(pDispatchTable->gvkGetInstanceProcAddr);
             pDispatchTable->g{commandName} = (PFN_{commandName})pDispatchTable->gvkGetInstanceProcAddr(vkInstance, "{commandName}");
         })"
         );
@@ -101,6 +101,7 @@ R"(        if (!pDispatchTable->g{commandName}) {
             file, manifest,
             "load_device_entry_points(VkDevice vkDevice, DispatchTable* pDispatchTable)",
 R"(        if (!pDispatchTable->g{commandName}) {
+            assert(pDispatchTable->gvkGetDeviceProcAddr);
             pDispatchTable->g{commandName} = (PFN_{commandName})pDispatchTable->gvkGetDeviceProcAddr(vkDevice, "{commandName}");
         })"
         );
@@ -126,7 +127,7 @@ R"(        if (!pDispatchTable->g{commandName}) {
         file << "    if (pDispatchTable) {" << std::endl;
         for (const auto& commandItr : manifest.commands) {
             const auto& command = commandItr.second;
-            if (command.alias.empty() && predicate(command)) {
+            if (predicate(command)) {
                 CompileGuardGenerator compileGuards(file, command.compileGuards);
                 file << string::replace(source, "{commandName}", command.name) << std::endl;
             }

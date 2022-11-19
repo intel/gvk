@@ -210,7 +210,7 @@ private:
             "        ",
             "((const VkBaseInStructure*)pNext)->sType",
             "printer.print_field(\"pNext\", *(const {structureType}*)pNext);",
-            "assert(false && \"Unrecognized VkStructureType\");"
+            "printer.print_field(\"pNext\", (const char*)\"VK_STRUCTURE_TYPE_UNKNOWN\");"
         );
         file << "    } else {" << std::endl;
         file << "        printer.print_pointer(\"pNext\", (const VkBaseInStructure*)pNext);" << std::endl;

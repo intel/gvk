@@ -104,7 +104,7 @@ int main(int, const char*[])
 {
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         GvkSampleContext context;
-        gvk_result(GvkSampleContext::create("Intel GVK - Getting Started - 04 - Render Target", &context));
+        gvk_result(GvkSampleContext::create("Intel(R) GPA Utilities for Vulkan* - Getting Started - 04 - Render Target", &context));
 
         // Create a gvk::RenderTarget.  We're going to want to be able to render to
         //  this gvk::RenderTarget and the gvk::WsiManager gvk::RenderTarget objects

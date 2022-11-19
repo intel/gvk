@@ -27,7 +27,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk/cppgen/compile-guard-generator.hpp"
 #include "gvk/cppgen/utilities.hpp"
 
-#include "gvk/string.hpp"
+#include <cassert>
 
 namespace gvk {
 namespace cppgen {
@@ -149,6 +149,18 @@ bool structure_requires_custom_serialization(const std::string& apiElementName)
     return structure_requires_custom_implementation(apiElementName) || sStructuresRequiringCustomImplementation.count(apiElementName);
 }
 
+xml::Command append_return_result_parameter(xml::Command command)
+{
+    assert(!command.returnType.empty());
+    if (command.returnType != "void") {
+        xml::Parameter result;
+        result.type = command.returnType;
+        result.name = "gvkResult";
+        command.parameters.push_back(result);
+    }
+    return command;
+}
+
 std::string get_command_args(const xml::Command& command, bool types, bool names)
 {
     std::stringstream strStrm;
@@ -165,6 +177,12 @@ std::string get_command_args(const xml::Command& command, bool types, bool names
         }
         if (names) {
             strStrm << parameter.name;
+        }
+        if (types) {
+            const auto& length = parameter.length;
+            if (!length.empty() && length.front() == '[' && length.back() == ']') {
+                strStrm << length;
+            }
         }
     }
     return strStrm.str();

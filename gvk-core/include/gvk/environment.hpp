@@ -26,41 +26,40 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk/cppgen/file-generator.hpp"
-#include "gvk/xml/command.hpp"
-#include "gvk/xml/manifest.hpp"
-#include "gvk/string.hpp"
+#include "gvk/defines.hpp"
 
 #include <string>
 
 namespace gvk {
-namespace cppgen {
 
-bool is_static_const_value(const std::string& apiElementName);
-bool is_strongly_typed_bitmask(const xml::Manifest& manifest, const std::string& apiElementName);
-bool structure_requires_custom_implementation(const std::string& name);
-bool structure_requires_custom_serialization(const std::string& name);
-xml::Command append_return_result_parameter(xml::Command command);
-std::string get_command_args(const xml::Command& command, bool types = true, bool names = true);
+/**
+Gets the value of a given environment variable
+@param [in] key The environment variable to get the value of
+@return The value of the given environment variable
+*/
+std::string get_env_var(const std::string& key);
 
-std::set<std::string> get_inner_scope_compile_guards(
-    const std::set<std::string>& outerScopeCompileGuards,
-    std::set<std::string> innerScopeCompileGuards
-);
+/**
+Sets the value of a given environment variable
+@param [in] key The environment variable to set the value of
+@param [in] value The value to set for the given environment variable
+*/
+void set_env_var(const std::string& key, const std::string& value);
 
-std::vector<string::Replacement> get_inner_scope_replacements(
-    const std::vector<string::Replacement>& outerScopeReplacements,
-    std::vector<string::Replacement> innerScopeReplacements
-);
+/**
+Appends a given value to a given environment variable
+@param [in] key The environment variable to append the given value to
+@param [in] value The value to append to the given environment variable
+*/
+void append_value_to_env_var(const std::string& key, const std::string& value);
 
-void generate_pnext_switch(
-    FileGenerator& file,
-    const xml::Manifest& manifest,
-    const std::string& indentation,
-    const std::string& evaluation,
-    const std::string& caseProcessor,
-    const std::string& defaultProcessor
-);
+#if defined(_WIN32) || defined(_WIN64)
+/**
+Sets the environment variable VK_LAYER_PATH with the explicit layer paths present in HKEY_LOCAL_MACHINE:"SOFTWARE\\Khronos\\Vulkan\\ExplicitLayers"
+NOTE : If the environment variable VK_LAYER_PATH is already set when this function is called it noops
+NOTE : After calling this function, append_value_to_env_var("VK_LAYER_PATH", "custom/layer/path") can be used to enable custom layers and built in layers simultaneously
+*/
+void set_vk_layer_path_from_windows_registry();
+#endif
 
-} // namespace cppgen
 } // namespace gvk

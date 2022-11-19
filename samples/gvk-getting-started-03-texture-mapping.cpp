@@ -208,7 +208,7 @@ int main(int, const char*[])
 {
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         GvkSampleContext context;
-        gvk_result(GvkSampleContext::create("Intel GVK - Getting Started - 03 - Texture Mapping", &context));
+        gvk_result(GvkSampleContext::create("Intel(R) GPA Utilities for Vulkan* - Getting Started - 03 - Texture Mapping", &context));
 
         gvk::spirv::ShaderInfo vertexShaderInfo{ };
         vertexShaderInfo.language = gvk::spirv::ShadingLanguage::Glsl;

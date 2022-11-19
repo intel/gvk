@@ -42,7 +42,7 @@ int main(int, const char*[])
         //  and several other utility objects.  GvkSampleContext extends gvk::Context.
         //  GvkSampleContext's definition can be found in "gvk-sample-utilities.hpp"...
         GvkSampleContext context;
-        gvk_result(GvkSampleContext::create("Intel GVK - Getting Started - 00 - Triangle", &context));
+        gvk_result(GvkSampleContext::create("Intel(R) GPA Utilities for Vulkan* - Getting Started - 00 - Triangle", &context));
 
         // We'll prepare two very simple shaders...
         gvk::spirv::ShaderInfo vertexShaderInfo{ };

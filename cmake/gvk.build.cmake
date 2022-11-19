@@ -24,7 +24,7 @@ macro(gvk_set_target_option target option)
 endmacro()
 
 function(gvk_setup_target)
-    cmake_parse_arguments(args "" "target;folder" "linkLibraries;includeDirectories;includeFiles;sourceFiles;inputFiles;outputFiles;compileDefinitions" ${ARGN})
+    cmake_parse_arguments(args "" "target;folder" "linkLibraries;includeDirectories;includeFiles;sourceFiles;compileDefinitions" ${ARGN})
     target_include_directories(${args_target} PUBLIC "${args_includeDirectories}")
     target_compile_definitions(${args_target} PUBLIC "${args_compileDefinitions}")
     target_link_libraries(${args_target} PUBLIC "${args_linkLibraries}")
@@ -63,6 +63,50 @@ function(gvk_add_code_generator)
         OUTPUT ${args_outputFiles}
         COMMAND "${args_target}" "${args_inputFiles}"
         DEPENDS ${args_target} ${args_inputFiles}
+    )
+endfunction()
+
+function(gvk_add_layer)
+    cmake_parse_arguments(args "" "target;folder" "linkLibraries;includeDirectories;includeFiles;sourceFiles;compileDefinitions;description;version;company;copyright" ${ARGN})
+    if(NOT args_version)
+        set(args_version 1)
+    endif()
+    if(NOT args_company)
+        set(args_company "Intel Corporation")
+    endif()
+    if(NOT args_copyright)
+        set(args_copyright "Copyright Intel Corporation")
+    endif()
+    if(MSVC)
+        configure_file("${CMAKE_CURRENT_FUNCTION_LIST_DIR}/gvk-layer.def.in" "${CMAKE_CURRENT_BINARY_DIR}/${args_target}.def")
+        configure_file("${CMAKE_CURRENT_FUNCTION_LIST_DIR}/gvk-layer.rc.in" "${CMAKE_CURRENT_BINARY_DIR}/${args_target}.rc")
+        list(APPEND args_sourceFiles
+            "${CMAKE_CURRENT_BINARY_DIR}/${args_target}.def"
+            "${CMAKE_CURRENT_BINARY_DIR}/${args_target}.rc"
+        )
+    endif()
+    add_library(${args_target} SHARED "${args_includeFiles}" "${args_sourceFiles}")
+    list(APPEND args_linkLibraries gvk-layer)
+    gvk_setup_target(
+        target              ${args_target}
+        folder             "${args_folder}"
+        linkLibraries       ${args_linkLibraries}
+        includeDirectories "${args_includeDirectories}"
+        includeFiles       "${args_includeFiles}"
+        sourceFiles        "${args_sourceFiles}"
+        compileDefinitions  ${args_compileDefinitions}
+    )
+    if(MSVC)
+        target_compile_options(${args_target} PRIVATE /guard:cf)
+        target_link_options(${args_target} PRIVATE /guard:cf /DYNAMICBASE)
+        set(libraryPath ".\\\\${args_target}.dll")
+    else()
+        set(libraryPath "./lib${args_target}.so")
+    endif()
+    configure_file("${CMAKE_CURRENT_FUNCTION_LIST_DIR}/gvk-layer.json.in" "${CMAKE_CURRENT_BINARY_DIR}/${args_target}.json")
+    add_custom_command(
+        TARGET ${args_target} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_BINARY_DIR}/${args_target}.json" "$<TARGET_FILE_DIR:${args_target}>"
     )
 endfunction()
 
