@@ -65,6 +65,7 @@ VkResult create_image_and_view(const gvk::Context& context, gvk::ImageView* pIma
         auto imageCreateInfo = gvk::get_default<VkImageCreateInfo>();
         imageCreateInfo.extent.width = width;
         imageCreateInfo.extent.height = height;
+        imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
         imageCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
         imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
         imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -162,9 +163,10 @@ VkResult create_image_and_view(const gvk::Context& context, gvk::ImageView* pIma
         // Create gvk::ImageView...
         auto imageViewCreateInfo = gvk::get_default<VkImageViewCreateInfo>();
         imageViewCreateInfo.image = image;
+        imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
         imageViewCreateInfo.format = imageCreateInfo.format;
         gvk_result(gvk::ImageView::create(context.get_devices()[0], &imageViewCreateInfo, nullptr, pImageView));
-    } gvk_result_scope_end
+    } gvk_result_scope_end;
 
     // If we got image data from stb, we need to free it...
     if (pImageData) {
@@ -200,7 +202,7 @@ VkResult create_mesh(const gvk::Context& context, const glm::vec2& extent, gvk::
             (uint32_t)indices.size(),
             indices.data()
         ));
-    } gvk_result_scope_end
+    } gvk_result_scope_end;
     return gvkResult;
 }
 
@@ -209,6 +211,12 @@ int main(int, const char*[])
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         GvkSampleContext context;
         gvk_result(GvkSampleContext::create("Intel(R) GPA Utilities for Vulkan* - Getting Started - 03 - Texture Mapping", &context));
+
+        gvk::sys::Surface sysSurface;
+        gvk_result(gvk_sample_create_sys_surface(context, &sysSurface));
+
+        gvk::WsiManager wsiManager;
+        gvk_result(gvk_sample_create_wsi_manager(context, sysSurface, &wsiManager));
 
         gvk::spirv::ShaderInfo vertexShaderInfo{ };
         vertexShaderInfo.language = gvk::spirv::ShadingLanguage::Glsl;
@@ -258,7 +266,7 @@ int main(int, const char*[])
         )";
         gvk::Pipeline pipeline;
         gvk_result(gvk_sample_create_pipeline<VertexPositionTexcoord>(
-            context.get_wsi_manager().get_render_pass(),
+            wsiManager.get_render_pass(),
             VK_CULL_MODE_BACK_BIT,
             vertexShaderInfo,
             fragmentShaderInfo,
@@ -332,8 +340,8 @@ int main(int, const char*[])
         gvk::math::Transform quadTransform;
 
         while (
-            !(context.get_sys_surface().get_input().keyboard.down(gvk::sys::Key::Escape)) &&
-            !(context.get_sys_surface().get_status() & gvk::sys::Surface::CloseRequested)) {
+            !(sysSurface.get_input().keyboard.down(gvk::sys::Key::Escape)) &&
+            !(sysSurface.get_status() & gvk::sys::Surface::CloseRequested)) {
             gvk::sys::Surface::update();
 
             clock.update();
@@ -346,7 +354,6 @@ int main(int, const char*[])
             uniforms.camera.projection = camera.projection();
             memcpy(uniformBufferAllocationInfo.pMappedData, &uniforms, sizeof(Uniforms));
 
-            auto& wsiManager = context.get_wsi_manager();
             if (wsiManager.update()) {
                 auto extent = wsiManager.get_swapchain().get<VkSwapchainCreateInfoKHR>().imageExtent;
                 camera.set_aspect_ratio(extent.width, extent.height);
@@ -369,7 +376,7 @@ int main(int, const char*[])
                     gvk_result(vkEndCommandBuffer(commandBuffer));
                 }
             }
-            gvk_result(gvk_sample_acquire_submit_present(context));
+            gvk_result(gvk_sample_acquire_submit_present(wsiManager));
         }
         gvk_result(vkDeviceWaitIdle(context.get_devices()[0]));
     } gvk_result_scope_end;

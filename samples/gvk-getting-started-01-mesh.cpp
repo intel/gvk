@@ -72,6 +72,12 @@ int main(int, const char*[])
         GvkSampleContext context;
         gvk_result(GvkSampleContext::create("Intel(R) GPA Utilities for Vulkan* - Getting Started - 01 - Mesh", &context));
 
+        gvk::sys::Surface sysSurface;
+        gvk_result(gvk_sample_create_sys_surface(context, &sysSurface));
+
+        gvk::WsiManager wsiManager;
+        gvk_result(gvk_sample_create_wsi_manager(context, sysSurface, &wsiManager));
+
         gvk::spirv::ShaderInfo vertexShaderInfo{ };
         vertexShaderInfo.language = gvk::spirv::ShadingLanguage::Glsl;
         vertexShaderInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -111,7 +117,7 @@ int main(int, const char*[])
         )";
         gvk::Pipeline pipeline;
         gvk_result(gvk_sample_create_pipeline<VertexPositionColor>(
-            context.get_wsi_manager().get_render_pass(),
+            wsiManager.get_render_pass(),
             VK_CULL_MODE_BACK_BIT,
             vertexShaderInfo,
             fragmentShaderInfo,
@@ -123,10 +129,9 @@ int main(int, const char*[])
         gvk_result(create_mesh(context, &mesh));
 
         while (
-            !(context.get_sys_surface().get_input().keyboard.down(gvk::sys::Key::Escape)) &&
-            !(context.get_sys_surface().get_status() & gvk::sys::Surface::CloseRequested)) {
+            !(sysSurface.get_input().keyboard.down(gvk::sys::Key::Escape)) &&
+            !(sysSurface.get_status() & gvk::sys::Surface::CloseRequested)) {
             gvk::sys::Surface::update();
-            auto& wsiManager = context.get_wsi_manager();
             if (wsiManager.update()) {
                 for (size_t i = 0; i < wsiManager.get_command_buffers().size(); ++i) {
                     const auto& commandBuffer = wsiManager.get_command_buffers()[i];
@@ -148,7 +153,7 @@ int main(int, const char*[])
                     gvk_result(vkEndCommandBuffer(commandBuffer));
                 }
             }
-            gvk_result(gvk_sample_acquire_submit_present(context));
+            gvk_result(gvk_sample_acquire_submit_present(wsiManager));
         }
         gvk_result(vkDeviceWaitIdle(context.get_devices()[0]));
     } gvk_result_scope_end;

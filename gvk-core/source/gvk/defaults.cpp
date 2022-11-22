@@ -101,7 +101,7 @@ const VkDescriptorBufferInfo& get_default<VkDescriptorBufferInfo>()
     static const VkDescriptorBufferInfo DefaultDescriptorBufferInfo {
         /* .buffer = */ VK_NULL_HANDLE,
         /* .offset = */ { },
-        /* .range  = */ VK_WHOLE_SIZE
+        /* .range  = */ VK_WHOLE_SIZE,
     };
     return DefaultDescriptorBufferInfo;
 }
@@ -110,26 +110,41 @@ template <>
 const VkDebugUtilsMessengerCreateInfoEXT& get_default<VkDebugUtilsMessengerCreateInfoEXT>()
 {
     static const VkDebugUtilsMessengerCreateInfoEXT DefaultDebugUtilsMessengerCreateInfo{
-        /* .sType = */ get_stype<VkDebugUtilsMessengerCreateInfoEXT>(),
-        /* .pNext = */ nullptr,
-        /* .flags = */ 0,
+        /* .sType           = */ get_stype<VkDebugUtilsMessengerCreateInfoEXT>(),
+        /* .pNext           = */ nullptr,
+        /* .flags           = */ 0,
         /* .messageSeverity = */
             VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
-        /* .messageType = */
+        /* .messageType     = */
             VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
         /* .pfnUserCallback = */ nullptr,
-        /* .pUserData = */ nullptr
+        /* .pUserData       = */ nullptr,
     };
     return DefaultDebugUtilsMessengerCreateInfo;
 }
 
 template <>
+const VkDeviceQueueCreateInfo& get_default<VkDeviceQueueCreateInfo>()
+{
+    static const float DefaultDeviceQueuePriority { 0 };
+    static const VkDeviceQueueCreateInfo DefaultDeviceQueueCreateInfo {
+        /* .sType            = */ get_stype<VkDeviceQueueCreateInfo>(),
+        /* .pNext            = */ nullptr,
+        /* .flags            = */ 0,
+        /* .uint32_t         = */ 0,
+        /* .uint32_t         = */ 1,
+        /* .pQueuePriorities = */ &DefaultDeviceQueuePriority,
+    };
+    return DefaultDeviceQueueCreateInfo;
+}
+
+template <>
 const VkFramebufferCreateInfo& get_default<VkFramebufferCreateInfo>()
 {
-    static const VkFramebufferCreateInfo DefaultImageCreateInfo {
+    static const VkFramebufferCreateInfo DefaultFramebufferCreateInfo {
         /* .sType           = */ get_stype<VkFramebufferCreateInfo>(),
         /* .pNext           = */ nullptr,
         /* .flags           = */ 0,
@@ -140,7 +155,7 @@ const VkFramebufferCreateInfo& get_default<VkFramebufferCreateInfo>()
         /* .height          = */ 1,
         /* .layers          = */ 1,
     };
-    return DefaultImageCreateInfo;
+    return DefaultFramebufferCreateInfo;
 }
 
 template <>
@@ -150,7 +165,7 @@ const VkImageCreateInfo& get_default<VkImageCreateInfo>()
         /* .sType                 = */ get_stype<VkImageCreateInfo>(),
         /* .pNext                 = */ nullptr,
         /* .flags                 = */ 0,
-        /* .imageType             = */ VK_IMAGE_TYPE_2D,
+        /* .imageType             = */ VK_IMAGE_TYPE_1D,
         /* .format                = */ VK_FORMAT_UNDEFINED,
         /* .extent                = */ { 1, 1, 1 },
         /* .mipLevels             = */ 1,
@@ -179,7 +194,7 @@ const VkImageMemoryBarrier& get_default<VkImageMemoryBarrier>()
         /* .srcQueueFamilyIndex = */ VK_QUEUE_FAMILY_IGNORED,
         /* .dstQueueFamilyIndex = */ VK_QUEUE_FAMILY_IGNORED,
         /* .image               = */ VK_NULL_HANDLE,
-        /* .subresourceRange    = */ get_default<VkImageSubresourceRange>()
+        /* .subresourceRange    = */ get_default<VkImageSubresourceRange>(),
     };
     return DefaultImageMemoryBarrier;
 }
@@ -199,7 +214,7 @@ const VkImageMemoryBarrier2& get_default<VkImageMemoryBarrier2>()
         /* .srcQueueFamilyIndex = */ VK_QUEUE_FAMILY_IGNORED,
         /* .dstQueueFamilyIndex = */ VK_QUEUE_FAMILY_IGNORED,
         /* .image               = */ VK_NULL_HANDLE,
-        /* .subresourceRange    = */ get_default<VkImageSubresourceRange>()
+        /* .subresourceRange    = */ get_default<VkImageSubresourceRange>(),
     };
     return DefaultImageMemoryBarrier;
 }
@@ -237,7 +252,7 @@ const VkImageViewCreateInfo& get_default<VkImageViewCreateInfo>()
         /* .pNext            = */ nullptr,
         /* .flags            = */ 0,
         /* .image            = */ VK_NULL_HANDLE,
-        /* .viewType         = */ VK_IMAGE_VIEW_TYPE_2D,
+        /* .viewType         = */ VK_IMAGE_VIEW_TYPE_1D,
         /* .format           = */ VK_FORMAT_UNDEFINED,
         /* .components       = */ get_default<VkComponentMapping>(),
         /* .subresourceRange = */ get_default<VkImageSubresourceRange>(),

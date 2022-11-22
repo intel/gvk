@@ -30,6 +30,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk/math/color.hpp"
 #include "gvk/math/transform.hpp"
 #include "gvk/spirv/context.hpp"
+#include "gvk/system/surface.hpp"
 #include "gvk/system/time.hpp"
 #include "gvk/context.hpp"
 #include "gvk/defaults.hpp"
@@ -39,6 +40,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk/render-target.hpp"
 #include "gvk/structures.hpp"
 #include "gvk/to-string.hpp"
+#include "gvk/wsi-manager.hpp"
 #include "gvk-sample-png.hpp"
 
 #include <algorithm>
@@ -79,97 +81,33 @@ private:
 public:
     static VkResult create(const char* pApplicationName, GvkSampleContext* pGvkSampleContext)
     {
-        // VkApplicationInfo is an optional member of gvk::Context::CreateInfo.
+        // Setup a VkInstanceCreateInfo.
         auto applicationInfo = gvk::get_default<VkApplicationInfo>();
         applicationInfo.pApplicationName = pApplicationName;
+        auto instanceCreateInfo = gvk::get_default<VkInstanceCreateInfo>();
+        instanceCreateInfo.pApplicationInfo = &applicationInfo;
 
-        // gvk::sys::Surface::CreateInfo is an optional member of gvk::Context::CreateInfo.
-        //  Providing a gvk::sys::Surface::CreateInfo indicates that platform specific
-        //  surface extensions should be loaded.
-        auto sysSurfaceCreateInfo = gvk::get_default<gvk::sys::Surface::CreateInfo>();
+        // Setup VkDeviceCreateInfo with desired VkPhysicalDeviceFeatures.
+        auto physicalDeviceFeatures = gvk::get_default<VkPhysicalDeviceFeatures>();
+        physicalDeviceFeatures.samplerAnisotropy = VK_TRUE;
+        auto deviceCreateInfo = gvk::get_default<VkDeviceCreateInfo>();
+        deviceCreateInfo.pEnabledFeatures = &physicalDeviceFeatures;
 
         // VkDebugUtilsMessengerCreateInfoEXT is an optional member of gvk::Context::CreateInfo.
         //  Providing a VkDebugUtilsMessengerCreateInfoEXT indicates that the debug
         //  utils extension should be loaded.
         auto debugUtilsMessengerCreateInfo = gvk::get_default<VkDebugUtilsMessengerCreateInfoEXT>();
-        debugUtilsMessengerCreateInfo.messageSeverity =
-            // VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-            // VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
-            VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-            VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-        debugUtilsMessengerCreateInfo.messageType =
-            VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-            VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-            VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
         debugUtilsMessengerCreateInfo.pfnUserCallback = debug_utils_messenger_callback;
 
         // Populate the gvk::Context::CreateInfo and call the base implementation.
         auto contextCreateInfo = gvk::get_default<gvk::Context::CreateInfo>();
-        contextCreateInfo.pApplicationInfo = &applicationInfo;
-        contextCreateInfo.pSysSurfaceCreateInfo = &sysSurfaceCreateInfo;
+        contextCreateInfo.pInstanceCreateInfo = &instanceCreateInfo;
+        contextCreateInfo.loadApiDumpLayer = VK_FALSE;
+        contextCreateInfo.loadValidationLayer = VK_TRUE;
+        contextCreateInfo.loadWsiExtensions = VK_TRUE;
         contextCreateInfo.pDebugUtilsMessengerCreateInfo = &debugUtilsMessengerCreateInfo;
+        contextCreateInfo.pDeviceCreateInfo = &deviceCreateInfo;
         return gvk::Context::create(&contextCreateInfo, nullptr, pGvkSampleContext);
-    }
-
-protected:
-    VkResult create_instance(const VkInstanceCreateInfo* pInstanceCreateInfo, const VkAllocationCallbacks* pAllocator) override
-    {
-        // If gvk::Context::create_instance() is overriden, you'll receive a
-        //  VkInstanceCreateInfo prepared with any layers/extensions required by the
-        //  gvk::Context...from there you're free to modify it as necessary...
-        assert(pInstanceCreateInfo);
-        auto enabledLayerCount = pInstanceCreateInfo->enabledLayerCount;
-        auto ppEnabledLayerNames = pInstanceCreateInfo->ppEnabledLayerNames;
-        std::vector<const char*> layers(ppEnabledLayerNames, ppEnabledLayerNames + enabledLayerCount);
-
-        // The order of layers matters, if you're using both VK_LAYER_LUNARG_api_dump
-        //  and VK_LAYER_KHRONOS_validation for instance, ensure that api dump is
-        //  listed first so that both layers output matching handle id's...
-#if 0
-        layers.push_back("VK_LAYER_KHRONOS_validation");
-#endif
-
-        auto instanceCreateInfo = *pInstanceCreateInfo;
-        instanceCreateInfo.enabledLayerCount = (uint32_t)layers.size();
-        instanceCreateInfo.ppEnabledLayerNames = !layers.empty() ? layers.data() : nullptr;
-
-        // Call the base implmentation of gvk::Context::create_instance() with the
-        //  modified VkInstanceCreateInfo...
-        return gvk::Context::create_instance(&instanceCreateInfo, pAllocator);
-    }
-
-    VkResult create_devices(const VkDeviceCreateInfo* pDeviceCreateInfo, const VkAllocationCallbacks* pAllocator) override
-    {
-        // If gvk::Context::create_devices() is overriden, you'll receive a
-        //  VkDeviceCreateInfo prepared with any layers/extensions required by the
-        //  gvk::Context...from there you're free to modify it as necessary.  Unlike
-        //  create_instance(), you may opt to populate mDevices directly instead of
-        //  calling into the base implemntation.  This is useful if you need to
-        //  configure multiple gvk::Devices.
-        assert(pDeviceCreateInfo);
-        auto enabledFeatures = gvk::get_default<VkPhysicalDeviceFeatures>();
-        enabledFeatures.samplerAnisotropy = VK_TRUE;
-        auto deviceCreateInfo = *pDeviceCreateInfo;
-        deviceCreateInfo.pEnabledFeatures = &enabledFeatures;
-        return gvk::Context::create_devices(&deviceCreateInfo, pAllocator);
-    }
-
-    VkResult create_wsi_manager(const gvk::WsiManager::CreateInfo* pWsiManagerCreateInfo, const VkAllocationCallbacks* pAllocator) override
-    {
-        // If gvk::Context::create_wsi_manager() is overriden, you'll receive a
-        //  gvk::WsiManager::CreateInfo prepared by the gvk::Context...from there
-        //  you're free to modify it as necessary.
-        assert(pWsiManagerCreateInfo);
-        auto wsiManagerCreateInfo = *pWsiManagerCreateInfo;
-
-        // sampleCount is a request.  The max supported sample count that is less than
-        //  or equal to the requested value will be selected.
-        wsiManagerCreateInfo.sampleCount = VK_SAMPLE_COUNT_64_BIT;
-
-        // depthFormat is a request.  The supported VkFormat with the greatest bit
-        //  depth that is less than or equal to the requested VkFormat will be selected.
-        wsiManagerCreateInfo.depthFormat = VK_FORMAT_D32_SFLOAT;
-        return gvk::Context::create_wsi_manager(&wsiManagerCreateInfo, pAllocator);
     }
 };
 
@@ -273,6 +211,49 @@ struct Uniforms
 };
 
 // Following are utility functions used in gvk samples...
+
+inline VkResult gvk_sample_create_sys_surface(const gvk::Context& context, gvk::sys::Surface* pSysSurface)
+{
+    assert(context);
+    assert(pSysSurface);
+    const auto& vkInstanceCreateInfo = context.get_instance().get<VkInstanceCreateInfo>();
+    auto sysSurfaceCreateInfo = gvk::get_default<gvk::sys::Surface::CreateInfo>();
+    if (vkInstanceCreateInfo.pApplicationInfo) {
+        sysSurfaceCreateInfo.pTitle = vkInstanceCreateInfo.pApplicationInfo->pApplicationName;
+    }
+    return gvk::sys::Surface::create(&sysSurfaceCreateInfo, pSysSurface) ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED;
+}
+
+inline VkResult gvk_sample_create_wsi_manager(const gvk::Context& context, const gvk::sys::Surface& sysSurface, gvk::WsiManager* pWsiManager)
+{
+    assert(context);
+    assert(pWsiManager);
+    auto device = context.get_devices()[0];
+    auto wsiManagerCreateInfo = gvk::get_default<gvk::WsiManager::CreateInfo>();
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+    auto xlibSurfaceCreateInfo = get_default<VkXlibSurfaceCreateInfoKHR>();
+    xlibSurfaceCreateInfo.dpy = (Display*)pContext->mSysSurface.get_display();
+    xlibSurfaceCreateInfo.window = (Window)pContext->mSysSurface.get_window();
+    wsiManagerCreateInfo.pXlibSurfaceCreateInfoKHR = &xlibSurfaceCreateInfo;
+#endif
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+    auto win32SurfaceCreateInfo = gvk::get_default<VkWin32SurfaceCreateInfoKHR>();
+    win32SurfaceCreateInfo.hinstance = GetModuleHandle(NULL);
+    win32SurfaceCreateInfo.hwnd = (HWND)sysSurface.get_hwnd();
+    wsiManagerCreateInfo.pWin32SurfaceCreateInfoKHR = &win32SurfaceCreateInfo;
+#endif
+
+    // sampleCount is a request.  The max supported sample count that is less than
+    //  or equal to the requested value will be selected.
+    wsiManagerCreateInfo.sampleCount = VK_SAMPLE_COUNT_64_BIT;
+
+    // depthFormat is a request.  The supported VkFormat with the greatest bit
+    //  depth that is less than or equal to the requested VkFormat will be selected.
+    wsiManagerCreateInfo.depthFormat = VK_FORMAT_D32_SFLOAT;
+
+    wsiManagerCreateInfo.queueFamilyIndex = gvk::get_queue_family(device, 0).queues[0].get<VkDeviceQueueCreateInfo>().queueFamilyIndex;
+    return gvk::WsiManager::create(device, &wsiManagerCreateInfo, nullptr, pWsiManager);
+}
 
 inline VkResult gvk_sample_validate_shader_info(const gvk::spirv::ShaderInfo& shaderInfo)
 {
@@ -421,7 +402,7 @@ inline VkResult gvk_sample_create_pipeline(
         graphicsPipelineCreateInfo.layout = pipelineLayout;
         graphicsPipelineCreateInfo.renderPass = renderPass;
         gvk_result(gvk::Pipeline::create(renderPass.get<gvk::Device>(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, pPipeline));
-    } gvk_result_scope_end
+    } gvk_result_scope_end;
     return gvkResult;
 }
 
@@ -472,7 +453,7 @@ inline VkResult gvk_sample_allocate_descriptor_sets(const gvk::Pipeline& pipelin
         descriptorSetAllocateInfo.pSetLayouts = !vkDescriptorSetLayouts.empty() ? vkDescriptorSetLayouts.data() : nullptr;
         pDescriptorSets->resize(vkDescriptorSetLayouts.size());
         gvk_result(gvk::DescriptorSet::allocate(pipeline.get<gvk::Device>(), &descriptorSetAllocateInfo, pDescriptorSets->data()));
-    } gvk_result_scope_end
+    } gvk_result_scope_end;
     return gvkResult;
 }
 
@@ -655,17 +636,17 @@ inline VkResult gvk_sample_create_render_target(const gvk::Context& context, Gvk
                 }
             }
         );
-    } gvk_result_scope_end
+    } gvk_result_scope_end;
     return gvkResult;
 }
 
-VkResult gvk_sample_acquire_submit_present(GvkSampleContext& context)
+VkResult gvk_sample_acquire_submit_present(gvk::WsiManager& wsiManager)
 {
     gvk_result_scope_begin(VK_SUCCESS) {
-        const auto& device = context.get_devices()[0];
-        const auto& queue = gvk::get_queue_family(device, 0).queues[0];
-        auto& wsiManager = context.get_wsi_manager();
         if (wsiManager.is_enabled()) {
+            const auto& device = wsiManager.get_swapchain().get<gvk::Device>();
+            const auto& queue = gvk::get_queue_family(device, 0).queues[0];
+
             // If the gvk::WsiManager is enabled, we need to acquire the next gvk::Image to
             //  render to...this method may return VK_SUBOPTIMAL_KHR...the gvk::WsiManager
             //  will update itself when this occurs, so we don't want to bail from the
@@ -696,6 +677,6 @@ VkResult gvk_sample_acquire_submit_present(GvkSampleContext& context)
             vkResult = vkQueuePresentKHR(queue, &presentInfo);
             gvk_result((vkResult == VK_SUCCESS || vkResult == VK_SUBOPTIMAL_KHR) ? VK_SUCCESS : vkResult);
         }
-    } gvk_result_scope_end
+    } gvk_result_scope_end;
     return gvkResult;
 }

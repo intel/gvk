@@ -82,28 +82,15 @@ endif()
 set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
 set(includePath "${includeDirectory}/gvk/")
 set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk/")
-list(APPEND linkLibraries
-    gvk-string
-    gvk-system
-    Vulkan::Vulkan
-)
-if(GVK_ASIO_ENABLED)
-    list(APPEND linkLibraries asio_INTERFACE)
-endif()
-if(GVK_CEREAL_ENABLED)
-    list(APPEND linkLibraries cereal)
-endif()
-if(GVK_STB_ENABLED)
-    list(APPEND linkLibraries stb)
-endif()
-if(GVK_VMA_ENABLED)
-    list(APPEND linkLibraries VulkanMemoryAllocator)
-endif()
 gvk_add_static_library(
     target
         gvk-core
     linkLibraries
-        ${linkLibraries}
+        gvk-string
+        cereal
+        VulkanMemoryAllocator
+        Vulkan::Vulkan
+        ${CMAKE_DL_LIBS}
     includeDirectories
         "${includeDirectory}"
         "${generatedIncludeDirectory}"
@@ -151,6 +138,9 @@ set(testsPath "${CMAKE_CURRENT_LIST_DIR}/tests/")
 gvk_add_target_test(
     target
         gvk-core
+    linkLibraries
+        gvk-system
+        asio_INTERFACE
     sourceFiles
         "${testsPath}/comparison-operator.tests.cpp"
         "${testsPath}/reference.tests.cpp"

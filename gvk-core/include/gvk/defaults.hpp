@@ -62,6 +62,7 @@ template <> const VkAttachmentDescription2& get_default<VkAttachmentDescription2
 template <> const VkBufferImageCopy& get_default<VkBufferImageCopy>();
 template <> const VkDescriptorBufferInfo& get_default<VkDescriptorBufferInfo>();
 template <> const VkDebugUtilsMessengerCreateInfoEXT& get_default<VkDebugUtilsMessengerCreateInfoEXT>();
+template <> const VkDeviceQueueCreateInfo& get_default<VkDeviceQueueCreateInfo>();
 template <> const VkFramebufferCreateInfo& get_default<VkFramebufferCreateInfo>();
 template <> const VkImageCreateInfo& get_default<VkImageCreateInfo>();
 template <> const VkImageMemoryBarrier& get_default<VkImageMemoryBarrier>();

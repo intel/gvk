@@ -106,15 +106,21 @@ int main(int, const char*[])
         GvkSampleContext context;
         gvk_result(GvkSampleContext::create("Intel(R) GPA Utilities for Vulkan* - Getting Started - 04 - Render Target", &context));
 
+        gvk::sys::Surface sysSurface;
+        gvk_result(gvk_sample_create_sys_surface(context, &sysSurface));
+
+        gvk::WsiManager wsiManager;
+        gvk_result(gvk_sample_create_wsi_manager(context, sysSurface, &wsiManager));
+
         // Create a gvk::RenderTarget.  We're going to want to be able to render to
         //  this gvk::RenderTarget and the gvk::WsiManager gvk::RenderTarget objects
         //  using the same gvk::Pipeline objects so the gvk::RenderPass objects need to
         //  be compatible...
         GvkSampleRenderTargetCreateInfo renderTargetCreateInfo{ };
         renderTargetCreateInfo.extent = { 1024, 1024 };
-        renderTargetCreateInfo.sampleCount = context.get_wsi_manager().get_sample_count();
-        renderTargetCreateInfo.colorFormat = context.get_wsi_manager().get_color_format();
-        renderTargetCreateInfo.depthFormat = context.get_wsi_manager().get_depth_format();
+        renderTargetCreateInfo.sampleCount = wsiManager.get_sample_count();
+        renderTargetCreateInfo.colorFormat = wsiManager.get_color_format();
+        renderTargetCreateInfo.depthFormat = wsiManager.get_depth_format();
         gvk::RenderTarget renderTarget;
         gvk_result(gvk_sample_create_render_target(context, renderTargetCreateInfo, &renderTarget));
 
@@ -397,14 +403,14 @@ int main(int, const char*[])
 
         gvk::sys::Clock clock;
         while (
-            !(context.get_sys_surface().get_input().keyboard.down(gvk::sys::Key::Escape)) &&
-            !(context.get_sys_surface().get_status() & gvk::sys::Surface::CloseRequested)) {
+            !(sysSurface.get_input().keyboard.down(gvk::sys::Key::Escape)) &&
+            !(sysSurface.get_status() & gvk::sys::Surface::CloseRequested)) {
             gvk::sys::Surface::update();
             clock.update();
 
             // Update the gvk::math::FreeCameraController...
             auto deltaTime = clock.elapsed<gvk::sys::Seconds<float>>();
-            const auto& input = context.get_sys_surface().get_input();
+            const auto& input = sysSurface.get_input();
             gvk::math::FreeCameraController::UpdateInfo cameraControllerUpdateInfo {
                 /* .deltaTime           = */ deltaTime,
                 /* .moveUp              = */ input.keyboard.down(gvk::sys::Key::Q),
@@ -462,7 +468,6 @@ int main(int, const char*[])
             assert(allocationInfo.pMappedData);
             memcpy(allocationInfo.pMappedData, &floorUbo, sizeof(ObjectUniforms));
 
-            auto& wsiManager = context.get_wsi_manager();
             if (wsiManager.update()) {
                 auto extent = wsiManager.get_swapchain().get<VkSwapchainCreateInfoKHR>().imageExtent;
                 camera.set_aspect_ratio(extent.width, extent.height);
@@ -543,7 +548,7 @@ int main(int, const char*[])
                     gvk_result(vkEndCommandBuffer(commandBuffer));
                 }
             }
-            gvk_result(gvk_sample_acquire_submit_present(context));
+            gvk_result(gvk_sample_acquire_submit_present(wsiManager));
         }
         gvk_result(vkDeviceWaitIdle(context.get_devices()[0]));
     } gvk_result_scope_end;

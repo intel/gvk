@@ -52,12 +52,19 @@ VkResult Context::create(const CreateInfo* pCreateInfo, const VkAllocationCallba
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
 
         // Create gvk::Instance
-        std::vector<const char*> layers;
-        std::vector<const char*> instanceExtensions;
+        auto instanceCreateInfo = pCreateInfo->pInstanceCreateInfo ? *pCreateInfo->pInstanceCreateInfo : get_default<VkInstanceCreateInfo>();
+        std::vector<const char*> layers(instanceCreateInfo.ppEnabledLayerNames, instanceCreateInfo.ppEnabledLayerNames + instanceCreateInfo.enabledLayerCount);
+        if (pCreateInfo->loadApiDumpLayer) {
+            layers.push_back("VK_LAYER_LUNARG_api_dump");
+        }
+        if (pCreateInfo->loadValidationLayer) {
+            layers.push_back("VK_LAYER_KHRONOS_validation");
+        }
+        std::vector<const char*> instanceExtensions(instanceCreateInfo.ppEnabledExtensionNames, instanceCreateInfo.ppEnabledExtensionNames + instanceCreateInfo.enabledExtensionCount);
         if (pCreateInfo->pDebugUtilsMessengerCreateInfo) {
             instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
-        if (pCreateInfo->pSysSurfaceCreateInfo) {
+        if (pCreateInfo->loadWsiExtensions) {
             instanceExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 #ifdef VK_USE_PLATFORM_XLIB_KHR
             instanceExtensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
@@ -66,13 +73,10 @@ VkResult Context::create(const CreateInfo* pCreateInfo, const VkAllocationCallba
             instanceExtensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #endif
         }
-        auto applicationInfo = pCreateInfo->pApplicationInfo ? *pCreateInfo->pApplicationInfo : get_default<VkApplicationInfo>();
-        auto instanceCreateInfo = get_default<VkInstanceCreateInfo>();
-        instanceCreateInfo.pApplicationInfo = &applicationInfo;
         instanceCreateInfo.enabledLayerCount = (uint32_t)layers.size();
-        instanceCreateInfo.ppEnabledLayerNames = layers.data();
+        instanceCreateInfo.ppEnabledLayerNames = !layers.empty() ? layers.data() : nullptr;
         instanceCreateInfo.enabledExtensionCount = (uint32_t)instanceExtensions.size();
-        instanceCreateInfo.ppEnabledExtensionNames = instanceExtensions.data();
+        instanceCreateInfo.ppEnabledExtensionNames = !instanceExtensions.empty() ? instanceExtensions.data() : nullptr;
         gvk_result(pContext->create_instance(&instanceCreateInfo, pAllocator));
 #ifdef VK_NO_PROTOTYPES
         DispatchTable::load_instance_entry_points(pContext->mInstance, &DispatchTable::get_global_dispatch_table());
@@ -84,20 +88,18 @@ VkResult Context::create(const CreateInfo* pCreateInfo, const VkAllocationCallba
         }
 
         // Create gvk::Device
-        std::vector<const char*> deviceExtensions;
-        if (pCreateInfo->pSysSurfaceCreateInfo) {
+        auto deviceCreateInfo = pCreateInfo->pDeviceCreateInfo ? *pCreateInfo->pDeviceCreateInfo : get_default<VkDeviceCreateInfo>();
+        assert(!deviceCreateInfo.queueCreateInfoCount == !deviceCreateInfo.pQueueCreateInfos);
+        if (!deviceCreateInfo.queueCreateInfoCount || !deviceCreateInfo.pQueueCreateInfos) {
+            deviceCreateInfo.queueCreateInfoCount = 1;
+            deviceCreateInfo.pQueueCreateInfos = &gvk::get_default<VkDeviceQueueCreateInfo>();
+        }
+        std::vector<const char*> deviceExtensions(deviceCreateInfo.ppEnabledExtensionNames, deviceCreateInfo.ppEnabledExtensionNames + deviceCreateInfo.enabledExtensionCount);
+        if (pCreateInfo->loadWsiExtensions) {
             deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
         }
-        float queuePriority = 0.0f;
-        auto deviceQueueCreateInfo = get_default<VkDeviceQueueCreateInfo>();
-        deviceQueueCreateInfo.queueFamilyIndex = 0;
-        deviceQueueCreateInfo.queueCount = 1;
-        deviceQueueCreateInfo.pQueuePriorities = &queuePriority;
-        auto deviceCreateInfo = get_default<VkDeviceCreateInfo>();
-        deviceCreateInfo.queueCreateInfoCount = 1;
-        deviceCreateInfo.pQueueCreateInfos = &deviceQueueCreateInfo;
         deviceCreateInfo.enabledExtensionCount = (uint32_t)deviceExtensions.size();
-        deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
+        deviceCreateInfo.ppEnabledExtensionNames = !deviceExtensions.empty() ? deviceExtensions.data() : nullptr;
         gvk_result(pContext->create_devices(&deviceCreateInfo, pAllocator));
 #ifdef VK_NO_PROTOTYPES
         DispatchTable::load_device_entry_points(pContext->mDevices[0], &DispatchTable::get_global_dispatch_table());
@@ -105,33 +107,6 @@ VkResult Context::create(const CreateInfo* pCreateInfo, const VkAllocationCallba
 
         // Allocate gvk::CommandBuffers
         gvk_result(pContext->allocate_command_buffers(pAllocator));
-
-        // Create gvk::sys::Surface and gvk::WsiManager
-        if (pCreateInfo->pSysSurfaceCreateInfo) {
-            auto sysSurfaceCreateInfo = *pCreateInfo->pSysSurfaceCreateInfo;
-            if (!sysSurfaceCreateInfo.pTitle && applicationInfo.pApplicationName) {
-                sysSurfaceCreateInfo.pTitle = applicationInfo.pApplicationName;
-            }
-            gvk_result(pContext->create_sys_surface(&sysSurfaceCreateInfo));
-
-            auto wsiManagerCreateInfo = get_default<WsiManager::CreateInfo>();
-
-#ifdef VK_USE_PLATFORM_XLIB_KHR
-            auto xlibSurfaceCreateInfo = get_default<VkXlibSurfaceCreateInfoKHR>();
-            xlibSurfaceCreateInfo.dpy = (Display*)pContext->mSysSurface.get_display();
-            xlibSurfaceCreateInfo.window = (Window)pContext->mSysSurface.get_window();
-            wsiManagerCreateInfo.pXlibSurfaceCreateInfoKHR = &xlibSurfaceCreateInfo;
-#endif
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-            auto win32SurfaceCreateInfo = get_default<VkWin32SurfaceCreateInfoKHR>();
-            win32SurfaceCreateInfo.hinstance = GetModuleHandle(NULL);
-            win32SurfaceCreateInfo.hwnd = (HWND)pContext->mSysSurface.get_hwnd();
-            wsiManagerCreateInfo.pWin32SurfaceCreateInfoKHR = &win32SurfaceCreateInfo;
-#endif
-
-            wsiManagerCreateInfo.queueFamilyIndex = get_queue_family(pContext->mDevices[0], 0).queues[0].get<VkDeviceQueueCreateInfo>().queueFamilyIndex;
-            gvk_result(pContext->create_wsi_manager(&wsiManagerCreateInfo, pAllocator));
-        }
     } gvk_result_scope_end
     return gvkResult;
 }
@@ -141,14 +116,17 @@ Context::~Context()
     reset();
 }
 
+Context::operator bool() const
+{
+    return mInstance && !mDevices.empty() && !mCommandBuffers.empty();
+}
+
 void Context::reset()
 {
     mInstance.reset();
     mDebugUtilsMessenger.reset();
     mDevices.clear();
     mCommandBuffers.clear();
-    mSysSurface.reset();
-    mWsiManager.reset();
 }
 
 const Instance& Context::get_instance() const
@@ -169,21 +147,6 @@ const std::vector<Device>& Context::get_devices() const
 const std::vector<CommandBuffer>& Context::get_command_buffers() const
 {
     return mCommandBuffers;
-}
-
-const sys::Surface& Context::get_sys_surface() const
-{
-    return mSysSurface;
-}
-
-const WsiManager& Context::get_wsi_manager() const
-{
-    return mWsiManager;
-}
-
-WsiManager& Context::get_wsi_manager()
-{
-    return mWsiManager;
 }
 
 VkResult Context::create_instance(const VkInstanceCreateInfo* pInstanceCreateInfo, const VkAllocationCallbacks* pAllocator)
@@ -241,8 +204,8 @@ uint32_t Context::get_physical_device_rating(const PhysicalDevice& physicalDevic
 VkResult Context::create_devices(const VkDeviceCreateInfo* pDeviceCreateInfo, const VkAllocationCallbacks* pAllocator)
 {
     assert(pDeviceCreateInfo);
-    mDevices.resize(1);
-    return Device::create(get_physical_devices()[0], pDeviceCreateInfo, pAllocator, &mDevices[0]);
+    mDevices.push_back({ });
+    return Device::create(get_physical_devices()[0], pDeviceCreateInfo, pAllocator, &mDevices.back());
 }
 
 VkResult Context::allocate_command_buffers(const VkAllocationCallbacks* pAllocator)
@@ -256,22 +219,10 @@ VkResult Context::allocate_command_buffers(const VkAllocationCallbacks* pAllocat
         auto commandBufferAllocateInfo = get_default<VkCommandBufferAllocateInfo>();
         commandBufferAllocateInfo.commandPool = commandPool;
         commandBufferAllocateInfo.commandBufferCount = 1;
-        mCommandBuffers.resize(1);
-        gvk_result(CommandBuffer::allocate(mDevices[0], &commandBufferAllocateInfo, &mCommandBuffers[0]));
+        mCommandBuffers.push_back({ });
+        gvk_result(CommandBuffer::allocate(mDevices[0], &commandBufferAllocateInfo, &mCommandBuffers.back()));
     } gvk_result_scope_end;
     return gvkResult;
-}
-
-VkResult Context::create_sys_surface(const sys::Surface::CreateInfo* pSysSurfaceCreateInfo)
-{
-    assert(pSysSurfaceCreateInfo);
-    return sys::Surface::create(pSysSurfaceCreateInfo, &mSysSurface) ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED;
-}
-
-VkResult Context::create_wsi_manager(const WsiManager::CreateInfo* pWsiManagerCreateInfo, const VkAllocationCallbacks* pAllocator)
-{
-    assert(pWsiManagerCreateInfo);
-    return WsiManager::create(mDevices[0], pWsiManagerCreateInfo, pAllocator, &mWsiManager);
 }
 
 namespace detail {

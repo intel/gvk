@@ -27,17 +27,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 #include "gvk/generated/dispatch-table.hpp"
-#include "gvk/system/surface.hpp"
 #include "gvk/defines.hpp"
 #include "gvk/handles.hpp"
 #include "gvk/structures.hpp"
-#include "gvk/wsi-manager.hpp"
 
 namespace gvk {
 
 /**
 Provides high level control over Instance, Device(s)/Queue(s), WsiManager (Window System Integration) and several other utility objects
-    @note Context may be extended to customize resource creation
+    @note Context may be extended to customize creation
 */
 class Context
 {
@@ -48,21 +46,35 @@ public:
     struct CreateInfo
     {
         /**
-        Optional VkApplicationInfo parameters
+        Optional VkInstance creation parameters
         */
-        const VkApplicationInfo* pApplicationInfo{ nullptr };
+        const VkInstanceCreateInfo* pInstanceCreateInfo { nullptr };
 
         /**
-        Optional creation parameters for a sys::Surface
-            @note If provided, platform specific WSI extensions will be loaded
+        Whether or not to load VK_LAYER_LUNARG_api_dump
         */
-        const sys::Surface::CreateInfo* pSysSurfaceCreateInfo{ nullptr };
+        VkBool32 loadApiDumpLayer { VK_FALSE };
+
+        /**
+        Whether or not to load VK_LAYER_KHRONOS_validation
+        */
+        VkBool32 loadValidationLayer { VK_FALSE };
+
+        /**
+        Whether or not to load VkSurfaceKHR and VkSwapchainKHR extensions
+        */
+        VkBool32 loadWsiExtensions { VK_FALSE };
 
         /**
         Optional creation parameters for a DebugUtilsMessenger
             @note If provided, the debug utils extension to be loaded
         */
-        const VkDebugUtilsMessengerCreateInfoEXT* pDebugUtilsMessengerCreateInfo{ nullptr };
+        const VkDebugUtilsMessengerCreateInfoEXT* pDebugUtilsMessengerCreateInfo { nullptr };
+
+        /**
+        Optional VkDevice creation parameters
+        */
+        const VkDeviceCreateInfo* pDeviceCreateInfo { nullptr };
     };
 
     /**
@@ -98,6 +110,12 @@ public:
     virtual ~Context();
 
     /**
+    Gets a value indicating whether or not this Context is in a valid state
+    @return Whether or not this Context is in a valid state
+    */
+    operator bool() const;
+
+    /**
     Destroys this instance of Context
     */
     void reset();
@@ -126,24 +144,6 @@ public:
     */
     const std::vector<CommandBuffer>& get_command_buffers() const;
 
-    /**
-    Gets this Context object's sys::Surface
-    @return This Context object's sys::Surface object
-    */
-    const sys::Surface& get_sys_surface() const;
-
-    /**
-    Gets this Context object's WsiManager
-    @return This Context object's WsiManager object
-    */
-    const WsiManager& get_wsi_manager() const;
-
-    /**
-    Gets this Context object's WsiManager
-    @return This Context object's WsiManager object
-    */
-    WsiManager& get_wsi_manager();
-
 protected:
     /**
     Creates this Context object's Instance
@@ -151,17 +151,16 @@ protected:
     @param [in] (optional) pAllocator A pointer to the VkAllocationCallbacks to use
     @return Instance creation result
         @note This method may be overriden to customize Instance creation
-        @note If this method is overriden, the base implementation must be called from the override
+        @note If the base implementation is not called from this method, it must populate mInstance
     */
     virtual VkResult create_instance(const VkInstanceCreateInfo* pInstanceCreateInfo, const VkAllocationCallbacks* pAllocator);
 
     /**
     Creates this Context object's DebugUtilsMessenger
-    @param [in] pDebugUtilsMessengerCreateInfo :DebugUtilsMessenger creation parameters
+    @param [in] pDebugUtilsMessengerCreateInfo DebugUtilsMessenger creation parameters
     @param [in] (optional) pAllocator A pointer to the VkAllocationCallbacks to use
     @return DebugUtilsMessenger creation result
         @note This method may be overriden to customize DebugUtilsMessenger creation
-        @note If this method is overriden, the base implementation must be called from the override
     */
     virtual VkResult create_debug_utils_messenger(const VkDebugUtilsMessengerCreateInfoEXT* pDebugUtilsMessengerCreateInfo, const VkAllocationCallbacks* pAllocator);
 
@@ -186,8 +185,8 @@ protected:
     @param [in] (optional) pAllocator A pointer to the VkAllocationCallbacks to use
     @return Device creation result
         @note This method may be overriden to customize Device creation
+        @note The base implementation of this method uses the PhysicalDevice at index 0 of the collection returned from sort_physical_devices()
         @note If the base implementation is not called from this method, it must populate mDevices with at least 1 Device
-        @note The Device at index 0 will be used as the parent Device for resources created by this Context
     */
     virtual VkResult create_devices(const VkDeviceCreateInfo* pDeviceCreateInfo, const VkAllocationCallbacks* pAllocator);
 
@@ -199,31 +198,10 @@ protected:
     */
     virtual VkResult allocate_command_buffers(const VkAllocationCallbacks* pAllocator);
 
-    /**
-    Creates this Context object's sys::Surface
-    @param [in] pSysSurfaceCreateInfo sys::Surface creation parameters
-    @return sys::Surface creation result
-        @note This method may be overriden to customize sys::Surface creation
-        @note If this method is overriden, the base implementation must be called from the override
-    */
-    virtual VkResult create_sys_surface(const sys::Surface::CreateInfo* pSysSurfaceCreateInfo);
-
-    /**
-    Creates this Context object's WsiManager
-    @param [in] pWsiManagerCreateInfo WsiManager creation parameters
-    @param [in] (optional) pAllocator A pointer to the VkAllocationCallbacks to use
-    @return WsiManager creation result
-        @note This method may be overriden to customize WsiManager creation
-        @note If this method is overriden, the base implementation must be called from the override
-    */
-    virtual VkResult create_wsi_manager(const WsiManager::CreateInfo* pWsiManagerCreateInfo, const VkAllocationCallbacks* pAllocator);
-
     Instance mInstance;
     DebugUtilsMessengerEXT mDebugUtilsMessenger;
     std::vector<Device> mDevices;
     std::vector<CommandBuffer> mCommandBuffers;
-    sys::Surface mSysSurface;
-    WsiManager mWsiManager;
 
 private:
     Context(const Context&) = delete;

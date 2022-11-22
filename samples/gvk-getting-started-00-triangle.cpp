@@ -44,6 +44,15 @@ int main(int, const char*[])
         GvkSampleContext context;
         gvk_result(GvkSampleContext::create("Intel(R) GPA Utilities for Vulkan* - Getting Started - 00 - Triangle", &context));
 
+        // Create a gvk::sys::Surface.  This is used to control a system window...
+        gvk::sys::Surface sysSurface;
+        gvk_result(gvk_sample_create_sys_surface(context, &sysSurface));
+
+        // Create a gvk::WsiManager.  This is used to manage a connection between your
+        //  Vulkan context and the system window referenced by the gvk::sys::Surface...
+        gvk::WsiManager wsiManager;
+        gvk_result(gvk_sample_create_wsi_manager(context, sysSurface, &wsiManager));
+
         // We'll prepare two very simple shaders...
         gvk::spirv::ShaderInfo vertexShaderInfo{ };
         vertexShaderInfo.language = gvk::spirv::ShadingLanguage::Glsl;
@@ -100,7 +109,7 @@ int main(int, const char*[])
         // With our GLSL shaders prepared, we'll create a gvk::Pipeline...
         gvk::Pipeline pipeline;
         gvk_result(gvk_sample_create_pipeline(
-            context.get_wsi_manager().get_render_pass(),
+            wsiManager.get_render_pass(),
             VK_CULL_MODE_BACK_BIT,
             vertexShaderInfo,
             fragmentShaderInfo,
@@ -109,8 +118,8 @@ int main(int, const char*[])
 
         // Loop until the user presses [esc] or closes the app window...
         while (
-            !(context.get_sys_surface().get_input().keyboard.down(gvk::sys::Key::Escape)) &&
-            !(context.get_sys_surface().get_status() & gvk::sys::Surface::CloseRequested)) {
+            !(sysSurface.get_input().keyboard.down(gvk::sys::Key::Escape)) &&
+            !(sysSurface.get_status() & gvk::sys::Surface::CloseRequested)) {
 
             // Call the static function gvk::sys::Surface::update() to cause all
             //  gvk::sys::Surface objects to process window/input events...
@@ -123,7 +132,6 @@ int main(int, const char*[])
             //  and the gvk::WsiManager is enabled...when true, command buffers (and any
             //  other resources) that reference the gvk::WsiManager's resources should
             //  be initialized/reinitialized...
-            auto& wsiManager = context.get_wsi_manager();
             if (wsiManager.update()) {
 
                 // Record command buffers to render to swapchain images...
@@ -160,7 +168,7 @@ int main(int, const char*[])
             }
 
             // Acquire, submit, present...
-            gvk_result(gvk_sample_acquire_submit_present(context));
+            gvk_result(gvk_sample_acquire_submit_present(wsiManager));
         }
 
         // gvk::Device calls vkDeviceWaitIdle() in its dtor, but we need to make sure
