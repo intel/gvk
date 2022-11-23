@@ -25,7 +25,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include "gvk/to-string.hpp"
-#include "gvk/system/random.hpp"
 
 #ifdef VK_USE_PLATFORM_XLIB_KHR
 #undef None
@@ -209,7 +208,6 @@ TEST(to_string, to_string)
     "pQueueFamilyIndices": null
 })");
 
-    gvk::sys::RandomNumberGenerator rng;
     auto makeFloat = [](const char* pFloatStr)
     {
         float value;

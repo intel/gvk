@@ -54,7 +54,7 @@ VkResult Buffer::create(const Device& device, const VkBufferCreateInfo* pBufferC
             VmaAllocation vmaAllocation = VK_NULL_HANDLE;
             gvk_result(vmaCreateBuffer(device.get<VmaAllocator>(), pBufferCreateInfo, pAllocationCreateInfo, &vkBuffer, &vmaAllocation, nullptr));
             pBuffer->mVkBuffer = vkBuffer;
-            pBuffer->mControlBlock.reset(detail::newref, vkBuffer);
+            pBuffer->mControlBlock.reset(newref, vkBuffer);
             auto& controlBlock = pBuffer->mControlBlock.get_obj();
             controlBlock.mVkBuffer = vkBuffer;
             controlBlock.mDevice = device;
@@ -75,7 +75,7 @@ VkResult Image::create(const Device& device, const VkImageCreateInfo* pImageCrea
             VmaAllocation vmaAllocation = VK_NULL_HANDLE;
             gvk_result(vmaCreateImage(device.get<VmaAllocator>(), pImageCreateInfo, pAllocationCreateInfo, &vkImage, &vmaAllocation, nullptr));
             pImage->mVkImage = vkImage;
-            pImage->mControlBlock.reset(detail::newref, vkImage);
+            pImage->mControlBlock.reset(newref, vkImage);
             auto& controlBlock = pImage->mControlBlock.get_obj();
             controlBlock.mVkImage = vkImage;
             controlBlock.mDevice = device;

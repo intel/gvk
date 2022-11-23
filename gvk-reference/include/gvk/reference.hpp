@@ -26,8 +26,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk/defines.hpp"
-
 #include <atomic>
 #include <cassert>
 #include <memory>
@@ -35,7 +33,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <unordered_map>
 
 namespace gvk {
-namespace detail {
 
 /**
 Tag dispatch for functions that nullify a reference
@@ -50,7 +47,7 @@ struct newref_t { };
 extern newref_t newref;
 
 /**
-Provides an automated mechanism for creating unique ids for a given object type
+Provides a mechanism for creating runtime unique ids for a given object type
 @param <ObjType> The type of object to create a unique id for
 */
 template <typename ObjType>
@@ -413,17 +410,16 @@ private:
     IdType mId { };
 };
 
-} // namespace detail
 } // namespace gvk
 
 namespace std {
 
 template <typename ObjType>
-struct hash<gvk::detail::RuntimeUID<ObjType>>
+struct hash<gvk::RuntimeUID<ObjType>>
 {
-    inline size_t operator()(const gvk::detail::RuntimeUID<ObjType>& runtimeUid) const
+    inline size_t operator()(const gvk::RuntimeUID<ObjType>& runtimeUid) const
     {
-        return std::hash<uint64_t> { } (runtimeUid);
+        return std::hash<uint64_t> { }(runtimeUid);
     }
 };
 

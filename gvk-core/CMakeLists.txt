@@ -86,6 +86,7 @@ gvk_add_static_library(
     target
         gvk-core
     linkLibraries
+        gvk-reference
         gvk-string
         cereal
         VulkanMemoryAllocator
@@ -99,7 +100,6 @@ gvk_add_static_library(
         "${includePath}/detail/comparison-operator-utilities.hpp"
         "${includePath}/detail/handle-utilities.hpp"
         "${includePath}/detail/make-tuple-utilities.hpp"
-        "${includePath}/detail/reference.hpp"
         "${includePath}/detail/structure-copy-utilities.hpp"
         "${includePath}/detail/to-string-utilities.hpp"
         "${includePath}/context.hpp"
@@ -119,7 +119,6 @@ gvk_add_static_library(
         "${sourcePath}/detail/comparison-operator-utilities.cpp"
         "${sourcePath}/detail/handle-utilities.cpp"
         "${sourcePath}/detail/make-tuple-utilities.cpp"
-        "${sourcePath}/detail/reference.cpp"
         "${sourcePath}/detail/structure-copy-utilities.cpp"
         "${sourcePath}/detail/to-string-utilities.cpp"
         "${sourcePath}/context.cpp"
@@ -138,12 +137,8 @@ set(testsPath "${CMAKE_CURRENT_LIST_DIR}/tests/")
 gvk_add_target_test(
     target
         gvk-core
-    linkLibraries
-        gvk-system
-        asio_INTERFACE
     sourceFiles
         "${testsPath}/comparison-operator.tests.cpp"
-        "${testsPath}/reference.tests.cpp"
         "${testsPath}/render-target.tests.cpp"
         "${testsPath}/structure-serialization.tests.cpp"
         "${testsPath}/structure-copy.tests.cpp"

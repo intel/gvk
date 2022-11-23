@@ -24,13 +24,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "gvk/detail/reference.hpp"
+#include "gvk/reference.hpp"
 
 namespace gvk {
-namespace detail {
 
 nullref_t nullref;
 newref_t newref;
 
-} // namespace detail
 } // namespace gvk

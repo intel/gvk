@@ -24,16 +24,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "gvk/detail/reference.hpp"
-#include "gvk/system/random.hpp"
+#include "gvk/reference.hpp"
 
 #include "asio.hpp"
-
-#ifdef VK_USE_PLATFORM_XLIB_KHR
-#undef None
-#undef Bool
-#endif
 #include "gtest/gtest.h"
+
+#include <random>
+#include <string>
 
 constexpr size_t TestCount = 256;
 
@@ -47,64 +44,65 @@ struct ExpectedRefCount { size_t value{ }; };
 struct ExpectedValue { size_t value{ }; };
 
 void validate(
-    const char* pFileLine,
-    const gvk::detail::Reference<Widget>& reference,
+    int line,
+    const gvk::Reference<Widget>& reference,
     ExpectedId expectedId = { },
     ExpectedRefCount expectedRefCount = { },
     ExpectedValue expectedValue = { }
 )
 {
-    EXPECT_EQ(reference.get_ref_count(), expectedRefCount.value) << pFileLine;
+    std::string failureMessage = " failure in gvk-reference.tests.cpp @ line " + std::to_string(line);
+    EXPECT_EQ(reference.get_ref_count(), expectedRefCount.value) << failureMessage;
     if (expectedRefCount.value) {
-        EXPECT_NE(reference, gvk::detail::nullref) << pFileLine;
-        EXPECT_TRUE(reference) << pFileLine;
-        EXPECT_EQ(reference.get_id(), expectedId.value) << pFileLine;
-        EXPECT_EQ(reference.get_obj().value, expectedValue.value) << pFileLine;
-        EXPECT_EQ(reference->value, expectedValue.value) << pFileLine;
-        EXPECT_EQ((*reference).value, expectedValue.value) << pFileLine;
+        EXPECT_NE(reference, gvk::nullref) << failureMessage;
+        EXPECT_TRUE(reference) << failureMessage;
+        EXPECT_EQ(reference.get_id(), expectedId.value) << failureMessage;
+        EXPECT_EQ(reference.get_obj().value, expectedValue.value) << failureMessage;
+        EXPECT_EQ(reference->value, expectedValue.value) << failureMessage;
+        EXPECT_EQ((*reference).value, expectedValue.value) << failureMessage;
     }
     else {
-        EXPECT_EQ(reference, gvk::detail::nullref) << pFileLine;
-        EXPECT_FALSE(reference) << pFileLine;
+        EXPECT_EQ(reference, gvk::nullref) << failureMessage;
+        EXPECT_FALSE(reference) << failureMessage;
     }
 }
 
 TEST(Reference, BasicCtorDtor)
 {
-    gvk::detail::Reference<Widget> reference;
-    validate(gvk_file_line, reference);
-    reference = gvk::detail::Reference<Widget>(gvk::detail::newref, 1);
+    gvk::Reference<Widget> reference;
+    validate(__LINE__, reference);
+    reference = gvk::Reference<Widget>(gvk::newref, 1);
     reference->value = 8;
-    validate(gvk_file_line, reference, ExpectedId{ 1 }, ExpectedRefCount{ 1 }, ExpectedValue{ 8 });
-    reference.reset(gvk::detail::newref, 2);
-    validate(gvk_file_line, reference, ExpectedId{ 2 }, ExpectedRefCount{ 1 }, ExpectedValue{ 0 });
-    reference = gvk::detail::nullref;
-    validate(gvk_file_line, reference);
-    reference.reset(gvk::detail::newref, 2);
-    validate(gvk_file_line, reference, ExpectedId{ 2 }, ExpectedRefCount{ 1 }, ExpectedValue{ 0 });
+    validate(__LINE__, reference, ExpectedId{ 1 }, ExpectedRefCount{ 1 }, ExpectedValue{ 8 });
+    reference.reset(gvk::newref, 2);
+    validate(__LINE__, reference, ExpectedId{ 2 }, ExpectedRefCount{ 1 }, ExpectedValue{ 0 });
+    reference = gvk::nullref;
+    validate(__LINE__, reference);
+    reference.reset(gvk::newref, 2);
+    validate(__LINE__, reference, ExpectedId{ 2 }, ExpectedRefCount{ 1 }, ExpectedValue{ 0 });
     reference.reset();
-    validate(gvk_file_line, reference);
+    validate(__LINE__, reference);
 }
 
 TEST(Reference, RefCounting)
 {
-    gvk::detail::Reference<Widget> reference(gvk::detail::newref, 3);
+    gvk::Reference<Widget> reference(gvk::newref, 3);
     reference->value = 64;
-    std::vector<gvk::detail::Reference<Widget>> references(TestCount);
+    std::vector<gvk::Reference<Widget>> references(TestCount);
     for (size_t i = 0; i < references.size(); ++i) {
         references[i] = reference;
         auto expectedRefCount = 1 + i + 1;
-        validate(gvk_file_line, references[i], ExpectedId{ 3 }, ExpectedRefCount{ expectedRefCount }, ExpectedValue{ 64 });
-        validate(gvk_file_line, reference, ExpectedId{ 3 }, ExpectedRefCount{ expectedRefCount }, ExpectedValue{ 64 });
+        validate(__LINE__, references[i], ExpectedId{ 3 }, ExpectedRefCount{ expectedRefCount }, ExpectedValue{ 64 });
+        validate(__LINE__, reference, ExpectedId{ 3 }, ExpectedRefCount{ expectedRefCount }, ExpectedValue{ 64 });
     }
-    validate(gvk_file_line, reference, ExpectedId{ 3 }, ExpectedRefCount{ references.size() + 1 }, ExpectedValue{ 64 });
+    validate(__LINE__, reference, ExpectedId{ 3 }, ExpectedRefCount{ references.size() + 1 }, ExpectedValue{ 64 });
     for (size_t i = 0; i < references.size(); ++i) {
         EXPECT_EQ(reference, references[i]);
     }
     references.clear();
-    validate(gvk_file_line, reference, ExpectedId{ 3 }, ExpectedRefCount{ 1 }, ExpectedValue{ 64 });
-    reference = gvk::detail::nullref;
-    validate(gvk_file_line, reference);
+    validate(__LINE__, reference, ExpectedId{ 3 }, ExpectedRefCount{ 1 }, ExpectedValue{ 64 });
+    reference = gvk::nullref;
+    validate(__LINE__, reference);
 }
 
 struct Operation
@@ -118,9 +116,9 @@ struct Operation
 
     Operation() = default;
 
-    Operation(size_t referenceCount, gvk::sys::RandomNumberGenerator& rng)
-        : type { (Operation::Type)rng.index((size_t)Operation::Type::Count) }
-        , index { rng.index(referenceCount) }
+    Operation(size_t referenceCount, std::default_random_engine& rng)
+        : type { (Operation::Type)std::uniform_int_distribution<int>(0, (int)Operation::Type::Count - 1)(rng) }
+        , index { std::uniform_int_distribution<size_t>(0, referenceCount - 1)(rng) }
     {
     }
 
@@ -130,8 +128,8 @@ struct Operation
 
 void apply_operation(
     const Operation& operation,
-    const std::vector<gvk::detail::Reference<Widget>>& references,
-    std::map<size_t, std::vector<gvk::detail::Reference<Widget>>>& referenceMap
+    const std::vector<gvk::Reference<Widget>>& references,
+    std::map<size_t, std::vector<gvk::Reference<Widget>>>& referenceMap
 )
 {
     static std::mutex sMutex;
@@ -155,7 +153,7 @@ void apply_operation(
         referenceMap[operation.index].pop_back();
         lock.unlock();
         //  ...reference destroyed outside the lock for the reason described above...
-        reference = gvk::detail::nullref;
+        reference = gvk::nullref;
     } break;
     case Operation::Type::Count:
     {
@@ -166,7 +164,7 @@ void apply_operation(
 
 std::vector<size_t> apply_operations(
     const std::vector<Operation>& operations,
-    const std::vector<gvk::detail::Reference<Widget>>& references,
+    const std::vector<gvk::Reference<Widget>>& references,
     asio::thread_pool* pThreadPool = nullptr
 )
 {
@@ -174,7 +172,7 @@ std::vector<size_t> apply_operations(
     //  This ensures that the order/count of Create/Delete Operations won't affect
     //  the outcome of the multithreaded test by creating enough references that
     //  Destroy Operations will never run out of references to destroy...
-    std::map<size_t, std::vector<gvk::detail::Reference<Widget>>> referenceMap;
+    std::map<size_t, std::vector<gvk::Reference<Widget>>> referenceMap;
     for (size_t i = 0; i < references.size(); ++i) {
         referenceMap[i].resize(references.size(), references[i]);
     }
@@ -207,14 +205,15 @@ std::vector<size_t> apply_operations(
 TEST(Reference, MultithreadedCtorDtor)
 {
     // Create a collection of references...
-    std::vector<gvk::detail::Reference<Widget>> references(TestCount);
+    std::vector<gvk::Reference<Widget>> references(TestCount);
     for (size_t i = 0; i < references.size(); ++i) {
-        references[i].reset(gvk::detail::newref);
+        references[i].reset(gvk::newref);
         references[i]->value = i;
     }
 
     // Create a randomized sequence of operations to apply to the collection...
-    gvk::sys::RandomNumberGenerator rng;
+    std::random_device randomDevice;
+    std::default_random_engine rng(randomDevice());
     std::vector<Operation> operations(references.size());
     for (auto& operation : operations) {
         operation = Operation(references.size(), rng);
@@ -230,21 +229,21 @@ TEST(Reference, MultithreadedCtorDtor)
 
 TEST(Reference, LookupById)
 {
-    EXPECT_EQ(gvk::detail::Reference<Widget>::get({ }), gvk::detail::nullref);
-    gvk::detail::Reference<Widget> reference(gvk::detail::newref, 3);
+    EXPECT_EQ(gvk::Reference<Widget>::get({ }), gvk::nullref);
+    gvk::Reference<Widget> reference(gvk::newref, 3);
     auto id = reference.get_id();
     EXPECT_EQ(id, 3);
-    EXPECT_EQ(gvk::detail::Reference<Widget>::get(id), reference);
-    reference = gvk::detail::nullref;
-    EXPECT_EQ(gvk::detail::Reference<Widget>::get(id), gvk::detail::nullref);
+    EXPECT_EQ(gvk::Reference<Widget>::get(id), reference);
+    reference = gvk::nullref;
+    EXPECT_EQ(gvk::Reference<Widget>::get(id), gvk::nullref);
 }
 
 TEST(Reference, Enumerate)
 {
     // Create a collection of references...
-    std::vector<gvk::detail::Reference<Widget>> references(TestCount);
+    std::vector<gvk::Reference<Widget>> references(TestCount);
     for (size_t i = 0; i < references.size(); ++i) {
-        references[i].reset(gvk::detail::newref);
+        references[i].reset(gvk::newref);
         references[i]->value = i;
     }
 
@@ -258,7 +257,7 @@ TEST(Reference, Enumerate)
     // Fill another std::set<> with the ids and values of each Widget encountered
     //  as a result of calling enumerate() and compare the result...
     std::set<std::pair<size_t, size_t>> actualValues;
-    gvk::detail::Reference<Widget>::enumerate(
+    gvk::Reference<Widget>::enumerate(
         [&actualValues](const auto& reference)
         {
             actualValues.insert({ reference.get_id(), reference->value });

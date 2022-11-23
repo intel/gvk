@@ -256,7 +256,7 @@ R"(    {handleTypeName}() = default;
 
 private:
     Vk{handleTypeName} mVk{handleTypeName} { VK_NULL_HANDLE };
-    detail::Reference<detail::{handleTypeName}ControlBlock, Vk{handleTypeName}> mControlBlock;
+    Reference<detail::{handleTypeName}ControlBlock, Vk{handleTypeName}> mControlBlock;
     template <typename ControlBlockType>
     friend VkResult detail::initialize_control_block(ControlBlockType&);
 };
@@ -320,7 +320,7 @@ R"({
             gvk_result(dispatchTable.g{vkCreateCommand}({vkCreateCallArgs}));
             for (uint32_t i = 0; i < handleCount; ++i) {
                 {outArg}[i].mVk{handleTypeName} = pVk{handleTypeName}[i];
-                {outArg}[i].mControlBlock.reset(detail::newref, pVk{handleTypeName}[i]);
+                {outArg}[i].mControlBlock.reset(newref, pVk{handleTypeName}[i]);
                 auto& controlBlock = {outArg}[i].mControlBlock.get_obj();
                 controlBlock.mVk{handleTypeName} = pVk{handleTypeName}[i];)", replacements);
         file << std::endl;
@@ -366,7 +366,7 @@ R"(void {handleTypeName}::reset()
 {handleTypeName} {handleTypeName}::get(Vk{handleTypeName} vk{handleTypeName})
 {
     {handleTypeName} result;
-    result.mControlBlock = detail::Reference<detail::{handleTypeName}ControlBlock, Vk{handleTypeName}>::get(vk{handleTypeName});
+    result.mControlBlock = Reference<detail::{handleTypeName}ControlBlock, Vk{handleTypeName}>::get(vk{handleTypeName});
     result.mVk{handleTypeName} = result.mControlBlock.get_id();
     return result;
 }
@@ -613,9 +613,9 @@ private:
     static inline void generate_header(FileGenerator& file, const xml::Manifest& manifest, const std::vector<HandleGenerator>& handleGenerators)
     {
         file << "#include \"gvk/detail/handle-utilities.hpp\"" << std::endl;
-        file << "#include \"gvk/detail/reference.hpp\"" << std::endl;
         file << "#include \"gvk/generated/forward-declarations.hpp\"" << std::endl;
         file << "#include \"gvk/defines.hpp\"" << std::endl;
+        file << "#include \"gvk/reference.hpp\"" << std::endl;
         file << "#include \"gvk/structures.hpp\"" << std::endl;
         file << std::endl;
         file << "#include <map>" << std::endl;
