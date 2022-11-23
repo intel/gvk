@@ -26,8 +26,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#ifdef GVK_GLM_ENABLED
-
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_SIZE_T_LENGTH
 #define GLM_ENABLE_EXPERIMENTAL
@@ -53,8 +51,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #else
 #pragma GCC diagnostic pop
 #endif
-
-#endif // GVK_GLM_ENABLED
 
 #include <algorithm>
 #include <array>

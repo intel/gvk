@@ -26,9 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-sample-utilities.hpp"
 
-#ifdef GVK_STB_ENABLED
 #include "stb/stb_image.h"
-#endif
 
 #include <array>
 #include <cassert>

@@ -53,8 +53,5 @@ gvk_add_executable(
     sourceFiles
         "${CMAKE_CURRENT_LIST_DIR}/gvk.xml-to-json.cpp"
 )
-add_custom_target(
-  gvk.xml-to-json.runner ALL
-  COMMAND gvk.xml-to-json > gvk.json
-)
+add_custom_target(gvk.xml-to-json.runner ALL COMMAND gvk.xml-to-json > gvk.json)
 set_target_properties(gvk.xml-to-json.runner PROPERTIES FOLDER "${GVK_IDE_FOLDER}/tools/")

@@ -27,14 +27,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk/spirv/context.hpp"
 #include "gvk/defaults.hpp"
 
-#ifdef GVK_GLSLANG_ENABLED
 #include "glslang/Public/ShaderLang.h"
 #include "glslang/SPIRV/GlslangToSpv.h"
-#endif
-
-#ifdef GVK_SPIRV_CROSS_ENABLED
 #include "spirv_glsl.hpp"
-#endif
 
 #include <cassert>
 #include <iostream>
@@ -42,7 +37,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace spirv {
 
-#ifdef GVK_GLSLANG_ENABLED
 static TBuiltInResource get_built_in_resource()
 {
     TBuiltInResource builtInResource { };
@@ -140,7 +134,6 @@ static TBuiltInResource get_built_in_resource()
     builtInResource.limits.generalConstantMatrixVectorIndexing = 1;
     return builtInResource;
 }
-#endif // GVK_GLSLANG_ENABLED
 
 std::mutex Context::sMutex;
 uint32_t Context::sInstanceCount;
@@ -156,12 +149,7 @@ VkResult Context::create(const CreateInfo* pCreateInfo, Context* pContext)
         if (sInstanceCount) {
             pContext->mInitialized = true;
         } else {
-            #ifdef GVK_GLSLANG_ENABLED
             pContext->mInitialized = glslang::InitializeProcess();
-            #else
-            assert(false && "TODO : gvk::spirv::Context currently requires GVK be built with GVK_GLSLANG_ENABLED");
-            pContext->mInitialized = false;
-            #endif // GVK_GLSLANG_ENABLED
         }
         sInstanceCount += (uint32_t)pContext->mInitialized;
     }
@@ -177,11 +165,7 @@ void Context::reset()
 {
     if (mInitialized) {
         std::lock_guard<std::mutex> lock(sMutex);
-        #ifdef GVK_GLSLANG_ENABLED
         glslang::FinalizeProcess();
-        #else
-        assert(false && "TODO : gvk::spirv::Context currently requires GVK be built with GVK_GLSLANG_ENABLED");
-        #endif // GVK_GLSLANG_ENABLED
         assert(sInstanceCount);
         --sInstanceCount;
     }
@@ -189,7 +173,6 @@ void Context::reset()
 
 VkResult Context::compile(ShaderInfo* pShaderInfo)
 {
-#ifdef GVK_GLSLANG_ENABLED
     assert(mInitialized);
     assert(pShaderInfo);
     assert(pShaderInfo->language == ShadingLanguage::Glsl && "TODO : ShadingLanguage::Hlsl");
@@ -235,11 +218,6 @@ VkResult Context::compile(ShaderInfo* pShaderInfo)
         pShaderInfo->errors.push_back(shader.getInfoDebugLog());
     }
     return pShaderInfo->errors.empty() ? VK_SUCCESS : VK_ERROR_UNKNOWN;
-#else
-    (void)pShaderInfo;
-    assert(false && "TODO : gvk::spirv::Context currently requires GVK be built with GVK_GLSLANG_ENABLED");
-    return VK_ERROR_FEATURE_NOT_PRESENT;
-#endif // GVK_GLSLANG_ENABLED
 }
 
 Context::operator bool() const
@@ -249,9 +227,7 @@ Context::operator bool() const
 
 void BindingInfo::add_shader(const ShaderInfo& shaderInfo)
 {
-#ifdef GVK_SPIRV_CROSS_ENABLED
     spirv_cross::CompilerGLSL compilerGlsl(shaderInfo.spirv.data(), shaderInfo.spirv.size());
-
     auto createBinding =
     [&](VkDescriptorType descriptorType, const spirv_cross::Resource& resource)
     {
@@ -263,7 +239,6 @@ void BindingInfo::add_shader(const ShaderInfo& shaderInfo)
         auto setIndex = compilerGlsl.get_decoration(resource.id, spv::DecorationDescriptorSet);
         add_binding(setIndex, descriptorSetLayoutBinding);
     };
-
     spirv_cross::ShaderResources shaderResources = compilerGlsl.get_shader_resources();
     for (const auto& shaderResource : shaderResources.uniform_buffers) {
         createBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, shaderResource);
@@ -287,10 +262,6 @@ void BindingInfo::add_shader(const ShaderInfo& shaderInfo)
             pushConstantRanges.back().size += (uint32_t)range.range;
         }
     }
-#else
-    (void)shaderInfo;
-    assert(false && "TODO : gvk::spirv::Context currently requires GVK be built with GVK_GLSLANG_ENABLED");
-#endif // GVK_GLSLANG_ENABLED
 }
 
 void BindingInfo::add_binding(uint32_t setIndex, const VkDescriptorSetLayoutBinding& descriptorSetLayoutBinding)
@@ -321,7 +292,7 @@ VkResult create_descriptor_set_layouts(const Device& device, const BindingInfo& 
                 *pDescriptorSetLayoutCount = (uint32_t)bindingInfo.descriptorSetLayoutBindings.size();
             }
         }
-    } gvk_result_scope_end
+    } gvk_result_scope_end;
     return gvkResult;
 }
 
@@ -341,7 +312,7 @@ VkResult create_pipeline_layout(const Device& device, const BindingInfo& binding
         pipelineLayoutCreateInfo.pushConstantRangeCount = (uint32_t)bindingInfo.pushConstantRanges.size();
         pipelineLayoutCreateInfo.pPushConstantRanges = bindingInfo.pushConstantRanges.data();
         gvk_result(gvk::PipelineLayout::create(device, &pipelineLayoutCreateInfo, pAllocator, pPipelineLayout));
-    } gvk_result_scope_end
+    } gvk_result_scope_end;
     return gvkResult;
 }
 

@@ -28,8 +28,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk/math/defines.hpp"
 
-#ifdef GVK_GLM_ENABLED
-
 namespace gvk {
 namespace math {
 
@@ -314,5 +312,3 @@ struct Color
 
 } // namespace math
 } // namespace gvk
-
-#endif // GVK_GLM_ENABLED

@@ -92,7 +92,6 @@ public:
     static void update();
 
 private:
-#ifdef GVK_GLFW_ENABLED
     static void glfw_error_callback(int, const char*);
     static void glfw_window_close_callback(GLFWwindow*);
     static void glfw_framebuffer_size_callback(GLFWwindow*, int, int);
@@ -100,7 +99,6 @@ private:
     static void glfw_cursor_pos_callback(GLFWwindow*, double, double);
     static void glfw_mouse_button_callback(GLFWwindow*, int, int, int);
     static void glfw_scroll_callback(GLFWwindow*, double, double);
-#endif // GVK_GLFW_ENABLED
 
     Input mInput;
     StatusFlags mStatus{ };

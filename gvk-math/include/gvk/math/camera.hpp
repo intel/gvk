@@ -27,9 +27,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 #include "gvk/math/defines.hpp"
-
-#ifdef GVK_GLM_ENABLED
-
 #include "gvk/math/transform.hpp"
 
 #include <algorithm>
@@ -113,5 +110,3 @@ inline T aspect_ratio(const T& width, const T& height)
 
 } // namespace math
 } // namespace gvk
-
-#endif // GVK_GLM_ENABLED

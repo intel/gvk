@@ -26,13 +26,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk/system/surface.hpp"
 
-#include <cassert>
-
-#ifdef GVK_GLFW_ENABLED
-#if defined(_WIN32) || defined(_WIN64)
-#ifndef GLFW_EXPOSE_NATIVE_WIN32
-#define GLFW_EXPOSE_NATIVE_WIN32
-#endif
+#ifndef GLFW_INCLUDE_NONE
+#define GLFW_INCLUDE_NONE
 #endif
 
 #if defined(__linux__)
@@ -41,13 +36,21 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 #endif
 
-#ifndef GLFW_INCLUDE_NONE
-#define GLFW_INCLUDE_NONE
+#if defined(_WIN32) || defined(_WIN64)
+#ifndef GLFW_EXPOSE_NATIVE_WIN32
+#define GLFW_EXPOSE_NATIVE_WIN32
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <Windows.h>
 #endif
 
 #include "GLFW/glfw3.h"
 #include "GLFW/glfw3native.h"
-#endif // GVK_GLFW_ENABLED
 
 #include <cassert>
 #include <iostream>
@@ -58,8 +61,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace gvk {
 namespace sys {
-
-#ifdef GVK_GLFW_ENABLED
 
 class GlfwWindowSet final
 {
@@ -417,22 +418,6 @@ void Surface::glfw_scroll_callback(GLFWwindow* glfwWindow, double xOffset, doubl
     pSurface->mInput.mouse.scroll.staged[0] += (float)xOffset;
     pSurface->mInput.mouse.scroll.staged[1] += (float)yOffset;
 }
-
-#else // GVK_GLFW_ENABLED
-bool Surface::create(const CreateInfo*, Surface*) { assert(false && "TODO : Generic surface support; gvk::sys::Surface currently requires that GVK be built with GVK_GLFW_ENABLED"); return false; }
-Surface::Surface(Surface&&) noexcept { }
-Surface& Surface::operator=(Surface&&) noexcept { return *this; }
-Surface::~Surface() { }
-void Surface::reset() { }
-Surface::operator bool() const { assert(false && "TODO : Generic surface support; gvk::sys::Surface currently requires that GVK be built with GVK_GLFW_ENABLED"); return false; }
-const Input& Surface::get_input() const { assert(false && "TODO : Generic surface support; gvk::sys::Surface currently requires that GVK be built with GVK_GLFW_ENABLED"); return mInput; }
-Surface::StatusFlags Surface::get_status() const { assert(false && "TODO : Generic surface support; gvk::sys::Surface currently requires that GVK be built with GVK_GLFW_ENABLED"); return { }; }
-const std::array<int, 2>& Surface::get_extent() const { assert(false && "TODO : Generic surface support; gvk::sys::Surface currently requires that GVK be built with GVK_GLFW_ENABLED"); return mExtent; }
-#if defined(_WIN32) || defined(_WIN64)
-void* Surface::get_hwnd() const { assert(false && "TODO : Generic surface support; gvk::sys::Surface currently requires that GVK be built with GVK_GLFW_ENABLED"); return nullptr; }
-#endif
-void Surface::update() { assert(false && "TODO : Generic surface support; gvk::sys::Surface currently requires that GVK be built with GVK_GLFW_ENABLED"); }
-#endif // GVK_GLFW_ENABLED
 
 } // namespace sys
 } // namespace gvk

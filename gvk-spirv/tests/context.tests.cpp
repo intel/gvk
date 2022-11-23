@@ -24,8 +24,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#if defined(GVK_GLSLANG_ENABLED) && defined(GVK_SPIRV_CROSS_ENABLED)
-
 #include "gvk/spirv/context.hpp"
 #include "gvk/context.hpp"
 
@@ -63,8 +61,8 @@ TEST(spirv, Context)
                 gl_Position = vec4(0, 0, 0, 1);
             }
         )",
-        /*.spirv  = */ { },
-        /*.errors = */ { }
+        /* .spirv  = */ { },
+        /* .errors = */ { }
     };
     EXPECT_EQ(spirvContext.compile(&shaderInfo), VK_SUCCESS);
     EXPECT_FALSE(shaderInfo.spirv.empty());
@@ -163,8 +161,8 @@ TEST(spirv, BindingInfo_UniformBuffer)
                     {
                     }
                 )",
-                /*.spirv  = */ { },
-                /*.errors = */ { }
+                /* .spirv  = */ { },
+                /* .errors = */ { }
             },
         },
         std::vector<std::vector<VkDescriptorSetLayoutBinding>>{
@@ -206,8 +204,8 @@ TEST(spirv, BindingInfo_StorageBuffer)
                     {
                     }
                 )",
-                /*.spirv  = */ { },
-                /*.errors = */ { }
+                /* .spirv  = */ { },
+                /* .errors = */ { }
             },
         },
         std::vector<std::vector<VkDescriptorSetLayoutBinding>>{
@@ -249,8 +247,8 @@ TEST(spirv, BindingInfo_StorageImage)
                     {
                     }
                 )",
-                /*.spirv  = */ { },
-                /*.errors = */ { }
+                /* .spirv  = */ { },
+                /* .errors = */ { }
             },
         },
         std::vector<std::vector<VkDescriptorSetLayoutBinding>>{
@@ -303,8 +301,8 @@ TEST(spirv, BindingInfo_CombinedImageSampler)
                     {
                     }
                 )",
-                /*.spirv  = */ { },
-                /*.errors = */ { }
+                /* .spirv  = */ { },
+                /* .errors = */ { }
             },
         },
         std::vector<std::vector<VkDescriptorSetLayoutBinding>>{
@@ -361,8 +359,8 @@ TEST(spirv, BindingInfo_AccelerationStructure)
                        imageStore(image, ivec2(gl_LaunchIDEXT.xy), col);
                     }
                 )",
-                /*.spirv  = */ { },
-                /*.errors = */ { }
+                /* .spirv  = */ { },
+                /* .errors = */ { }
             },
         },
         std::vector<std::vector<VkDescriptorSetLayoutBinding>>{
@@ -415,8 +413,8 @@ TEST(spirv, BindingInfo_PushConstants)
                         matrix = pc.matrix;
                     }
                 )",
-                /*.spirv  = */ { },
-                /*.errors = */ { }
+                /* .spirv  = */ { },
+                /* .errors = */ { }
             },
         },
         std::vector<std::vector<VkDescriptorSetLayoutBinding>>{
@@ -430,5 +428,3 @@ TEST(spirv, BindingInfo_PushConstants)
         }
     );
 }
-
-#endif // defined(GVK_GLSLANG_ENABLED) && defined(GVK_SPIRV_CROSS_ENABLED)

@@ -30,11 +30,6 @@ function(gvk_setup_target)
     target_link_libraries(${args_target} PUBLIC "${args_linkLibraries}")
     set_target_properties(${args_target} PROPERTIES LINKER_LANGUAGE CXX)
     target_compile_options(${args_target} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX> $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror>)
-    gvk_set_target_option(${args_target} GVK_GLFW_ENABLED)
-    gvk_set_target_option(${args_target} GVK_GLM_ENABLED)
-    gvk_set_target_option(${args_target} GVK_GLSLANG_ENABLED)
-    gvk_set_target_option(${args_target} GVK_SPIRV_CROSS_ENABLED)
-    gvk_set_target_option(${args_target} GVK_STB_ENABLED)
     gvk_create_file_group("${args_includeFiles}")
     gvk_create_file_group("${args_sourceFiles}")
     if(GVK_NO_PROTOTYPES)
@@ -46,19 +41,42 @@ endfunction()
 function(gvk_add_static_library)
     cmake_parse_arguments(args "" "target;folder" "linkLibraries;includeDirectories;includeFiles;sourceFiles;compileDefinitions" ${ARGN})
     add_library(${args_target} STATIC "${args_includeFiles}" "${args_sourceFiles}")
-    gvk_setup_target(${ARGN})
+    gvk_setup_target(
+        target              ${args_target}
+        folder             "${args_folder}"
+        linkLibraries       ${args_linkLibraries}
+        includeDirectories "${args_includeDirectories}"
+        includeFiles       "${args_includeFiles}"
+        sourceFiles        "${args_sourceFiles}"
+        compileDefinitions  ${args_compileDefinitions}
+    )
 endfunction()
 
 function(gvk_add_executable)
     cmake_parse_arguments(args "" "target;folder" "linkLibraries;includeDirectories;includeFiles;sourceFiles;compileDefinitions" ${ARGN})
     add_executable(${args_target} "${args_includeFiles}" "${args_sourceFiles}")
-    gvk_setup_target(${ARGN})
+    gvk_setup_target(
+        target              ${args_target}
+        folder             "${args_folder}"
+        linkLibraries       ${args_linkLibraries}
+        includeDirectories "${args_includeDirectories}"
+        includeFiles       "${args_includeFiles}"
+        sourceFiles        "${args_sourceFiles}"
+        compileDefinitions  ${args_compileDefinitions}
+    )
 endfunction()
 
 function(gvk_add_code_generator)
-    cmake_parse_arguments(args "" "target;folder" "linkLibraries;includeDirectories;includeFiles;sourceFiles;inputFiles;outputFiles;compileDefinitions" ${ARGN})
-    add_executable(${args_target} "${args_includeFiles}" "${args_sourceFiles}")
-    gvk_setup_target(${ARGN})
+    cmake_parse_arguments(args "" "target" "linkLibraries;includeDirectories;includeFiles;sourceFiles;inputFiles;outputFiles;compileDefinitions" ${ARGN})
+    gvk_add_executable(
+        target              ${args_target}
+        folder             "generators/"
+        linkLibraries       ${args_linkLibraries}
+        includeDirectories "${args_includeDirectories}"
+        includeFiles       "${args_includeFiles}"
+        sourceFiles        "${args_sourceFiles}"
+        compileDefinitions  ${args_compileDefinitions}
+    )
     add_custom_command(
         OUTPUT ${args_outputFiles}
         COMMAND "${args_target}" "${args_inputFiles}"
@@ -111,20 +129,21 @@ function(gvk_add_layer)
 endfunction()
 
 macro(gvk_add_target_test)
-    cmake_parse_arguments(args "" "target;folder" "linkLibraries;includeDirectories;includeFiles;sourceFiles;compileDefinitions" ${ARGN})
+    cmake_parse_arguments(args "" "target" "linkLibraries;includeDirectories;includeFiles;sourceFiles;compileDefinitions" ${ARGN})
     if(GVK_BUILD_TESTS)
         gvk_add_executable(
-            target ${args_target}.test
+            target ${args_target}.tests
             folder "tests/"
-            linkLibraries ${args_target} "${args_linkLibraries}" gtest_main
+            linkLibraries ${args_target} ${args_linkLibraries} gtest_main
             includeDirectories "${args_includeDirectories}"
             includeFiles "${args_includeFiles}"
             sourceFiles "${args_sourceFiles}"
+            compileDefinitions ${compileDefinitions}
         )
         if(GVK_RUN_TESTS)
-            add_test(NAME ${args_target}.test COMMAND ${args_target}.test)
+            add_test(NAME ${args_target}.tests COMMAND ${args_target}.tests)
             add_custom_command(
-                TARGET ${args_target}.test POST_BUILD
+                TARGET ${args_target}.tests POST_BUILD
                 COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --verbose --output-on-failures
             )
         endif()
@@ -134,8 +153,8 @@ macro(gvk_add_target_test)
                 file(MAKE_DIRECTORY "${package}")
             endif()
             add_custom_command(
-                TARGET ${args_target}.test POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${args_target}.test> "${package}/"
+                TARGET ${args_target}.tests POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${args_target}.tests> "${package}/"
             )
         endif()
     endif()

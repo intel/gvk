@@ -26,8 +26,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk/math/transform.hpp"
 
-#ifdef GVK_GLM_ENABLED
-
 #include <cassert>
 
 namespace gvk {
@@ -75,5 +73,3 @@ glm::vec3 Transform::backward() const
 
 } // namespace math
 } // namespace gvk
-
-#endif // GVK_GLM_ENABLED

@@ -26,8 +26,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk/math/camera.hpp"
 
-#ifdef GVK_GLM_ENABLED
-
 namespace gvk {
 namespace math {
 
@@ -104,5 +102,3 @@ void FreeCameraController::update(const UpdateInfo& updateInfo)
 
 } // namespace math
 } // namespace gvk
-
-#endif // GVK_GLM_ENABLED

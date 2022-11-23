@@ -40,8 +40,6 @@ set(generatorSourcePath "${CMAKE_CURRENT_LIST_DIR}/generator/")
 gvk_add_code_generator(
     target
         gvk-core.generator
-    folder
-        "tools/"
     linkLibraries
         gvk-cppgen
     includeDirectories
