@@ -26,7 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk/cppgen.hpp"
+#include "gvk-cppgen/include.hpp"
 
 #include <cassert>
 
@@ -58,7 +58,7 @@ private:
         for (const auto& commandItr : manifest.commands) {
             const auto& command = commandItr.second;
             CompileGuardGenerator compileGuardGenerator(file, command.compileGuards);
-            file << command.returnType << " g" << command.name << "(" << get_command_args(command) << ");" << std::endl;
+            file << command.returnType << " g" << command.name << "(" << get_parameter_list(command.parameters) << ");" << std::endl;
         }
         file << "PFN_vkVoidFunction get(const char* pName);" << std::endl;
         file << std::endl;
@@ -66,8 +66,8 @@ private:
 
     static void generate_source(FileGenerator& file, const xml::Manifest& manifest)
     {
-        file << "#include \"gvk/layer/generated/basic-layer.hpp\"" << std::endl;
-        file << "#include \"gvk/layer/registry.hpp\"" << std::endl;
+        file << "#include \"gvk-layer/generated/basic-layer.hpp\"" << std::endl;
+        file << "#include \"gvk-layer/registry.hpp\"" << std::endl;
         file << std::endl;
         file << "#include <cassert>" << std::endl;
         file << "#include <unordered_map>" << std::endl;
@@ -78,15 +78,15 @@ private:
             assert(!command.parameters.empty());
             std::vector<string::Replacement> replacements{
                 { "{commandName}", command.name },
-                { "{vkCommandArgs}", get_command_args(command, false, true) },
-                { "{gvkCommandArgs}", get_command_args(append_return_result_parameter(command), false, true) },
+                { "{vkCommandArgs}", get_parameter_list(command.parameters, false, true) },
+                { "{gvkCommandArgs}", get_parameter_list(append_return_result_parameter(command).parameters, false, true) },
                 { "{resultAssignment}", command.returnType == "void" ? std::string() : "gvkResult = " },
                 { "{dispatchableHandleType}", (command.parameters[0].type == "VkInstance" || command.parameters[0].type == "VkPhysicalDevice") ? "VkInstance" : "VkDevice" },
                 { "{dispatchableHandle}", command.parameters[0].name },
             };
             file << std::endl;
             CompileGuardGenerator compileGuardGenerator(file, command.compileGuards);
-            file << command.returnType << " g" << command.name << "(" << get_command_args(command) << ")" << std::endl;
+            file << command.returnType << " g" << command.name << "(" << get_parameter_list(command.parameters) << ")" << std::endl;
             file << "{" << std::endl;
             file << (command.returnType == "void" ? std::string() : "    " + command.returnType + " gvkResult { };\n");
             file << string::replace(

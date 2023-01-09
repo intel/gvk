@@ -26,6 +26,5 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk/generated/serialize-structures.hpp"
-#include "gvk/generated/deserialize-structures.hpp"
+#include "gvk/structures/serialization.hpp"
 #include "gvk/defines.hpp"

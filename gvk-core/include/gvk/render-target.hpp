@@ -115,14 +115,4 @@ private:
     std::vector<VkClearValue> mClearValues;
 };
 
-/**
-Gets the max VkSampleCountFlagBits for a Framebuffer with specified attachment types
-@param [in] vkPhysicalDevice
-@param [in] color A value indicating whether or not the Framebuffer has a color attachment
-@param [in] depth A value indicating whether or not the Framebuffer has a depth attachment
-@param [in] stencil A value indicating whether or not the Framebuffer has a stencil attachment
-@return The max VkSampleCountFlagBits for a Framebuffer with the specified attachment types
-*/
-VkSampleCountFlagBits get_max_framebuffer_sample_count(VkPhysicalDevice vkPhysicalDevice, VkBool32 color, VkBool32 depth, VkBool32 stencil);
-
 } // namespace gvk

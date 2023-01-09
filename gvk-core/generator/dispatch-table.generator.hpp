@@ -26,7 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk/cppgen.hpp"
+#include "gvk-cppgen/include.hpp"
 
 namespace gvk {
 namespace cppgen {
@@ -73,6 +73,7 @@ private:
 
     static void generate_source(FileGenerator& file, const xml::Manifest& manifest)
     {
+        file << std::endl;
         file << "#include <cassert>" << std::endl;
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk");
@@ -99,6 +100,10 @@ R"(        if (!pDispatchTable->g{commandName}) {
         file << std::endl;
         generate_load_entry_points_function(
             file, manifest,
+            [](const xml::Command& command)
+            {
+                return !command.parameters.empty() && (command.parameters[0].type == "VkDevice" || command.parameters[0].type == "VkQueue" || command.parameters[0].type == "VkCommandBuffer");
+            },
             "load_device_entry_points(VkDevice vkDevice, DispatchTable* pDispatchTable)",
 R"(        if (!pDispatchTable->g{commandName}) {
             assert(pDispatchTable->gvkGetDeviceProcAddr);

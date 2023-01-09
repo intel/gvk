@@ -106,11 +106,11 @@ int main(int, const char*[])
         GvkSampleContext context;
         gvk_result(GvkSampleContext::create("Intel(R) GPA Utilities for Vulkan* - Getting Started - 04 - Render Target", &context));
 
-        gvk::sys::Surface sysSurface;
-        gvk_result(gvk_sample_create_sys_surface(context, &sysSurface));
+        gvk::system::Surface systemSurface;
+        gvk_result(gvk_sample_create_sys_surface(context, &systemSurface));
 
         gvk::WsiManager wsiManager;
-        gvk_result(gvk_sample_create_wsi_manager(context, sysSurface, &wsiManager));
+        gvk_result(gvk_sample_create_wsi_manager(context, systemSurface, &wsiManager));
 
         // Create a gvk::RenderTarget.  We're going to want to be able to render to
         //  this gvk::RenderTarget and the gvk::WsiManager gvk::RenderTarget objects
@@ -401,30 +401,35 @@ int main(int, const char*[])
         gvk::math::FreeCameraController cameraController;
         cameraController.set_camera(&camera);
 
-        gvk::sys::Clock clock;
+        gvk::system::Clock clock;
         while (
-            !(sysSurface.get_input().keyboard.down(gvk::sys::Key::Escape)) &&
-            !(sysSurface.get_status() & gvk::sys::Surface::CloseRequested)) {
-            gvk::sys::Surface::update();
+            !(systemSurface.get_input().keyboard.down(gvk::system::Key::Escape)) &&
+            !(systemSurface.get_status() & gvk::system::Surface::CloseRequested)) {
+            gvk::system::Surface::update();
             clock.update();
 
             // Update the gvk::math::FreeCameraController...
-            auto deltaTime = clock.elapsed<gvk::sys::Seconds<float>>();
-            const auto& input = sysSurface.get_input();
+            auto deltaTime = clock.elapsed<gvk::system::Seconds<float>>();
+            const auto& input = systemSurface.get_input();
             gvk::math::FreeCameraController::UpdateInfo cameraControllerUpdateInfo {
                 /* .deltaTime           = */ deltaTime,
-                /* .moveUp              = */ input.keyboard.down(gvk::sys::Key::Q),
-                /* .moveDown            = */ input.keyboard.down(gvk::sys::Key::E),
-                /* .moveLeft            = */ input.keyboard.down(gvk::sys::Key::A),
-                /* .moveRight           = */ input.keyboard.down(gvk::sys::Key::D),
-                /* .moveForward         = */ input.keyboard.down(gvk::sys::Key::W),
-                /* .moveBackward        = */ input.keyboard.down(gvk::sys::Key::S),
-                /* .moveSpeedMultiplier = */ input.keyboard.down(gvk::sys::Key::LeftShift) ? 2.0f : 1.0f,
+                /* .moveUp              = */ input.keyboard.down(gvk::system::Key::Q),
+                /* .moveDown            = */ input.keyboard.down(gvk::system::Key::E),
+                /* .moveLeft            = */ input.keyboard.down(gvk::system::Key::A),
+                /* .moveRight           = */ input.keyboard.down(gvk::system::Key::D),
+                /* .moveForward         = */ input.keyboard.down(gvk::system::Key::W),
+                /* .moveBackward        = */ input.keyboard.down(gvk::system::Key::S),
+                /* .moveSpeedMultiplier = */ input.keyboard.down(gvk::system::Key::LeftShift) ? 2.0f : 1.0f,
                 /* .lookDelta           = */ { input.mouse.position.delta()[0], input.mouse.position.delta()[1] },
                 /* .fieldOfViewDelta    = */ input.mouse.scroll.delta()[1],
             };
-            cameraController.lookEnabled = input.mouse.buttons.down(gvk::sys::Mouse::Button::Left);
-            if (input.mouse.buttons.pressed(gvk::sys::Mouse::Button::Right)) {
+            cameraController.lookEnabled = input.mouse.buttons.down(gvk::system::Mouse::Button::Left);
+            if (cameraController.lookEnabled) {
+                systemSurface.set_cursor_mode(gvk::system::Surface::CursorMode::Hidden);
+            } else {
+                systemSurface.set_cursor_mode(gvk::system::Surface::CursorMode::Visible);
+            }
+            if (input.mouse.buttons.pressed(gvk::system::Mouse::Button::Right)) {
                 camera.fieldOfView = 60.0f;
             }
             cameraController.update(cameraControllerUpdateInfo);
@@ -433,7 +438,7 @@ int main(int, const char*[])
             float anchor = 1.5f;
             float amplitude = 0.5f;
             float frequency = 3;
-            cubeTransform.translation.y = anchor + amplitude * glm::sin(frequency * clock.total<gvk::sys::Seconds<float>>());
+            cubeTransform.translation.y = anchor + amplitude * glm::sin(frequency * clock.total<gvk::system::Seconds<float>>());
             auto cubeRotationY = glm::angleAxis(glm::radians(90.0f * deltaTime), glm::vec3{ 0, 1, 0 });
             auto cubeRotationZ = glm::angleAxis(glm::radians(45.0f * deltaTime), glm::vec3{ 0, 0, 1 });
             cubeTransform.rotation = glm::normalize(cubeRotationY * cubeTransform.rotation * cubeRotationZ);
@@ -468,87 +473,104 @@ int main(int, const char*[])
             assert(allocationInfo.pMappedData);
             memcpy(allocationInfo.pMappedData, &floorUbo, sizeof(ObjectUniforms));
 
-            if (wsiManager.update()) {
+            wsiManager.update();
+            auto swapchain = wsiManager.get_swapchain();
+            if (swapchain) {
                 auto extent = wsiManager.get_swapchain().get<VkSwapchainCreateInfoKHR>().imageExtent;
                 camera.set_aspect_ratio(extent.width, extent.height);
-                for (size_t i = 0; i < wsiManager.get_command_buffers().size(); ++i) {
-                    const auto& commandBuffer = wsiManager.get_command_buffers()[i];
-                    gvk_result(vkBeginCommandBuffer(commandBuffer, &gvk::get_default<VkCommandBufferBeginInfo>()));
 
-                    // Begin a gvk::RenderPass with our gvk::RenderTarget...
-                    auto renderPassBeginInfo = renderTarget.get_render_pass_begin_info();
-                    vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-                    {
-                        VkRect2D scissor{ { }, renderPassBeginInfo.renderArea.extent };
-                        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-                        VkViewport viewport{ 0, 0, (float)scissor.extent.width, (float)scissor.extent.height, 0, 1 };
-                        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+                uint32_t imageIndex = 0;
+                auto vkResult = wsiManager.acquire_next_image(UINT64_MAX, VK_NULL_HANDLE, &imageIndex);
+                gvk_result((vkResult == VK_SUCCESS || vkResult == VK_SUBOPTIMAL_KHR) ? VK_SUCCESS : vkResult);
 
-                        // Bind cube gvk::Pipeline, reflection gvk::math::Camera uniform gvk::Buffer,
-                        //  and the cube uniform gvk::Buffer, then render the cube gvk::Mesh.  This
-                        //  will draw the cube into the gvk::RenderTarget with the reflection view
-                        //  matrix...in the next gvk::RenderPass, we'll use this gvk::RenderTarget as
-                        //  the texture for the floor to create the illusion of a reflection on the
-                        //  floor...
-                        auto pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-                        vkCmdBindPipeline(commandBuffer, pipelineBindPoint, cubePipeline);
-                        vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, cubePipeline.get<gvk::PipelineLayout>(), 0, 1, &(const VkDescriptorSet&)reflectionCameraDescriptorSet, 0, nullptr);
-                        vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, cubePipeline.get<gvk::PipelineLayout>(), 1, 1, &(const VkDescriptorSet&)cubeDescriptorSet, 0, nullptr);
-                        cubeMesh.record_cmds(commandBuffer);
-                    }
-                    vkCmdEndRenderPass(commandBuffer);
+                const auto& device = context.get_devices()[0];
+                const auto& vkFences = wsiManager.get_vk_fences();
+                gvk_result(vkWaitForFences(device, 1, &vkFences[imageIndex], VK_TRUE, UINT64_MAX));
+                gvk_result(vkResetFences(device, 1, &vkFences[imageIndex]));
 
-                    // Begin the gvk::RenderPass that renders into the gvk::WsiManager...
-                    renderPassBeginInfo = wsiManager.get_render_targets()[i].get_render_pass_begin_info();
-                    vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-                    {
-                        VkRect2D scissor{ { }, renderPassBeginInfo.renderArea.extent };
-                        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-                        VkViewport viewport{ 0, 0, (float)scissor.extent.width, (float)scissor.extent.height, 0, 1 };
-                        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+                const auto& commandBuffer = wsiManager.get_command_buffers()[imageIndex];
+                gvk_result(vkBeginCommandBuffer(commandBuffer, &gvk::get_default<VkCommandBufferBeginInfo>()));
 
-                        // Bind the gvk::math::Camera uniform gvk::Buffer and the floor resources then
-                        //  issue a draw call for the floor.  Then bind the floating cube resources...
-                        //  we can leave the gvk::math::Camera uniform gvk::Buffer bound and update the
-                        //  gvk::Pipeline and gvk::DescriptorSet at index 1 without distrubing the
-                        //  gvk::DescriptorSet at index 0...then issue a draw call for the floating
-                        //  cube...
-                        auto pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-                        vkCmdBindPipeline(commandBuffer, pipelineBindPoint, floorPipeline);
-                        vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, floorPipeline.get<gvk::PipelineLayout>(), 0, 1, &(const VkDescriptorSet&)cameraDescriptorSet, 0, nullptr);
-                        vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, floorPipeline.get<gvk::PipelineLayout>(), 1, 1, &(const VkDescriptorSet&)floorDescriptorSet, 0, nullptr);
-                        floorMesh.record_cmds(commandBuffer);
-                        vkCmdBindPipeline(commandBuffer, pipelineBindPoint, cubePipeline);
-                        vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, cubePipeline.get<gvk::PipelineLayout>(), 1, 1, &(const VkDescriptorSet&)cubeDescriptorSet, 0, nullptr);
-                        cubeMesh.record_cmds(commandBuffer);
-                    }
-                    vkCmdEndRenderPass(commandBuffer);
+                // Begin a gvk::RenderPass with our gvk::RenderTarget...
+                auto renderPassBeginInfo = renderTarget.get_render_pass_begin_info();
+                vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+                {
+                    VkRect2D scissor{ { }, renderPassBeginInfo.renderArea.extent };
+                    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+                    VkViewport viewport{ 0, 0, (float)scissor.extent.width, (float)scissor.extent.height, 0, 1 };
+                    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
-                    // Ensure the gvk::RenderTarget attachments are transitioned back to the
-                    //  VkImageLayout expected when the gvk::RenderPass is next executed...the
-                    //  VkImageMemoryBarrier objects provided by gvk::RenderTarget do not
-                    //  account for layout transitions that occur outside of the associated
-                    //  gvk::RenderPass, those must be handled by your application...
-                    auto attachmentCount = renderTarget.get_render_pass().get<VkRenderPassCreateInfo2>().attachmentCount;
-                    for (size_t attachment_i = 0; attachment_i < attachmentCount; ++attachment_i) {
-                        auto imageMemoryBarrier = renderTarget.get_image_memory_barrier((uint32_t)attachment_i);
-                        if (imageMemoryBarrier.oldLayout != imageMemoryBarrier.newLayout) {
-                            vkCmdPipelineBarrier(
-                                commandBuffer,
-                                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                                0,
-                                0, nullptr,
-                                0, nullptr,
-                                1, &imageMemoryBarrier
-                            );
-                        }
-                    }
-
-                    gvk_result(vkEndCommandBuffer(commandBuffer));
+                    // Bind cube gvk::Pipeline, reflection gvk::math::Camera uniform gvk::Buffer,
+                    //  and the cube uniform gvk::Buffer, then render the cube gvk::Mesh.  This
+                    //  will draw the cube into the gvk::RenderTarget with the reflection view
+                    //  matrix...in the next gvk::RenderPass, we'll use this gvk::RenderTarget as
+                    //  the texture for the floor to create the illusion of a reflection on the
+                    //  floor...
+                    auto pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+                    vkCmdBindPipeline(commandBuffer, pipelineBindPoint, cubePipeline);
+                    vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, cubePipeline.get<gvk::PipelineLayout>(), 0, 1, &(const VkDescriptorSet&)reflectionCameraDescriptorSet, 0, nullptr);
+                    vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, cubePipeline.get<gvk::PipelineLayout>(), 1, 1, &(const VkDescriptorSet&)cubeDescriptorSet, 0, nullptr);
+                    cubeMesh.record_cmds(commandBuffer);
                 }
+                vkCmdEndRenderPass(commandBuffer);
+
+                // Begin the gvk::RenderPass that renders into the gvk::WsiManager...
+                renderPassBeginInfo = wsiManager.get_render_targets()[imageIndex].get_render_pass_begin_info();
+                vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+                {
+                    VkRect2D scissor{ { }, renderPassBeginInfo.renderArea.extent };
+                    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+                    VkViewport viewport{ 0, 0, (float)scissor.extent.width, (float)scissor.extent.height, 0, 1 };
+                    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+                    // Bind the gvk::math::Camera uniform gvk::Buffer and the floor resources then
+                    //  issue a draw call for the floor.  Then bind the floating cube resources...
+                    //  we can leave the gvk::math::Camera uniform gvk::Buffer bound and update the
+                    //  gvk::Pipeline and gvk::DescriptorSet at index 1 without distrubing the
+                    //  gvk::DescriptorSet at index 0...then issue a draw call for the floating
+                    //  cube...
+                    auto pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+                    vkCmdBindPipeline(commandBuffer, pipelineBindPoint, floorPipeline);
+                    vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, floorPipeline.get<gvk::PipelineLayout>(), 0, 1, &(const VkDescriptorSet&)cameraDescriptorSet, 0, nullptr);
+                    vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, floorPipeline.get<gvk::PipelineLayout>(), 1, 1, &(const VkDescriptorSet&)floorDescriptorSet, 0, nullptr);
+                    floorMesh.record_cmds(commandBuffer);
+                    vkCmdBindPipeline(commandBuffer, pipelineBindPoint, cubePipeline);
+                    vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, cubePipeline.get<gvk::PipelineLayout>(), 1, 1, &(const VkDescriptorSet&)cubeDescriptorSet, 0, nullptr);
+                    cubeMesh.record_cmds(commandBuffer);
+                }
+                vkCmdEndRenderPass(commandBuffer);
+
+                // Ensure the gvk::RenderTarget attachments are transitioned back to the
+                //  VkImageLayout expected when the gvk::RenderPass is next executed...the
+                //  VkImageMemoryBarrier objects provided by gvk::RenderTarget do not
+                //  account for layout transitions that occur outside of the associated
+                //  gvk::RenderPass, those must be handled by your application...
+                auto attachmentCount = renderTarget.get_render_pass().get<VkRenderPassCreateInfo2>().attachmentCount;
+                for (size_t attachment_i = 0; attachment_i < attachmentCount; ++attachment_i) {
+                    auto imageMemoryBarrier = renderTarget.get_image_memory_barrier((uint32_t)attachment_i);
+                    if (imageMemoryBarrier.oldLayout != imageMemoryBarrier.newLayout) {
+                        vkCmdPipelineBarrier(
+                            commandBuffer,
+                            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                            0,
+                            0, nullptr,
+                            0, nullptr,
+                            1, &imageMemoryBarrier
+                        );
+                    }
+                }
+
+                gvk_result(vkEndCommandBuffer(commandBuffer));
+
+                const auto& queue = gvk::get_queue_family(device, 0).queues[0];
+                auto submitInfo = wsiManager.get_submit_info(imageIndex);
+                gvk_result(vkQueueSubmit(queue, 1, &submitInfo, vkFences[imageIndex]));
+
+                auto presentInfo = wsiManager.get_present_info(&imageIndex);
+                vkResult = vkQueuePresentKHR(gvk::get_queue_family(context.get_devices()[0], 0).queues[0], &presentInfo);
+                gvk_result((vkResult == VK_SUCCESS || vkResult == VK_SUBOPTIMAL_KHR) ? VK_SUCCESS : vkResult);
             }
-            gvk_result(gvk_sample_acquire_submit_present(wsiManager));
         }
         gvk_result(vkDeviceWaitIdle(context.get_devices()[0]));
     } gvk_result_scope_end;

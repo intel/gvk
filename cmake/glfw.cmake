@@ -12,7 +12,6 @@ FetchContent_Declare(
     GIT_REPOSITORY "https://github.com/glfw/glfw.git"
     GIT_TAG 45ce5ddd197d5c58f50fdd3296a5131c894e5527 # 3.3.7
     GIT_PROGRESS TRUE
-    FETCHCONTENT_UPDATES_DISCONNECTED
 )
 FetchContent_MakeAvailable(glfw)
 set_target_properties(glfw PROPERTIES FOLDER "${GVK_IDE_FOLDER}/external/glfw/")

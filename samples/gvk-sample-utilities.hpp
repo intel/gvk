@@ -26,20 +26,21 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk/math/camera.hpp"
-#include "gvk/math/color.hpp"
-#include "gvk/math/transform.hpp"
-#include "gvk/spirv/context.hpp"
-#include "gvk/system/surface.hpp"
-#include "gvk/system/time.hpp"
+#include "gvk-gui/renderer.hpp"
+#include "gvk-math/camera.hpp"
+#include "gvk-math/color.hpp"
+#include "gvk-math/transform.hpp"
+#include "gvk-spirv/context.hpp"
+#include "gvk-system/surface.hpp"
+#include "gvk-system/time.hpp"
 #include "gvk/context.hpp"
-#include "gvk/defaults.hpp"
 #include "gvk/format.hpp"
 #include "gvk/handles.hpp"
 #include "gvk/mesh.hpp"
 #include "gvk/render-target.hpp"
 #include "gvk/structures.hpp"
 #include "gvk/to-string.hpp"
+#include "gvk/utilities.hpp"
 #include "gvk/wsi-manager.hpp"
 #include "gvk-sample-png.hpp"
 
@@ -212,19 +213,19 @@ struct Uniforms
 
 // Following are utility functions used in gvk samples...
 
-inline VkResult gvk_sample_create_sys_surface(const gvk::Context& context, gvk::sys::Surface* pSysSurface)
+inline VkResult gvk_sample_create_sys_surface(const gvk::Context& context, gvk::system::Surface* pSystemSurface)
 {
     assert(context);
-    assert(pSysSurface);
+    assert(pSystemSurface);
     const auto& vkInstanceCreateInfo = context.get_instance().get<VkInstanceCreateInfo>();
-    auto sysSurfaceCreateInfo = gvk::get_default<gvk::sys::Surface::CreateInfo>();
+    auto systemSurfaceCreateInfo = gvk::get_default<gvk::system::Surface::CreateInfo>();
     if (vkInstanceCreateInfo.pApplicationInfo) {
-        sysSurfaceCreateInfo.pTitle = vkInstanceCreateInfo.pApplicationInfo->pApplicationName;
+        systemSurfaceCreateInfo.pTitle = vkInstanceCreateInfo.pApplicationInfo->pApplicationName;
     }
-    return gvk::sys::Surface::create(&sysSurfaceCreateInfo, pSysSurface) ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED;
+    return gvk::system::Surface::create(&systemSurfaceCreateInfo, pSystemSurface) ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED;
 }
 
-inline VkResult gvk_sample_create_wsi_manager(const gvk::Context& context, const gvk::sys::Surface& sysSurface, gvk::WsiManager* pWsiManager)
+inline VkResult gvk_sample_create_wsi_manager(const gvk::Context& context, const gvk::system::Surface& systemSurface, gvk::WsiManager* pWsiManager)
 {
     assert(context);
     assert(pWsiManager);
@@ -232,14 +233,14 @@ inline VkResult gvk_sample_create_wsi_manager(const gvk::Context& context, const
     auto wsiManagerCreateInfo = gvk::get_default<gvk::WsiManager::CreateInfo>();
 #ifdef VK_USE_PLATFORM_XLIB_KHR
     auto xlibSurfaceCreateInfo = get_default<VkXlibSurfaceCreateInfoKHR>();
-    xlibSurfaceCreateInfo.dpy = (Display*)pContext->mSysSurface.get_display();
-    xlibSurfaceCreateInfo.window = (Window)pContext->mSysSurface.get_window();
+    xlibSurfaceCreateInfo.dpy = (Display*)systemSurface.get_display();
+    xlibSurfaceCreateInfo.window = (Window)systemSurface.get_window();
     wsiManagerCreateInfo.pXlibSurfaceCreateInfoKHR = &xlibSurfaceCreateInfo;
 #endif
 #ifdef VK_USE_PLATFORM_WIN32_KHR
     auto win32SurfaceCreateInfo = gvk::get_default<VkWin32SurfaceCreateInfoKHR>();
     win32SurfaceCreateInfo.hinstance = GetModuleHandle(NULL);
-    win32SurfaceCreateInfo.hwnd = (HWND)sysSurface.get_hwnd();
+    win32SurfaceCreateInfo.hwnd = (HWND)systemSurface.get_hwnd();
     wsiManagerCreateInfo.pWin32SurfaceCreateInfoKHR = &win32SurfaceCreateInfo;
 #endif
 
@@ -432,7 +433,6 @@ inline VkResult gvk_sample_allocate_descriptor_sets(const gvk::Pipeline& pipelin
 
         // Create a gvk::DescriptorPool...
         auto descriptorPoolCreateInfo = gvk::get_default<VkDescriptorPoolCreateInfo>();
-        descriptorPoolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
         descriptorPoolCreateInfo.maxSets = (uint32_t)vkDescriptorSetLayouts.size();
         descriptorPoolCreateInfo.poolSizeCount = (uint32_t)descriptorPoolSizes.size();
         descriptorPoolCreateInfo.pPoolSizes = !descriptorPoolSizes.empty() ? descriptorPoolSizes.data() : nullptr;
@@ -640,6 +640,7 @@ inline VkResult gvk_sample_create_render_target(const gvk::Context& context, Gvk
     return gvkResult;
 }
 
+#if 0
 VkResult gvk_sample_acquire_submit_present(gvk::WsiManager& wsiManager)
 {
     gvk_result_scope_begin(VK_SUCCESS) {
@@ -659,10 +660,10 @@ VkResult gvk_sample_acquire_submit_present(gvk::WsiManager& wsiManager)
             //  the associated gvk::Fence...this ensures that we're not trying to reuse the
             //  gvk::Image while it's in flight...
             const auto& fence = wsiManager.get_fences()[imageIndex];
-            gvk_result(vkWaitForFences(device, 1, &(const VkFence&)fence, VK_TRUE, UINT64_MAX));
+            gvk_result(vkWaitForFences(device, 1, &fence.get<const VkFence&>(), VK_TRUE, UINT64_MAX));
 
             // Reset the gvk::Fence because we're going to use it again right away...
-            gvk_result(vkResetFences(device, 1, &(const VkFence&)fence));
+            gvk_result(vkResetFences(device, 1, &fence.get<const VkFence&>()));
 
             // Submit...
             //  When this submission finishes, the associated gvk::Fence will be signaled
@@ -680,3 +681,4 @@ VkResult gvk_sample_acquire_submit_present(gvk::WsiManager& wsiManager)
     } gvk_result_scope_end;
     return gvkResult;
 }
+#endif

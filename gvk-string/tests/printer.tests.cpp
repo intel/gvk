@@ -24,7 +24,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "gvk/printer.hpp"
+#include "gvk-string/printer.hpp"
+#include "gvk-string/to-string.hpp"
 
 #include "gtest/gtest.h"
 

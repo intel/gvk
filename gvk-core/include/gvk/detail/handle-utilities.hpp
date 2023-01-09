@@ -26,10 +26,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk/generated/forward-declarations.hpp"
+#include "gvk-reference/include.hpp"
+#include "gvk/generated/forward-declarations.inl"
 #include "gvk/defines.hpp"
 
 #include <cassert>
+#include <tuple>
 #include <vector>
 
 namespace gvk {
@@ -53,18 +55,21 @@ namespace detail {
 
 void* get_transient_storage(size_t size);
 
-template <typename ControlBlockType>
-inline VkResult initialize_control_block(ControlBlockType&)
+template <typename HandleType>
+inline VkResult initialize_control_block(HandleType&)
 {
     return VK_SUCCESS;
 }
 
-template <> VkResult initialize_control_block<DeviceControlBlock>(DeviceControlBlock& controlBlock);
-template <> VkResult initialize_control_block<FramebufferControlBlock>(FramebufferControlBlock& controlBlock);
-template <> VkResult initialize_control_block<InstanceControlBlock>(InstanceControlBlock& controlBlock);
-template <> VkResult initialize_control_block<PipelineLayoutControlBlock>(PipelineLayoutControlBlock& controlBlock);
-template <> VkResult initialize_control_block<RenderPassControlBlock>(RenderPassControlBlock& controlBlock);
-template <> VkResult initialize_control_block<SwapchainKHRControlBlock>(SwapchainKHRControlBlock& controlBlock);
+template <> VkResult initialize_control_block<Device>(Device& device);
+template <> VkResult initialize_control_block<Framebuffer>(Framebuffer& framebuffer);
+template <> VkResult initialize_control_block<Instance>(Instance& instance);
+template <> VkResult initialize_control_block<PipelineLayout>(PipelineLayout& pipelineLayout);
+#if 0
+template <> VkResult initialize_control_block<RenderPass>(RenderPass& renderPass);
+#endif
+template <> VkResult initialize_control_block<SurfaceKHR>(SurfaceKHR& surfaceKHR);
+template <> VkResult initialize_control_block<SwapchainKHR>(SwapchainKHR& swapchainKHR);
 
 } // namespace detail
 } // namespace gvk

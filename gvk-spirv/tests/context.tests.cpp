@@ -24,7 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "gvk/spirv/context.hpp"
+#include "gvk-spirv/context.hpp"
 #include "gvk/context.hpp"
 
 #ifdef VK_USE_PLATFORM_XLIB_KHR

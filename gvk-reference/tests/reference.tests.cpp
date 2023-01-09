@@ -24,9 +24,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "gvk/reference.hpp"
+#include "gvk-reference/reference.hpp"
 
+#if defined(_WIN32) || defined(_WIN64)
+#include <SDKDDKVer.h>
+#endif
 #include "asio.hpp"
+
 #include "gtest/gtest.h"
 
 #include <random>
@@ -220,7 +224,6 @@ TEST(Reference, MultithreadedCtorDtor)
     }
 
     // Compare the results of running operations on one vs many threads...
-    // gvk::sys::ThreadPool threadPool;
     asio::thread_pool threadPool;
     auto singleThreadedResults = apply_operations(operations, references, nullptr);
     auto multiThreadedResults = apply_operations(operations, references, &threadPool);

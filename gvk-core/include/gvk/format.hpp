@@ -26,13 +26,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
+#include "gvk-structures/defaults.hpp"
 #include "gvk/generated/dispatch-table.hpp"
 #include "gvk/generated/format-utilities.hpp"
-#include "gvk/defaults.hpp"
 #include "gvk/defines.hpp"
 
 #include <array>
-#include <cassert>
 #include <set>
 #include <string>
 #include <vector>
@@ -115,34 +114,33 @@ inline void enumerate_formats(
     ProcessFormatFunctionType processFormat
 )
 {
-    if (vkPhysicalDevice) {
-        enumerate_formats(
-            [&](VkFormat format)
-            {
-                auto formatProperties3 = get_default<VkFormatProperties3>();
-                auto formatProperties2 = get_default<VkFormatProperties2>();
-                formatProperties2.pNext = &formatProperties3;
-                auto dispatchTable = DispatchTable::get_global_dispatch_table();
-                assert(dispatchTable.gvkGetPhysicalDeviceFormatProperties2);
-                dispatchTable.gvkGetPhysicalDeviceFormatProperties2(vkPhysicalDevice, format, &formatProperties2);
-                switch (imageTiling) {
-                case VK_IMAGE_TILING_OPTIMAL: {
-                    if (formatProperties3.optimalTilingFeatures & featureFlags) {
-                        return processFormat(format);
-                    }
-                } break;
-                case VK_IMAGE_TILING_LINEAR: {
-                    if (formatProperties3.linearTilingFeatures & featureFlags) {
-                        return processFormat(format);
-                    }
-                } break;
-                default: {
-                } break;
+    assert(vkPhysicalDevice);
+    enumerate_formats(
+        [&](VkFormat format)
+        {
+            auto formatProperties3 = get_default<VkFormatProperties3>();
+            auto formatProperties2 = get_default<VkFormatProperties2>();
+            formatProperties2.pNext = &formatProperties3;
+            auto dispatchTable = DispatchTable::get_global_dispatch_table();
+            assert(dispatchTable.gvkGetPhysicalDeviceFormatProperties2);
+            dispatchTable.gvkGetPhysicalDeviceFormatProperties2(vkPhysicalDevice, format, &formatProperties2);
+            switch (imageTiling) {
+            case VK_IMAGE_TILING_OPTIMAL: {
+                if (formatProperties3.optimalTilingFeatures & featureFlags) {
+                    return processFormat(format);
                 }
-                return true;
+            } break;
+            case VK_IMAGE_TILING_LINEAR: {
+                if (formatProperties3.linearTilingFeatures & featureFlags) {
+                    return processFormat(format);
+                }
+            } break;
+            default: {
+            } break;
             }
-        );
-    }
+            return true;
+        }
+    );
 }
 
 } // namespace gvk

@@ -28,7 +28,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk/format.hpp"
 
 #include <array>
-#include <cassert>
 
 namespace gvk {
 
@@ -41,7 +40,7 @@ VkResult RenderTarget::create(const Device& device, const RenderTarget::CreateIn
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         pRenderTarget->reset();
         auto framebufferCreateInfo = *pRenderTargetCreateInfo->pFramebufferCreateInfo;
-        auto renderPass = RenderPass::get(framebufferCreateInfo.renderPass);
+        auto renderPass = RenderPass::get({ device, framebufferCreateInfo.renderPass });
         assert(renderPass);
         auto renderPassCreateInfo = renderPass.get<VkRenderPassCreateInfo2>();
         if (renderPassCreateInfo.attachmentCount && renderPassCreateInfo.pAttachments) {
@@ -119,7 +118,7 @@ Image RenderTarget::get_image(uint32_t attachmentIndex) const
 {
     assert(mFramebuffer);
     const auto& imageViews = mFramebuffer.get<ImageViews>();
-    const auto& imageView = attachmentIndex < imageViews.size() ? imageViews[attachmentIndex] : VK_NULL_HANDLE;
+    auto imageView = attachmentIndex < imageViews.size() ? imageViews[attachmentIndex] : VK_NULL_HANDLE;
     return imageView ? imageView.get<Image>() : VK_NULL_HANDLE;
 }
 
@@ -184,38 +183,6 @@ VkImageMemoryBarrier2 RenderTarget::get_image_memory_barrier_2(uint32_t attachme
         }
     }
     return imageMemoryBarrier;
-}
-
-VkSampleCountFlagBits get_max_framebuffer_sample_count(VkPhysicalDevice vkPhysicalDevice, VkBool32 color, VkBool32 depth, VkBool32 stencil)
-{
-    VkPhysicalDeviceProperties physicalDeviceProperties{ };
-    auto dispatchTable = DispatchTable::get_global_dispatch_table();
-    assert(dispatchTable.gvkGetPhysicalDeviceProperties);
-    dispatchTable.gvkGetPhysicalDeviceProperties(vkPhysicalDevice, &physicalDeviceProperties);
-    VkSampleCountFlags sampleCounts = (color || depth || stencil) ? (uint32_t)-1 : 0;
-    if (color) {
-        sampleCounts &= physicalDeviceProperties.limits.framebufferColorSampleCounts;
-    }
-    if (depth) {
-        sampleCounts &= physicalDeviceProperties.limits.framebufferDepthSampleCounts;
-    }
-    if (stencil) {
-        sampleCounts &= physicalDeviceProperties.limits.framebufferStencilSampleCounts;
-    }
-    if (sampleCounts & VK_SAMPLE_COUNT_64_BIT) {
-        return VK_SAMPLE_COUNT_64_BIT;
-    } else if (sampleCounts & VK_SAMPLE_COUNT_32_BIT) {
-        return VK_SAMPLE_COUNT_32_BIT;
-    } else if (sampleCounts & VK_SAMPLE_COUNT_16_BIT) {
-        return VK_SAMPLE_COUNT_16_BIT;
-    } else if (sampleCounts & VK_SAMPLE_COUNT_8_BIT) {
-        return VK_SAMPLE_COUNT_8_BIT;
-    } else if (sampleCounts & VK_SAMPLE_COUNT_4_BIT) {
-        return VK_SAMPLE_COUNT_4_BIT;
-    } else if (sampleCounts & VK_SAMPLE_COUNT_2_BIT) {
-        return VK_SAMPLE_COUNT_2_BIT;
-    }
-    return VK_SAMPLE_COUNT_1_BIT;
 }
 
 } // namespace gvk

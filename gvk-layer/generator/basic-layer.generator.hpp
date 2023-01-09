@@ -26,9 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk/cppgen.hpp"
-
-#include <cassert>
+#include "gvk-cppgen/include.hpp"
 
 namespace gvk {
 namespace cppgen {
@@ -75,8 +73,8 @@ private:
         for (const auto& commandItr : manifest.commands) {
             const auto& command = append_return_result_parameter(commandItr.second);
             CompileGuardGenerator compileGuardGenerator(file, command.compileGuards);
-            file << "    virtual " << command.returnType << " pre_" << command.name << "(" << get_command_args(command) << ");" << std::endl;
-            file << "    virtual " << command.returnType << " post_" << command.name << "(" << get_command_args(command) << ");" << std::endl;
+            file << "    virtual " << command.returnType << " pre_" << command.name << "(" << get_parameter_list(command.parameters) << ");" << std::endl;
+            file << "    virtual " << command.returnType << " post_" << command.name << "(" << get_parameter_list(command.parameters) << ");" << std::endl;
         }
         file << "};" << std::endl;
         file << std::endl;
@@ -94,10 +92,10 @@ private:
             const auto& command = append_return_result_parameter(commandItr.second);
             file << std::endl;
             CompileGuardGenerator compileGuardGenerator(file, command.compileGuards);
-            file << command.returnType << " BasicLayer::pre_" << command.name << "(" << get_command_args(command) << ")" << std::endl;
+            file << command.returnType << " BasicLayer::pre_" << command.name << "(" << get_parameter_list(command.parameters) << ")" << std::endl;
             generate_noop_command_body(file, command);
             file << std::endl;
-            file << command.returnType << " BasicLayer::post_" << command.name << "(" << get_command_args(command) << ")" << std::endl;
+            file << command.returnType << " BasicLayer::post_" << command.name << "(" << get_parameter_list(command.parameters) << ")" << std::endl;
             generate_noop_command_body(file, command);
         }
         file << std::endl;

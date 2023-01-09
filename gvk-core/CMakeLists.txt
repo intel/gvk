@@ -5,62 +5,29 @@ set(generatedIncludeDirectory "${CMAKE_CURRENT_BINARY_DIR}/include/")
 set(generatedIncludePath "${generatedIncludeDirectory}/gvk/generated/")
 set(generatedSourcePath "${CMAKE_CURRENT_BINARY_DIR}/source/gvk/generated/")
 set(generatedIncludeFiles
-    "${generatedIncludePath}/cerealize-structures.hpp"
-    "${generatedIncludePath}/comparison-operators.hpp"
-    "${generatedIncludePath}/create-structure-copy.hpp"
-    "${generatedIncludePath}/decerealize-structures.hpp"
-    "${generatedIncludePath}/deserialize-structures.hpp"
-    "${generatedIncludePath}/destroy-structure-copy.hpp"
     "${generatedIncludePath}/dispatch-table.hpp"
-    "${generatedIncludePath}/enum-to-string.hpp"
     "${generatedIncludePath}/format-utilities.hpp"
-    "${generatedIncludePath}/forward-declarations.hpp"
-    "${generatedIncludePath}/get-stype.hpp"
-    "${generatedIncludePath}/handle-to-string.hpp"
     "${generatedIncludePath}/handles.hpp"
-    "${generatedIncludePath}/make-tuple.hpp"
-    "${generatedIncludePath}/serialize-structures.hpp"
-    "${generatedIncludePath}/structure-to-string.hpp"
 )
 set(generatedSourceFiles
-    "${generatedSourcePath}/comparison-operators.cpp"
-    "${generatedSourcePath}/create-structure-copy.cpp"
-    "${generatedSourcePath}/deserialize-structures.cpp"
-    "${generatedSourcePath}/destroy-structure-copy.cpp"
     "${generatedSourcePath}/dispatch-table.cpp"
-    "${generatedSourcePath}/enum-to-string.cpp"
     "${generatedSourcePath}/format-utilities.cpp"
-    "${generatedSourcePath}/handle-to-string.cpp"
     "${generatedSourcePath}/handles.cpp"
-    "${generatedSourcePath}/make-tuple.cpp"
-    "${generatedSourcePath}/serialize-structures.cpp"
-    "${generatedSourcePath}/structure-to-string.cpp"
 )
 set(generatorSourcePath "${CMAKE_CURRENT_LIST_DIR}/generator/")
 gvk_add_code_generator(
     target
         gvk-core.generator
+    folder
+        "gvk-core/"
     linkLibraries
         gvk-cppgen
     includeDirectories
         "${generatorSourcePath}/"
     includeFiles
-        "${generatorSourcePath}/comparison-operators.generator.hpp"
-        "${generatorSourcePath}/cerealize-structures.generator.hpp"
-        "${generatorSourcePath}/create-structure-copy.generator.hpp"
-        "${generatorSourcePath}/decerealize-structures.generator.hpp"
-        "${generatorSourcePath}/deserialize-structures.generator.hpp"
-        "${generatorSourcePath}/destroy-structure-copy.generator.hpp"
         "${generatorSourcePath}/dispatch-table.generator.hpp"
-        "${generatorSourcePath}/enum-to-string.generator.hpp"
         "${generatorSourcePath}/format-utilities.generator.hpp"
-        "${generatorSourcePath}/forward-declarations.generator.hpp"
-        "${generatorSourcePath}/get-stype.generator.hpp"
-        "${generatorSourcePath}/handle-to-string.generator.hpp"
         "${generatorSourcePath}/handles.generator.hpp"
-        "${generatorSourcePath}/make-tuple.generator.hpp"
-        "${generatorSourcePath}/serialize-structures.generator.hpp"
-        "${generatorSourcePath}/structure-to-string.generator.hpp"
     sourceFiles
         "${generatorSourcePath}/main.cpp"
     outputFiles
@@ -70,6 +37,7 @@ gvk_add_code_generator(
         GVK_CORE_GENERATED_INCLUDE_PATH="${generatedIncludePath}"
         GVK_CORE_GENERATED_INCLUDE_PREFIX="gvk/generated/"
         GVK_CORE_GENERATED_SOURCE_PATH="${generatedSourcePath}"
+        GVK_XML_FILE_PATH="${Vulkan_XML}"
 )
 if(MSVC)
     set_source_files_properties("${generatedSourcePath}/comparison-operators.cpp" PROPERTIES COMPILE_FLAGS "/bigobj")
@@ -83,25 +51,22 @@ set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk/")
 gvk_add_static_library(
     target
         gvk-core
+    folder
+        "gvk-core/"
     linkLibraries
         gvk-reference
         gvk-string
-        cereal
+        gvk-structures
         VulkanMemoryAllocator
         Vulkan::Vulkan
         ${CMAKE_DL_LIBS}
     includeDirectories
-        "${includeDirectory}"
         "${generatedIncludeDirectory}"
+        "${includeDirectory}"
     includeFiles
-        "${includePath}/detail/cerealization-utilities.hpp"
-        "${includePath}/detail/comparison-operator-utilities.hpp"
+        "${generatedIncludeFiles}"
         "${includePath}/detail/handle-utilities.hpp"
-        "${includePath}/detail/make-tuple-utilities.hpp"
-        "${includePath}/detail/structure-copy-utilities.hpp"
-        "${includePath}/detail/to-string-utilities.hpp"
         "${includePath}/context.hpp"
-        "${includePath}/defaults.hpp"
         "${includePath}/defines.hpp"
         "${includePath}/environment.hpp"
         "${includePath}/format.hpp"
@@ -111,22 +76,18 @@ gvk_add_static_library(
         "${includePath}/serialization.hpp"
         "${includePath}/structures.hpp"
         "${includePath}/to-string.hpp"
+        "${includePath}/utilities.hpp"
         "${includePath}/wsi-manager.hpp"
-        "${generatedIncludeFiles}"
     sourceFiles
-        "${sourcePath}/detail/comparison-operator-utilities.cpp"
+        "${generatedSourceFiles}"
         "${sourcePath}/detail/handle-utilities.cpp"
-        "${sourcePath}/detail/make-tuple-utilities.cpp"
-        "${sourcePath}/detail/structure-copy-utilities.cpp"
-        "${sourcePath}/detail/to-string-utilities.cpp"
         "${sourcePath}/context.cpp"
-        "${sourcePath}/defaults.cpp"
         "${sourcePath}/environment.cpp"
         "${sourcePath}/format.cpp"
         "${sourcePath}/mesh.cpp"
         "${sourcePath}/render-target.cpp"
+        "${sourcePath}/utilities.cpp"
         "${sourcePath}/wsi-manager.cpp"
-        "${generatedSourceFiles}"
 )
 
 ################################################################################
@@ -135,10 +96,8 @@ set(testsPath "${CMAKE_CURRENT_LIST_DIR}/tests/")
 gvk_add_target_test(
     target
         gvk-core
+    folder
+        "gvk-core/"
     sourceFiles
-        "${testsPath}/comparison-operator.tests.cpp"
         "${testsPath}/render-target.tests.cpp"
-        "${testsPath}/structure-serialization.tests.cpp"
-        "${testsPath}/structure-copy.tests.cpp"
-        "${testsPath}/to-string.tests.cpp"
 )

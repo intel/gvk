@@ -26,8 +26,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk/format.hpp"
 
-#include <cassert>
-
 namespace gvk {
 
 uint32_t FormatInfo::bits_per_pixel() const

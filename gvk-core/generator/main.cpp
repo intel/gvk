@@ -24,23 +24,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "gvk/xml/manifest.hpp"
-#include "cerealize-structures.generator.hpp"
-#include "comparison-operators.generator.hpp"
-#include "create-structure-copy.generator.hpp"
-#include "decerealize-structures.generator.hpp"
-#include "deserialize-structures.generator.hpp"
-#include "destroy-structure-copy.generator.hpp"
+#include "gvk-xml/manifest.hpp"
 #include "dispatch-table.generator.hpp"
-#include "enum-to-string.generator.hpp"
 #include "format-utilities.generator.hpp"
-#include "forward-declarations.generator.hpp"
-#include "get-stype.generator.hpp"
-#include "handle-to-string.generator.hpp"
 #include "handles.generator.hpp"
-#include "make-tuple.generator.hpp"
-#include "serialize-structures.generator.hpp"
-#include "structure-to-string.generator.hpp"
 
 int main(int, const char*[])
 {
@@ -48,22 +35,9 @@ int main(int, const char*[])
     auto xmlResult = xmlDocument.LoadFile(GVK_XML_FILE_PATH);
     if (xmlResult == tinyxml2::XML_SUCCESS) {
         gvk::xml::Manifest manifest(xmlDocument);
-        gvk::cppgen::CerealizeStructuresGenerator::generate(manifest);
-        gvk::cppgen::ComparisonOperatorsGenerator::generate(manifest);
-        gvk::cppgen::CreateStructureCopyGenerator::generate(manifest);
-        gvk::cppgen::DecerealizeStructuresGenerator::generate(manifest);
-        gvk::cppgen::DeserializeStructuresGenerator::generate(manifest);
-        gvk::cppgen::DestroyStructureCopyGenerator::generate(manifest);
         gvk::cppgen::DispatchTableGenerator::generate(manifest);
-        gvk::cppgen::EnumToStringGenerator::generate(manifest);
         gvk::cppgen::FormatUtilitiesGenerator::generate(manifest);
-        gvk::cppgen::ForwardDeclarationsGenerator::generate(manifest);
-        gvk::cppgen::GetSTypeGenerator::generate(manifest);
-        gvk::cppgen::HandleToStringGenerator::generate(manifest);
         gvk::cppgen::HandlesGenerator::generate(manifest);
-        gvk::cppgen::MakeTupleGenerator::generate(manifest);
-        gvk::cppgen::SerializeStructuresGenerator::generate(manifest);
-        gvk::cppgen::StructureToStringGenerator::generate(manifest);
     }
     return 0;
 }

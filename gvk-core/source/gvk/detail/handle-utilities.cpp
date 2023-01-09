@@ -53,16 +53,15 @@ VkResult Buffer::create(const Device& device, const VkBufferCreateInfo* pBufferC
             VkBuffer vkBuffer = VK_NULL_HANDLE;
             VmaAllocation vmaAllocation = VK_NULL_HANDLE;
             gvk_result(vmaCreateBuffer(device.get<VmaAllocator>(), pBufferCreateInfo, pAllocationCreateInfo, &vkBuffer, &vmaAllocation, nullptr));
-            pBuffer->mVkBuffer = vkBuffer;
-            pBuffer->mControlBlock.reset(newref, vkBuffer);
-            auto& controlBlock = pBuffer->mControlBlock.get_obj();
+            pBuffer->mReference.reset(newref, { device, vkBuffer });
+            auto& controlBlock = pBuffer->mReference.get_obj();
             controlBlock.mVkBuffer = vkBuffer;
             controlBlock.mDevice = device;
             controlBlock.mBufferCreateInfo = *pBufferCreateInfo;
             controlBlock.mVmaAllocation = vmaAllocation;
             gvk_result(detail::initialize_control_block(controlBlock));
         }
-    } gvk_result_scope_end
+    } gvk_result_scope_end;
     return gvkResult;
 }
 
@@ -74,16 +73,15 @@ VkResult Image::create(const Device& device, const VkImageCreateInfo* pImageCrea
             VkImage vkImage = VK_NULL_HANDLE;
             VmaAllocation vmaAllocation = VK_NULL_HANDLE;
             gvk_result(vmaCreateImage(device.get<VmaAllocator>(), pImageCreateInfo, pAllocationCreateInfo, &vkImage, &vmaAllocation, nullptr));
-            pImage->mVkImage = vkImage;
-            pImage->mControlBlock.reset(newref, vkImage);
-            auto& controlBlock = pImage->mControlBlock.get_obj();
+            pImage->mReference.reset(newref, { device, vkImage });
+            auto& controlBlock = pImage->mReference.get_obj();
             controlBlock.mVkImage = vkImage;
             controlBlock.mDevice = device;
             controlBlock.mImageCreateInfo = *pImageCreateInfo;
             controlBlock.mVmaAllocation = vmaAllocation;
             gvk_result(detail::initialize_control_block(controlBlock));
         }
-    } gvk_result_scope_end
+    } gvk_result_scope_end;
     return gvkResult;
 }
 
@@ -98,23 +96,26 @@ void* get_transient_storage(size_t size)
 }
 
 template <>
-VkResult initialize_control_block<DeviceControlBlock>(DeviceControlBlock& controlBlock)
+VkResult initialize_control_block<Device>(Device& device)
 {
-    auto& dispatchTable = DispatchTable::get_global_dispatch_table();
+    auto& controlBlock = device.mReference.get_obj();
+    const auto& dispatchTable = DispatchTable::get_global_dispatch_table();
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         const auto& deviceCreateInfo = *controlBlock.mDeviceCreateInfo;
         for (uint32_t queueCreateInfo_i = 0; queueCreateInfo_i < deviceCreateInfo.queueCreateInfoCount; ++queueCreateInfo_i) {
             const auto& deviceQueueCreateInfo = deviceCreateInfo.pQueueCreateInfos[queueCreateInfo_i];
-            QueueFamily queueFamily{ };
+            QueueFamily queueFamily { };
             queueFamily.index = deviceQueueCreateInfo.queueFamilyIndex;
             queueFamily.queues.reserve(deviceQueueCreateInfo.queueCount);
             for (uint32_t queue_i = 0; queue_i < deviceQueueCreateInfo.queueCount; ++queue_i) {
-                Queue queue;
+                VkQueue vkQueue = VK_NULL_HANDLE;
                 assert(dispatchTable.gvkGetDeviceQueue);
-                dispatchTable.gvkGetDeviceQueue(controlBlock.mVkDevice, deviceQueueCreateInfo.queueFamilyIndex, queue_i, &queue.mVkQueue);
-                queue.mControlBlock.reset(newref, queue.mVkQueue);
-                auto& queueControlBlock = queue.mControlBlock.get_obj();
-                queueControlBlock.mVkQueue = queue.mVkQueue;
+                dispatchTable.gvkGetDeviceQueue(controlBlock.mVkDevice, deviceQueueCreateInfo.queueFamilyIndex, queue_i, &vkQueue);
+
+                Queue queue;
+                queue.mReference.reset(newref, vkQueue);
+                auto& queueControlBlock = queue.mReference.get_obj();
+                queueControlBlock.mVkQueue = vkQueue;
                 queueControlBlock.mVkDevice = controlBlock.mVkDevice;
                 queueControlBlock.mDeviceQueueCreateInfo = deviceQueueCreateInfo;
                 gvk_result(detail::initialize_control_block(queueControlBlock));
@@ -131,7 +132,7 @@ VkResult initialize_control_block<DeviceControlBlock>(DeviceControlBlock& contro
         //  keep VMA hooked up to GVK's dispatch table(s)...not super high priority atm.
         DispatchTable::load_device_entry_points(controlBlock.mVkDevice, &DispatchTable::get_global_dispatch_table());
 
-        VmaVulkanFunctions vulkanFunctions{ };
+        VmaVulkanFunctions vulkanFunctions { };
         vulkanFunctions.vkGetInstanceProcAddr = dispatchTable.gvkGetInstanceProcAddr;
         vulkanFunctions.vkGetDeviceProcAddr = dispatchTable.gvkGetDeviceProcAddr;
         vulkanFunctions.vkGetPhysicalDeviceProperties = dispatchTable.gvkGetPhysicalDeviceProperties;
@@ -151,47 +152,48 @@ VkResult initialize_control_block<DeviceControlBlock>(DeviceControlBlock& contro
         vulkanFunctions.vkCreateImage = dispatchTable.gvkCreateImage;
         vulkanFunctions.vkDestroyImage = dispatchTable.gvkDestroyImage;
         vulkanFunctions.vkCmdCopyBuffer = dispatchTable.gvkCmdCopyBuffer;
-        #if VMA_DEDICATED_ALLOCATION || VMA_VULKAN_VERSION >= 1001000
+#if VMA_DEDICATED_ALLOCATION || VMA_VULKAN_VERSION >= 1001000
         /// Fetch "vkGetBufferMemoryRequirements2" on Vulkan >= 1.1, fetch "vkGetBufferMemoryRequirements2KHR" when using VK_KHR_dedicated_allocation extension.
         vulkanFunctions.vkGetBufferMemoryRequirements2KHR = dispatchTable.gvkGetBufferMemoryRequirements2;
         /// Fetch "vkGetImageMemoryRequirements2" on Vulkan >= 1.1, fetch "vkGetImageMemoryRequirements2KHR" when using VK_KHR_dedicated_allocation extension.
         vulkanFunctions.vkGetImageMemoryRequirements2KHR = dispatchTable.gvkGetImageMemoryRequirements2;
-        #endif
-        #if VMA_BIND_MEMORY2 || VMA_VULKAN_VERSION >= 1001000
+#endif
+#if VMA_BIND_MEMORY2 || VMA_VULKAN_VERSION >= 1001000
         /// Fetch "vkBindBufferMemory2" on Vulkan >= 1.1, fetch "vkBindBufferMemory2KHR" when using VK_KHR_bind_memory2 extension.
         vulkanFunctions.vkBindBufferMemory2KHR = dispatchTable.gvkBindBufferMemory2;
         /// Fetch "vkBindImageMemory2" on Vulkan >= 1.1, fetch "vkBindImageMemory2KHR" when using VK_KHR_bind_memory2 extension.
         vulkanFunctions.vkBindImageMemory2KHR = dispatchTable.gvkBindImageMemory2;
-        #endif
-        #if VMA_MEMORY_BUDGET || VMA_VULKAN_VERSION >= 1001000
+#endif
+#if VMA_MEMORY_BUDGET || VMA_VULKAN_VERSION >= 1001000
         vulkanFunctions.vkGetPhysicalDeviceMemoryProperties2KHR = dispatchTable.gvkGetPhysicalDeviceMemoryProperties2;
-        #endif
-        #if VMA_VULKAN_VERSION >= 1003000
+#endif
+#if VMA_VULKAN_VERSION >= 1003000
         /// Fetch from "vkGetDeviceBufferMemoryRequirements" on Vulkan >= 1.3, but you can also fetch it from "vkGetDeviceBufferMemoryRequirementsKHR" if you enabled extension VK_KHR_maintenance4.
         vulkanFunctions.vkGetDeviceBufferMemoryRequirements = dispatchTable.gvkGetDeviceBufferMemoryRequirements;
         /// Fetch from "vkGetDeviceImageMemoryRequirements" on Vulkan >= 1.3, but you can also fetch it from "vkGetDeviceImageMemoryRequirementsKHR" if you enabled extension VK_KHR_maintenance4.
         vulkanFunctions.vkGetDeviceImageMemoryRequirements = dispatchTable.gvkGetDeviceImageMemoryRequirements;
-        #endif
+#endif
 
-        VmaAllocatorCreateInfo allocatorCreateInfo{ };
+        VmaAllocatorCreateInfo allocatorCreateInfo { };
         allocatorCreateInfo.vulkanApiVersion = instanceCreateInfo.pApplicationInfo ? instanceCreateInfo.pApplicationInfo->apiVersion : VK_API_VERSION_1_3;
         allocatorCreateInfo.instance = controlBlock.mInstance;
         allocatorCreateInfo.physicalDevice = controlBlock.mPhysicalDevice;
         allocatorCreateInfo.device = controlBlock.mVkDevice;
         allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
         gvk_result(vmaCreateAllocator(&allocatorCreateInfo, &controlBlock.mVmaAllocator));
-    } gvk_result_scope_end
+    } gvk_result_scope_end;
     return gvkResult;
 }
 
 template <>
-VkResult initialize_control_block<FramebufferControlBlock>(FramebufferControlBlock& controlBlock)
+VkResult initialize_control_block<Framebuffer>(Framebuffer& framebuffer)
 {
+    auto& controlBlock = framebuffer.mReference.get_obj();
     const auto& framebufferCreateInfo = *controlBlock.mFramebufferCreateInfo;
     if (framebufferCreateInfo.attachmentCount && framebufferCreateInfo.pAttachments) {
         controlBlock.mImageViews.reserve(framebufferCreateInfo.attachmentCount);
         for (uint32_t i = 0; i < framebufferCreateInfo.attachmentCount; ++i) {
-            ImageView imageView = framebufferCreateInfo.pAttachments[i];
+            ImageView imageView = HandleId<VkDevice, VkImageView>(controlBlock.mDevice, framebufferCreateInfo.pAttachments[i]);
             if (imageView) {
                 controlBlock.mImageViews.push_back(imageView);
             }
@@ -201,8 +203,9 @@ VkResult initialize_control_block<FramebufferControlBlock>(FramebufferControlBlo
 }
 
 template <>
-VkResult initialize_control_block<InstanceControlBlock>(InstanceControlBlock& controlBlock)
+VkResult initialize_control_block<Instance>(Instance& instance)
 {
+    auto& controlBlock = instance.mReference.get_obj();
     auto& dispatchTable = DispatchTable::get_global_dispatch_table();
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         auto vkInstance = controlBlock.mVkInstance;
@@ -216,9 +219,8 @@ VkResult initialize_control_block<InstanceControlBlock>(InstanceControlBlock& co
         controlBlock.mPhysicalDevices.reserve(physicalDeviceCount);
         for (uint32_t i = 0; i < physicalDeviceCount; ++i) {
             PhysicalDevice physicalDevice;
-            physicalDevice.mVkPhysicalDevice = pVkPhysicalDevices[i];
-            physicalDevice.mControlBlock.reset(newref, pVkPhysicalDevices[i]);
-            auto& physicalDeviceControlBlock = physicalDevice.mControlBlock.get_obj();
+            physicalDevice.mReference.reset(newref, pVkPhysicalDevices[i]);
+            auto& physicalDeviceControlBlock = physicalDevice.mReference.get_obj();
             physicalDeviceControlBlock.mVkPhysicalDevice = pVkPhysicalDevices[i];
             physicalDeviceControlBlock.mVkInstance = vkInstance;
             controlBlock.mPhysicalDevices.push_back(physicalDevice);
@@ -229,21 +231,24 @@ VkResult initialize_control_block<InstanceControlBlock>(InstanceControlBlock& co
 }
 
 template <>
-VkResult initialize_control_block<PipelineLayoutControlBlock>(PipelineLayoutControlBlock& controlBlock)
+VkResult initialize_control_block<PipelineLayout>(PipelineLayout& pipelineLayout)
 {
+    auto& controlBlock = pipelineLayout.mReference.get_obj();
     const auto& pipelineLayoutCreateInfo = *controlBlock.mPipelineLayoutCreateInfo;
     if (pipelineLayoutCreateInfo.setLayoutCount && pipelineLayoutCreateInfo.pSetLayouts) {
         controlBlock.mDescriptorSetLayouts.resize(pipelineLayoutCreateInfo.setLayoutCount);
         for (uint32_t i = 0; i < pipelineLayoutCreateInfo.setLayoutCount; ++i) {
-            controlBlock.mDescriptorSetLayouts[i] = pipelineLayoutCreateInfo.pSetLayouts[i];
+            controlBlock.mDescriptorSetLayouts[i] = HandleId<VkDevice, VkDescriptorSetLayout>(controlBlock.mDevice, pipelineLayoutCreateInfo.pSetLayouts[i]);
         }
     }
     return VK_SUCCESS;
 }
 
+#if 0
 template <>
-VkResult initialize_control_block<RenderPassControlBlock>(RenderPassControlBlock& controlBlock)
+VkResult initialize_control_block<RenderPass>(RenderPass& renderPass)
 {
+    auto& controlBlock = renderPass.mControlBlock.get_obj();
     if (controlBlock.mRenderPassCreateInfo->sType == VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO) {
         controlBlock.mRenderPassCreateInfo2 = convert<VkRenderPassCreateInfo, VkRenderPassCreateInfo2>(controlBlock.mRenderPassCreateInfo);
     } else if (controlBlock.mRenderPassCreateInfo2->sType == VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2) {
@@ -251,12 +256,30 @@ VkResult initialize_control_block<RenderPassControlBlock>(RenderPassControlBlock
     }
     return VK_SUCCESS;
 }
+#endif
 
 template <>
-VkResult initialize_control_block<SwapchainKHRControlBlock>(SwapchainKHRControlBlock& controlBlock)
+VkResult initialize_control_block<SurfaceKHR>(SurfaceKHR& surface)
 {
-    auto& dispatchTable = DispatchTable::get_global_dispatch_table();
+    auto& controlBlock = surface.mReference.get_obj();
+    const VkDisplaySurfaceCreateInfoKHR& displaySurfaceCreateInfo = controlBlock.mDisplaySurfaceCreateInfoKHR;
+    if (displaySurfaceCreateInfo.sType == VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR) {
+        // TODO : Documentation
+        for (const auto& physicalDevice : controlBlock.mInstance.get<PhysicalDevices>()) {
+            assert(!controlBlock.mDisplayModeKHR && "TODO : Documentation");
+            controlBlock.mDisplayModeKHR = HandleId<VkPhysicalDevice, VkDisplayModeKHR>(physicalDevice, displaySurfaceCreateInfo.displayMode);
+        }
+    }
+    return VK_SUCCESS;
+}
+
+template <>
+VkResult initialize_control_block<SwapchainKHR>(SwapchainKHR& swapchain)
+{
+    auto& controlBlock = swapchain.mReference.get_obj();
+    const auto& dispatchTable = DispatchTable::get_global_dispatch_table();
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+        controlBlock.mSurfaceKHR = HandleId<VkInstance, VkSurfaceKHR>(controlBlock.mDevice.get<Instance>(), controlBlock.mSwapchainCreateInfoKHR->surface);
         uint32_t swapchainImageCount = 0;
         assert(dispatchTable.gvkGetSwapchainImagesKHR);
         gvk_result(dispatchTable.gvkGetSwapchainImagesKHR(controlBlock.mDevice, controlBlock.mVkSwapchainKHR, &swapchainImageCount, nullptr));
@@ -277,9 +300,8 @@ VkResult initialize_control_block<SwapchainKHRControlBlock>(SwapchainKHRControlB
         imageCreateInfo.pQueueFamilyIndices = swapchainCreateInfo.pQueueFamilyIndices;
         imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         for (uint32_t i = 0; i < swapchainImageCount; ++i) {
-            images[i].mVkImage = pVkImages[i];
-            images[i].mControlBlock.reset(newref, pVkImages[i]);
-            auto& imageControlBlock = images[i].mControlBlock.get_obj();
+            images[i].mReference.reset(newref, HandleId<VkDevice, VkImage>(controlBlock.mDevice, pVkImages[i]));
+            auto& imageControlBlock = images[i].mReference.get_obj();
             imageControlBlock.mVkImage = pVkImages[i];
             imageControlBlock.mDevice = controlBlock.mDevice;
             imageControlBlock.mVkSwapchainKHR = controlBlock.mVkSwapchainKHR;
@@ -290,18 +312,20 @@ VkResult initialize_control_block<SwapchainKHRControlBlock>(SwapchainKHRControlB
     return gvkResult;
 }
 
-BufferControlBlock::~BufferControlBlock()
+} // namespace detail
+
+Buffer::ControlBlock::~ControlBlock()
 {
     if (mVmaAllocation) {
         vmaDestroyBuffer(mDevice.get<VmaAllocator>(), mVkBuffer, mVmaAllocation);
     } else {
         auto dispatchTable = DispatchTable::get_global_dispatch_table();
         assert(dispatchTable.gvkDestroyBuffer);
-        dispatchTable.gvkDestroyBuffer(mDevice, mVkBuffer, (mAllocator.pfnFree ? &mAllocator : nullptr));
+        dispatchTable.gvkDestroyBuffer(mDevice, mVkBuffer, (mAllocationCallbacks.pfnFree ? &mAllocationCallbacks : nullptr));
     }
 }
 
-DeviceControlBlock::~DeviceControlBlock()
+Device::ControlBlock::~ControlBlock()
 {
     if (mVmaAllocator) {
         vmaDestroyAllocator(mVmaAllocator);
@@ -310,10 +334,10 @@ DeviceControlBlock::~DeviceControlBlock()
     assert(dispatchTable.gvkDeviceWaitIdle);
     dispatchTable.gvkDeviceWaitIdle(mVkDevice);
     assert(dispatchTable.gvkDestroyDevice);
-    dispatchTable.gvkDestroyDevice(mVkDevice, (mAllocator.pfnFree ? &mAllocator : nullptr));
+    dispatchTable.gvkDestroyDevice(mVkDevice, (mAllocationCallbacks.pfnFree ? &mAllocationCallbacks : nullptr));
 }
 
-ImageControlBlock::~ImageControlBlock()
+Image::ControlBlock::~ControlBlock()
 {
     if (!mVkSwapchainKHR) {
         if (mVmaAllocation) {
@@ -321,10 +345,9 @@ ImageControlBlock::~ImageControlBlock()
         } else {
             auto dispatchTable = DispatchTable::get_global_dispatch_table();
             assert(dispatchTable.gvkDestroyImage);
-            dispatchTable.gvkDestroyImage(mDevice, mVkImage, (mAllocator.pfnFree ? &mAllocator : nullptr));
+            dispatchTable.gvkDestroyImage(mDevice, mVkImage, (mAllocationCallbacks.pfnFree ? &mAllocationCallbacks : nullptr));
         }
     }
 }
 
-} // namespace detail
 } // namespace gvk

@@ -26,81 +26,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk/generated/comparison-operators.hpp"
-#include "gvk/generated/create-structure-copy.hpp"
-#include "gvk/generated/destroy-structure-copy.hpp"
-#include "gvk/defaults.hpp"
+#include "gvk-structures/auto.hpp"
+#include "gvk-structures/comparison-operators.hpp"
+#include "gvk-structures/copy.hpp"
+#include "gvk-structures/defaults.hpp"
+#include "gvk-structures/get-stype.hpp"
 #include "gvk/defines.hpp"
 
 #include <utility>
 
 namespace gvk {
-
-template <typename ObjecType>
-class Auto final
-{
-public:
-    Auto() = default;
-
-    inline Auto(const ObjecType& other)
-        : mObject{ detail::create_structure_copy(other, nullptr) }
-    {
-    }
-
-    inline Auto(const Auto<ObjecType>& other)
-    {
-        *this = other;
-    }
-
-    inline Auto(Auto<ObjecType>&& other)
-    {
-        *this = std::move(other);
-    }
-
-    inline ~Auto()
-    {
-        reset();
-    }
-
-    inline Auto<ObjecType>& operator=(const Auto<ObjecType>& other)
-    {
-        reset();
-        mObject = detail::create_structure_copy(other.mObject, nullptr);
-        return *this;
-    }
-
-    inline Auto<ObjecType>& operator=(Auto<ObjecType>&& other)
-    {
-        mObject = other.mObject;
-        other.mObject = { };
-        return *this;
-    }
-
-    inline operator const ObjecType&() const
-    {
-        return mObject;
-    }
-
-    inline const ObjecType& operator*() const
-    {
-        return mObject;
-    }
-
-    inline const ObjecType* operator->() const
-    {
-        return &mObject;
-    }
-
-    inline void reset()
-    {
-        detail::destroy_structure_copy(mObject, nullptr);
-        mObject = { };
-    }
-
-private:
-    ObjecType mObject { };
-};
-
 namespace detail {
 
 // NOTE : These functions operate on Auto<> structures that we are allocating
@@ -135,7 +70,7 @@ inline void convert_array(
 template<typename SrcAttachmentDescriptionType, typename DstAttachmentDescriptionType>
 inline void convert_attachment_description(const SrcAttachmentDescriptionType& src, DstAttachmentDescriptionType& dst)
 {
-    dst = {};
+    dst = { };
     dst.flags = src.flags;
     dst.format = src.format;
     dst.samples = src.samples;
@@ -150,7 +85,7 @@ inline void convert_attachment_description(const SrcAttachmentDescriptionType& s
 template<typename SrcAttachmentReferenceType, typename DstAttachmentReferenceType>
 inline void convert_attachment_reference(const SrcAttachmentReferenceType& src, DstAttachmentReferenceType& dst)
 {
-    dst = {};
+    dst = { };
     dst.attachment = src.attachment;
     dst.layout = src.layout;
 }
@@ -158,7 +93,7 @@ inline void convert_attachment_reference(const SrcAttachmentReferenceType& src, 
 template<typename SrcSubpassDescriptionType, typename DstSubpassDescriptionType>
 inline void convert_subpass_description(const SrcSubpassDescriptionType& src, DstSubpassDescriptionType& dst)
 {
-    dst = {};
+    dst = { };
     dst.flags = src.flags;
     dst.pipelineBindPoint = src.pipelineBindPoint;
     using SrcAttachmentReferenceType = std::remove_const_t<std::remove_pointer_t<decltype(src.pDepthStencilAttachment)>>;
@@ -196,7 +131,7 @@ inline void convert_subpass_description(const SrcSubpassDescriptionType& src, Ds
 template<typename SrcSubpassDependencyType, typename DstSubpassDependencyType>
 inline void convert_subpass_dependency(const SrcSubpassDependencyType& src, DstSubpassDependencyType& dst)
 {
-    dst = {};
+    dst = { };
     dst.srcSubpass = src.srcSubpass;
     dst.dstSubpass = src.dstSubpass;
     dst.srcStageMask = src.srcStageMask;

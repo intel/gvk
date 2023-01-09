@@ -44,7 +44,7 @@ void Mesh::record_cmds(const gvk::CommandBuffer& commandBuffer) const
     assert(dispatchTable.gvkCmdBindIndexBuffer);
     assert(dispatchTable.gvkCmdDrawIndexed);
     VkDeviceSize vertexDataOffset = 0;
-    dispatchTable.gvkCmdBindVertexBuffers(commandBuffer, 0, 1, &(const VkBuffer&)mGpuBuffer, &vertexDataOffset);
+    dispatchTable.gvkCmdBindVertexBuffers(commandBuffer, 0, 1, &mGpuBuffer.get<const VkBuffer&>(), &vertexDataOffset);
     dispatchTable.gvkCmdBindIndexBuffer(commandBuffer, mGpuBuffer, mIndexDataOffset, mIndexType);
     dispatchTable.gvkCmdDrawIndexed(commandBuffer, (uint32_t)mIndexCount, 1, 0, 0, 0);
 }

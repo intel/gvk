@@ -94,6 +94,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 4. GLM
    Copyright (c) 2005 - G-Truc Creation
 
+   imgui
+   Copyright (c) 2014-2022 Omar Cornut
+
+   RapidJSON
+   Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip.  All rights reserved.
+
+   RapidXml
+   Copyright (c) 2006, 2007 Marcin Kalicinski
+
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
     in the Software without restriction, including without limitation the rights
@@ -1192,6 +1201,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 -------------------------------------------------------------
 7. SPIRV-Cross
+   SPIRV-Headers
+   SPIRV-Tools
 
     Apache License
 

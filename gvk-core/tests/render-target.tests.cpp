@@ -28,6 +28,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk/format.hpp"
 #include "gvk/render-target.hpp"
 #include "gvk/to-string.hpp"
+#include "gvk/utilities.hpp"
 
 #ifdef VK_USE_PLATFORM_XLIB_KHR
 #undef None

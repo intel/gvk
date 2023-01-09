@@ -8,7 +8,6 @@ FetchContent_Declare(
     GIT_REPOSITORY "https://github.com/google/googletest.git"
     GIT_TAG 58d77fa8070e8cec2dc1ed015d66b454c8d78850
     GIT_PROGRESS TRUE
-    FETCHCONTENT_UPDATES_DISCONNECTED
 )
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)

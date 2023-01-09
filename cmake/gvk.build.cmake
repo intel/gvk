@@ -4,6 +4,8 @@ include_guard()
 include(CMakeParseArguments)
 include(CTest)
 
+set(GVK_BUILD_MODULE_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}")
+
 function(gvk_create_file_group files)
     set_property(GLOBAL PROPERTY USE_FOLDERS ON)
     foreach(file ${files})
@@ -29,7 +31,7 @@ function(gvk_setup_target)
     target_compile_definitions(${args_target} PUBLIC "${args_compileDefinitions}")
     target_link_libraries(${args_target} PUBLIC "${args_linkLibraries}")
     set_target_properties(${args_target} PROPERTIES LINKER_LANGUAGE CXX)
-    target_compile_options(${args_target} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX> $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror>)
+    target_compile_options(${args_target} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX> $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror -fPIC>)
     gvk_create_file_group("${args_includeFiles}")
     gvk_create_file_group("${args_sourceFiles}")
     if(GVK_NO_PROTOTYPES)
@@ -67,10 +69,10 @@ function(gvk_add_executable)
 endfunction()
 
 function(gvk_add_code_generator)
-    cmake_parse_arguments(args "" "target" "linkLibraries;includeDirectories;includeFiles;sourceFiles;inputFiles;outputFiles;compileDefinitions" ${ARGN})
+    cmake_parse_arguments(args "" "target;folder" "linkLibraries;includeDirectories;includeFiles;sourceFiles;inputFiles;outputFiles;compileDefinitions" ${ARGN})
     gvk_add_executable(
         target              ${args_target}
-        folder             "generators/"
+        folder             "${args_folder}"
         linkLibraries       ${args_linkLibraries}
         includeDirectories "${args_includeDirectories}"
         includeFiles       "${args_includeFiles}"
@@ -85,7 +87,7 @@ function(gvk_add_code_generator)
 endfunction()
 
 function(gvk_add_layer)
-    cmake_parse_arguments(args "" "target;folder" "linkLibraries;includeDirectories;includeFiles;sourceFiles;compileDefinitions;description;version;company;copyright" ${ARGN})
+    cmake_parse_arguments(args "" "target;folder" "linkLibraries;includeDirectories;includeFiles;sourceFiles;compileDefinitions;description;version;company;copyright;entryPoints" ${ARGN})
     if(NOT args_version)
         set(args_version 1)
     endif()
@@ -96,6 +98,7 @@ function(gvk_add_layer)
         set(args_copyright "Copyright Intel Corporation")
     endif()
     if(MSVC)
+        string(REPLACE ";" "\n" args_entryPoints "${args_entryPoints}")
         configure_file("${CMAKE_CURRENT_FUNCTION_LIST_DIR}/gvk-layer.def.in" "${CMAKE_CURRENT_BINARY_DIR}/${args_target}.def")
         configure_file("${CMAKE_CURRENT_FUNCTION_LIST_DIR}/gvk-layer.rc.in" "${CMAKE_CURRENT_BINARY_DIR}/${args_target}.rc")
         list(APPEND args_sourceFiles
@@ -121,7 +124,8 @@ function(gvk_add_layer)
     else()
         set(libraryPath "./lib${args_target}.so")
     endif()
-    configure_file("${CMAKE_CURRENT_FUNCTION_LIST_DIR}/gvk-layer.json.in" "${CMAKE_CURRENT_BINARY_DIR}/${args_target}.json")
+    # HUH : Why doesn't CMAKE_CURRENT_FUNCTION_LIST_DIR work on Linux?
+    configure_file("${GVK_BUILD_MODULE_DIRECTORY}/gvk-layer.json.in" "${CMAKE_CURRENT_BINARY_DIR}/${args_target}.json")
     add_custom_command(
         TARGET ${args_target} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_BINARY_DIR}/${args_target}.json" "$<TARGET_FILE_DIR:${args_target}>"
@@ -129,17 +133,25 @@ function(gvk_add_layer)
 endfunction()
 
 macro(gvk_add_target_test)
-    cmake_parse_arguments(args "" "target" "linkLibraries;includeDirectories;includeFiles;sourceFiles;compileDefinitions" ${ARGN})
+    cmake_parse_arguments(args "" "target;folder" "linkLibraries;includeDirectories;includeFiles;sourceFiles;compileDefinitions" ${ARGN})
     if(GVK_BUILD_TESTS)
+        list(APPEND args_linkLibraries gtest_main)
+        get_target_property(type ${args_target} TYPE)
+        if(type STREQUAL STATIC_LIBRARY)
+            list(APPEND args_linkLibraries ${args_target})
+        endif()
         gvk_add_executable(
             target ${args_target}.tests
-            folder "tests/"
-            linkLibraries ${args_target} ${args_linkLibraries} gtest_main
+            folder ${args_folder}
+            linkLibraries ${args_linkLibraries}
             includeDirectories "${args_includeDirectories}"
             includeFiles "${args_includeFiles}"
             sourceFiles "${args_sourceFiles}"
-            compileDefinitions ${compileDefinitions}
+            compileDefinitions ${args_compileDefinitions}
         )
+        if(type STREQUAL SHARED_LIBRARY)
+            add_dependencies(${args_target}.tests ${args_target})
+        endif()
         if(GVK_RUN_TESTS)
             add_test(NAME ${args_target}.tests COMMAND ${args_target}.tests)
             add_custom_command(

@@ -35,9 +35,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 
 using DescriptorSetLayouts = const std::vector<DescriptorSetLayout>&;
+using Images = const std::vector<Image>&;
 using ImageViews = const std::vector<ImageView>&;
 using PhysicalDevices = const std::vector<PhysicalDevice>&;
-using Images = const std::vector<Image>&;
 using QueueFamilies = const std::vector<QueueFamily>&;
 
 template <typename GvkHandleType>

@@ -10,12 +10,11 @@ set(SPIRV_CROSS_SKIP_INSTALL ON  CACHE BOOL "" FORCE)
 FetchContent_Declare(
     SPIRV-Cross
     GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Cross.git"
-    GIT_TAG 9acb9ec31f5a8ef80ea6b994bb77be787b08d3d1 # 2021-01-15
+    GIT_TAG f09ba2777714871bddb70d049878af34b94fa54d # sdk-1.3.231.1
     GIT_PROGRESS TRUE
-    FETCHCONTENT_UPDATES_DISCONNECTED
 )
 FetchContent_MakeAvailable(SPIRV-Cross)
-set(folder "${GVK_IDE_FOLDER}/external/spirv-cross/")
+set(folder "${GVK_IDE_FOLDER}/external/SPIRV-Cross/")
 set_target_properties(spirv-cross-c       PROPERTIES FOLDER "${folder}")
 set_target_properties(spirv-cross-core    PROPERTIES FOLDER "${folder}")
 set_target_properties(spirv-cross-cpp     PROPERTIES FOLDER "${folder}")

@@ -185,6 +185,11 @@ public:
     const std::vector<Fence>& get_fences() const;
 
     /**
+    TODO : Documentation
+    */
+    const std::vector<VkFence>& get_vk_fences() const;
+
+    /**
     Gets this WsiManager object's image acquired Semaphore
     @return This WsiManager object's image acquired Semaphore
     */
@@ -286,6 +291,7 @@ private:
     std::vector<CommandBuffer> mCommandBuffers;
     std::vector<RenderTarget> mRenderTargets;
     std::vector<Fence> mFences;
+    std::vector<VkFence> mVkFences;
     Semaphore mImageAcquiredSemaphore;
     Semaphore mImageRenderedSemaphore;
     uint32_t mQueueFamilyIndex{ };

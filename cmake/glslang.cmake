@@ -8,12 +8,12 @@ set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "" FORCE)
 set(ENABLE_GLSLANG_INSTALL  OFF CACHE BOOL "" FORCE)
 set(ENABLE_GLSLANG_JS       OFF CACHE BOOL "" FORCE)
 set(ENABLE_GLSLANG_WEBMIN   OFF CACHE BOOL "" FORCE)
+set(SKIP_GLSLANG_INSTALL    ON  CACHE BOOL "" FORCE)
 FetchContent_Declare(
     glslang
     GIT_REPOSITORY "https://github.com/KhronosGroup/glslang.git"
-    GIT_TAG adbf0d3106b26daa237b10b9bf72b1af7c31092d # 11.10.0
+    GIT_TAG 5755de46b07e4374c05fb1081f65f7ae1f8cca81 # sdk-1.3.231.1
     GIT_PROGRESS TRUE
-    FETCHCONTENT_UPDATES_DISCONNECTED
 )
 FetchContent_MakeAvailable(glslang)
 set(folder "${GVK_IDE_FOLDER}/external/glslang/")

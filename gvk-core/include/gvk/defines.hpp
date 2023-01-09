@@ -37,10 +37,10 @@ NOTE : Best practices for loading dll/so libraries (ie. full paths instead of re
 #endif
 #include <dlfcn.h>
 #ifndef gvk_dlopen
-#define gvk_dlopen(LIBRARY_NAME) dlopen(LIBRARY_NAME, RTLD_LAZY | RTLD_LOCAL)
+#define gvk_dlopen(LIBRARY_NAME) (void*)dlopen(LIBRARY_NAME, RTLD_LAZY | RTLD_LOCAL)
 #endif
 #ifndef gvk_dlsym
-#define gvk_dlsym(LIBRARY_HANDLE, SYMBOL_NAME) dlsym(LIBRARY_HANDLE, SYMBOL_NAME)
+#define gvk_dlsym(LIBRARY_HANDLE, SYMBOL_NAME) (void*)dlsym(LIBRARY_HANDLE, SYMBOL_NAME)
 #endif
 #ifndef gvk_dlclose
 #define gvk_dlclose(LIBRARY_HANDLE) dlclose(LIBRARY_HANDLE)
@@ -59,10 +59,10 @@ NOTE : Best practices for loading dll/so libraries (ie. full paths instead of re
 #endif
 #include <Windows.h>
 #ifndef gvk_dlopen
-#define gvk_dlopen(LIBRARY_NAME) LoadLibraryA(LIBRARY_NAME)
+#define gvk_dlopen(LIBRARY_NAME) (void*)LoadLibraryA(LIBRARY_NAME)
 #endif
 #ifndef gvk_dlsym
-#define gvk_dlsym(LIBRARY_HANDLE, SYMBOL_NAME) GetProcAddress((HMODULE)LIBRARY_HANDLE, SYMBOL_NAME)
+#define gvk_dlsym(LIBRARY_HANDLE, SYMBOL_NAME) (void*)GetProcAddress((HMODULE)LIBRARY_HANDLE, SYMBOL_NAME)
 #endif
 #ifndef gvk_dlclose
 #define gvk_dlclose(LIBRARY_HANDLE) FreeLibrary((HMODULE)LIBRARY_HANDLE)
@@ -110,6 +110,8 @@ NOTE : Best practices for loading dll/so libraries (ie. full paths instead of re
 #ifdef GVK_COMPILER_MSVC
 #pragma warning(pop)
 #endif // GVK_COMPILER_MSVC
+
+#include <cassert>
 
 #define gvk_stringify(STR) #STR
 #define gvk_expand(STR) gvk_stringify(STR)

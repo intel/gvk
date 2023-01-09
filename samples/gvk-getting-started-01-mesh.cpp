@@ -72,11 +72,11 @@ int main(int, const char*[])
         GvkSampleContext context;
         gvk_result(GvkSampleContext::create("Intel(R) GPA Utilities for Vulkan* - Getting Started - 01 - Mesh", &context));
 
-        gvk::sys::Surface sysSurface;
-        gvk_result(gvk_sample_create_sys_surface(context, &sysSurface));
+        gvk::system::Surface systemSurface;
+        gvk_result(gvk_sample_create_sys_surface(context, &systemSurface));
 
         gvk::WsiManager wsiManager;
-        gvk_result(gvk_sample_create_wsi_manager(context, sysSurface, &wsiManager));
+        gvk_result(gvk_sample_create_wsi_manager(context, systemSurface, &wsiManager));
 
         gvk::spirv::ShaderInfo vertexShaderInfo{ };
         vertexShaderInfo.language = gvk::spirv::ShadingLanguage::Glsl;
@@ -129,31 +129,47 @@ int main(int, const char*[])
         gvk_result(create_mesh(context, &mesh));
 
         while (
-            !(sysSurface.get_input().keyboard.down(gvk::sys::Key::Escape)) &&
-            !(sysSurface.get_status() & gvk::sys::Surface::CloseRequested)) {
-            gvk::sys::Surface::update();
-            if (wsiManager.update()) {
-                for (size_t i = 0; i < wsiManager.get_command_buffers().size(); ++i) {
-                    const auto& commandBuffer = wsiManager.get_command_buffers()[i];
-                    gvk_result(vkBeginCommandBuffer(commandBuffer, &gvk::get_default<VkCommandBufferBeginInfo>()));
-                    auto renderPassBeginInfo = wsiManager.get_render_targets()[i].get_render_pass_begin_info();
-                    vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+            !(systemSurface.get_input().keyboard.down(gvk::system::Key::Escape)) &&
+            !(systemSurface.get_status() & gvk::system::Surface::CloseRequested)) {
+            gvk::system::Surface::update();
+            wsiManager.update();
+            auto swapchain = wsiManager.get_swapchain();
+            if (swapchain) {
+                uint32_t imageIndex = 0;
+                auto vkResult = wsiManager.acquire_next_image(UINT64_MAX, VK_NULL_HANDLE, &imageIndex);
+                gvk_result((vkResult == VK_SUCCESS || vkResult == VK_SUBOPTIMAL_KHR) ? VK_SUCCESS : vkResult);
 
-                    VkRect2D scissor{ { }, renderPassBeginInfo.renderArea.extent };
-                    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-                    VkViewport viewport{ 0, 0, (float)scissor.extent.width, (float)scissor.extent.height, 0, 1 };
-                    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+                const auto& device = context.get_devices()[0];
+                const auto& vkFences = wsiManager.get_vk_fences();
+                gvk_result(vkWaitForFences(device, 1, &vkFences[imageIndex], VK_TRUE, UINT64_MAX));
+                gvk_result(vkResetFences(device, 1, &vkFences[imageIndex]));
 
-                    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+                const auto& commandBuffer = wsiManager.get_command_buffers()[imageIndex];
+                gvk_result(vkBeginCommandBuffer(commandBuffer, &gvk::get_default<VkCommandBufferBeginInfo>()));
+                auto renderPassBeginInfo = wsiManager.get_render_targets()[imageIndex].get_render_pass_begin_info();
+                vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-                    // Record gvk::Mesh draw cmds...
-                    mesh.record_cmds(commandBuffer);
+                VkRect2D scissor { { }, renderPassBeginInfo.renderArea.extent };
+                vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+                VkViewport viewport { 0, 0, (float)scissor.extent.width, (float)scissor.extent.height, 0, 1 };
+                vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
-                    vkCmdEndRenderPass(commandBuffer);
-                    gvk_result(vkEndCommandBuffer(commandBuffer));
-                }
+                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+                // Record gvk::Mesh draw cmds...
+                mesh.record_cmds(commandBuffer);
+
+                vkCmdEndRenderPass(commandBuffer);
+                gvk_result(vkEndCommandBuffer(commandBuffer));
+
+                const auto& queue = gvk::get_queue_family(device, 0).queues[0];
+                auto submitInfo = wsiManager.get_submit_info(imageIndex);
+                gvk_result(vkQueueSubmit(queue, 1, &submitInfo, vkFences[imageIndex]));
+
+                auto presentInfo = wsiManager.get_present_info(&imageIndex);
+                vkResult = vkQueuePresentKHR(gvk::get_queue_family(context.get_devices()[0], 0).queues[0], &presentInfo);
+                gvk_result((vkResult == VK_SUCCESS || vkResult == VK_SUBOPTIMAL_KHR) ? VK_SUCCESS : vkResult);
             }
-            gvk_result(gvk_sample_acquire_submit_present(wsiManager));
         }
         gvk_result(vkDeviceWaitIdle(context.get_devices()[0]));
     } gvk_result_scope_end;

@@ -26,9 +26,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk/context.hpp"
 #include "gvk/generated/dispatch-table.hpp"
+#include "gvk/utilities.hpp"
 
 #include <algorithm>
-#include <cassert>
 
 namespace gvk {
 
@@ -179,8 +179,6 @@ uint32_t Context::get_physical_device_rating(const PhysicalDevice& physicalDevic
     auto dispatchTable = DispatchTable::get_global_dispatch_table();
     assert(dispatchTable.gvkGetPhysicalDeviceProperties);
     dispatchTable.gvkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
-    VkPhysicalDeviceFeatures physicalDeviceFeatures { };
-    dispatchTable.gvkGetPhysicalDeviceFeatures(physicalDevice, &physicalDeviceFeatures);
     uint32_t rating = 0;
 #ifdef GVK_COMPILER_GCC
 #pragma GCC diagnostic push
@@ -212,7 +210,7 @@ VkResult Context::allocate_command_buffers(const VkAllocationCallbacks* pAllocat
 {
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         auto commandPoolCreateInfo = get_default<VkCommandPoolCreateInfo>();
-        commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+        commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         commandPoolCreateInfo.queueFamilyIndex = get_queue_family(mDevices[0], 0).queues[0].get<VkDeviceQueueCreateInfo>().queueFamilyIndex;
         CommandPool commandPool;
         gvk_result(CommandPool::create(mDevices[0], &commandPoolCreateInfo, pAllocator, &commandPool));

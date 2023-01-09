@@ -26,10 +26,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk/generated/dispatch-table.hpp"
 #include "gvk/defines.hpp"
 #include "gvk/handles.hpp"
-#include "gvk/structures.hpp"
 
 namespace gvk {
 
@@ -207,48 +205,6 @@ private:
     Context(const Context&) = delete;
     Context& operator=(const Context&) = delete;
 };
-
-/**
-Record and execute a VkCommandBuffer immediately
-@typename <RecordCommandBufferFunctionType> The type of function to call to record the VkCommandBuffer
-    @note The function type must accept a single VkCommandBuffer argument
-@param [in] vkQueue The VkQueue to submit the recorded VkCommandBuffer to
-@param [in] vkCommandBuffer The vkCommandBuffer to record and submit
-@param [in] vkFence The VkFence to signal when the submited VkCommandBuffer completes execution
-    @note If this argument is VK_NULL_HANDLE this call will block on vkQueueWaitIdle() after VkCommandBuffer submission
-@return The VkResult
-*/
-template <typename RecordCommandBufferFunctionType>
-inline VkResult execute_immediately(
-    VkQueue vkQueue,
-    VkCommandBuffer vkCommandBuffer,
-    VkFence vkFence,
-    RecordCommandBufferFunctionType recordCommandBuffer
-)
-{
-    auto dispatchTable = DispatchTable::get_global_dispatch_table();
-    gvk_result_scope_begin(VK_INCOMPLETE) {
-        auto commandBufferBeginInfo = get_default<VkCommandBufferBeginInfo>();
-        commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        assert(dispatchTable.gvkBeginCommandBuffer);
-        gvk_result(dispatchTable.gvkBeginCommandBuffer(vkCommandBuffer, &commandBufferBeginInfo));
-        recordCommandBuffer(vkCommandBuffer);
-        assert(dispatchTable.gvkEndCommandBuffer);
-        gvk_result(dispatchTable.gvkEndCommandBuffer(vkCommandBuffer));
-
-        auto submitInfo = get_default<VkSubmitInfo>();
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &vkCommandBuffer;
-        assert(dispatchTable.gvkQueueSubmit);
-        gvk_result(dispatchTable.gvkQueueSubmit(vkQueue, 1, &submitInfo, vkFence));
-
-        if (!vkFence) {
-            assert(dispatchTable.gvkQueueWaitIdle);
-            gvk_result(dispatchTable.gvkQueueWaitIdle(vkQueue));
-        }
-    } gvk_result_scope_end
-    return gvkResult;
-}
 
 namespace detail {
 

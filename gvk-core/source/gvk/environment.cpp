@@ -24,8 +24,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
+#include "gvk-string/utilities.hpp"
 #include "gvk/environment.hpp"
-#include "gvk/string.hpp"
 
 #include <filesystem>
 #include <unordered_set>

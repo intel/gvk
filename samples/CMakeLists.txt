@@ -16,8 +16,9 @@ gvk_add_sample(gvk-getting-started-01-mesh)
 gvk_add_sample(gvk-getting-started-02-uniform-buffer)
 gvk_add_sample(gvk-getting-started-03-texture-mapping)
 gvk_add_sample(gvk-getting-started-04-render-target)
+gvk_add_sample(gvk-getting-started-05-gui)
 
-if(GVK_LAYER_ENABLED)
+if(GVK_BUILD_LAYER)
     gvk_add_layer(
         target VK_LAYER_INTEL_gvk_sample
         folder "samples/"

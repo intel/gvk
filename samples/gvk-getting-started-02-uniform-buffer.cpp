@@ -66,11 +66,11 @@ int main(int, const char*[])
         GvkSampleContext context;
         gvk_result(GvkSampleContext::create("Intel(R) GPA Utilities for Vulkan* - Getting Started - 02 - Uniform Buffer", &context));
 
-        gvk::sys::Surface sysSurface;
-        gvk_result(gvk_sample_create_sys_surface(context, &sysSurface));
+        gvk::system::Surface systemSurface;
+        gvk_result(gvk_sample_create_sys_surface(context, &systemSurface));
 
         gvk::WsiManager wsiManager;
-        gvk_result(gvk_sample_create_wsi_manager(context, sysSurface, &wsiManager));
+        gvk_result(gvk_sample_create_wsi_manager(context, systemSurface, &wsiManager));
 
         gvk::spirv::ShaderInfo vertexShaderInfo{ };
         vertexShaderInfo.language = gvk::spirv::ShadingLanguage::Glsl;
@@ -155,21 +155,21 @@ int main(int, const char*[])
         writeDescriptorSet.pBufferInfo = &descriptorBufferInfo;
         vkUpdateDescriptorSets(context.get_devices()[0], 1, &writeDescriptorSet, 0, nullptr);
 
-        // Create a gvk::sys::Clock, gvk::math::Camera, and gvk::math::Transform.
+        // Create a gvk::system::Clock, gvk::math::Camera, and gvk::math::Transform.
         //  These objects will be used to animate our gvk::Mesh...
-        gvk::sys::Clock clock;
+        gvk::system::Clock clock;
         gvk::math::Camera camera;
         camera.transform.translation = { 0, 1.25f, 1.25f };
         gvk::math::Transform quadTransform;
 
         while (
-            !(sysSurface.get_input().keyboard.down(gvk::sys::Key::Escape)) &&
-            !(sysSurface.get_status() & gvk::sys::Surface::CloseRequested)) {
-            gvk::sys::Surface::update();
+            !(systemSurface.get_input().keyboard.down(gvk::system::Key::Escape)) &&
+            !(systemSurface.get_status() & gvk::system::Surface::CloseRequested)) {
+            gvk::system::Surface::update();
 
-            // Update the gvk::sys::Clock and gvk::math::Transform...
+            // Update the gvk::system::Clock and gvk::math::Transform...
             clock.update();
-            auto rotation = 90.0f * clock.elapsed<gvk::sys::Seconds<float>>();
+            auto rotation = 90.0f * clock.elapsed<gvk::system::Seconds<float>>();
             quadTransform.rotation *= glm::angleAxis(glm::radians(rotation), glm::vec3 { 0, 1, 0 });
 
             // Populate a Uniforms object with gvk::math::Camera and gvk::math::Transform
@@ -180,32 +180,47 @@ int main(int, const char*[])
             uniforms.camera.projection = camera.projection();
             memcpy(uniformBufferAllocationInfo.pMappedData, &uniforms, sizeof(Uniforms));
 
-            if (wsiManager.update()) {
+            wsiManager.update();
+            auto swapchain = wsiManager.get_swapchain();
+            if (swapchain) {
                 auto extent = wsiManager.get_swapchain().get<VkSwapchainCreateInfoKHR>().imageExtent;
-                // Keep the gvk::math::Camera and gvk::SwapchainKHR aspect ratios in sync...
                 camera.set_aspect_ratio(extent.width, extent.height);
 
-                for (size_t i = 0; i < wsiManager.get_command_buffers().size(); ++i) {
-                    const auto& commandBuffer = wsiManager.get_command_buffers()[i];
-                    gvk_result(vkBeginCommandBuffer(commandBuffer, &gvk::get_default<VkCommandBufferBeginInfo>()));
-                    auto renderPassBeginInfo = wsiManager.get_render_targets()[i].get_render_pass_begin_info();
-                    vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+                uint32_t imageIndex = 0;
+                auto vkResult = wsiManager.acquire_next_image(UINT64_MAX, VK_NULL_HANDLE, &imageIndex);
+                gvk_result((vkResult == VK_SUCCESS || vkResult == VK_SUBOPTIMAL_KHR) ? VK_SUCCESS : vkResult);
 
-                    VkRect2D scissor{ { }, renderPassBeginInfo.renderArea.extent };
-                    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-                    VkViewport viewport{ 0, 0, (float)scissor.extent.width, (float)scissor.extent.height, 0, 1 };
-                    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+                const auto& device = context.get_devices()[0];
+                const auto& vkFences = wsiManager.get_vk_fences();
+                gvk_result(vkWaitForFences(device, 1, &vkFences[imageIndex], VK_TRUE, UINT64_MAX));
+                gvk_result(vkResetFences(device, 1, &vkFences[imageIndex]));
 
-                    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-                    // Bind our gvk::DescriptorSet for use with the bound gvk::Pipeline...
-                    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get<gvk::PipelineLayout>(), 0, 1, &(const VkDescriptorSet&)descriptorSet, 0, nullptr);
+                const auto& commandBuffer = wsiManager.get_command_buffers()[imageIndex];
+                gvk_result(vkBeginCommandBuffer(commandBuffer, &gvk::get_default<VkCommandBufferBeginInfo>()));
+                auto renderPassBeginInfo = wsiManager.get_render_targets()[imageIndex].get_render_pass_begin_info();
+                vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-                    mesh.record_cmds(commandBuffer);
-                    vkCmdEndRenderPass(commandBuffer);
-                    gvk_result(vkEndCommandBuffer(commandBuffer));
-                }
+                VkRect2D scissor { { }, renderPassBeginInfo.renderArea.extent };
+                vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+                VkViewport viewport { 0, 0, (float)scissor.extent.width, (float)scissor.extent.height, 0, 1 };
+                vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+                // Bind our gvk::DescriptorSet for use with the bound gvk::Pipeline...
+                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get<gvk::PipelineLayout>(), 0, 1, &(const VkDescriptorSet&)descriptorSet, 0, nullptr);
+
+                mesh.record_cmds(commandBuffer);
+                vkCmdEndRenderPass(commandBuffer);
+                gvk_result(vkEndCommandBuffer(commandBuffer));
+
+                const auto& queue = gvk::get_queue_family(device, 0).queues[0];
+                auto submitInfo = wsiManager.get_submit_info(imageIndex);
+                gvk_result(vkQueueSubmit(queue, 1, &submitInfo, vkFences[imageIndex]));
+
+                auto presentInfo = wsiManager.get_present_info(&imageIndex);
+                vkResult = vkQueuePresentKHR(gvk::get_queue_family(context.get_devices()[0], 0).queues[0], &presentInfo);
+                gvk_result((vkResult == VK_SUCCESS || vkResult == VK_SUBOPTIMAL_KHR) ? VK_SUCCESS : vkResult);
             }
-            gvk_result(gvk_sample_acquire_submit_present(wsiManager));
         }
         gvk_result(vkDeviceWaitIdle(context.get_devices()[0]));
     } gvk_result_scope_end;

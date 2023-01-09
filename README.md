@@ -69,5 +69,5 @@ target_link_libraries(someTarget PUBLIC gvk-core gvk-xml)
  - Android support
  - HLSL support
  - CMake functionality to add shader compilation to build (both for gvk itself and consuming libraries)
- - Break direct dependency on GLFW (so gvk::sys::Surface can be created from an SDL_Window, for instance)
+ - Break direct dependency on GLFW (so gvk::system::Surface can be created from an SDL_Window, for instance)
  - ...and of course, always new Vulkan features/extensions to stay on top of...

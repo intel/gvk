@@ -26,18 +26,5 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk/generated/enum-to-string.hpp"
-#include "gvk/generated/handle-to-string.hpp"
-#include "gvk/generated/structure-to-string.hpp"
+#include "gvk-structures/to-string.hpp"
 #include "gvk/defines.hpp"
-#include "gvk/structures.hpp"
-
-namespace gvk {
-
-template <typename VulkanStructureType>
-void print(Printer& printer, const Auto<VulkanStructureType>& obj)
-{
-    print(printer, *obj);
-}
-
-} // namespace gvk

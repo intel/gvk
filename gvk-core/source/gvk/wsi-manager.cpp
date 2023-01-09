@@ -29,12 +29,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk/context.hpp"
 #include "gvk/format.hpp"
 #include "gvk/handles.hpp"
-
-#include "gvk/to-string.hpp"
+#include "gvk/utilities.hpp"
 
 #include <algorithm>
 #include <array>
-#include <cassert>
 
 namespace gvk {
 
@@ -137,6 +135,11 @@ const std::vector<Fence>& WsiManager::get_fences() const
     return mFences;
 }
 
+const std::vector<VkFence>& WsiManager::get_vk_fences() const
+{
+    return mVkFences;
+}
+
 const Semaphore& WsiManager::get_image_acquired_semaphore() const
 {
     return mImageAcquiredSemaphore;
@@ -163,6 +166,7 @@ VkBool32 WsiManager::is_enabled() const
     assert((mSwapchain == VK_NULL_HANDLE) == mCommandBuffers.empty());
     assert((mSwapchain == VK_NULL_HANDLE) == mRenderTargets.empty());
     assert((mSwapchain == VK_NULL_HANDLE) == mFences.empty());
+    assert((mSwapchain == VK_NULL_HANDLE) == mVkFences.empty());
     assert((mSwapchain == VK_NULL_HANDLE) == (mImageAcquiredSemaphore == VK_NULL_HANDLE));
     assert((mSwapchain == VK_NULL_HANDLE) == (mImageRenderedSemaphore == VK_NULL_HANDLE));
     return mSurface && mSwapchain;
@@ -214,12 +218,12 @@ VkSubmitInfo WsiManager::get_submit_info(uint32_t imageIndex) const
     static const VkPipelineStageFlags sWaitStage[]{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
     auto submitInfo = get_default<VkSubmitInfo>();
     submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = &(const VkSemaphore&)mImageAcquiredSemaphore;
+    submitInfo.pWaitSemaphores = &mImageAcquiredSemaphore.get<const VkSemaphore&>();
     submitInfo.pWaitDstStageMask = sWaitStage;
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &(const VkCommandBuffer&)mCommandBuffers[imageIndex];
+    submitInfo.pCommandBuffers = &mCommandBuffers[imageIndex].get<const VkCommandBuffer&>();
     submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = &(const VkSemaphore&)mImageRenderedSemaphore;
+    submitInfo.pSignalSemaphores = &mImageRenderedSemaphore.get<const VkSemaphore&>();
     return submitInfo;
 }
 
@@ -229,9 +233,9 @@ VkPresentInfoKHR WsiManager::get_present_info(const uint32_t* pImageIndex) const
     assert(mImageRenderedSemaphore);
     auto presentInfo = get_default<VkPresentInfoKHR>();
     presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = &(const VkSemaphore&)mImageRenderedSemaphore;
+    presentInfo.pWaitSemaphores = &mImageRenderedSemaphore.get<const VkSemaphore&>();
     presentInfo.swapchainCount = 1;
-    presentInfo.pSwapchains = &(const VkSwapchainKHR&)mSwapchain;
+    presentInfo.pSwapchains = &mSwapchain.get<const VkSwapchainKHR&>();
     presentInfo.pImageIndices = pImageIndex;
     return presentInfo;
 }
@@ -244,8 +248,7 @@ VkResult WsiManager::validate()
     assert(dispatchTable.gvkGetPhysicalDeviceSurfaceCapabilitiesKHR);
     auto vkResult = dispatchTable.gvkGetPhysicalDeviceSurfaceCapabilitiesKHR(mDevice.get<PhysicalDevice>(), mSurface, &surfaceCapabilities);
     bool swapchainImageExtentMatchesSurfaceCapabilities = mSwapchain && mSwapchain.get<VkSwapchainCreateInfoKHR>().imageExtent == surfaceCapabilities.currentExtent;
-    if (mStatus != VK_SUCCESS ||
-        vkResult != VK_SUCCESS ||
+    if (mStatus != VK_SUCCESS || vkResult != VK_SUCCESS ||
         !surfaceCapabilities.currentExtent.width ||
         !surfaceCapabilities.currentExtent.height ||
         !swapchainImageExtentMatchesSurfaceCapabilities
@@ -284,6 +287,7 @@ void WsiManager::invalidate()
     mCommandBuffers.clear();
     mRenderTargets.clear();
     mFences.clear();
+    mVkFences.clear();
     mImageAcquiredSemaphore.reset();
     mImageRenderedSemaphore.reset();
     mStatus = VK_ERROR_OUT_OF_DATE_KHR;
@@ -624,8 +628,10 @@ VkResult WsiManager::create_synchronization_primitives()
         auto fenceCreateInfo = gvk::get_default<VkFenceCreateInfo>();
         fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
         mFences.resize(mRenderTargets.size());
+        mVkFences.resize(mRenderTargets.size());
         for (size_t i = 0; i < mRenderTargets.size(); ++i) {
             gvk_result(Fence::create(mDevice, &fenceCreateInfo, validate_allocator(mAllocator), &mFences[i]));
+            mVkFences[i] = mFences[i];
         }
         gvk_result(Semaphore::create(mDevice, &get_default<VkSemaphoreCreateInfo>(), validate_allocator(mAllocator), &mImageAcquiredSemaphore));
         gvk_result(Semaphore::create(mDevice, &get_default<VkSemaphoreCreateInfo>(), validate_allocator(mAllocator), &mImageRenderedSemaphore));
