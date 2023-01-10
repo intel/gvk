@@ -49,7 +49,6 @@ public:
         }
         if (handle.name == "VkDevice") {
             add_member(MemberInfo("ObjectTracker<Queue>", "mQueueTracker"));
-            add_member(MemberInfo("ObjectTracker<SwapchainKHR>", "mSwapchainTracker"));
         }
         if (handle.name == "VkQueue") {
             add_member(MemberInfo("VkDevice", "mVkDevice", "Device", "mReference.get_obj().mVkDevice"));

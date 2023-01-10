@@ -87,7 +87,7 @@ VkResult StateTracker::post_vkCreateSwapchainKHR(VkDevice device, const VkSwapch
             imageControlBlock.mImageCreateInfo = imageCreateInfo;
             swapchainControlBlock.mImages.insert(gvkImage);
         }
-        gvkDevice.mReference.get_obj().mSwapchainTracker.insert(gvkSwapchain);
+        gvkDevice.mReference.get_obj().mSwapchainKHRTracker.insert(gvkSwapchain);
     }
     return gvkResult;
 }
@@ -100,7 +100,7 @@ void StateTracker::post_vkDestroySwapchainKHR(VkDevice device, VkSwapchainKHR sw
     auto& controlBlock = gvkSwapchain.mReference.get_obj();
     controlBlock.mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKED_OBJECT_STATUS_ACTIVE_BIT;
     controlBlock.mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKED_OBJECT_STATUS_DESTROYED_BIT;
-    controlBlock.mDevice.mReference.get_obj().mSwapchainTracker.erase(gvkSwapchain);
+    controlBlock.mDevice.mReference.get_obj().mSwapchainKHRTracker.erase(gvkSwapchain);
 }
 
 } // namespace state_tracker

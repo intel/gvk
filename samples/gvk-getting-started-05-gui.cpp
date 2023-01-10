@@ -104,7 +104,7 @@ int main(int, const char*[])
 {
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         GvkSampleContext context;
-        gvk_result(GvkSampleContext::create("Intel(R) GPA Utilities for Vulkan* - Getting Started - 04 - Render Target", &context));
+        gvk_result(GvkSampleContext::create("Intel(R) GPA Utilities for Vulkan* - Getting Started - 05 - GUI", &context));
 
         gvk::system::Surface systemSurface;
         gvk_result(gvk_sample_create_sys_surface(context, &systemSurface));

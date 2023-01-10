@@ -37,6 +37,7 @@ bool is_static_const_value(const std::string& apiElementName)
     static const std::set<std::string> sStaticConstValues {
         "VkAccessFlagBits2",
         "VkFormatFeatureFlagBits2",
+        "VkMemoryDecompressionMethodFlagBitsNV",
         "VkPipelineStageFlagBits2",
     };
     return sStaticConstValues.count(apiElementName);

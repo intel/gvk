@@ -8,7 +8,7 @@ if(MSVC)
 else()
     set(Vulkan_SDK_DIR "$ENV{VULKAN_SDK}")
 endif()
-set(Vulkan_XML "${Vulkan_SDK_DIR}/share/vulkan/registry/vk.xml")
+set(Vulkan_XML "${Vulkan_SDK_DIR}/share/vulkan/registry/vk.xml" CACHE STRING "" FORCE)
 
 ################################################################################
 # Set Vulkan_VERSION

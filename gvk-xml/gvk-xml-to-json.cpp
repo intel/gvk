@@ -70,6 +70,9 @@ void gvk::print<gvk::xml::Handle>(gvk::Printer& printer, const gvk::xml::Handle&
             if (!obj.parents.empty()) {
                 printer.print_collection("parents", obj.parents);
             }
+            if (!obj.children.empty()) {
+                printer.print_collection("children", obj.children);
+            }
             if (!obj.createInfos.empty()) {
                 printer.print_collection("createInfos", obj.createInfos);
             }
