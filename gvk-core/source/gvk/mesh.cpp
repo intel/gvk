@@ -39,7 +39,7 @@ void Mesh::reset()
 
 void Mesh::record_cmds(const gvk::CommandBuffer& commandBuffer) const
 {
-    auto dispatchTable = DispatchTable::get_global_dispatch_table();
+    auto dispatchTable = commandBuffer.get<Device>().get<DispatchTable>();
     assert(dispatchTable.gvkCmdBindVertexBuffers);
     assert(dispatchTable.gvkCmdBindIndexBuffer);
     assert(dispatchTable.gvkCmdDrawIndexed);

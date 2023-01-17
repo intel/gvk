@@ -389,7 +389,7 @@ VkResult Renderer::end_gui(uint32_t fenceCount, const VkFence* pVkFences)
                 auto originalSize = mVertexIndexBuffer ? mVertexIndexBuffer.get<VkBufferCreateInfo>().size : 0;
                 (void)originalSize;
                 if (mVertexIndexBuffer && fenceCount && pVkFences) {
-                    const auto& dispatchTable = DispatchTable::get_global_dispatch_table();
+                    auto dispatchTable = mDevice.get<DispatchTable>();
                     assert(dispatchTable.gvkWaitForFences);
                     dispatchTable.gvkWaitForFences(mDevice, fenceCount, pVkFences, VK_TRUE, UINT64_MAX);
                 }
@@ -422,7 +422,7 @@ VkResult Renderer::end_gui(uint32_t fenceCount, const VkFence* pVkFences)
 
 void Renderer::record_cmds(VkCommandBuffer vkCommandBuffer) const
 {
-    const auto& dispatchTable = DispatchTable::get_global_dispatch_table();
+    auto dispatchTable = mDevice.get<DispatchTable>();
     assert(dispatchTable.gvkCmdSetScissor);
     assert(dispatchTable.gvkCmdBindDescriptorSets);
     assert(dispatchTable.gvkCmdDrawIndexed);
@@ -653,11 +653,11 @@ VkResult Renderer::create_image_view_and_sampler(VkQueue vkQueue, VkCommandBuffe
         vmaUnmapMemory(mDevice.get<VmaAllocator>(), buffer.get<VmaAllocation>());
 
         // TODO : Documentation
-        gvk_result(execute_immediately(vkQueue, vkCommandBuffer, VK_NULL_HANDLE,
+        gvk_result(execute_immediately(mDevice, vkQueue, vkCommandBuffer, VK_NULL_HANDLE,
             [&](auto)
             {
                 // TODO : Documentation
-                const auto& dispatchTable = DispatchTable::get_global_dispatch_table();
+                auto dispatchTable = mDevice.get<DispatchTable>();
                 assert(dispatchTable.gvkCmdPipelineBarrier);
                 assert(dispatchTable.gvkCmdCopyBufferToImage);
 
@@ -738,7 +738,7 @@ VkResult Renderer::allocate_and_update_descriptor_set(const VkAllocationCallback
         writeDescriptorSet.descriptorCount = 1;
         writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         writeDescriptorSet.pImageInfo = &descriptorImageInfo;
-        const auto& dispatchTable = DispatchTable::get_global_dispatch_table();
+        auto dispatchTable = mDevice.get<DispatchTable>();
         assert(dispatchTable.gvkUpdateDescriptorSets);
         dispatchTable.gvkUpdateDescriptorSets(mDevice, 1, &writeDescriptorSet, 0, nullptr);
 
@@ -750,7 +750,7 @@ VkResult Renderer::allocate_and_update_descriptor_set(const VkAllocationCallback
 
 void Renderer::record_render_state_setup_cmds(VkCommandBuffer vkCommandBuffer, const ImDrawData* pImDrawData) const
 {
-    const auto& dispatchTable = DispatchTable::get_global_dispatch_table();
+    auto dispatchTable = mDevice.get<DispatchTable>();
     assert(dispatchTable.gvkCmdSetViewport);
     assert(dispatchTable.gvkCmdBindPipeline);
     assert(dispatchTable.gvkCmdPushConstants);

@@ -152,15 +152,16 @@ TEST(ImageLayout, PipelineBarrier)
 
     // TODO : Documentation
     gvk::execute_immediately(
+        context.get_devices()[0],
         gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
         context.get_command_buffers()[0],
         VK_NULL_HANDLE,
-        [&](const gvk::CommandBuffer& commandBuffer)
+        [&](auto)
         {
-            const auto& dispatchTable = gvk::DispatchTable::get_global_dispatch_table();
+            const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
             assert(dispatchTable.gvkCmdPipelineBarrier);
             dispatchTable.gvkCmdPipelineBarrier(
-                commandBuffer,
+                context.get_command_buffers()[0],
                 VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                 VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
                 0,
@@ -238,14 +239,15 @@ TEST(ImageLayout, PipelineBarrier2)
 
     // TODO : Documentation
     gvk::execute_immediately(
+        context.get_devices()[0],
         gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
         context.get_command_buffers()[0],
         VK_NULL_HANDLE,
-        [&](const gvk::CommandBuffer& commandBuffer)
+        [&](auto)
         {
-            const auto& dispatchTable = gvk::DispatchTable::get_global_dispatch_table();
+            const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
             assert(dispatchTable.gvkCmdPipelineBarrier2);
-            dispatchTable.gvkCmdPipelineBarrier2(commandBuffer, &dependencyInfo);
+            dispatchTable.gvkCmdPipelineBarrier2(context.get_command_buffers()[0], &dependencyInfo);
         }
     );
 
@@ -312,20 +314,21 @@ TEST(ImageLayout, WaitEvents)
     auto eventCreateInfo = gvk::get_default<VkEventCreateInfo>();
     gvk::Event event;
     ASSERT_EQ(gvk::Event::create(context.get_devices()[0], &eventCreateInfo, nullptr, &event), VK_SUCCESS);
-    const auto& dispatchTable = gvk::DispatchTable::get_global_dispatch_table();
+    const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
     assert(dispatchTable.gvkSetEvent);
     ASSERT_EQ(dispatchTable.gvkSetEvent(context.get_devices()[0], event), VK_SUCCESS);
 
     // TODO : Documentation
     gvk::execute_immediately(
+        context.get_devices()[0],
         gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
         context.get_command_buffers()[0],
         VK_NULL_HANDLE,
-        [&](const gvk::CommandBuffer& commandBuffer)
+        [&](auto)
         {
             assert(dispatchTable.gvkCmdWaitEvents);
             dispatchTable.gvkCmdWaitEvents(
-                commandBuffer,
+                context.get_command_buffers()[0],
                 1,
                 &event.get<const VkEvent&>(),
                 VK_PIPELINE_STAGE_HOST_BIT,
@@ -407,19 +410,20 @@ TEST(ImageLayout, WaitEvents2)
     auto eventCreateInfo = gvk::get_default<VkEventCreateInfo>();
     gvk::Event event;
     ASSERT_EQ(gvk::Event::create(context.get_devices()[0], &eventCreateInfo, nullptr, &event), VK_SUCCESS);
-    const auto& dispatchTable = gvk::DispatchTable::get_global_dispatch_table();
+    const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
     assert(dispatchTable.gvkSetEvent);
     ASSERT_EQ(dispatchTable.gvkSetEvent(context.get_devices()[0], event), VK_SUCCESS);
 
     // TODO : Documentation
     gvk::execute_immediately(
+        context.get_devices()[0],
         gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
         context.get_command_buffers()[0],
         VK_NULL_HANDLE,
-        [&](const gvk::CommandBuffer& commandBuffer)
+        [&](auto)
         {
             assert(dispatchTable.gvkCmdWaitEvents2);
-            dispatchTable.gvkCmdWaitEvents2(commandBuffer, 1, &event.get<const VkEvent&>(), &dependencyInfo);
+            dispatchTable.gvkCmdWaitEvents2(context.get_command_buffers()[0], 1, &event.get<const VkEvent&>(), &dependencyInfo);
         }
     );
 
@@ -511,17 +515,18 @@ TEST(ImageLayout, RenderPass)
 
     // TODO : Documentation
     gvk::execute_immediately(
+        context.get_devices()[0],
         gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
         context.get_command_buffers()[0],
         VK_NULL_HANDLE,
-        [&](const gvk::CommandBuffer& commandBuffer)
+        [&](auto)
         {
             auto renderPassBeginInfo = renderTarget.get_render_pass_begin_info();
-            const auto& dispatchTable = gvk::DispatchTable::get_global_dispatch_table();
+            const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
             assert(dispatchTable.gvkCmdBeginRenderPass);
-            dispatchTable.gvkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+            dispatchTable.gvkCmdBeginRenderPass(context.get_command_buffers()[0], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
             assert(dispatchTable.gvkCmdEndRenderPass);
-            dispatchTable.gvkCmdEndRenderPass(commandBuffer);
+            dispatchTable.gvkCmdEndRenderPass(context.get_command_buffers()[0]);
         }
     );
 
@@ -611,19 +616,20 @@ TEST(ImageLayout, RenderPass2)
 
     // TODO : Documentation
     gvk::execute_immediately(
+        context.get_devices()[0],
         gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
         context.get_command_buffers()[0],
         VK_NULL_HANDLE,
-        [&](const gvk::CommandBuffer& commandBuffer)
+        [&](auto)
         {
             auto renderPassBeginInfo = renderTarget.get_render_pass_begin_info();
             auto subpassBeginInfo = gvk::get_default<VkSubpassBeginInfo>();
             subpassBeginInfo.contents = VK_SUBPASS_CONTENTS_INLINE;
-            const auto& dispatchTable = gvk::DispatchTable::get_global_dispatch_table();
+            const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
             assert(dispatchTable.gvkCmdBeginRenderPass2);
-            dispatchTable.gvkCmdBeginRenderPass2(commandBuffer, &renderPassBeginInfo, &subpassBeginInfo);
+            dispatchTable.gvkCmdBeginRenderPass2(context.get_command_buffers()[0], &renderPassBeginInfo, &subpassBeginInfo);
             assert(dispatchTable.gvkCmdEndRenderPass);
-            dispatchTable.gvkCmdEndRenderPass(commandBuffer);
+            dispatchTable.gvkCmdEndRenderPass(context.get_command_buffers()[0]);
         }
     );
 

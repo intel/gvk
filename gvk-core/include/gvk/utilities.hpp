@@ -28,6 +28,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk/generated/dispatch-table.hpp"
 #include "gvk/defines.hpp"
+#include "gvk/handles.hpp"
 #include "gvk/structures.hpp"
 
 #include <array>
@@ -37,7 +38,7 @@ namespace gvk {
 /*
 TODO : Documentation
 */
-void get_compatible_memory_type_indices(VkPhysicalDevice vkPhysicalDevice, uint32_t memoryTypeBits, VkMemoryPropertyFlags memoryPropertyFlags, uint32_t* pMemoryTypeCount, uint32_t* pMemoryTypeIndices);
+void get_compatible_memory_type_indices(const PhysicalDevice& physicalDevice, uint32_t memoryTypeBits, VkMemoryPropertyFlags memoryPropertyFlags, uint32_t* pMemoryTypeCount, uint32_t* pMemoryTypeIndices);
 
 /**
 TODO : Documentation
@@ -57,7 +58,7 @@ Gets the max VkSampleCountFlagBits for a Framebuffer with specified attachment t
 @param [in] stencil A value indicating whether or not the Framebuffer has a stencil attachment
 @return The max VkSampleCountFlagBits for a Framebuffer with the specified attachment types
 */
-VkSampleCountFlagBits get_max_framebuffer_sample_count(VkPhysicalDevice vkPhysicalDevice, VkBool32 color, VkBool32 depth, VkBool32 stencil);
+VkSampleCountFlagBits get_max_framebuffer_sample_count(const PhysicalDevice& physicalDevice, VkBool32 color, VkBool32 depth, VkBool32 stencil);
 
 /**
 Gets the vertex input attribute VkFormat for a given type
@@ -75,11 +76,15 @@ Gets the vertex input attribute VkFormat for a given type
 
     } // namespace example
 
+    namespace gvk {
+
     template <>
-    inline VkFormat gvk::get_vertex_input_attribute_format<example::Vector3>()
+    inline VkFormat get_vertex_input_attribute_format<example::Vector3>()
     {
         return VK_FORMAT_R32G32B32_SFLOAT;
     }
+
+    } // namespace gvk
 */
 template <typename VertexInputAttributeType>
 inline VkFormat get_vertex_input_attribute_format()
@@ -99,6 +104,7 @@ Gets an std::array<VkVertexInputAttributeDescription, N> for a given set of vert
 template <typename ...VertexInputAttributeTypes>
 inline std::array<VkVertexInputAttributeDescription, sizeof...(VertexInputAttributeTypes)> get_vertex_input_attribute_descriptions(uint32_t binding)
 {
+    (void)binding;
     size_t offset = 0;
     std::array<size_t, sizeof...(VertexInputAttributeTypes)> sizes{ sizeof(VertexInputAttributeTypes)... };
     std::array<VkVertexInputAttributeDescription, sizeof...(VertexInputAttributeTypes)> vertexInputAttributeDescriptions{
@@ -134,8 +140,10 @@ Gets an std::array<VkVertexInputAttributeDescription, N> for a given VertexType
 
     } // namespace example
 
+    namespace gvk {
+
     template <>
-    inline auto gvk::get_vertex_description<example::VertexPositionTexcoordColor>(uint32_t binding)
+    inline auto get_vertex_description<example::VertexPositionTexcoordColor>(uint32_t binding)
     {
         return gvk::get_vertex_input_attribute_descriptions<
             example::Vector3,
@@ -143,6 +151,8 @@ Gets an std::array<VkVertexInputAttributeDescription, N> for a given VertexType
             example::Vector4
         >(binding);
     }
+
+    } // namespace gvk
 */
 template <typename VertexType>
 inline auto get_vertex_description(uint32_t binding)
@@ -199,6 +209,7 @@ Record and execute a VkCommandBuffer immediately
 */
 template <typename RecordCommandBufferFunctionType>
 inline VkResult execute_immediately(
+    const Device& device,
     VkQueue vkQueue,
     VkCommandBuffer vkCommandBuffer,
     VkFence vkFence,
@@ -207,10 +218,10 @@ inline VkResult execute_immediately(
 {
     assert(vkQueue);
     assert(vkCommandBuffer);
-    auto dispatchTable = DispatchTable::get_global_dispatch_table();
     gvk_result_scope_begin(VK_INCOMPLETE) {
         auto commandBufferBeginInfo = get_default<VkCommandBufferBeginInfo>();
         commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        auto dispatchTable = device.get<DispatchTable>();
         assert(dispatchTable.gvkBeginCommandBuffer);
         gvk_result(dispatchTable.gvkBeginCommandBuffer(vkCommandBuffer, &commandBufferBeginInfo));
         recordCommandBuffer(vkCommandBuffer);

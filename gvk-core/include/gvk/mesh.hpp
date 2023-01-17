@@ -76,12 +76,12 @@ public:
                 memcpy(pData + mIndexDataOffset, pIndices, indexDataSize);
                 vmaUnmapMemory(device.get<VmaAllocator>(), mCpuBuffer.get<VmaAllocation>());
                 gvk_result(execute_immediately(
-                    vkQueue, vkCommandBuffer, vkFence,
+                    device, vkQueue, vkCommandBuffer, vkFence,
                     [&](auto)
                     {
                         auto bufferCopy = get_default<VkBufferCopy>();
                         bufferCopy.size = bufferCreateInfo.size;
-                        auto dispatchTable = DispatchTable::get_global_dispatch_table();
+                        auto dispatchTable = device.get<DispatchTable>();
                         assert(dispatchTable.gvkCmdCopyBuffer);
                         dispatchTable.gvkCmdCopyBuffer(vkCommandBuffer, mCpuBuffer, mGpuBuffer, 1, &bufferCopy);
                     }

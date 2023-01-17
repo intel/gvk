@@ -97,14 +97,9 @@ bool operator>=(const StringArrayTupleElementWrapper& lhs, const StringArrayTupl
     return !(lhs < rhs);
 }
 
-// NOTE : This function is implemented in gvk/structures/generated/pnext-tuple-element-wrapper.cpp
 #if 0
-bool operator==(const PNextTupleElementWrapper& lhs, const PNextTupleElementWrapper& rhs)
-{
-    (void)lhs;
-    (void)rhs;
-    return false;
-}
+// NOTE : Defined in gvk/structures/generated/pnext-tuple-element-wrapper.cpp
+bool operator==(const PNextTupleElementWrapper& lhs, const PNextTupleElementWrapper& rhs);
 #endif
 
 bool operator!=(const PNextTupleElementWrapper& lhs, const PNextTupleElementWrapper& rhs)
@@ -112,14 +107,9 @@ bool operator!=(const PNextTupleElementWrapper& lhs, const PNextTupleElementWrap
     return !(lhs == rhs);
 }
 
-// NOTE : This function is implemented in gvk/structures/generated/pnext-tuple-element-wrapper.cpp
 #if 0
-bool operator<(const PNextTupleElementWrapper& lhs, const PNextTupleElementWrapper& rhs)
-{
-    (void)lhs;
-    (void)rhs;
-    return false;
-}
+// NOTE : Defined in gvk/structures/generated/pnext-tuple-element-wrapper.cpp
+bool operator<(const PNextTupleElementWrapper& lhs, const PNextTupleElementWrapper& rhs);
 #endif
 
 bool operator>(const PNextTupleElementWrapper& lhs, const PNextTupleElementWrapper& rhs)

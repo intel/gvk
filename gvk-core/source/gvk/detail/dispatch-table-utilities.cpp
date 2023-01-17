@@ -24,49 +24,39 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#pragma once
-
-#include "gvk-reference/include.hpp"
-#include "gvk/generated/forward-declarations.inl"
-#include "gvk/defines.hpp"
-
-#include <cassert>
-#include <tuple>
-#include <vector>
+#include "gvk/detail/dispatch-table-utilities.hpp"
 
 namespace gvk {
-
-class QueueFamily final
-{
-public:
-    uint32_t index{ };
-    std::vector<Queue> queues;
-};
-
-/**
-Gets a QueueFamily given a Device and index
-@param [in] device The Device to get the QueueFamily from
-@param [in] queueFamilyIndex The index of the QueueFamily to get
-@return The given Device object's QueueFamily at the specified index
-*/
-const QueueFamily& get_queue_family(const Device& device, uint32_t queueFamilyIndex);
-
 namespace detail {
 
-void* get_transient_storage(size_t size);
+static void* sVulkanRuntime;
 
-template <typename HandleType>
-inline VkResult initialize_control_block(HandleType&)
+VkResult load_runtime()
 {
-    return VK_SUCCESS;
+    #ifdef __linux__
+    constexpr const char* const VulkanRuntimeLibraryName = "libvulkan.so.1";
+    #endif
+    #ifdef VK_USE_PLATFORM_WIN32_KHR
+    constexpr const char* const VulkanRuntimeLibraryName = "vulkan-1.dll";
+    #endif
+    if (!sVulkanRuntime) {
+        sVulkanRuntime = gvk_dlopen(VulkanRuntimeLibraryName);
+    }
+    return sVulkanRuntime ? VK_SUCCESS : VK_ERROR_FEATURE_NOT_PRESENT;
 }
 
-template <> VkResult initialize_control_block<Instance>(Instance& instance);
-template <> VkResult initialize_control_block<Device>(Device& device);
-template <> VkResult initialize_control_block<Framebuffer>(Framebuffer& framebuffer);
-template <> VkResult initialize_control_block<PipelineLayout>(PipelineLayout& pipelineLayout);
-template <> VkResult initialize_control_block<SurfaceKHR>(SurfaceKHR& surfaceKHR);
-template <> VkResult initialize_control_block<SwapchainKHR>(SwapchainKHR& swapchainKHR);
+void unload_runtime()
+{
+    if (sVulkanRuntime) {
+        gvk_dlclose(sVulkanRuntime);
+        sVulkanRuntime = NULL;
+    }
+}
+
+PFN_vkGetInstanceProcAddr load_get_instance_proc_addr()
+{
+    return load_runtime() == VK_SUCCESS ? (PFN_vkGetInstanceProcAddr)gvk_dlsym(sVulkanRuntime, "vkGetInstanceProcAddr") : nullptr;
+}
 
 } // namespace detail
 } // namespace gvk

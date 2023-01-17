@@ -129,13 +129,19 @@ int main(int, const char*[])
             wsiManager.update();
             auto swapchain = wsiManager.get_swapchain();
             if (swapchain) {
-
-                // TODO : Documentation
+                // Acquire the next image to render to.  The index will be used to access the
+                //  acquired image as well as the command buffer and fence associated with that
+                //  image.  Note that this method may return VK_SUBOPTIMAL_KHR...gvk::WsiManager
+                //  will update itself when this occurs so there's no need to bail from the
+                //  gvk_result_scope().
                 uint32_t imageIndex = 0;
                 auto vkResult = wsiManager.acquire_next_image(UINT64_MAX, VK_NULL_HANDLE, &imageIndex);
                 gvk_result((vkResult == VK_SUCCESS || vkResult == VK_SUBOPTIMAL_KHR) ? VK_SUCCESS : vkResult);
 
-                // TODO : Documentation
+                // Using the acquired image index we'll wait on the associated fence.  This
+                //  ensures that the image isn't currently in use via vkQueueSubmit().  After
+                //  waiting on the fence, we'll immediately reset it so that it's ready to be
+                //  used in the next call to vkQueueSubmit().
                 const auto& device = context.get_devices()[0];
                 const auto& vkFences = wsiManager.get_vk_fences();
                 gvk_result(vkWaitForFences(device, 1, &vkFences[imageIndex], VK_TRUE, UINT64_MAX));
@@ -169,12 +175,15 @@ int main(int, const char*[])
                 vkCmdEndRenderPass(commandBuffer);
                 gvk_result(vkEndCommandBuffer(commandBuffer));
 
-                // TODO : Documentation
+                // Submit the command buffer associated with the acquired image.
+                //  wsiManager.get_submit_info() prepares a VkSubmitInfo for the indexed
+                //  command buffer.
                 const auto& queue = gvk::get_queue_family(device, 0).queues[0];
                 auto submitInfo = wsiManager.get_submit_info(imageIndex);
                 gvk_result(vkQueueSubmit(queue, 1, &submitInfo, vkFences[imageIndex]));
 
-                // TODO : Documentation
+                // Present the acquired image.  wsiManager.get_present_info() prepares a
+                //  VkPresentInfoKHR for the acquired image.
                 auto presentInfo = wsiManager.get_present_info(&imageIndex);
                 vkResult = vkQueuePresentKHR(gvk::get_queue_family(context.get_devices()[0], 0).queues[0], &presentInfo);
                 gvk_result((vkResult == VK_SUCCESS || vkResult == VK_SUBOPTIMAL_KHR) ? VK_SUCCESS : vkResult);

@@ -54,7 +54,7 @@ TEST(DeviceMemoryBindingTracking, BindBufferMemory)
 
     // TODO : Documentation
     VkMemoryRequirements memoryRequirements { };
-    const auto& dispatchTable = gvk::DispatchTable::get_global_dispatch_table();
+    const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
     assert(dispatchTable.gvkGetBufferMemoryRequirements);
     dispatchTable.gvkGetBufferMemoryRequirements(buffer.get<gvk::Device>(), buffer, &memoryRequirements);
     auto memoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
@@ -147,7 +147,7 @@ TEST(DeviceMemoryBindingTracking, BindBufferMemory2)
     auto bufferMemoryRequirementsInfo = gvk::get_default<VkBufferMemoryRequirementsInfo2>();
     bufferMemoryRequirementsInfo.buffer = buffer;
     auto memoryRequirements = gvk::get_default<VkMemoryRequirements2>();
-    const auto& dispatchTable = gvk::DispatchTable::get_global_dispatch_table();
+    const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
     assert(dispatchTable.gvkGetBufferMemoryRequirements2);
     dispatchTable.gvkGetBufferMemoryRequirements2(buffer.get<gvk::Device>(), &bufferMemoryRequirementsInfo, &memoryRequirements);
     auto memoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
@@ -242,7 +242,7 @@ TEST(DeviceMemoryBindingTracking, BindImageMemory)
 
     // TODO : Documentation
     VkMemoryRequirements memoryRequirements { };
-    const auto& dispatchTable = gvk::DispatchTable::get_global_dispatch_table();
+    const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
     assert(dispatchTable.gvkGetImageMemoryRequirements);
     dispatchTable.gvkGetImageMemoryRequirements(image.get<gvk::Device>(), image, &memoryRequirements);
     auto memoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
@@ -338,7 +338,7 @@ TEST(DeviceMemoryBindingTracking, BindImageMemory2)
     auto imageMemoryRequirementsInfo = gvk::get_default<VkImageMemoryRequirementsInfo2>();
     imageMemoryRequirementsInfo.image = image;
     auto memoryRequirements = gvk::get_default<VkMemoryRequirements2>();
-    const auto& dispatchTable = gvk::DispatchTable::get_global_dispatch_table();
+    const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
     assert(dispatchTable.gvkGetImageMemoryRequirements2);
     dispatchTable.gvkGetImageMemoryRequirements2(image.get<gvk::Device>(), &imageMemoryRequirementsInfo, &memoryRequirements);
     auto memoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;

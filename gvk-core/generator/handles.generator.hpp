@@ -74,6 +74,9 @@ public:
             add_member(MemberInfo("std::vector<Image>", "mImages", "const std::vector<Image>&"));
         }
         add_private_declaration("template <typename HandleType> friend VkResult gvk::detail::initialize_control_block(HandleType&)");
+        if (handle.isDispatchable && handle.name != "VkCommandBuffer") {
+            add_member(MemberInfo("DispatchTable", "mDispatchTable", "DispatchTable"));
+        }
     }
 
     xml::Parameter get_ctor_parameter(const xml::Manifest& manifest, xml::Parameter parameter) const override final
@@ -103,6 +106,7 @@ protected:
                 }
             }
         }
+
         std::vector<string::Replacement> replacements {
             { "{handleName}", get_handle_name() },
             { "{handleCount}", !ctor.parameters.back().length.empty() ? ctor.parameters.back().length : "1" },
@@ -112,7 +116,12 @@ protected:
             { "{vkCreateCommand}", ctor.name },
             { "{vkCreateCommandArgs}", get_parameter_list(parameters, false, true) },
             { "{handleId}", handleId },
+            { "{initializeDispatchTableExpression}",
+                get_handle().name == "VkInstance" ?
+                "DispatchTable::load_global_entry_points(&dispatchTable)" :
+                "dispatchTable = " + ctor.parameters.front().name + ".get<DispatchTable>()" },
         };
+
         file << string::replace(
 R"(VkResult {handleName}::{ctorName}({ctorParameterList})
 {
@@ -124,7 +133,8 @@ R"(VkResult {handleName}::{ctorName}({ctorParameterList})
             }
 )", replacements);
         file << string::replace(
-R"(            auto dispatchTable = DispatchTable::get_global_dispatch_table();
+R"(            DispatchTable dispatchTable { };
+            {initializeDispatchTableExpression};
             assert(dispatchTable.g{vkCreateCommand});
             auto pVk{handleName} = (Vk{handleName}*)detail::get_transient_storage(HandleCount * sizeof(Vk{handleName}));
             gvk_result(dispatchTable.g{vkCreateCommand}({vkCreateCommandArgs}));
@@ -172,11 +182,16 @@ R"(            auto dispatchTable = DispatchTable::get_global_dispatch_table();
                 { "{handleName}", get_handle_name() },
                 { "{vkDestroyCommand}", dtor.name },
                 { "{vkDestroyCommandArgs}", get_parameter_list(parameters, false, true) },
+                { "{initializeDispatchTableExpression}",
+                    get_handle().name == "VkInstance" ?
+                    "dispatchTable = mDispatchTable" :
+                    "dispatchTable = m" + string::strip_vk(dtor.parameters.front().type) + ".get<DispatchTable>()" },
             };
             file << string::replace(
 R"({handleName}::ControlBlock::~ControlBlock()
 {
-    const auto& dispatchTable = DispatchTable::get_global_dispatch_table();
+    DispatchTable dispatchTable { };
+    {initializeDispatchTableExpression};
     assert(dispatchTable.g{vkDestroyCommand});
     dispatchTable.g{vkDestroyCommand}({vkDestroyCommandArgs});
 }
@@ -235,6 +250,7 @@ private:
     {
         file << "#include \"gvk-reference/include.hpp\"" << std::endl;
         file << "#include \"gvk/detail/handle-utilities.hpp\"" << std::endl;
+        file << "#include \"gvk/generated/dispatch-table.hpp\"" << std::endl;
         file << "#include \"gvk/generated/forward-declarations.inl\"" << std::endl;
         file << "#include \"gvk/defines.hpp\"" << std::endl;
         file << "#include \"gvk/structures.hpp\"" << std::endl;
@@ -262,7 +278,6 @@ private:
         const std::vector<HandleGenerator>& generators
     )
     {
-        file << "#include \"gvk/generated/dispatch-table.hpp\"" << std::endl;
         file << std::endl;
         file << "#include <cassert>" << std::endl;
         file << std::endl;

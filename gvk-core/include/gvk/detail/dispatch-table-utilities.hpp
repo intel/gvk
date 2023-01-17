@@ -26,47 +26,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-reference/include.hpp"
-#include "gvk/generated/forward-declarations.inl"
 #include "gvk/defines.hpp"
 
-#include <cassert>
-#include <tuple>
-#include <vector>
-
 namespace gvk {
-
-class QueueFamily final
-{
-public:
-    uint32_t index{ };
-    std::vector<Queue> queues;
-};
-
-/**
-Gets a QueueFamily given a Device and index
-@param [in] device The Device to get the QueueFamily from
-@param [in] queueFamilyIndex The index of the QueueFamily to get
-@return The given Device object's QueueFamily at the specified index
-*/
-const QueueFamily& get_queue_family(const Device& device, uint32_t queueFamilyIndex);
-
 namespace detail {
 
-void* get_transient_storage(size_t size);
-
-template <typename HandleType>
-inline VkResult initialize_control_block(HandleType&)
-{
-    return VK_SUCCESS;
-}
-
-template <> VkResult initialize_control_block<Instance>(Instance& instance);
-template <> VkResult initialize_control_block<Device>(Device& device);
-template <> VkResult initialize_control_block<Framebuffer>(Framebuffer& framebuffer);
-template <> VkResult initialize_control_block<PipelineLayout>(PipelineLayout& pipelineLayout);
-template <> VkResult initialize_control_block<SurfaceKHR>(SurfaceKHR& surfaceKHR);
-template <> VkResult initialize_control_block<SwapchainKHR>(SwapchainKHR& swapchainKHR);
+VkResult load_runtime();
+void unload_runtime();
+PFN_vkGetInstanceProcAddr load_get_instance_proc_addr();
 
 } // namespace detail
 } // namespace gvk

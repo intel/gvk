@@ -38,14 +38,14 @@ namespace gvk {
 namespace state_tracker {
 
 #if 0
-// Defined in /build/gvk-state-tracker/source/generated/enumerate-objects.cpp
-void enumerate_state_tracked_objects(const GvkStateTrackedObject* pStateTrackedObject, PFN_gvkEnumerateStateTrackedObjectsCallback pfnCallback, void* pUserData);
-// Defined in /build/gvk-state-tracker/source/generated/enumerate-objects.cpp
-void enumerate_state_tracked_object_dependencies(const GvkStateTrackedObject* pStateTrackedObject, PFN_gvkEnumerateStateTrackedObjectsCallback pfnCallback, void* pUserData);
-// Defined in /build/gvk-state-tracker/source/generated/get-object-status.cpp
-void get_state_tracked_object_status(const GvkStateTrackedObject* pStateTrackedObject, GvkStateTrackedObjectStatus* pStateTrackedObjectStatus);
-// Defined in /build/gvk-state-tracker/source/generated/get-object-create-info.cpp
-void get_state_tracked_object_create_info(const GvkStateTrackedObject* pStateTrackedObject, VkStructureType* pCreateInfoType, VkBaseOutStructure* pCreateInfo);
+// NOTE : Defined in /build/gvk-state-tracker/source/generated/enumerate-objects.cpp
+void StateTracker::enumerate_state_tracked_objects(const GvkStateTrackedObject* pStateTrackedObject, PFN_gvkEnumerateStateTrackedObjectsCallback pfnCallback, void* pUserData);
+// NOTE : Defined in /build/gvk-state-tracker/source/generated/enumerate-objects.cpp
+void StateTracker::enumerate_state_tracked_object_dependencies(const GvkStateTrackedObject* pStateTrackedObject, PFN_gvkEnumerateStateTrackedObjectsCallback pfnCallback, void* pUserData);
+// NOTE : Defined in /build/gvk-state-tracker/source/generated/get-object-status.cpp
+void StateTracker::get_state_tracked_object_status(const GvkStateTrackedObject* pStateTrackedObject, GvkStateTrackedObjectStatus* pStateTrackedObjectStatus);
+// NOTE : Defined in /build/gvk-state-tracker/source/generated/get-object-create-info.cpp
+void StateTracker::get_state_tracked_object_create_info(const GvkStateTrackedObject* pStateTrackedObject, VkStructureType* pCreateInfoType, VkBaseOutStructure* pCreateInfo);
 #endif
 
 void StateTracker::enumerate_state_tracked_object_bindings(const GvkStateTrackedObject* pStateTrackedObject, const GvkStateTrackedObjectEnumerateInfo* pEnumerateInfo)

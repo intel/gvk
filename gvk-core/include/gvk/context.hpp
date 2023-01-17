@@ -206,13 +206,5 @@ private:
     Context& operator=(const Context&) = delete;
 };
 
-namespace detail {
 
-#ifdef VK_NO_PROTOTYPES
-VkResult load_runtime();
-void unload_runtime();
-PFN_vkGetInstanceProcAddr load_get_instance_proc_addr();
-#endif
-
-} // namespace detail
 } // namespace gvk

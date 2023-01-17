@@ -36,19 +36,7 @@ VkResult Context::create(const CreateInfo* pCreateInfo, const VkAllocationCallba
 {
     assert(pCreateInfo);
     assert(pContext);
-
-#ifndef VK_NO_PROTOTYPES
-    DispatchTable::load_static_entry_points(&DispatchTable::get_global_dispatch_table());
-#else
-    auto& dispatchTable = DispatchTable::get_global_dispatch_table();
-    dispatchTable.gvkGetInstanceProcAddr = detail::load_get_instance_proc_addr();
-    assert(dispatchTable.gvkGetInstanceProcAddr);
-    DispatchTable::load_instance_entry_points(VK_NULL_HANDLE, &dispatchTable);
-    assert(dispatchTable.gvkCreateInstance);
-#endif
-
     pContext->reset();
-
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
 
         // Create gvk::Instance
@@ -78,9 +66,6 @@ VkResult Context::create(const CreateInfo* pCreateInfo, const VkAllocationCallba
         instanceCreateInfo.enabledExtensionCount = (uint32_t)instanceExtensions.size();
         instanceCreateInfo.ppEnabledExtensionNames = !instanceExtensions.empty() ? instanceExtensions.data() : nullptr;
         gvk_result(pContext->create_instance(&instanceCreateInfo, pAllocator));
-#ifdef VK_NO_PROTOTYPES
-        DispatchTable::load_instance_entry_points(pContext->mInstance, &DispatchTable::get_global_dispatch_table());
-#endif
 
         // Create gvk::DebugUtilsMessengerEXT
         if (pCreateInfo->pDebugUtilsMessengerCreateInfo) {
@@ -101,9 +86,6 @@ VkResult Context::create(const CreateInfo* pCreateInfo, const VkAllocationCallba
         deviceCreateInfo.enabledExtensionCount = (uint32_t)deviceExtensions.size();
         deviceCreateInfo.ppEnabledExtensionNames = !deviceExtensions.empty() ? deviceExtensions.data() : nullptr;
         gvk_result(pContext->create_devices(&deviceCreateInfo, pAllocator));
-#ifdef VK_NO_PROTOTYPES
-        DispatchTable::load_device_entry_points(pContext->mDevices[0], &DispatchTable::get_global_dispatch_table());
-#endif
 
         // Allocate gvk::CommandBuffers
         gvk_result(pContext->allocate_command_buffers(pAllocator));
@@ -176,7 +158,7 @@ std::vector<PhysicalDevice> Context::sort_physical_devices() const
 uint32_t Context::get_physical_device_rating(const PhysicalDevice& physicalDevice) const
 {
     VkPhysicalDeviceProperties physicalDeviceProperties { };
-    auto dispatchTable = DispatchTable::get_global_dispatch_table();
+    const auto& dispatchTable = physicalDevice.get<DispatchTable>();
     assert(dispatchTable.gvkGetPhysicalDeviceProperties);
     dispatchTable.gvkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
     uint32_t rating = 0;
@@ -223,39 +205,4 @@ VkResult Context::allocate_command_buffers(const VkAllocationCallbacks* pAllocat
     return gvkResult;
 }
 
-namespace detail {
-
-#ifdef VK_NO_PROTOTYPES
-static void* sVulkanRuntime;
-
-VkResult load_runtime()
-{
-    #ifdef __linux__
-    constexpr const char* const VulkanRuntimeLibraryName = "libvulkan.so.1";
-    #endif
-    #ifdef VK_USE_PLATFORM_WIN32_KHR
-    constexpr const char* const VulkanRuntimeLibraryName = "vulkan-1.dll";
-    #endif
-    if (!sVulkanRuntime) {
-        sVulkanRuntime = gvk_dlopen(VulkanRuntimeLibraryName);
-    }
-    return sVulkanRuntime ? VK_SUCCESS : VK_ERROR_FEATURE_NOT_PRESENT;
-}
-
-void unload_runtime()
-{
-    if (sVulkanRuntime) {
-        gvk_dlclose(sVulkanRuntime);
-        sVulkanRuntime = NULL;
-    }
-}
-
-PFN_vkGetInstanceProcAddr load_get_instance_proc_addr()
-{
-    load_runtime();
-    return (PFN_vkGetInstanceProcAddr)gvk_dlsym(sVulkanRuntime, "vkGetInstanceProcAddr");
-}
-#endif
-
-} // namespace detail
 } // namespace gvk

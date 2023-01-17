@@ -83,7 +83,7 @@ TEST(Pipeline, ComputePipelineResourceLifetime)
     computePipelineCreateInfo.stage.module = shaderModule;
     computePipelineCreateInfo.layout = pipelineLayout;
     VkPipeline vkPipeline = VK_NULL_HANDLE;
-    const auto& dispatchTable = gvk::DispatchTable::get_global_dispatch_table();
+    const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
     assert(dispatchTable.gvkCreateComputePipelines);
     ASSERT_EQ(dispatchTable.gvkCreateComputePipelines(context.get_devices()[0], VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &vkPipeline), VK_SUCCESS);
     auto stateTrackedPipeline = gvk::get_default<GvkStateTrackedObject>();
@@ -312,7 +312,7 @@ TEST(Pipeline, GraphicsPipelineResourceLifetime)
     graphicsPipelineCreateInfo.layout = pipelineLayout;
     graphicsPipelineCreateInfo.renderPass = renderPass;
     VkPipeline vkPipeline = VK_NULL_HANDLE;
-    const auto& dispatchTable = gvk::DispatchTable::get_global_dispatch_table();
+    const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
     assert(dispatchTable.gvkCreateGraphicsPipelines);
     ASSERT_EQ(dispatchTable.gvkCreateGraphicsPipelines(context.get_devices()[0], VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &vkPipeline), VK_SUCCESS);
     auto stateTrackedPipeline = gvk::get_default<GvkStateTrackedObject>();

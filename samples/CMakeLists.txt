@@ -5,6 +5,8 @@ macro(gvk_add_sample target)
         folder "samples/"
         linkLibraries gvk stb
         sourceFiles
+            "${CMAKE_CURRENT_LIST_DIR}/gvk-sample-entry-points.cpp"
+            "${CMAKE_CURRENT_LIST_DIR}/gvk-sample-entry-points.hpp"
             "${CMAKE_CURRENT_LIST_DIR}/gvk-sample-png.hpp"
             "${CMAKE_CURRENT_LIST_DIR}/gvk-sample-utilities.hpp"
             "${CMAKE_CURRENT_LIST_DIR}/${target}.cpp"

@@ -38,7 +38,7 @@ TEST(CommandBuffer, CommandBufferResourceLifetime)
     create_state_tracker_validation_context(&context);
     load_gvk_state_tracker_entry_points();
     auto expectedInstanceObjects = get_expected_instance_objects(context);
-    const auto& dispatchTable = gvk::DispatchTable::get_global_dispatch_table();
+    const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
 
     // TODO : Documentation
     auto commandPoolCreateInfo = gvk::get_default<VkCommandPoolCreateInfo>();

@@ -97,6 +97,6 @@ gvk_add_subdirectory(GVK_BUILD_XML           gvk-xml)
 
 ################################################################################
 # Samples
-if(GVK_BUILD_SAMPLES AND NOT GVK_NO_PROTOTYPES)
+if(GVK_BUILD_SAMPLES)
     add_subdirectory(samples)
 endif()

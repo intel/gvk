@@ -34,6 +34,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-system/surface.hpp"
 #include "gvk-system/time.hpp"
 #include "gvk/context.hpp"
+#include "gvk/defines.hpp"
 #include "gvk/format.hpp"
 #include "gvk/handles.hpp"
 #include "gvk/mesh.hpp"
@@ -42,6 +43,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk/to-string.hpp"
 #include "gvk/utilities.hpp"
 #include "gvk/wsi-manager.hpp"
+#include "gvk-sample-entry-points.hpp"
 #include "gvk-sample-png.hpp"
 
 #include <algorithm>
@@ -104,11 +106,15 @@ public:
         auto contextCreateInfo = gvk::get_default<gvk::Context::CreateInfo>();
         contextCreateInfo.pInstanceCreateInfo = &instanceCreateInfo;
         contextCreateInfo.loadApiDumpLayer = VK_FALSE;
-        contextCreateInfo.loadValidationLayer = VK_TRUE;
+        contextCreateInfo.loadValidationLayer = VK_FALSE;
         contextCreateInfo.loadWsiExtensions = VK_TRUE;
         contextCreateInfo.pDebugUtilsMessengerCreateInfo = &debugUtilsMessengerCreateInfo;
         contextCreateInfo.pDeviceCreateInfo = &deviceCreateInfo;
-        return gvk::Context::create(&contextCreateInfo, nullptr, pGvkSampleContext);
+        auto gvkResult = gvk::Context::create(&contextCreateInfo, nullptr, pGvkSampleContext);
+#ifdef VK_NO_PROTOTYPES
+        gvk_sample_set_entry_points(pGvkSampleContext->get_devices()[0]);
+#endif
+        return gvkResult;
     }
 };
 
@@ -232,7 +238,7 @@ inline VkResult gvk_sample_create_wsi_manager(const gvk::Context& context, const
     auto device = context.get_devices()[0];
     auto wsiManagerCreateInfo = gvk::get_default<gvk::WsiManager::CreateInfo>();
 #ifdef VK_USE_PLATFORM_XLIB_KHR
-    auto xlibSurfaceCreateInfo = get_default<VkXlibSurfaceCreateInfoKHR>();
+    auto xlibSurfaceCreateInfo = gvk::get_default<VkXlibSurfaceCreateInfoKHR>();
     xlibSurfaceCreateInfo.dpy = (Display*)systemSurface.get_display();
     xlibSurfaceCreateInfo.window = (Window)systemSurface.get_window();
     wsiManagerCreateInfo.pXlibSurfaceCreateInfoKHR = &xlibSurfaceCreateInfo;
@@ -251,6 +257,10 @@ inline VkResult gvk_sample_create_wsi_manager(const gvk::Context& context, const
     // depthFormat is a request.  The supported VkFormat with the greatest bit
     //  depth that is less than or equal to the requested VkFormat will be selected.
     wsiManagerCreateInfo.depthFormat = VK_FORMAT_D32_SFLOAT;
+
+    // presentMode is a request.  If the request cannot be met, it will default to
+    //  VK_PRESENT_MODE_FIFO_KHR.
+    wsiManagerCreateInfo.presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
 
     wsiManagerCreateInfo.queueFamilyIndex = gvk::get_queue_family(device, 0).queues[0].get<VkDeviceQueueCreateInfo>().queueFamilyIndex;
     return gvk::WsiManager::create(device, &wsiManagerCreateInfo, nullptr, pWsiManager);
@@ -612,10 +622,11 @@ inline VkResult gvk_sample_create_render_target(const gvk::Context& context, Gvk
         //  changed by something besides the associated gvk::RenderPass, your
         //  application must keep track of this.
         gvk::execute_immediately(
+            context.get_devices()[0],
             gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
             context.get_command_buffers()[0],
             VK_NULL_HANDLE,
-            [&](const gvk::CommandBuffer& commandBuffer)
+            [&](auto)
             {
                 auto attachmentCount = pRenderTarget->get_framebuffer().get<gvk::ImageViews>().size();
                 for (size_t i = 0; i < attachmentCount; ++i) {
@@ -624,7 +635,7 @@ inline VkResult gvk_sample_create_render_target(const gvk::Context& context, Gvk
                         imageMemoryBarrier.newLayout = imageMemoryBarrier.oldLayout;
                         imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
                         vkCmdPipelineBarrier(
-                            commandBuffer,
+                            context.get_command_buffers()[0],
                             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                             VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
                             0,
@@ -639,46 +650,3 @@ inline VkResult gvk_sample_create_render_target(const gvk::Context& context, Gvk
     } gvk_result_scope_end;
     return gvkResult;
 }
-
-#if 0
-VkResult gvk_sample_acquire_submit_present(gvk::WsiManager& wsiManager)
-{
-    gvk_result_scope_begin(VK_SUCCESS) {
-        if (wsiManager.is_enabled()) {
-            const auto& device = wsiManager.get_swapchain().get<gvk::Device>();
-            const auto& queue = gvk::get_queue_family(device, 0).queues[0];
-
-            // If the gvk::WsiManager is enabled, we need to acquire the next gvk::Image to
-            //  render to...this method may return VK_SUBOPTIMAL_KHR...the gvk::WsiManager
-            //  will update itself when this occurs, so we don't want to bail from the
-            //  gvk_result_scope when this happens...
-            uint32_t imageIndex = 0;
-            auto vkResult = wsiManager.acquire_next_image(UINT64_MAX, VK_NULL_HANDLE, &imageIndex);
-            gvk_result((vkResult == VK_SUCCESS || vkResult == VK_SUBOPTIMAL_KHR) ? VK_SUCCESS : vkResult);
-
-            // Once we have the gvk::Image acquired, we need to make sure that we wait on
-            //  the associated gvk::Fence...this ensures that we're not trying to reuse the
-            //  gvk::Image while it's in flight...
-            const auto& fence = wsiManager.get_fences()[imageIndex];
-            gvk_result(vkWaitForFences(device, 1, &fence.get<const VkFence&>(), VK_TRUE, UINT64_MAX));
-
-            // Reset the gvk::Fence because we're going to use it again right away...
-            gvk_result(vkResetFences(device, 1, &fence.get<const VkFence&>()));
-
-            // Submit...
-            //  When this submission finishes, the associated gvk::Fence will be signaled
-            //  so we know this gvk::Image is ready to be used again...
-            auto submitInfo = wsiManager.get_submit_info(imageIndex);
-            gvk_result(vkQueueSubmit(queue, 1, &submitInfo, fence));
-
-            // Present...
-            // Like acquire_next_image(), VK_SUBOPTIMAL_KHR is ok and will be handled by
-            //  the gvk::WsiManager...
-            auto presentInfo = wsiManager.get_present_info(&imageIndex);
-            vkResult = vkQueuePresentKHR(queue, &presentInfo);
-            gvk_result((vkResult == VK_SUCCESS || vkResult == VK_SUBOPTIMAL_KHR) ? VK_SUCCESS : vkResult);
-        }
-    } gvk_result_scope_end;
-    return gvkResult;
-}
-#endif

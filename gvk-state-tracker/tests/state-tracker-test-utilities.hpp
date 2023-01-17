@@ -103,7 +103,7 @@ protected:
         auto physicalDeviceSynchronization2Features = gvk::get_default<VkPhysicalDeviceSynchronization2Features>();
         auto availablePhysicalDeviceFeatures = gvk::get_default<VkPhysicalDeviceFeatures2>();
         availablePhysicalDeviceFeatures.pNext = &physicalDeviceSynchronization2Features;
-        const auto& dispatchTable = gvk::DispatchTable::get_global_dispatch_table();
+        auto dispatchTable = get_physical_devices()[0].get<gvk::DispatchTable>();
         assert(dispatchTable.gvkGetPhysicalDeviceFeatures2);
         dispatchTable.gvkGetPhysicalDeviceFeatures2(get_physical_devices()[0], &availablePhysicalDeviceFeatures);
         auto enabledPhysicalDeviceFeatures = gvk::get_default<VkPhysicalDeviceFeatures2>();
@@ -750,7 +750,7 @@ inline void create_memory_bound_image(const gvk::Context& context, const VkImage
     auto imageMemoryRequirementsInfo = gvk::get_default<VkImageMemoryRequirementsInfo2>();
     imageMemoryRequirementsInfo.image = *pImage;
     auto memoryRequirements = gvk::get_default<VkMemoryRequirements2>();
-    const auto& dispatchTable = gvk::DispatchTable::get_global_dispatch_table();
+    const auto& dispatchTable = pImage->get<gvk::Device>().get<gvk::DispatchTable>();
     assert(dispatchTable.gvkGetImageMemoryRequirements2);
     dispatchTable.gvkGetImageMemoryRequirements2(pImage->get<gvk::Device>(), &imageMemoryRequirementsInfo, &memoryRequirements);
     auto memoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;

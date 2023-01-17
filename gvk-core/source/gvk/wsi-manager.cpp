@@ -38,7 +38,6 @@ namespace gvk {
 
 VkResult WsiManager::create(const Device& device, const CreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, WsiManager* pWsiManager)
 {
-    auto dispatchTable = DispatchTable::get_global_dispatch_table();
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         if (device && pCreateInfo && pWsiManager) {
             pWsiManager->reset();
@@ -48,6 +47,7 @@ VkResult WsiManager::create(const Device& device, const CreateInfo* pCreateInfo,
 
             // Get VkPresentModeKHR
             uint32_t presentModeCount = 0;
+            auto dispatchTable = device.get<PhysicalDevice>().get<DispatchTable>();
             assert(dispatchTable.gvkGetPhysicalDeviceSurfacePresentModesKHR);
             dispatchTable.gvkGetPhysicalDeviceSurfacePresentModesKHR(device.get<PhysicalDevice>(), pWsiManager->get_surface(), &presentModeCount, nullptr);
             std::vector<VkPresentModeKHR> availablePresentModes(presentModeCount);
@@ -206,7 +206,7 @@ VkResult WsiManager::acquire_next_image(uint64_t timeout, VkFence vkFence, uint3
 {
     assert(pImageIndex);
     assert(mImageAcquiredSemaphore);
-    auto dispatchTable = DispatchTable::get_global_dispatch_table();
+    auto dispatchTable = mDevice.get<DispatchTable>();
     assert(dispatchTable.gvkAcquireNextImageKHR);
     mStatus = dispatchTable.gvkAcquireNextImageKHR(mDevice, mSwapchain, timeout, mImageAcquiredSemaphore, vkFence, pImageIndex);
     return mStatus;
@@ -244,7 +244,7 @@ VkResult WsiManager::validate()
 {
     assert(mSurface);
     VkSurfaceCapabilitiesKHR surfaceCapabilities { };
-    auto dispatchTable = DispatchTable::get_global_dispatch_table();
+    auto dispatchTable = mDevice.get<PhysicalDevice>().get<DispatchTable>();
     assert(dispatchTable.gvkGetPhysicalDeviceSurfaceCapabilitiesKHR);
     auto vkResult = dispatchTable.gvkGetPhysicalDeviceSurfaceCapabilitiesKHR(mDevice.get<PhysicalDevice>(), mSurface, &surfaceCapabilities);
     bool swapchainImageExtentMatchesSurfaceCapabilities = mSwapchain && mSwapchain.get<VkSwapchainCreateInfoKHR>().imageExtent == surfaceCapabilities.currentExtent;
@@ -278,7 +278,7 @@ VkResult WsiManager::validate()
 void WsiManager::invalidate()
 {
     if (mDevice) {
-        auto dispatchTable = DispatchTable::get_global_dispatch_table();
+        auto dispatchTable = mDevice.get<DispatchTable>();
         assert(dispatchTable.gvkDeviceWaitIdle);
         dispatchTable.gvkDeviceWaitIdle(mDevice);
     }
@@ -371,7 +371,7 @@ VkResult WsiManager::create_surface(const CreateInfo* pCreateInfo, const VkAlloc
         #endif // VK_USE_PLATFORM_XLIB_KHR
         mQueueFamilyIndex = pCreateInfo->queueFamilyIndex;
         VkBool32 physicalDeviceSurfaceSupport = VK_FALSE;
-        auto dispatchTable = DispatchTable::get_global_dispatch_table();
+        auto dispatchTable = mDevice.get<PhysicalDevice>().get<DispatchTable>();
         assert(dispatchTable.gvkGetPhysicalDeviceSurfaceSupportKHR);
         gvk_result(dispatchTable.gvkGetPhysicalDeviceSurfaceSupportKHR(mDevice.get<PhysicalDevice>(), mQueueFamilyIndex, mSurface, &physicalDeviceSurfaceSupport));
         gvk_result(gvkResult != VK_SUCCESS ? gvkResult : physicalDeviceSurfaceSupport ? gvkResult : VK_ERROR_FEATURE_NOT_PRESENT);
@@ -385,7 +385,7 @@ VkResult WsiManager::create_swapchain()
     assert(mSurface);
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         VkSurfaceCapabilitiesKHR surfaceCapabilities{ };
-        auto dispatchTable = DispatchTable::get_global_dispatch_table();
+        auto dispatchTable = mDevice.get<PhysicalDevice>().get<DispatchTable>();
         assert(dispatchTable.gvkGetPhysicalDeviceSurfaceCapabilitiesKHR);
         gvk_result(dispatchTable.gvkGetPhysicalDeviceSurfaceCapabilitiesKHR(mDevice.get<PhysicalDevice>(), mSurface, &surfaceCapabilities));
         if (surfaceCapabilities.currentExtent.width && surfaceCapabilities.currentExtent.height) {
@@ -599,14 +599,14 @@ VkResult WsiManager::create_render_targets()
                 imageMemoryBarrier = mRenderTargets[0].get_image_memory_barrier(attachmentIndex);
                 imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
             }
-            gvk::execute_immediately(
-                gvk::get_queue_family(mDevice, mQueueFamilyIndex).queues[0],
-                mCommandBuffers[0],
-                VK_NULL_HANDLE,
-                [&](const gvk::CommandBuffer& commandBuffer)
+            auto queue = gvk::get_queue_family(mDevice, mQueueFamilyIndex).queues[0];
+            gvk_result(gvk::execute_immediately(mDevice, queue, mCommandBuffers[0], VK_NULL_HANDLE,
+                [&](auto)
                 {
-                    DispatchTable::get_global_dispatch_table().gvkCmdPipelineBarrier(
-                        commandBuffer,
+                    auto dispatchTable = mDevice.get<DispatchTable>();
+                    assert(dispatchTable.gvkCmdPipelineBarrier);
+                    dispatchTable.gvkCmdPipelineBarrier(
+                        mCommandBuffers[0],
                         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
                         0,
@@ -615,7 +615,7 @@ VkResult WsiManager::create_render_targets()
                         imageMemoryBarrierCount, imageMemoryBarriers.data()
                     );
                 }
-            );
+            ));
         }
     } gvk_result_scope_end;
     return gvkResult;

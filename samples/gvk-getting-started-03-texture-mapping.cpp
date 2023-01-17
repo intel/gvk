@@ -107,10 +107,11 @@ VkResult create_image_and_view(const gvk::Context& context, gvk::ImageView* pIma
         //  VkFence isn't provided, gvk::execute_immediately() will block the calling
         //  thread until execution of the given VkCommandBuffer has completed...
         gvk_result(gvk::execute_immediately(
+            context.get_devices()[0],
             gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
             context.get_command_buffers()[0],
             VK_NULL_HANDLE,
-            [&](const gvk::CommandBuffer& commandBuffer)
+            [&](auto)
             {
                 // We start by recording a VkImageMemoryBarrier that will transition the
                 //  gvk::Image to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL and make it available at
@@ -122,7 +123,7 @@ VkResult create_image_and_view(const gvk::Context& context, gvk::ImageView* pIma
                 imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
                 imageMemoryBarrier.image = image;
                 vkCmdPipelineBarrier(
-                    commandBuffer,
+                    context.get_command_buffers()[0],
                     VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                     VK_PIPELINE_STAGE_TRANSFER_BIT,
                     0,
@@ -136,7 +137,7 @@ VkResult create_image_and_view(const gvk::Context& context, gvk::ImageView* pIma
                 bufferImageCopy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                 bufferImageCopy.imageSubresource.layerCount = 1;
                 bufferImageCopy.imageExtent = imageCreateInfo.extent;
-                vkCmdCopyBufferToImage(commandBuffer, stagingBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferImageCopy);
+                vkCmdCopyBufferToImage(context.get_command_buffers()[0], stagingBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferImageCopy);
 
                 // Then transition the gvk::Image to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
                 //  after VK_PIPELINE_STAGE_TRANSFER_BIT and make it available at
@@ -147,7 +148,7 @@ VkResult create_image_and_view(const gvk::Context& context, gvk::ImageView* pIma
                 imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
                 imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                 vkCmdPipelineBarrier(
-                    commandBuffer,
+                    context.get_command_buffers()[0],
                     VK_PIPELINE_STAGE_TRANSFER_BIT,
                     VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                     0,

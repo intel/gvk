@@ -30,6 +30,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk/generated/dispatch-table.hpp"
 #include "gvk/generated/format-utilities.hpp"
 #include "gvk/defines.hpp"
+#include "gvk/handles.hpp"
 
 #include <array>
 #include <set>
@@ -108,22 +109,22 @@ Executes a given function for every VkFormat the fulfills the provided criteria
 */
 template <typename ProcessFormatFunctionType>
 inline void enumerate_formats(
-    VkPhysicalDevice vkPhysicalDevice,
+    const PhysicalDevice& physicalDevice,
     VkImageTiling imageTiling,
     VkFormatFeatureFlags2 featureFlags,
     ProcessFormatFunctionType processFormat
 )
 {
-    assert(vkPhysicalDevice);
+    assert(physicalDevice);
     enumerate_formats(
         [&](VkFormat format)
         {
             auto formatProperties3 = get_default<VkFormatProperties3>();
             auto formatProperties2 = get_default<VkFormatProperties2>();
             formatProperties2.pNext = &formatProperties3;
-            auto dispatchTable = DispatchTable::get_global_dispatch_table();
+            auto dispatchTable = physicalDevice.get<DispatchTable>();
             assert(dispatchTable.gvkGetPhysicalDeviceFormatProperties2);
-            dispatchTable.gvkGetPhysicalDeviceFormatProperties2(vkPhysicalDevice, format, &formatProperties2);
+            dispatchTable.gvkGetPhysicalDeviceFormatProperties2(physicalDevice, format, &formatProperties2);
             switch (imageTiling) {
             case VK_IMAGE_TILING_OPTIMAL: {
                 if (formatProperties3.optimalTilingFeatures & featureFlags) {

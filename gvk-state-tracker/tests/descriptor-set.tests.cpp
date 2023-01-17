@@ -222,7 +222,7 @@ TEST(DescriptorSet, BasicDescriptorBinding)
     ASSERT_TRUE(descriptorSetLayoutCreateInfo.pBindings);
     descriptorWrite.descriptorType = descriptorSetLayouts[0].get<VkDescriptorSetLayoutCreateInfo>().pBindings[0].descriptorType;
     descriptorWrite.pImageInfo = &descriptorImageInfo;
-    const auto& dispatchTable = gvk::DispatchTable::get_global_dispatch_table();
+    const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
     assert(dispatchTable.gvkUpdateDescriptorSets);
     dispatchTable.gvkUpdateDescriptorSets(context.get_devices()[0], 1, &descriptorWrite, 0, nullptr);
 
@@ -306,7 +306,7 @@ TEST(DescriptorSet, DescriptorSetResourceLifetime)
     descriptorSetAllocateInfo.descriptorSetCount = (uint32_t)vkDescriptorSetLayouts.size();
     descriptorSetAllocateInfo.pSetLayouts = vkDescriptorSetLayouts.data();
     std::vector<VkDescriptorSet> vkDescriptorSets(descriptorSetAllocateInfo.descriptorSetCount);
-    const auto& dispatchTable = gvk::DispatchTable::get_global_dispatch_table();
+    const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
     assert(dispatchTable.gvkAllocateDescriptorSets);
     ASSERT_EQ(dispatchTable.gvkAllocateDescriptorSets(context.get_devices()[0], &descriptorSetAllocateInfo, vkDescriptorSets.data()), VK_SUCCESS);
     for (auto vkDescriptorSet : vkDescriptorSets) {

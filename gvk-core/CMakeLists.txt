@@ -65,6 +65,7 @@ gvk_add_static_library(
         "${includeDirectory}"
     includeFiles
         "${generatedIncludeFiles}"
+        "${includePath}/detail/dispatch-table-utilities.hpp"
         "${includePath}/detail/handle-utilities.hpp"
         "${includePath}/context.hpp"
         "${includePath}/defines.hpp"
@@ -80,6 +81,7 @@ gvk_add_static_library(
         "${includePath}/wsi-manager.hpp"
     sourceFiles
         "${generatedSourceFiles}"
+        "${sourcePath}/detail/dispatch-table-utilities.cpp"
         "${sourcePath}/detail/handle-utilities.cpp"
         "${sourcePath}/context.cpp"
         "${sourcePath}/environment.cpp"

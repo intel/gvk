@@ -31,15 +31,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace gvk {
 
-void get_compatible_memory_type_indices(VkPhysicalDevice vkPhysicalDevice, uint32_t memoryTypeBits, VkMemoryPropertyFlags memoryPropertyFlags, uint32_t* pMemoryTypeCount, uint32_t* pMemoryTypeIndices)
+void get_compatible_memory_type_indices(const PhysicalDevice& physicalDevice, uint32_t memoryTypeBits, VkMemoryPropertyFlags memoryPropertyFlags, uint32_t* pMemoryTypeCount, uint32_t* pMemoryTypeIndices)
 {
-    assert(vkPhysicalDevice);
+    assert(physicalDevice);
     assert(pMemoryTypeCount);
     uint32_t memoryTypeCount = 0;
-    auto dispatchTable = DispatchTable::get_global_dispatch_table();
+    auto dispatchTable = physicalDevice.get<DispatchTable>();
     assert(dispatchTable.gvkGetPhysicalDeviceMemoryProperties);
     VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties { };
-    dispatchTable.gvkGetPhysicalDeviceMemoryProperties(vkPhysicalDevice, &physicalDeviceMemoryProperties);
+    dispatchTable.gvkGetPhysicalDeviceMemoryProperties(physicalDevice, &physicalDeviceMemoryProperties);
     for (uint32_t i = 0; i < physicalDeviceMemoryProperties.memoryTypeCount; ++i) {
         if (memoryTypeBits & (1 << i) && (physicalDeviceMemoryProperties.memoryTypes[i].propertyFlags & memoryPropertyFlags) == memoryPropertyFlags) {
             if (++memoryTypeCount <= *pMemoryTypeCount && pMemoryTypeIndices) {
@@ -61,13 +61,13 @@ VkExtent3D get_mip_level_extent(const VkExtent3D& imageExtent, uint32_t mipLevel
     return { imageExtent.width >> mipLevel, imageExtent.height >> mipLevel, imageExtent.depth >> mipLevel };
 }
 
-VkSampleCountFlagBits get_max_framebuffer_sample_count(VkPhysicalDevice vkPhysicalDevice, VkBool32 color, VkBool32 depth, VkBool32 stencil)
+VkSampleCountFlagBits get_max_framebuffer_sample_count(const PhysicalDevice& physicalDevice, VkBool32 color, VkBool32 depth, VkBool32 stencil)
 {
-    assert(vkPhysicalDevice);
+    assert(physicalDevice);
     VkPhysicalDeviceProperties physicalDeviceProperties { };
-    auto dispatchTable = DispatchTable::get_global_dispatch_table();
+    auto dispatchTable = physicalDevice.get<DispatchTable>();
     assert(dispatchTable.gvkGetPhysicalDeviceProperties);
-    dispatchTable.gvkGetPhysicalDeviceProperties(vkPhysicalDevice, &physicalDeviceProperties);
+    dispatchTable.gvkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
     VkSampleCountFlags sampleCounts = (color || depth || stencil) ? (uint32_t)-1 : 0;
     if (color) {
         sampleCounts &= physicalDeviceProperties.limits.framebufferColorSampleCounts;
