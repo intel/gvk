@@ -140,7 +140,7 @@ int main(int, const char*[])
 
         // Allocate a gvk::DescriptorSet...
         std::vector<gvk::DescriptorSet> descriptorSets;
-        gvk_result(gvk_sample_allocate_descriptor_sets(pipeline, &descriptorSets));
+        gvk_result(gvk_sample_allocate_descriptor_sets(pipeline, descriptorSets));
         assert(descriptorSets.size() == 1);
         auto descriptorSet = descriptorSets[0];
 

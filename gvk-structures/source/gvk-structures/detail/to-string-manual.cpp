@@ -411,6 +411,21 @@ void print<GvkCommandStructureAllocateCommandBuffers>(Printer& printer, const Gv
 }
 
 template <>
+void print<GvkCommandStructureAllocateDescriptorSets>(Printer& printer, const GvkCommandStructureAllocateDescriptorSets& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            printer.print_field("device", obj.device);
+            printer.print_field("pAllocateInfo", obj.pAllocateInfo);
+            printer.print_array("pDescriptorSets", obj.pAllocateInfo ? obj.pAllocateInfo->descriptorSetCount : 0, obj.pDescriptorSets);
+            printer.print_field("result", obj.result);
+        }
+    );
+}
+
+template <>
 void print<GvkCommandStructureBuildAccelerationStructuresKHR>(Printer& printer, const GvkCommandStructureBuildAccelerationStructuresKHR& obj)
 {
     printer.print_object(
@@ -511,6 +526,22 @@ void print<GvkCommandStructureCmdSetFragmentShadingRateKHR>(Printer& printer, co
             printer.print_field("commandBuffer", obj.commandBuffer);
             // TODO : const VkExtent2D* pFragmentSize
             // TODO : const VkFragmentShadingRateCombinerOpKHR combinerOps
+        }
+    );
+}
+
+template <>
+void print<GvkCommandStructureGetAccelerationStructureBuildSizesKHR>(Printer& printer, const GvkCommandStructureGetAccelerationStructureBuildSizesKHR& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            printer.print_field("device", obj.device);
+            printer.print_field("buildType", obj.buildType);
+            printer.print_pointer("pBuildInfo", obj.pBuildInfo);
+            printer.print_pointer("pMaxPrimitiveCounts", obj.pMaxPrimitiveCounts);
+            printer.print_pointer("pSizeInfo", obj.pSizeInfo);
         }
     );
 }

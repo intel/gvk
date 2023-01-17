@@ -499,6 +499,7 @@ inline void load(ArchiveType& archive, VkAccelerationStructureSRTMotionInstanceN
 ////////////////////////////////////////////////////////////////////////////////
 // GvkCommandStructures
 GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureAllocateCommandBuffers)
+GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureAllocateDescriptorSets)
 GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureBuildAccelerationStructuresKHR)
 GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureCmdBuildAccelerationStructuresIndirectKHR)
 GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureCmdBuildAccelerationStructuresKHR)
@@ -506,6 +507,7 @@ GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureCmdSetBlendConstants)
 GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureCmdSetSampleMaskEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureCmdSetFragmentShadingRateEnumNV)
 GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureCmdSetFragmentShadingRateKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureGetAccelerationStructureBuildSizesKHR)
 GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureGetDeviceProcAddr)
 GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureGetInstanceProcAddr)
 GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureGetMemoryRemoteAddressNV)

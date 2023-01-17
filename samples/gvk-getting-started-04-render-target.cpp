@@ -301,11 +301,11 @@ int main(int, const char*[])
         //  The gvk::ImageView for the gvk::RenderTarget color attachment will be at
         //  gvk::DescriptorSet 1 and binding index 1...
         std::vector<gvk::DescriptorSet> descriptorSets;
-        gvk_result(gvk_sample_allocate_descriptor_sets(cubePipeline, &descriptorSets));
+        gvk_result(gvk_sample_allocate_descriptor_sets(cubePipeline, descriptorSets));
         assert(descriptorSets.size() == 2);
         auto reflectionCameraDescriptorSet = descriptorSets[0];
         auto cubeDescriptorSet = descriptorSets[1];
-        gvk_result(gvk_sample_allocate_descriptor_sets(floorPipeline, &descriptorSets));
+        gvk_result(gvk_sample_allocate_descriptor_sets(floorPipeline, descriptorSets));
         assert(descriptorSets.size() == 2);
         auto cameraDescriptorSet = descriptorSets[0];
         auto floorDescriptorSet = descriptorSets[1];

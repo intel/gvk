@@ -108,15 +108,13 @@ VkResult initialize_control_block<Instance>(Instance& instance)
         auto pVkPhysicalDevices = (VkPhysicalDevice*)detail::get_transient_storage(physicalDeviceCount * sizeof(VkPhysicalDevice));
         std::vector<VkPhysicalDevice> vkPhysicalDevices(physicalDeviceCount);
         gvk_result(instanceControlBlock.mDispatchTable.gvkEnumeratePhysicalDevices(instanceControlBlock.mVkInstance, &physicalDeviceCount, pVkPhysicalDevices));
-        instanceControlBlock.mPhysicalDevices.reserve(physicalDeviceCount);
+        instanceControlBlock.mPhysicalDevices.resize(physicalDeviceCount);
         for (uint32_t i = 0; i < physicalDeviceCount; ++i) {
-            PhysicalDevice physicalDevice;
-            physicalDevice.mReference.reset(newref, pVkPhysicalDevices[i]);
-            auto& physicalDeviceControlBlock = physicalDevice.mReference.get_obj();
+            instanceControlBlock.mPhysicalDevices[i].mReference.reset(newref, pVkPhysicalDevices[i]);
+            auto& physicalDeviceControlBlock = instanceControlBlock.mPhysicalDevices[i].mReference.get_obj();
             physicalDeviceControlBlock.mVkPhysicalDevice = pVkPhysicalDevices[i];
             physicalDeviceControlBlock.mVkInstance = instanceControlBlock.mVkInstance;
             physicalDeviceControlBlock.mDispatchTable = instanceControlBlock.mDispatchTable;
-            instanceControlBlock.mPhysicalDevices.push_back(physicalDevice);
             gvk_result(detail::initialize_control_block(physicalDeviceControlBlock));
         }
     } gvk_result_scope_end;
@@ -126,8 +124,9 @@ VkResult initialize_control_block<Instance>(Instance& instance)
 template <>
 VkResult initialize_control_block<Device>(Device& device)
 {
-    auto& deviceControlBlock = device.mReference.get_obj();
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+        auto& deviceControlBlock = device.mReference.get_obj();
+        deviceControlBlock.mInstance = deviceControlBlock.mPhysicalDevice.get<Instance>();
         const auto& physicalDeviceDispatchTable = deviceControlBlock.mPhysicalDevice.get<DispatchTable>();
         deviceControlBlock.mDispatchTable.gvkGetDeviceProcAddr = physicalDeviceDispatchTable.gvkGetDeviceProcAddr;
         DispatchTable::load_device_entry_points(deviceControlBlock.mVkDevice, &deviceControlBlock.mDispatchTable);
@@ -136,26 +135,21 @@ VkResult initialize_control_block<Device>(Device& device)
             const auto& deviceQueueCreateInfo = deviceCreateInfo.pQueueCreateInfos[queueCreateInfo_i];
             QueueFamily queueFamily { };
             queueFamily.index = deviceQueueCreateInfo.queueFamilyIndex;
-            queueFamily.queues.reserve(deviceQueueCreateInfo.queueCount);
+            queueFamily.queues.resize(deviceQueueCreateInfo.queueCount);
             for (uint32_t queue_i = 0; queue_i < deviceQueueCreateInfo.queueCount; ++queue_i) {
                 VkQueue vkQueue = VK_NULL_HANDLE;
                 assert(deviceControlBlock.mDispatchTable.gvkGetDeviceQueue);
                 deviceControlBlock.mDispatchTable.gvkGetDeviceQueue(deviceControlBlock.mVkDevice, deviceQueueCreateInfo.queueFamilyIndex, queue_i, &vkQueue);
-
-                Queue queue;
-                queue.mReference.reset(newref, vkQueue);
-                auto& queueControlBlock = queue.mReference.get_obj();
+                queueFamily.queues[queue_i].mReference.reset(newref, vkQueue);
+                auto& queueControlBlock = queueFamily.queues[queue_i].mReference.get_obj();
                 queueControlBlock.mVkQueue = vkQueue;
                 queueControlBlock.mVkDevice = deviceControlBlock.mVkDevice;
                 queueControlBlock.mDeviceQueueCreateInfo = deviceQueueCreateInfo;
                 queueControlBlock.mDispatchTable = deviceControlBlock.mDispatchTable;
-                queueFamily.queues.push_back(queue);
                 gvk_result(detail::initialize_control_block(queueControlBlock));
             }
             deviceControlBlock.mQueueFamilies.push_back(queueFamily);
         }
-        deviceControlBlock.mInstance = deviceControlBlock.mPhysicalDevice.get<Instance>();
-        const auto& instanceCreateInfo = deviceControlBlock.mInstance.get<VkInstanceCreateInfo>();
 
         VmaVulkanFunctions vulkanFunctions { };
         vulkanFunctions.vkGetInstanceProcAddr = deviceControlBlock.mInstance.get<DispatchTable>().gvkGetInstanceProcAddr;
@@ -199,6 +193,7 @@ VkResult initialize_control_block<Device>(Device& device)
         vulkanFunctions.vkGetDeviceImageMemoryRequirements = deviceControlBlock.mDispatchTable.gvkGetDeviceImageMemoryRequirements;
 #endif
 
+        const auto& instanceCreateInfo = deviceControlBlock.mInstance.get<VkInstanceCreateInfo>();
         VmaAllocatorCreateInfo allocatorCreateInfo { };
         allocatorCreateInfo.vulkanApiVersion = instanceCreateInfo.pApplicationInfo ? instanceCreateInfo.pApplicationInfo->apiVersion : VK_API_VERSION_1_3;
         allocatorCreateInfo.instance = deviceControlBlock.mInstance;

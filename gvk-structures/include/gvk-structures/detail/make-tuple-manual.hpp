@@ -312,6 +312,7 @@ inline auto make_tuple(const VkPipelineExecutableStatisticValueKHR& obj)
 ////////////////////////////////////////////////////////////////////////////////
 // GvkCommandStructures
 GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureAllocateCommandBuffers)
+GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureAllocateDescriptorSets)
 GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureBuildAccelerationStructuresKHR)
 GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureCmdBuildAccelerationStructuresIndirectKHR)
 GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureCmdBuildAccelerationStructuresKHR)
@@ -319,6 +320,7 @@ GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureCmdSetBlendConstants)
 GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureCmdSetSampleMaskEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureCmdSetFragmentShadingRateEnumNV)
 GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureCmdSetFragmentShadingRateKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureGetAccelerationStructureBuildSizesKHR)
 #ifdef VK_USE_PLATFORM_XLIB_KHR
 GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureCreateXlibSurfaceKHR)
 GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureGetPhysicalDeviceXlibPresentationSupportKHR)

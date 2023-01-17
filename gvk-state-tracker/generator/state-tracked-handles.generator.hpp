@@ -41,7 +41,6 @@ public:
     StateTrackedHandleGenerator(const xml::Manifest& manifest, const xml::Handle& handle)
         : BasicHandleGenerator(manifest, handle)
     {
-        // TODO : Documentation
         generate_ctors(false, false);
 
         if (handle.name == "VkPhysicalDevice") {

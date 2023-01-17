@@ -280,6 +280,7 @@ GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkPipelineExecutableStatisticValueKHR)
 ////////////////////////////////////////////////////////////////////////////////
 // GvkCommandStructures
 GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureAllocateCommandBuffers)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureAllocateDescriptorSets)
 GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureBuildAccelerationStructuresKHR)
 GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureCmdBuildAccelerationStructuresIndirectKHR)
 GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureCmdBuildAccelerationStructuresKHR)
@@ -287,6 +288,7 @@ GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureCmdSetBlendConstants)
 GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureCmdSetSampleMaskEXT)
 GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureCmdSetFragmentShadingRateEnumNV)
 GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureCmdSetFragmentShadingRateKHR)
+GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureGetAccelerationStructureBuildSizesKHR)
 #ifdef VK_USE_PLATFORM_XLIB_KHR
 GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureCreateXlibSurfaceKHR)
 GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureGetPhysicalDeviceXlibPresentationSupportKHR)

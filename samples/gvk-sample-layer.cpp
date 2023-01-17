@@ -47,6 +47,7 @@ public:
 
     VkResult pre_vkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks*, VkInstance*, VkResult gvkResult) override final
     {
+        assert(pCreateInfo);
         std::cout << "================================================================================" << std::endl;
         std::cout << "pre_vkCreateInstance() : pCreateInfo : " << gvk::to_string(*pCreateInfo, printerFlags) << std::endl;
         return gvkResult;
@@ -54,6 +55,7 @@ public:
 
     VkResult post_vkCreateInstance(const VkInstanceCreateInfo*, const VkAllocationCallbacks*, VkInstance* pInstance, VkResult gvkResult) override final
     {
+        assert(pInstance);
         std::cout << "--------------------------------------------------------------------------------" << std::endl;
         std::cout << "post_vkCreateInstance() : " << gvk::to_string(gvkResult, printerFlags) << " : " << gvk::to_string(*pInstance) << std::endl;
         std::cout << "================================================================================" << std::endl;
@@ -62,6 +64,7 @@ public:
 
     VkResult pre_vkCreateDevice(VkPhysicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks*, VkDevice*, VkResult gvkResult) override final
     {
+        assert(pCreateInfo);
         std::cout << "================================================================================" << std::endl;
         std::cout << "pre_vkCreateDevice() : pCreateInfo : " << gvk::to_string(*pCreateInfo, printerFlags) << std::endl;
         return gvkResult;
@@ -69,6 +72,7 @@ public:
 
     VkResult post_vkCreateDevice(VkPhysicalDevice, const VkDeviceCreateInfo*, const VkAllocationCallbacks*, VkDevice* pDevice, VkResult gvkResult) override final
     {
+        assert(pDevice);
         std::cout << "--------------------------------------------------------------------------------" << std::endl;
         std::cout << "post_vkCreateDevice() : " << gvk::to_string(gvkResult, printerFlags) << " : " << gvk::to_string(*pDevice) << std::endl;
         std::cout << "================================================================================" << std::endl;
@@ -77,6 +81,7 @@ public:
 
     VkResult pre_vkAllocateMemory(VkDevice, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks*, VkDeviceMemory*, VkResult gvkResult) override final
     {
+        assert(pAllocateInfo);
         std::cout << "================================================================================" << std::endl;
         std::cout << "pre_vkAllocateMemory() : pAllocateInfo : " << gvk::to_string(*pAllocateInfo, printerFlags) << std::endl;
         return gvkResult;
@@ -84,6 +89,7 @@ public:
 
     VkResult post_vkAllocateMemory(VkDevice, const VkMemoryAllocateInfo*, const VkAllocationCallbacks*, VkDeviceMemory* pMemory, VkResult gvkResult) override final
     {
+        assert(pMemory);
         std::cout << "--------------------------------------------------------------------------------" << std::endl;
         std::cout << "post_vkAllocateMemory() : " << gvk::to_string(gvkResult, printerFlags) << " : " << gvk::to_string(*pMemory) << std::endl;
         std::cout << "================================================================================" << std::endl;

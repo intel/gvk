@@ -417,10 +417,9 @@ inline VkResult gvk_sample_create_pipeline(
     return gvkResult;
 }
 
-inline VkResult gvk_sample_allocate_descriptor_sets(const gvk::Pipeline& pipeline, std::vector<gvk::DescriptorSet>* pDescriptorSets)
+inline VkResult gvk_sample_allocate_descriptor_sets(const gvk::Pipeline& pipeline, std::vector<gvk::DescriptorSet>& descriptorSets)
 {
     assert(pipeline);
-    assert(pDescriptorSets);
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         // Use the provided gvk::Pipeline's gvk::PipelineLayout to determine what types
         //  and how many descriptors we'll need...the samples generally allocate a very
@@ -441,28 +440,32 @@ inline VkResult gvk_sample_allocate_descriptor_sets(const gvk::Pipeline& pipelin
             }
         }
 
-        // Create a gvk::DescriptorPool...
-        auto descriptorPoolCreateInfo = gvk::get_default<VkDescriptorPoolCreateInfo>();
-        descriptorPoolCreateInfo.maxSets = (uint32_t)vkDescriptorSetLayouts.size();
-        descriptorPoolCreateInfo.poolSizeCount = (uint32_t)descriptorPoolSizes.size();
-        descriptorPoolCreateInfo.pPoolSizes = !descriptorPoolSizes.empty() ? descriptorPoolSizes.data() : nullptr;
-        gvk::DescriptorPool descriptorPool;
-        gvk_result(gvk::DescriptorPool::create(pipeline.get<gvk::Device>(), &descriptorPoolCreateInfo, nullptr, &descriptorPool));
+        descriptorSets.clear();
+        assert(vkDescriptorSetLayouts.empty() == descriptorPoolSizes.empty());
+        if (!vkDescriptorSetLayouts.empty() && !descriptorPoolSizes.empty()) {
+            // Create a gvk::DescriptorPool...
+            auto descriptorPoolCreateInfo = gvk::get_default<VkDescriptorPoolCreateInfo>();
+            descriptorPoolCreateInfo.maxSets = (uint32_t)vkDescriptorSetLayouts.size();
+            descriptorPoolCreateInfo.poolSizeCount = (uint32_t)descriptorPoolSizes.size();
+            descriptorPoolCreateInfo.pPoolSizes = descriptorPoolSizes.data();
+            gvk::DescriptorPool descriptorPool;
+            gvk_result(gvk::DescriptorPool::create(pipeline.get<gvk::Device>(), &descriptorPoolCreateInfo, nullptr, &descriptorPool));
 
-        // And allocate gvk::DescriptorSets...
-        // NOTE : The allocated gvk::DescriptorSets will hold references to the
-        //  gvk::DescriptorPool so there's no need for user code to maintain an
-        //  explicit reference.  A gvk::DescriptorSet's gvk::DescriptorPool can be
-        //  retrieved using descriptorSet.get<gvk::DescriptorPool>().
-        // NOTE : vkResetDescriptorPool() must not be used with gvk::DescriptorSets.
-        // NOTE : A gvk::DescriptorPool may be used to allocate VkDescriptorSets and
-        //  use vkResetDescriptorPool() as normal.
-        auto descriptorSetAllocateInfo = gvk::get_default<VkDescriptorSetAllocateInfo>();
-        descriptorSetAllocateInfo.descriptorPool = descriptorPool;
-        descriptorSetAllocateInfo.descriptorSetCount = (uint32_t)vkDescriptorSetLayouts.size();
-        descriptorSetAllocateInfo.pSetLayouts = !vkDescriptorSetLayouts.empty() ? vkDescriptorSetLayouts.data() : nullptr;
-        pDescriptorSets->resize(vkDescriptorSetLayouts.size());
-        gvk_result(gvk::DescriptorSet::allocate(pipeline.get<gvk::Device>(), &descriptorSetAllocateInfo, pDescriptorSets->data()));
+            // And allocate gvk::DescriptorSets...
+            // NOTE : The allocated gvk::DescriptorSets will hold references to the
+            //  gvk::DescriptorPool so there's no need for user code to maintain an
+            //  explicit reference.  A gvk::DescriptorSet's gvk::DescriptorPool can be
+            //  retrieved using descriptorSet.get<gvk::DescriptorPool>().
+            // NOTE : vkResetDescriptorPool() must not be used with gvk::DescriptorSets.
+            // NOTE : A gvk::DescriptorPool may be used to allocate VkDescriptorSets and
+            //  use vkResetDescriptorPool() as normal.
+            auto descriptorSetAllocateInfo = gvk::get_default<VkDescriptorSetAllocateInfo>();
+            descriptorSetAllocateInfo.descriptorPool = descriptorPool;
+            descriptorSetAllocateInfo.descriptorSetCount = (uint32_t)vkDescriptorSetLayouts.size();
+            descriptorSetAllocateInfo.pSetLayouts = vkDescriptorSetLayouts.data();
+            descriptorSets.resize(descriptorSetAllocateInfo.descriptorSetCount);
+            gvk_result(gvk::DescriptorSet::allocate(pipeline.get<gvk::Device>(), &descriptorSetAllocateInfo, descriptorSets.data()));
+        }
     } gvk_result_scope_end;
     return gvkResult;
 }

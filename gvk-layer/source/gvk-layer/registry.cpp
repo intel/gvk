@@ -67,6 +67,8 @@ VkLayerDeviceCreateInfo* get_device_chain_info(const VkDeviceCreateInfo* pCreate
 
 VkResult create_instance(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance)
 {
+    assert(pCreateInfo);
+    assert(pInstance);
     auto vkResult = VK_ERROR_INITIALIZATION_FAILED;
     auto pLayerInstanceCreateInfo = get_instance_chain_info(pCreateInfo, VK_LAYER_LINK_INFO);
     auto pfn_vkGetInstanceProcAddr = (pLayerInstanceCreateInfo && pLayerInstanceCreateInfo->u.pLayerInfo) ? pLayerInstanceCreateInfo->u.pLayerInfo->pfnNextGetInstanceProcAddr : nullptr;
@@ -81,7 +83,7 @@ VkResult create_instance(const VkInstanceCreateInfo* pCreateInfo, const VkAlloca
             vkResult = (*layerItr)->pre_vkCreateInstance(pCreateInfo, pAllocator, pInstance, vkResult);
         }
         vkResult = pfn_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
-        if (vkResult == VK_SUCCESS && pInstance && *pInstance) {
+        if (vkResult == VK_SUCCESS) {
             DispatchTable instanceDispatchTable { };
             instanceDispatchTable.gvkGetInstanceProcAddr = pfn_vkGetInstanceProcAddr;
             DispatchTable::load_instance_entry_points(*pInstance, &instanceDispatchTable);
@@ -98,6 +100,7 @@ VkResult create_instance(const VkInstanceCreateInfo* pCreateInfo, const VkAlloca
 
 void destroy_instance(VkInstance instance, const VkAllocationCallbacks* pAllocator)
 {
+    assert(instance);
     auto& layers = Registry::get().layers;
     for (auto layerItr = layers.begin(); layerItr != layers.end(); ++layerItr) {
         assert(*layerItr && "gvk::layer::Registry contains a null layer; are layers configured correctly and intialized via gvk::layer::on_load()?");
@@ -120,6 +123,9 @@ void destroy_instance(VkInstance instance, const VkAllocationCallbacks* pAllocat
 
 VkResult create_device(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice)
 {
+    assert(physicalDevice);
+    assert(pCreateInfo);
+    assert(pDevice);
     auto vkResult = VK_ERROR_INITIALIZATION_FAILED;
     auto pLayerDeviceCreateInfo = get_device_chain_info(pCreateInfo, VK_LAYER_LINK_INFO);
     auto pfn_vkGetDeviceProcAddr = (pLayerDeviceCreateInfo && pLayerDeviceCreateInfo->u.pLayerInfo) ? pLayerDeviceCreateInfo->u.pLayerInfo->pfnNextGetDeviceProcAddr : nullptr;
@@ -135,7 +141,7 @@ VkResult create_device(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo
             vkResult = (*layerItr)->pre_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice, vkResult);
         }
         vkResult = instanceDispatchTable.gvkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
-        if (vkResult == VK_SUCCESS && pDevice && *pDevice) {
+        if (vkResult == VK_SUCCESS) {
             DispatchTable deviceDispatchTable { };
             deviceDispatchTable.gvkGetDeviceProcAddr = pfn_vkGetDeviceProcAddr;
             DispatchTable::load_device_entry_points(*pDevice, &deviceDispatchTable);
@@ -152,6 +158,7 @@ VkResult create_device(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo
 
 void destroy_device(VkDevice device, const VkAllocationCallbacks* pAllocator)
 {
+    assert(device);
     auto& layers = Registry::get().layers;
     for (auto layerItr = layers.begin(); layerItr != layers.end(); ++layerItr) {
         assert(*layerItr && "gvk::layer::Registry contains a null layer; are layers configured correctly and intialized via gvk::layer::on_load()?");
@@ -174,6 +181,7 @@ void destroy_device(VkDevice device, const VkAllocationCallbacks* pAllocator)
 
 PFN_vkVoidFunction get_instance_proc_addr(VkInstance, const char* pName)
 {
+    assert(pName);
     if (!strcmp(pName, "vkCreateInstance")) {
         return (PFN_vkVoidFunction)gvk::layer::create_instance;
     } else if (!strcmp(pName, "vkDestroyInstance")) {

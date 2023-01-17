@@ -76,15 +76,6 @@ public:
     };
 
     /**
-    Creates an instance of Context
-    @param [in] pCreateInfo A pointer to the Context creation parameters
-    @param [in] (optional) pAllocator A pointer to the VkAllocationCallbacks to use
-    @param [out] pContext A pointer to the Context to create
-    @return The VkResult
-    */
-    static VkResult create(const CreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, Context* pContext);
-
-    /**
     Constructs an instance of Context
     */
     Context() = default;
@@ -101,6 +92,15 @@ public:
     @return A reference to this Context
     */
     Context& operator=(Context&& other) = default;
+
+    /**
+    Creates an instance of Context
+    @param [in] pCreateInfo A pointer to the Context creation parameters
+    @param [in] (optional) pAllocator A pointer to the VkAllocationCallbacks to use
+    @param [out] pContext A pointer to the Context to create
+    @return The VkResult
+    */
+    static VkResult create(const CreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, Context* pContext);
 
     /**
     Destroys this instance of Context
@@ -127,8 +127,9 @@ public:
     /**
     Gets this Context object's PhysicalDevice objects
     @return This Context object's PhysicalDevice objects
+        @note The PhysicalDevice objects returned by this method are the same as the PhysicalDevice objects provided by this Context object's Instance sorted by the rating provided by get_physical_device_rating()
     */
-    std::vector<PhysicalDevice> get_physical_devices() const;
+    const std::vector<PhysicalDevice>& get_physical_devices() const;
 
     /**
     Gets this Context object's Device objects
@@ -167,7 +168,7 @@ protected:
     @return This Context object's PhysicalDevice objects sorted by the rating provided by get_physical_device_rating()
         @note This method may be overriden to customize PhysicalDevice sorting
     */
-    virtual std::vector<PhysicalDevice> sort_physical_devices() const;
+    virtual std::vector<PhysicalDevice> sort_physical_devices(std::vector<PhysicalDevice> physicalDevices) const;
 
     /**
     Gets a given PhysicalDevice object's rating
@@ -198,6 +199,7 @@ protected:
 
     Instance mInstance;
     DebugUtilsMessengerEXT mDebugUtilsMessenger;
+    std::vector<PhysicalDevice> mPhysicalDevices;
     std::vector<Device> mDevices;
     std::vector<CommandBuffer> mCommandBuffers;
 

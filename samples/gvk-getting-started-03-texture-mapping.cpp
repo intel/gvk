@@ -290,7 +290,7 @@ int main(int, const char*[])
         vmaGetAllocationInfo(context.get_devices()[0].get<VmaAllocator>(), uniformBuffer.get<VmaAllocation>(), &uniformBufferAllocationInfo);
 
         std::vector<gvk::DescriptorSet> descriptorSets;
-        gvk_result(gvk_sample_allocate_descriptor_sets(pipeline, &descriptorSets));
+        gvk_result(gvk_sample_allocate_descriptor_sets(pipeline, descriptorSets));
         assert(descriptorSets.size() == 1);
         auto descriptorSet = descriptorSets[0];
 

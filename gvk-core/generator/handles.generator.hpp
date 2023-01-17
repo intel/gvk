@@ -96,7 +96,10 @@ protected:
         assert(!ctor.parameters.empty());
         auto parameters = ctor.parameters;
         parameters.back().name = "pVk" + get_handle_name();
-        auto handleId = parameters.back().name + "[i]";
+        if (parameters.back().flags & xml::Array) {
+            parameters.back().name += "s";
+        }
+        auto handleId = parameters.back().flags & xml::Array ? parameters.back().name + "[i]" : "*" + parameters.back().name;
         if (!get_handle().isDispatchable) {
             auto dispatchableHandle = get_handle().get_dispatchable_handle(manifest);
             for (const auto& parameter : parameters) {
@@ -109,7 +112,7 @@ protected:
 
         std::vector<string::Replacement> replacements {
             { "{handleName}", get_handle_name() },
-            { "{handleCount}", !ctor.parameters.back().length.empty() ? ctor.parameters.back().length : "1" },
+            { "{handleCount}", parameters.back().flags & xml::Array ? ctor.parameters.back().length : "1" },
             { "{outArg}", ctor.parameters.back().name },
             { "{ctorName}", get_ctor_name(ctor) },
             { "{ctorParameterList}", get_parameter_list(get_ctor_parameters(manifest, ctor)) },
@@ -122,39 +125,62 @@ protected:
                 "dispatchTable = " + ctor.parameters.front().name + ".get<DispatchTable>()" },
         };
 
-        file << string::replace(
+        if (parameters.back().flags & xml::Array) {
+            file << string::replace(
 R"(VkResult {handleName}::{ctorName}({ctorParameterList})
 {
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
-        const uint32_t HandleCount = {handleCount};
-        if (HandleCount && {outArg}) {
-            for (uint32_t i = 0; i < HandleCount; ++i) {
-                {outArg}[i].reset();
-            }
-)", replacements);
-        file << string::replace(
-R"(            DispatchTable dispatchTable { };
-            {initializeDispatchTableExpression};
-            assert(dispatchTable.g{vkCreateCommand});
-            auto pVk{handleName} = (Vk{handleName}*)detail::get_transient_storage(HandleCount * sizeof(Vk{handleName}));
-            gvk_result(dispatchTable.g{vkCreateCommand}({vkCreateCommandArgs}));
-            for (uint32_t i = 0; i < HandleCount; ++i) {
-                {outArg}[i].mReference.reset(gvk::newref, {handleId});
-                auto& controlBlock = {outArg}[i].mReference.get_obj();
-                controlBlock.mVk{handleName} = pVk{handleName}[i];
-)", replacements);
-        for (const auto& memberInfo : get_members()) {
-            auto assignmentExpression = get_member_assignment_expression(manifest, ctor, memberInfo);
-            if (!assignmentExpression.empty()) {
-                file << "                controlBlock." << memberInfo.storageName << " = " << assignmentExpression << ";" << std::endl;
-            }
+        assert({handleCount});
+        assert({outArg});
+        for (uint32_t i = 0; i < {handleCount}; ++i) {
+            {outArg}[i].reset();
         }
-        file << string::replace("                gvk_result(gvk::detail::initialize_control_block({outArg}[i]));", replacements) << std::endl;
-        file << "            }" << std::endl;
-        file << "        }" << std::endl;
-        file << "    } gvk_result_scope_end;" << std::endl;
-        file << "    return gvkResult;" << std::endl;
-        file << "}" << std::endl;
+        DispatchTable dispatchTable { };
+        {initializeDispatchTableExpression};
+        assert(dispatchTable.g{vkCreateCommand});
+        auto pVk{handleName}s = (Vk{handleName}*)detail::get_transient_storage({handleCount} * sizeof(Vk{handleName}));
+        gvk_result(dispatchTable.g{vkCreateCommand}({vkCreateCommandArgs}));
+        for (uint32_t i = 0; i < {handleCount}; ++i) {
+            {outArg}[i].mReference.reset(gvk::newref, {handleId});
+            auto& controlBlock = {outArg}[i].mReference.get_obj();
+            controlBlock.mVk{handleName} = pVk{handleName}s[i];)", replacements) << std::endl;
+            for (const auto& memberInfo : get_members()) {
+                auto assignmentExpression = get_member_assignment_expression(manifest, ctor, memberInfo);
+                if (!assignmentExpression.empty()) {
+                    file << "            controlBlock." << memberInfo.storageName << " = " << assignmentExpression << ";" << std::endl;
+                }
+            }
+            file << string::replace("            gvk_result(gvk::detail::initialize_control_block({outArg}[i]));", replacements) << std::endl;
+            file << "        }" << std::endl;
+            file << "    } gvk_result_scope_end;" << std::endl;
+            file << "    return gvkResult;" << std::endl;
+            file << "}" << std::endl;
+        } else {
+            file << string::replace(
+R"(VkResult {handleName}::{ctorName}({ctorParameterList})
+{
+    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+        assert({outArg});
+        DispatchTable dispatchTable { };
+        {initializeDispatchTableExpression};
+        assert(dispatchTable.g{vkCreateCommand});
+        Vk{handleName} vk{handleName} = VK_NULL_HANDLE;
+        auto pVk{handleName} = &vk{handleName};
+        gvk_result(dispatchTable.g{vkCreateCommand}({vkCreateCommandArgs}));
+        {outArg}->mReference.reset(gvk::newref, {handleId});
+        auto& controlBlock = {outArg}->mReference.get_obj();
+        controlBlock.mVk{handleName} = *pVk{handleName};)", replacements) << std::endl;
+            for (const auto& memberInfo : get_members()) {
+                auto assignmentExpression = get_member_assignment_expression(manifest, ctor, memberInfo);
+                if (!assignmentExpression.empty()) {
+                    file << "        controlBlock." << memberInfo.storageName << " = " << assignmentExpression << ";" << std::endl;
+                }
+            }
+            file << string::replace("        gvk_result(gvk::detail::initialize_control_block(*{outArg}));", replacements) << std::endl;
+            file << "    } gvk_result_scope_end;" << std::endl;
+            file << "    return gvkResult;" << std::endl;
+            file << "}" << std::endl;
+        }
     }
 
     void generate_dtor(FileGenerator& file, const xml::Manifest& manifest, const xml::Command& dtor) const override final

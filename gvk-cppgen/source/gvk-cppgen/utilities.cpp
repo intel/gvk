@@ -137,6 +137,7 @@ bool structure_requires_custom_implementation(const std::string& apiElementName)
 
         // GvkCommandStructures
         "GvkCommandStructureAllocateCommandBuffers",
+        "GvkCommandStructureAllocateDescriptorSets",
         "GvkCommandStructureBuildAccelerationStructuresKHR",
         "GvkCommandStructureCmdBuildAccelerationStructuresIndirectKHR",
         "GvkCommandStructureCmdBuildAccelerationStructuresKHR",
@@ -145,6 +146,7 @@ bool structure_requires_custom_implementation(const std::string& apiElementName)
         "GvkCommandStructureCmdSetFragmentShadingRateEnumNV",
         "GvkCommandStructureCmdSetFragmentShadingRateKHR",
         "GvkCommandStructureCreateXlibSurfaceKHR",
+        "GvkCommandStructureGetAccelerationStructureBuildSizesKHR",
         "GvkCommandStructureGetPhysicalDeviceXlibPresentationSupportKHR",
     };
     return sStructuresRequiringCustomImplentation.count(apiElementName);

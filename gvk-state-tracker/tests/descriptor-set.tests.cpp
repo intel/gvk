@@ -163,7 +163,7 @@ TEST(DescriptorSet, BasicDescriptorBinding)
     auto descriptorSetAllocateInfo = gvk::get_default<VkDescriptorSetAllocateInfo>();
     descriptorSetAllocateInfo.descriptorPool = descriptorPool;
     descriptorSetAllocateInfo.descriptorSetCount = 1;
-    descriptorSetAllocateInfo.pSetLayouts = &(const VkDescriptorSetLayout&)descriptorSetLayouts[0];
+    descriptorSetAllocateInfo.pSetLayouts = &descriptorSetLayouts[0].get<const VkDescriptorSetLayout&>();
     gvk::DescriptorSet descriptorSet;
     ASSERT_EQ(gvk::DescriptorSet::allocate(context.get_devices()[0], &descriptorSetAllocateInfo, &descriptorSet), VK_SUCCESS);
     ASSERT_TRUE(create_state_tracked_object_record(descriptorSet, descriptorSet.get<VkDescriptorSetAllocateInfo>(), expectedInstanceObjects));

@@ -31,6 +31,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <algorithm>
 #include <iostream>
+#include <utility>
 
 namespace gvk {
 
@@ -73,6 +74,27 @@ static VkResult validate_shader_info(const gvk::spirv::ShaderInfo& shaderInfo)
         return VK_ERROR_INITIALIZATION_FAILED;
     }
     return VK_SUCCESS;
+}
+
+Renderer::Renderer(Renderer&& other)
+{
+    *this = std::move(other);
+}
+
+Renderer& Renderer::operator=(Renderer&& other)
+{
+    if (this != &other) {
+        mpImGuiContext = std::move(other.mpImGuiContext);
+        mDevice = std::move(other.mDevice);
+        mPipeline = std::move(other.mPipeline);
+        mFontImageView = std::move(other.mFontImageView);
+        mFontSampler = std::move(other.mFontSampler);
+        mFontDescriptorSet = std::move(other.mFontDescriptorSet);
+        mVertexIndexBuffer = std::move(other.mVertexIndexBuffer);
+        mIndexCount = std::move(other.mIndexCount);
+        other.mpImGuiContext = nullptr;
+    }
+    return *this;
 }
 
 VkResult Renderer::create(const Device& device, VkQueue vkQueue, VkCommandBuffer vkCommandBuffer, const RenderPass& renderPass, const VkAllocationCallbacks* pAllocator, Renderer* pRenderer)

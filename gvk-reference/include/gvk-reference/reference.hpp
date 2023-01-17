@@ -31,6 +31,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <memory>
 #include <mutex>
 #include <unordered_map>
+#include <utility>
 
 namespace gvk {
 
@@ -132,6 +133,26 @@ public:
         reset(nullref);
         return *this;
     }
+
+    /**
+    TODO : Documentation
+    */
+    Reference(const Reference<ObjType, IdType>& other) = default;
+
+    /**
+    TODO : Documentation
+    */
+    Reference<ObjType, IdType>& operator=(const Reference<ObjType, IdType>& other) = default;
+
+    /**
+    TODO : Documentation
+    */
+    Reference(Reference<ObjType, IdType>&& other) = default;
+
+    /**
+    TODO : Documentation
+    */
+    Reference<ObjType, IdType>& operator=(Reference<ObjType, IdType>&& other) = default;
 
     /**
     Destroys this instance of Reference<>

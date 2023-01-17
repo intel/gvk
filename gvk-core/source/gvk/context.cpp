@@ -66,6 +66,7 @@ VkResult Context::create(const CreateInfo* pCreateInfo, const VkAllocationCallba
         instanceCreateInfo.enabledExtensionCount = (uint32_t)instanceExtensions.size();
         instanceCreateInfo.ppEnabledExtensionNames = !instanceExtensions.empty() ? instanceExtensions.data() : nullptr;
         gvk_result(pContext->create_instance(&instanceCreateInfo, pAllocator));
+        pContext->mPhysicalDevices = pContext->sort_physical_devices(pContext->mInstance.get<PhysicalDevices>());
 
         // Create gvk::DebugUtilsMessengerEXT
         if (pCreateInfo->pDebugUtilsMessengerCreateInfo) {
@@ -116,9 +117,9 @@ const Instance& Context::get_instance() const
     return mInstance;
 }
 
-std::vector<PhysicalDevice> Context::get_physical_devices() const
+const std::vector<PhysicalDevice>& Context::get_physical_devices() const
 {
-    return sort_physical_devices();
+    return mPhysicalDevices;
 }
 
 const std::vector<Device>& Context::get_devices() const
@@ -143,9 +144,8 @@ VkResult Context::create_debug_utils_messenger(const VkDebugUtilsMessengerCreate
     return DebugUtilsMessengerEXT::create(mInstance, pDebugUtilsMessengerCreateInfo, pAllocator, &mDebugUtilsMessenger);
 }
 
-std::vector<PhysicalDevice> Context::sort_physical_devices() const
+std::vector<PhysicalDevice> Context::sort_physical_devices(std::vector<PhysicalDevice> physicalDevices) const
 {
-    auto physicalDevices = mInstance.get<const std::vector<PhysicalDevice>&>();
     std::sort(physicalDevices.begin(), physicalDevices.end(),
         [this](const auto& lhs, const auto& rhs)
         {
@@ -184,8 +184,8 @@ uint32_t Context::get_physical_device_rating(const PhysicalDevice& physicalDevic
 VkResult Context::create_devices(const VkDeviceCreateInfo* pDeviceCreateInfo, const VkAllocationCallbacks* pAllocator)
 {
     assert(pDeviceCreateInfo);
-    mDevices.push_back({ });
-    return Device::create(get_physical_devices()[0], pDeviceCreateInfo, pAllocator, &mDevices.back());
+    mDevices.resize(1);
+    return Device::create(mPhysicalDevices[0], pDeviceCreateInfo, pAllocator, mDevices.data());
 }
 
 VkResult Context::allocate_command_buffers(const VkAllocationCallbacks* pAllocator)
@@ -199,8 +199,8 @@ VkResult Context::allocate_command_buffers(const VkAllocationCallbacks* pAllocat
         auto commandBufferAllocateInfo = get_default<VkCommandBufferAllocateInfo>();
         commandBufferAllocateInfo.commandPool = commandPool;
         commandBufferAllocateInfo.commandBufferCount = 1;
-        mCommandBuffers.push_back({ });
-        gvk_result(CommandBuffer::allocate(mDevices[0], &commandBufferAllocateInfo, &mCommandBuffers.back()));
+        mCommandBuffers.resize(commandBufferAllocateInfo.commandBufferCount);
+        gvk_result(CommandBuffer::allocate(mDevices[0], &commandBufferAllocateInfo, mCommandBuffers.data()));
     } gvk_result_scope_end;
     return gvkResult;
 }

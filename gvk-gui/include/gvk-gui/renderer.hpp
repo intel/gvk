@@ -50,6 +50,9 @@ public:
         const uint32_t* pTextStreamCodePoints { nullptr };
     };
 
+    Renderer() = default;
+    Renderer(Renderer&& other);
+    Renderer& operator=(Renderer&& other);
     static VkResult create(const Device& device, VkQueue vkQueue, VkCommandBuffer vkCommandBuffer, const RenderPass& renderPass, const VkAllocationCallbacks* pAllocator, Renderer* pRenderer);
     ~Renderer();
 

@@ -62,15 +62,19 @@ public:
 
     inline Auto<StructureType>& operator=(const Auto<StructureType>& other)
     {
-        reset();
-        mStructure = detail::create_structure_copy(other.mStructure, nullptr);
+        if (this != &other) {
+            reset();
+            mStructure = detail::create_structure_copy(other.mStructure, nullptr);
+        }
         return *this;
     }
 
     inline Auto<StructureType>& operator=(Auto<StructureType>&& other)
     {
-        mStructure = other.mStructure;
-        other.mStructure = { };
+        if (this != &other) {
+            mStructure = other.mStructure;
+            other.mStructure = { };
+        }
         return *this;
     }
 

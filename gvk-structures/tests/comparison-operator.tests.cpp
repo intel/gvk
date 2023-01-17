@@ -82,9 +82,9 @@ TEST(ComparisonOperators, Union)
     EXPECT_EQ(clearColorValue0, clearColorValue1);
 
     clearColorValue1.uint32[0] = 255;
-    clearColorValue1.uint32[0] = 255;
-    clearColorValue1.uint32[0] = 255;
-    clearColorValue1.uint32[0] = 128;
+    clearColorValue1.uint32[1] = 255;
+    clearColorValue1.uint32[2] = 255;
+    clearColorValue1.uint32[3] = 128;
     EXPECT_NE(clearColorValue0, clearColorValue1);
 }
 
@@ -99,9 +99,9 @@ TEST(ComparisonOperators, UnionWithUnionMember)
     EXPECT_EQ(clearValue0, clearValue1);
 
     clearValue1.color.uint32[0] = 255;
-    clearValue1.color.uint32[0] = 255;
-    clearValue1.color.uint32[0] = 255;
-    clearValue1.color.uint32[0] = 128;
+    clearValue1.color.uint32[1] = 255;
+    clearValue1.color.uint32[2] = 255;
+    clearValue1.color.uint32[3] = 128;
     EXPECT_NE(clearValue0, clearValue1);
 
     clearValue1 = clearValue0;
@@ -125,9 +125,9 @@ TEST(ComparisonOperators, StructureWithUnionMember)
     EXPECT_EQ(clearAttachment0, clearAttachment1);
 
     clearAttachment1.clearValue.color.uint32[0] = 255;
-    clearAttachment1.clearValue.color.uint32[0] = 255;
-    clearAttachment1.clearValue.color.uint32[0] = 255;
-    clearAttachment1.clearValue.color.uint32[0] = 128;
+    clearAttachment1.clearValue.color.uint32[1] = 255;
+    clearAttachment1.clearValue.color.uint32[2] = 255;
+    clearAttachment1.clearValue.color.uint32[3] = 128;
     EXPECT_NE(clearAttachment0, clearAttachment1);
 }
 

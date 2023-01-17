@@ -58,10 +58,11 @@ private:
     Registry& operator=(Registry&&) = delete;
 };
 
-template <typename DispatchableHandleType>
-inline void* get_dispatch_key(DispatchableHandleType dispatchableHandle)
+template <typename DispatchableVkHandleType>
+inline void* get_dispatch_key(DispatchableVkHandleType dispatchableVkHandle)
 {
-    return *(void**)dispatchableHandle;
+    assert(dispatchableVkHandle);
+    return *(void**)dispatchableVkHandle;
 }
 
 extern void on_load(Registry& registry);
