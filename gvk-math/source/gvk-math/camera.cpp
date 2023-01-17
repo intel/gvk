@@ -82,7 +82,7 @@ void FreeCameraController::update(const UpdateInfo& updateInfo)
             mpCamera->transform.translation += move * moveSpeed * updateInfo.moveSpeedMultiplier * updateInfo.deltaTime;
         }
         if (lookEnabled) {
-            auto look = updateInfo.lookDelta * lookSpeed * updateInfo.deltaTime;
+            auto look = updateInfo.lookDelta * lookSpeed;
             if (mVerticalLook + look.y > verticalLookMax) {
                 look.y = verticalLookMax - mVerticalLook;
             } else if (mVerticalLook + look.y < verticalLookMin) {
@@ -94,7 +94,7 @@ void FreeCameraController::update(const UpdateInfo& updateInfo)
             mpCamera->transform.rotation = glm::normalize(horizontalRotation * mpCamera->transform.rotation * verticalRotation);
         }
         if (fieldOfViewEnabled) {
-            mpCamera->fieldOfView -= updateInfo.fieldOfViewDelta * fieldOfViewSpeed * updateInfo.deltaTime;
+            mpCamera->fieldOfView -= updateInfo.fieldOfViewDelta * fieldOfViewSpeed;
             mpCamera->fieldOfView = glm::clamp(mpCamera->fieldOfView, fieldOfViewMin, fieldOfViewMax);
         }
     }

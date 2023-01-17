@@ -90,11 +90,11 @@ public:
     bool moveEnabled{ true };
     float moveSpeed{ 4.2f };
     bool lookEnabled{ true };
-    glm::vec2 lookSpeed{ 1, 1 };
+    glm::vec2 lookSpeed{ 0.01f, 0.01f };
     float verticalLookMin{ -glm::radians(90.0f) };
     float verticalLookMax{ glm::radians(90.0f) };
     bool fieldOfViewEnabled{ true };
-    float fieldOfViewSpeed{ 64 };
+    float fieldOfViewSpeed{ 1 };
     float fieldOfViewMin{ 20 };
     float fieldOfViewMax{ 120 };
 
