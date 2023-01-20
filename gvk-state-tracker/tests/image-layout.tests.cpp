@@ -32,8 +32,8 @@ TODO : Documentation
 TEST(ImageLayout, SingleMipSingleArray)
 {
     // TODO : Documentation
-    gvk::Context context;
-    create_state_tracker_validation_context(&context);
+    StateTrackerValidationContext context;
+    ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
     load_gvk_state_tracker_entry_points();
 
     // TODO : Documentation
@@ -71,8 +71,8 @@ TEST(ImageLayout, MultiMipMultiArray)
     const uint32_t ArrayLayers = 4;
 
     // TODO : Documentation
-    gvk::Context context;
-    create_state_tracker_validation_context(&context);
+    StateTrackerValidationContext context;
+    ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
     load_gvk_state_tracker_entry_points();
 
     // TODO : Documentation
@@ -117,8 +117,8 @@ TEST(ImageLayout, PipelineBarrier)
     const uint32_t ArrayLayers = 4;
 
     // TODO : Documentation
-    gvk::Context context;
-    create_state_tracker_validation_context(&context);
+    StateTrackerValidationContext context;
+    ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
     load_gvk_state_tracker_entry_points();
 
     // TODO : Documentation
@@ -200,7 +200,7 @@ TEST(ImageLayout, PipelineBarrier2)
 
     // TODO : Documentation
     StateTrackerValidationContext context;
-    StateTrackerValidationContext::create(&context);
+    ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
     load_gvk_state_tracker_entry_points();
 
     // TODO : Documentation
@@ -277,8 +277,8 @@ TEST(ImageLayout, WaitEvents)
     const uint32_t ArrayLayers = 4;
 
     // TODO : Documentation
-    gvk::Context context;
-    create_state_tracker_validation_context(&context);
+    StateTrackerValidationContext context;
+    ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
     load_gvk_state_tracker_entry_points();
 
     // TODO : Documentation
@@ -368,7 +368,7 @@ TEST(ImageLayout, WaitEvents2)
 
     // TODO : Documentation
     StateTrackerValidationContext context;
-    StateTrackerValidationContext::create(&context);
+    ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
     load_gvk_state_tracker_entry_points();
 
     // TODO : Documentation
@@ -449,8 +449,8 @@ TODO : Documentation
 TEST(ImageLayout, RenderPass)
 {
     // TODO : Documentation
-    gvk::Context context;
-    create_state_tracker_validation_context(&context);
+    StateTrackerValidationContext context;
+    ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
     load_gvk_state_tracker_entry_points();
 
     // Get color VkFormat
@@ -550,8 +550,8 @@ TODO : Documentation
 TEST(ImageLayout, RenderPass2)
 {
     // TODO : Documentation
-    gvk::Context context;
-    create_state_tracker_validation_context(&context);
+    StateTrackerValidationContext context;
+    ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
     load_gvk_state_tracker_entry_points();
 
     // Get color VkFormat

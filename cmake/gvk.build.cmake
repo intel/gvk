@@ -166,8 +166,20 @@ macro(gvk_add_target_test)
             endif()
             add_custom_command(
                 TARGET ${args_target}.tests POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${args_target}.tests> "${package}/"
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:${args_target}.tests> "${package}/"
             )
+            if(type STREQUAL SHARED_LIBRARY)
+                add_custom_command(
+                    TARGET ${args_target} POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:${args_target}> "${package}/"
+                )
+                if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/${args_target}.json")
+                    add_custom_command(
+                        TARGET ${args_target} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_BINARY_DIR}/${args_target}.json" "${package}/"
+                    )
+                endif()
+            endif()
         endif()
     endif()
 endmacro()

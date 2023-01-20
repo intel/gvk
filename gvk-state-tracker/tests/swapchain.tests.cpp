@@ -30,7 +30,7 @@ TEST(Swapchain, SwapchainResourceLifetime)
 {
     // TODO : Documentation
     StateTrackerValidationContext context;
-    StateTrackerValidationContext::create(&context);
+    ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
     load_gvk_state_tracker_entry_points();
     auto expectedInstanceObjects = get_expected_instance_objects(context);
 

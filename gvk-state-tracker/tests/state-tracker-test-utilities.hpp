@@ -77,45 +77,13 @@ class StateTrackerValidationContext final
     : public gvk::Context
 {
 public:
-    inline static VkResult create(StateTrackerValidationContext* pContext)
-    {
-        assert(pContext);
-#if defined(_WIN32) || defined(_WIN64)
-        gvk::set_vk_layer_path_from_windows_registry();
-#endif
-        gvk::append_value_to_env_var("VK_LAYER_PATH", GVK_STATE_TRACKER_LAYER_JSON_PATH);
-        std::array<const char*, 1> layers { VK_LAYER_INTEL_GVK_STATE_TRACKER_NAME };
-        auto instanceCreateInfo = gvk::get_default<VkInstanceCreateInfo>();
-        instanceCreateInfo.enabledLayerCount = (uint32_t)layers.size();
-        instanceCreateInfo.ppEnabledLayerNames = layers.data();
-        auto contextCreateInfo = gvk::get_default<gvk::Context::CreateInfo>();
-        contextCreateInfo.loadApiDumpLayer = VK_FALSE;
-        contextCreateInfo.loadValidationLayer = VK_TRUE;
-        contextCreateInfo.loadWsiExtensions = VK_TRUE;
-        contextCreateInfo.pInstanceCreateInfo = &instanceCreateInfo;
-        return gvk::Context::create(&contextCreateInfo, nullptr, pContext);
-    }
+    static VkResult create(StateTrackerValidationContext* pContext);
 
 protected:
-    inline VkResult create_devices(const VkDeviceCreateInfo* pDeviceCreateInfo, const VkAllocationCallbacks*) override final
-    {
-        assert(pDeviceCreateInfo);
-        auto physicalDeviceSynchronization2Features = gvk::get_default<VkPhysicalDeviceSynchronization2Features>();
-        auto availablePhysicalDeviceFeatures = gvk::get_default<VkPhysicalDeviceFeatures2>();
-        availablePhysicalDeviceFeatures.pNext = &physicalDeviceSynchronization2Features;
-        auto dispatchTable = get_physical_devices()[0].get<gvk::DispatchTable>();
-        assert(dispatchTable.gvkGetPhysicalDeviceFeatures2);
-        dispatchTable.gvkGetPhysicalDeviceFeatures2(get_physical_devices()[0], &availablePhysicalDeviceFeatures);
-        auto enabledPhysicalDeviceFeatures = gvk::get_default<VkPhysicalDeviceFeatures2>();
-        if (physicalDeviceSynchronization2Features.synchronization2) {
-            enabledPhysicalDeviceFeatures.pNext = &physicalDeviceSynchronization2Features;
-        }
-        auto deviceCreateInfo = *pDeviceCreateInfo;
-        deviceCreateInfo.pNext = &enabledPhysicalDeviceFeatures;
-        mDevices.push_back({ });
-        return gvk::Device::create(get_physical_devices()[0], &deviceCreateInfo, nullptr, &mDevices.back());
-    }
+    VkResult create_devices(const VkDeviceCreateInfo* pDeviceCreateInfo, const VkAllocationCallbacks*) override final;
 };
+
+void load_gvk_state_tracker_entry_points();
 
 class ObjectRecord final
 {
@@ -505,44 +473,6 @@ public:
 
     std::map<GvkStateTrackedObject, ObjectRecord> records;
 };
-
-inline VkResult create_state_tracker_validation_context(gvk::Context* pContext)
-{
-    assert(pContext);
-#if defined(_WIN32) || defined(_WIN64)
-    gvk::set_vk_layer_path_from_windows_registry();
-#endif
-    gvk::append_value_to_env_var("VK_LAYER_PATH", GVK_STATE_TRACKER_LAYER_JSON_PATH);
-    std::array<const char*, 1> layers { VK_LAYER_INTEL_GVK_STATE_TRACKER_NAME };
-    auto instanceCreateInfo = gvk::get_default<VkInstanceCreateInfo>();
-    instanceCreateInfo.enabledLayerCount = (uint32_t)layers.size();
-    instanceCreateInfo.ppEnabledLayerNames = layers.data();
-    auto contextCreateInfo = gvk::get_default<gvk::Context::CreateInfo>();
-    contextCreateInfo.loadValidationLayer = VK_TRUE;
-    contextCreateInfo.pInstanceCreateInfo = &instanceCreateInfo;
-    return gvk::Context::create(&contextCreateInfo, nullptr, pContext);
-}
-
-inline void load_gvk_state_tracker_entry_points()
-{
-    auto dlStateTracker = gvk_dlopen(VK_LAYER_INTEL_GVK_STATE_TRACKER_NAME);
-    assert(dlStateTracker);
-    pfnGvkEnumerateStateTrackedObjects = (PFN_gvkEnumerateStateTrackedObjects)gvk_dlsym(dlStateTracker, "gvkEnumerateStateTrackedObjects");
-    assert(pfnGvkEnumerateStateTrackedObjects);
-    pfnGvkEnumerateStateTrackedObjectDependencies = (PFN_gvkEnumerateStateTrackedObjectDependencies)gvk_dlsym(dlStateTracker, "gvkEnumerateStateTrackedObjectDependencies");
-    assert(pfnGvkEnumerateStateTrackedObjectDependencies);
-    pfnGvkEnumerateStateTrackedObjectBindings = (PFN_gvkEnumerateStateTrackedObjectBindings)gvk_dlsym(dlStateTracker, "gvkEnumerateStateTrackedObjectBindings");
-    assert(pfnGvkEnumerateStateTrackedObjectBindings);
-    pfnGvkGetStateTrackedObjectInfo = (PFN_gvkGetStateTrackedObjectInfo)gvk_dlsym(dlStateTracker, "gvkGetStateTrackedObjectInfo");
-    assert(pfnGvkGetStateTrackedObjectInfo);
-    pfnGvkGetStateTrackedObjectCreateInfo = (PFN_gvkGetStateTrackedObjectCreateInfo)gvk_dlsym(dlStateTracker, "gvkGetStateTrackedObjectCreateInfo");
-    assert(pfnGvkGetStateTrackedObjectCreateInfo);
-    pfnGvkGetStateTrackedObjectAllocateInfo = (PFN_gvkGetStateTrackedObjectAllocateInfo)gvk_dlsym(dlStateTracker, "gvkGetStateTrackedObjectAllocateInfo");
-    assert(pfnGvkGetStateTrackedObjectAllocateInfo);
-    pfnGvkGetStateTrackedImageLayouts = (PFN_gvkGetStateTrackedImageLayouts)gvk_dlsym(dlStateTracker, "gvkGetStateTrackedImageLayouts");
-    assert(pfnGvkGetStateTrackedImageLayouts);
-    gvk_dlclose(dlStateTracker);
-}
 
 inline VkFormat get_render_pass_color_format(const gvk::Context& context)
 {

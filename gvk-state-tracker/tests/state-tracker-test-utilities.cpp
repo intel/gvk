@@ -80,3 +80,64 @@ template <> void print<GvkStateTrackedObjectInfo>(Printer& printer, const GvkSta
 }
 
 } // namespace gvk
+
+VkResult StateTrackerValidationContext::create(StateTrackerValidationContext* pContext)
+{
+    assert(pContext);
+    auto vkLayerPath = gvk::get_env_var("VK_LAYER_PATH");
+    if (vkLayerPath.empty()) {
+#if defined(_WIN32) || defined(_WIN64)
+        gvk::set_vk_layer_path_from_windows_registry();
+#endif
+        gvk::append_value_to_env_var("VK_LAYER_PATH", GVK_STATE_TRACKER_LAYER_JSON_PATH);
+    }
+    std::array<const char*, 1> layers { VK_LAYER_INTEL_GVK_STATE_TRACKER_NAME };
+    auto instanceCreateInfo = gvk::get_default<VkInstanceCreateInfo>();
+    instanceCreateInfo.enabledLayerCount = (uint32_t)layers.size();
+    instanceCreateInfo.ppEnabledLayerNames = layers.data();
+    auto contextCreateInfo = gvk::get_default<gvk::Context::CreateInfo>();
+    contextCreateInfo.loadValidationLayer = VK_TRUE;
+    contextCreateInfo.loadWsiExtensions = VK_TRUE;
+    contextCreateInfo.pInstanceCreateInfo = &instanceCreateInfo;
+    return gvk::Context::create(&contextCreateInfo, nullptr, pContext);
+}
+
+VkResult StateTrackerValidationContext::create_devices(const VkDeviceCreateInfo* pDeviceCreateInfo, const VkAllocationCallbacks*)
+{
+    assert(pDeviceCreateInfo);
+    auto physicalDeviceSynchronization2Features = gvk::get_default<VkPhysicalDeviceSynchronization2Features>();
+    auto availablePhysicalDeviceFeatures = gvk::get_default<VkPhysicalDeviceFeatures2>();
+    availablePhysicalDeviceFeatures.pNext = &physicalDeviceSynchronization2Features;
+    auto dispatchTable = get_physical_devices()[0].get<gvk::DispatchTable>();
+    assert(dispatchTable.gvkGetPhysicalDeviceFeatures2);
+    dispatchTable.gvkGetPhysicalDeviceFeatures2(get_physical_devices()[0], &availablePhysicalDeviceFeatures);
+    auto enabledPhysicalDeviceFeatures = gvk::get_default<VkPhysicalDeviceFeatures2>();
+    if (physicalDeviceSynchronization2Features.synchronization2) {
+        enabledPhysicalDeviceFeatures.pNext = &physicalDeviceSynchronization2Features;
+    }
+    auto deviceCreateInfo = *pDeviceCreateInfo;
+    deviceCreateInfo.pNext = &enabledPhysicalDeviceFeatures;
+    mDevices.push_back({ });
+    return gvk::Device::create(get_physical_devices()[0], &deviceCreateInfo, nullptr, &mDevices.back());
+}
+
+void load_gvk_state_tracker_entry_points()
+{
+    auto dlStateTracker = gvk_dlopen(VK_LAYER_INTEL_GVK_STATE_TRACKER_NAME);
+    assert(dlStateTracker);
+    pfnGvkEnumerateStateTrackedObjects = (PFN_gvkEnumerateStateTrackedObjects)gvk_dlsym(dlStateTracker, "gvkEnumerateStateTrackedObjects");
+    assert(pfnGvkEnumerateStateTrackedObjects);
+    pfnGvkEnumerateStateTrackedObjectDependencies = (PFN_gvkEnumerateStateTrackedObjectDependencies)gvk_dlsym(dlStateTracker, "gvkEnumerateStateTrackedObjectDependencies");
+    assert(pfnGvkEnumerateStateTrackedObjectDependencies);
+    pfnGvkEnumerateStateTrackedObjectBindings = (PFN_gvkEnumerateStateTrackedObjectBindings)gvk_dlsym(dlStateTracker, "gvkEnumerateStateTrackedObjectBindings");
+    assert(pfnGvkEnumerateStateTrackedObjectBindings);
+    pfnGvkGetStateTrackedObjectInfo = (PFN_gvkGetStateTrackedObjectInfo)gvk_dlsym(dlStateTracker, "gvkGetStateTrackedObjectInfo");
+    assert(pfnGvkGetStateTrackedObjectInfo);
+    pfnGvkGetStateTrackedObjectCreateInfo = (PFN_gvkGetStateTrackedObjectCreateInfo)gvk_dlsym(dlStateTracker, "gvkGetStateTrackedObjectCreateInfo");
+    assert(pfnGvkGetStateTrackedObjectCreateInfo);
+    pfnGvkGetStateTrackedObjectAllocateInfo = (PFN_gvkGetStateTrackedObjectAllocateInfo)gvk_dlsym(dlStateTracker, "gvkGetStateTrackedObjectAllocateInfo");
+    assert(pfnGvkGetStateTrackedObjectAllocateInfo);
+    pfnGvkGetStateTrackedImageLayouts = (PFN_gvkGetStateTrackedImageLayouts)gvk_dlsym(dlStateTracker, "gvkGetStateTrackedImageLayouts");
+    assert(pfnGvkGetStateTrackedImageLayouts);
+    gvk_dlclose(dlStateTracker);
+}

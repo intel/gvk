@@ -34,8 +34,8 @@ TODO : Documentation
 TEST(CommandBuffer, CommandBufferResourceLifetime)
 {
     // TODO : Documentation
-    gvk::Context context;
-    create_state_tracker_validation_context(&context);
+    StateTrackerValidationContext context;
+    ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
     load_gvk_state_tracker_entry_points();
     auto expectedInstanceObjects = get_expected_instance_objects(context);
     const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
