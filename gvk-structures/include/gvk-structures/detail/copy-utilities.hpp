@@ -26,11 +26,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-structures/defines.hpp"
+#include "gvk-defines.hpp"
 
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
+
+#define GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VK_STRUCTURE_TYPE) \
+template <> VK_STRUCTURE_TYPE create_structure_copy<VK_STRUCTURE_TYPE>(const VK_STRUCTURE_TYPE& obj, const VkAllocationCallbacks*) { return obj; } \
+template <> void destroy_structure_copy<VK_STRUCTURE_TYPE>(const VK_STRUCTURE_TYPE&, const VkAllocationCallbacks*) { }
 
 namespace gvk {
 namespace detail {

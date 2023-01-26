@@ -26,6 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-state-tracker/state-tracker.hpp"
 #include "gvk-layer/registry.hpp"
+#include "gvk-structures/defaults.hpp"
 
 #include <cassert>
 

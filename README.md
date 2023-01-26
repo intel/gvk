@@ -57,7 +57,7 @@ target_link_libraries(someTarget PUBLIC gvk)
 ```
 ...or link individual modules...
 ```
-target_link_libraries(someTarget PUBLIC gvk-core gvk-xml)
+target_link_libraries(someTarget PUBLIC gvk-handles gvk-xml)
 ```
 
 # TODO : (in no particular order)

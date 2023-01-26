@@ -26,7 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-cppgen/include.hpp"
+#include "gvk-cppgen.hpp"
 
 #include <cassert>
 
@@ -51,7 +51,7 @@ public:
 private:
     static void generate_header(FileGenerator& file, const xml::Manifest& manifest)
     {
-        file << "#include \"gvk/defines.hpp\"" << std::endl;
+        file << "#include \"gvk-defines.hpp\"" << std::endl;
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk::layer::hooks");
         file << std::endl;

@@ -23,11 +23,11 @@ gvk_add_static_library(
         "${includePath}/feature.hpp"
         "${includePath}/format.hpp"
         "${includePath}/handle.hpp"
-        "${includePath}/include.hpp"
         "${includePath}/manifest.hpp"
         "${includePath}/parameter.hpp"
         "${includePath}/platform.hpp"
         "${includePath}/structure.hpp"
+        "${includeDirectory}/gvk-xml.hpp"
     sourceFiles
         "${sourcePath}/command.cpp"
         "${sourcePath}/enumeration.cpp"

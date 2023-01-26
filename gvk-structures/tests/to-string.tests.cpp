@@ -231,6 +231,7 @@ TEST(structure, to_string)
     ]
 })");
 
+#if 0
     GvkCommandStructureCreateBuffer commandStructureCreateBuffer { };
     commandStructureCreateBuffer.sType = gvk::get_stype<GvkCommandStructureCreateBuffer>();
     commandStructureCreateBuffer.device = (VkDevice)16;
@@ -258,4 +259,5 @@ TEST(structure, to_string)
     "pBuffer": "0x40",
     "result": "VK_SUCCESS"
 })");
+#endif
 }

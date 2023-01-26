@@ -25,17 +25,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include "gvk-structures/detail/copy-utilities.hpp"
-#include "gvk-structures/generated/command-structures-create-copy.hpp"
-#include "gvk-structures/generated/command-structures-destroy-copy.hpp"
-#include "gvk-structures/generated/core-structures-create-copy.hpp"
-#include "gvk-structures/generated/core-structures-destroy-copy.hpp"
+#include "gvk-structures/generated/core-structure-create-copy.hpp"
+#include "gvk-structures/generated/core-structure-destroy-copy.hpp"
 
 namespace gvk {
 namespace detail {
-
-#define GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VK_STRUCTURE_TYPE) \
-template <> VK_STRUCTURE_TYPE create_structure_copy<VK_STRUCTURE_TYPE>(const VK_STRUCTURE_TYPE& obj, const VkAllocationCallbacks*) { return obj; } \
-template <> void destroy_structure_copy<VK_STRUCTURE_TYPE>(const VK_STRUCTURE_TYPE&, const VkAllocationCallbacks*) { }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Linux
@@ -276,23 +270,6 @@ GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkDeviceOrHostAddressKHR)
 GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkPerformanceCounterResultKHR)
 GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkPerformanceValueDataINTEL)
 GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkPipelineExecutableStatisticValueKHR)
-
-////////////////////////////////////////////////////////////////////////////////
-// GvkCommandStructures
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureAllocateCommandBuffers)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureAllocateDescriptorSets)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureBuildAccelerationStructuresKHR)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureCmdBuildAccelerationStructuresIndirectKHR)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureCmdBuildAccelerationStructuresKHR)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureCmdSetBlendConstants)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureCmdSetSampleMaskEXT)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureCmdSetFragmentShadingRateEnumNV)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureCmdSetFragmentShadingRateKHR)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureGetAccelerationStructureBuildSizesKHR)
-#ifdef VK_USE_PLATFORM_XLIB_KHR
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureCreateXlibSurfaceKHR)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureGetPhysicalDeviceXlibPresentationSupportKHR)
-#endif // VK_USE_PLATFORM_XLIB_KHR
 
 } // namespace detail
 } // namespace gvk

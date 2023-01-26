@@ -27,7 +27,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 #include "state-tracked-handles.generator.hpp"
-#include "gvk-cppgen/include.hpp"
+#include "gvk-cppgen.hpp"
 
 #include <cassert>
 #include <unordered_set>
@@ -77,7 +77,7 @@ private:
         file << "#include \"gvk-layer/generated/basic-layer.hpp\"" << std::endl;
         file << "#include \"gvk-state-tracker/generated/state-tracked-handles.hpp\"" << std::endl;
         file << "#include \"gvk-state-tracker/object-tracker.hpp\"" << std::endl;
-        file << "#include \"gvk/defines.hpp\"" << std::endl;
+        file << "#include \"gvk-defines.hpp\"" << std::endl;
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk::state_tracker");
         file << std::endl;

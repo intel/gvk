@@ -28,8 +28,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-state-tracker/image-layout-tracker.hpp"
 #include "gvk-state-tracker/generated/basic-cmd-tracker.hpp"
-#include "gvk/structures.hpp"
-#include "gvk/defines.hpp"
+#include "gvk-structures.hpp"
+#include "gvk-defines.hpp"
 
 #include <unordered_map>
 

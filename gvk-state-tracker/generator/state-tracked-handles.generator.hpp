@@ -26,8 +26,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-cppgen/include.hpp"
-#include "gvk-string/include.hpp"
+#include "gvk-cppgen.hpp"
+#include "gvk-string.hpp"
 
 #include <cassert>
 
@@ -165,7 +165,6 @@ R"({
                         }
                     } else if (manifest.handles.count(memberInfo.storageType)) {
                         strStrm << "        get<" << string::strip_vk(memberInfo.accessorType) << ">().enumerate_dependencies(pfnCallback, pUserData);" << std::endl;
-                        // strStrm << "        /*!*/" << string::strip_vk(memberInfo.storageType) << "(mReference.get_obj()." << memberInfo.storageName << ").enumerate_dependencies(pfnCallback, pUserData);" << std::endl;
                     }
                 }
             }
@@ -214,7 +213,7 @@ private:
     {
         FileGenerator file(GVK_STATE_TRACKER_GENERATED_INCLUDE_PATH "/forward-declarations.inl");
         file << std::endl;
-        file << "#include \"gvk/defines.hpp\"" << std::endl;
+        file << "#include \"gvk-defines.hpp\"" << std::endl;
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk::state_tracker");
         file << std::endl;
@@ -231,14 +230,13 @@ private:
         const std::vector<StateTrackedHandleGenerator>& generators
     )
     {
-        file << "#include \"gvk-reference/include.hpp\"" << std::endl;
         file << "#include \"gvk-state-tracker/generated/forward-declarations.inl\"" << std::endl;
         file << "#include \"gvk-state-tracker/descriptor.hpp\"" << std::endl;
         file << "#include \"gvk-state-tracker/cmd-tracker.hpp\"" << std::endl;
         file << "#include \"gvk-state-tracker/object-tracker.hpp\"" << std::endl;
         file << "#include \"gvk-state-tracker/image-layout-tracker.hpp\"" << std::endl;
-        file << "#include \"gvk/defines.hpp\"" << std::endl;
-        file << "#include \"gvk/structures.hpp\"" << std::endl;
+        file << "#include \"gvk-reference.hpp\"" << std::endl;
+        file << "#include \"gvk-structures.hpp\"" << std::endl;
         file << "#include \"VK_LAYER_INTEL_gvk_state_tracker.h\"" << std::endl;
         file << std::endl;
         file << "#include <cassert>" << std::endl;

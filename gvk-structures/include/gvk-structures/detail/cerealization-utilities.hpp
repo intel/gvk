@@ -26,8 +26,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
+#include "gvk-defines.hpp"
 #include "gvk-structures/detail/copy-utilities.hpp"
-#include "gvk-structures/defines.hpp"
 
 #include "cereal/archives/binary.hpp"
 #include "cereal/types/common.hpp"

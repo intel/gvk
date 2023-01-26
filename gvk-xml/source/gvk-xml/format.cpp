@@ -62,7 +62,10 @@ Format::Format(const tinyxml2::XMLElement& xmlElement)
         blockExtent[dimension_i++] = string::to_number<uint32_t>(dimension);
     }
     compressionType = get_xml_attribute(xmlElement, "compressed");
-    spirvImageFormat = get_xml_attribute(xmlElement, "spirvImageFormat");
+    auto pSpirvImageFormatXmlElement = xmlElement.FirstChildElement("spirvimageformat");
+    if (pSpirvImageFormatXmlElement) {
+        spirvImageFormat = get_xml_attribute(*pSpirvImageFormatXmlElement, "name");
+    }
     process_xml_elements(xmlElement, "component", [&](const auto& componentXmlElement) { components.emplace_back(componentXmlElement); });
     process_xml_elements(xmlElement, "plane", [&](const auto& planeXmlElement) { planes.emplace_back(planeXmlElement); });
 }

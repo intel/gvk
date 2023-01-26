@@ -6,48 +6,29 @@ set(generatedIncludePath "${generatedIncludeDirectory}/gvk-structures/generated/
 set(generatedSourcePath "${CMAKE_CURRENT_BINARY_DIR}/source/gvk-structures/generated/")
 set(generatedIncludeFiles
     "${generatedIncludePath}/cerealize-pnext.hpp"
-    "${generatedIncludePath}/command-structures.h"
-    "${generatedIncludePath}/command-structures-cerealization.hpp"
-    "${generatedIncludePath}/command-structures-comparison-operators.hpp"
-    "${generatedIncludePath}/command-structures-create-copy.hpp"
-    "${generatedIncludePath}/command-structures-decerealization.hpp"
-    "${generatedIncludePath}/command-structures-deserialization.hpp"
-    "${generatedIncludePath}/command-structures-destroy-copy.hpp"
-    "${generatedIncludePath}/command-structures-get-stype.hpp"
-    "${generatedIncludePath}/command-structures-make-tuple.hpp"
-    "${generatedIncludePath}/command-structures-serialization.hpp"
-    "${generatedIncludePath}/command-structures-to-string.hpp"
-    "${generatedIncludePath}/command-structure-type-to-string.hpp"
     "${generatedIncludePath}/core-enumerations-to-string.hpp"
-    "${generatedIncludePath}/core-structures-cerealization.hpp"
-    "${generatedIncludePath}/core-structures-comparison-operators.hpp"
-    "${generatedIncludePath}/core-structures-create-copy.hpp"
-    "${generatedIncludePath}/core-structures-decerealization.hpp"
-    "${generatedIncludePath}/core-structures-deserialization.hpp"
-    "${generatedIncludePath}/core-structures-destroy-copy.hpp"
-    "${generatedIncludePath}/core-structures-get-stype.hpp"
-    "${generatedIncludePath}/core-structures-make-tuple.hpp"
-    "${generatedIncludePath}/core-structures-serialization.hpp"
-    "${generatedIncludePath}/core-structures-to-string.hpp"
+    "${generatedIncludePath}/core-structure-cerealization.hpp"
+    "${generatedIncludePath}/core-structure-comparison-operators.hpp"
+    "${generatedIncludePath}/core-structure-create-copy.hpp"
+    "${generatedIncludePath}/core-structure-decerealization.hpp"
+    "${generatedIncludePath}/core-structure-deserialization.hpp"
+    "${generatedIncludePath}/core-structure-destroy-copy.hpp"
+    "${generatedIncludePath}/core-structure-get-stype.hpp"
+    "${generatedIncludePath}/core-structure-make-tuple.hpp"
+    "${generatedIncludePath}/core-structure-serialization.hpp"
+    "${generatedIncludePath}/core-structure-to-string.hpp"
     "${generatedIncludePath}/decerealize-pnext.hpp"
     "${generatedIncludePath}/handle-to-string.hpp"
 )
 set(generatedSourceFiles
-    "${generatedSourcePath}/command-structures-comparison-operators.cpp"
-    "${generatedSourcePath}/command-structures-create-copy.cpp"
-    "${generatedSourcePath}/command-structures-deserialization.cpp"
-    "${generatedSourcePath}/command-structures-destroy-copy.cpp"
-    "${generatedSourcePath}/command-structures-serialization.cpp"
-    "${generatedSourcePath}/command-structures-to-string.cpp"
-    "${generatedSourcePath}/command-structure-type-to-string.cpp"
-    "${generatedSourcePath}/core-enumerations-to-string.cpp"
-    "${generatedSourcePath}/core-structures-comparison-operators.cpp"
-    "${generatedSourcePath}/core-structures-create-copy.cpp"
-    "${generatedSourcePath}/core-structures-deserialization.cpp"
-    "${generatedSourcePath}/core-structures-destroy-copy.cpp"
-    "${generatedSourcePath}/core-structures-serialization.cpp"
-    "${generatedSourcePath}/core-structures-to-string.cpp"
     "${generatedSourcePath}/create-pnext-copy.cpp"
+    "${generatedSourcePath}/core-enumerations-to-string.cpp"
+    "${generatedSourcePath}/core-structure-comparison-operators.cpp"
+    "${generatedSourcePath}/core-structure-create-copy.cpp"
+    "${generatedSourcePath}/core-structure-deserialization.cpp"
+    "${generatedSourcePath}/core-structure-destroy-copy.cpp"
+    "${generatedSourcePath}/core-structure-serialization.cpp"
+    "${generatedSourcePath}/core-structure-to-string.cpp"
     "${generatedSourcePath}/destroy-pnext-copy.cpp"
     "${generatedSourcePath}/handle-to-string.cpp"
     "${generatedSourcePath}/pnext-to-string.cpp"
@@ -65,25 +46,12 @@ gvk_add_code_generator(
         "${generatorSourcePath}/"
     includeFiles
         "${generatorSourcePath}/cerealize-pnext.generator.hpp"
-        "${generatorSourcePath}/cerealize-structures.generator.hpp"
-        "${generatorSourcePath}/command-structures.generator.hpp"
-        "${generatorSourcePath}/comparison-operators.generator.hpp"
         "${generatorSourcePath}/create-pnext-copy.generator.hpp"
-        "${generatorSourcePath}/create-structure-copy.generator.hpp"
         "${generatorSourcePath}/decerealize-pnext.generator.hpp"
-        "${generatorSourcePath}/decerealize-structures.generator.hpp"
-        "${generatorSourcePath}/deserialize-structures.generator.hpp"
         "${generatorSourcePath}/destroy-pnext-copy.generator.hpp"
-        "${generatorSourcePath}/destroy-structure-copy.generator.hpp"
-        "${generatorSourcePath}/enum-to-string.generator.hpp"
-        "${generatorSourcePath}/get-stype.generator.hpp"
         "${generatorSourcePath}/handle-to-string.generator.hpp"
-        "${generatorSourcePath}/make-tuple.generator.hpp"
         "${generatorSourcePath}/pnext-to-string.generator.hpp"
         "${generatorSourcePath}/pnext-tuple-element-wrapper.generator.hpp"
-        "${generatorSourcePath}/serialize-structures.generator.hpp"
-        "${generatorSourcePath}/structure-to-string.generator.hpp"
-        "${generatorSourcePath}/structure-utilities.generator.hpp"
     sourceFiles
         "${generatorSourcePath}/main.cpp"
     outputFiles
@@ -96,8 +64,7 @@ gvk_add_code_generator(
         GVK_XML_FILE_PATH="${Vulkan_XML}"
 )
 if(MSVC)
-    set_source_files_properties("${generatedSourcePath}/command-structures-comparison-operators.cpp" PROPERTIES COMPILE_FLAGS "/bigobj")
-    set_source_files_properties("${generatedSourcePath}/core-structures-comparison-operators.cpp" PROPERTIES COMPILE_FLAGS "/bigobj")
+    set_source_files_properties("${generatedSourcePath}/core-structure-comparison-operators.cpp" PROPERTIES COMPILE_FLAGS "/bigobj")
 endif()
 
 ################################################################################
@@ -111,9 +78,8 @@ gvk_add_static_library(
     folder
         "gvk-structures/"
     linkLibraries
-        gvk-string
+        gvk-runtime
         cereal
-        Vulkan::Vulkan
     includeDirectories
         "${generatedIncludeDirectory}"
         "${includeDirectory}"
@@ -130,12 +96,13 @@ gvk_add_static_library(
         "${includePath}/auto.hpp"
         "${includePath}/command-structures.hpp"
         "${includePath}/comparison-operators.hpp"
+        "${includePath}/convert.hpp"
         "${includePath}/copy.hpp"
         "${includePath}/defaults.hpp"
-        "${includePath}/defines.hpp"
         "${includePath}/get-stype.hpp"
         "${includePath}/serialization.hpp"
         "${includePath}/to-string.hpp"
+        "${includeDirectory}/gvk-structures.hpp"
     sourceFiles
         "${generatedSourceFiles}"
         "${sourcePath}/detail/cerealization-utilities.cpp"

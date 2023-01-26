@@ -26,8 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-structures/defines.hpp"
-#include "gvk-structures/generated/command-structures.h"
+#include "gvk-defines.hpp"
 #include "gvk-structures/detail/cerealization-utilities.hpp"
 
 #define GVK_STUB_CEREALIZATION_FUNCTIONS(VK_STRUCTURE_TYPE) \
@@ -495,32 +494,5 @@ inline void load(ArchiveType& archive, VkAccelerationStructureSRTMotionInstanceN
 {
     archive(cereal::binary_data(&obj, sizeof(VkAccelerationStructureSRTMotionInstanceNV)));
 }
-
-////////////////////////////////////////////////////////////////////////////////
-// GvkCommandStructures
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureAllocateCommandBuffers)
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureAllocateDescriptorSets)
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureBuildAccelerationStructuresKHR)
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureCmdBuildAccelerationStructuresIndirectKHR)
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureCmdBuildAccelerationStructuresKHR)
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureCmdSetBlendConstants)
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureCmdSetSampleMaskEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureCmdSetFragmentShadingRateEnumNV)
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureCmdSetFragmentShadingRateKHR)
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureGetAccelerationStructureBuildSizesKHR)
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureGetDeviceProcAddr)
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureGetInstanceProcAddr)
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureGetMemoryRemoteAddressNV)
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureGetMemoryWin32HandlePropertiesKHR)
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureGetFenceWin32HandleKHR)
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureGetMemoryWin32HandleKHR)
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureGetMemoryWin32HandleNV)
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureGetSemaphoreWin32HandleKHR)
-#endif // VK_USE_PLATFORM_WIN32_KHR
-#ifdef VK_USE_PLATFORM_XLIB_KHR
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureCreateXlibSurfaceKHR)
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureGetPhysicalDeviceXlibPresentationSupportKHR)
-#endif // VK_USE_PLATFORM_XLIB_KHR
 
 } // namespace cereal

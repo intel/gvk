@@ -27,7 +27,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 #include "state-tracked-handles.generator.hpp"
-#include "gvk-cppgen/include.hpp"
+#include "gvk-cppgen.hpp"
 
 #include <cassert>
 

@@ -26,23 +26,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-gui/renderer.hpp"
-#include "gvk-math/camera.hpp"
-#include "gvk-math/color.hpp"
-#include "gvk-math/transform.hpp"
-#include "gvk-spirv/context.hpp"
-#include "gvk-system/surface.hpp"
-#include "gvk-system/time.hpp"
-#include "gvk/context.hpp"
-#include "gvk/defines.hpp"
-#include "gvk/format.hpp"
-#include "gvk/handles.hpp"
-#include "gvk/mesh.hpp"
-#include "gvk/render-target.hpp"
-#include "gvk/structures.hpp"
-#include "gvk/to-string.hpp"
-#include "gvk/utilities.hpp"
-#include "gvk/wsi-manager.hpp"
+#include "gvk-defines.hpp"
+#include "gvk-format-info.hpp"
+#include "gvk-gui.hpp"
+#include "gvk-handles.hpp"
+#include "gvk-math.hpp"
+#include "gvk-reference.hpp"
+#include "gvk-spirv.hpp"
+#include "gvk-string.hpp"
+#include "gvk-structures.hpp"
+#include "gvk-system.hpp"
 #include "gvk-sample-entry-points.hpp"
 #include "gvk-sample-png.hpp"
 
@@ -503,10 +496,17 @@ inline VkResult gvk_sample_create_render_target(const gvk::Context& context, Gvk
         //  the supported VkFormat with the highest bit depth that is less than or
         //  equal to the requested VkFormat.
         if (createInfo.depthFormat) {
+            // TODO : Revisit this logic
             auto requestedDepthFormat = createInfo.depthFormat;
-            auto requestedDepthBits = gvk::get_format_info(requestedDepthFormat).components[0].bits;
-            enumerate_formats(
-                context.get_devices()[0].get<gvk::PhysicalDevice>(),
+            GvkFormatInfo requestedDepthFormatInfo { };
+            gvk::get_format_info(requestedDepthFormat, &requestedDepthFormatInfo);
+            assert(requestedDepthFormatInfo.componentCount);
+            assert(requestedDepthFormatInfo.pComponents);
+            auto requestedDepthBits = requestedDepthFormatInfo.pComponents[0].bits;
+            auto physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
+            gvk::enumerate_formats(
+                physicalDevice.get<gvk::DispatchTable>().gvkGetPhysicalDeviceFormatProperties2,
+                physicalDevice,
                 VK_IMAGE_TILING_OPTIMAL,
                 VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT,
                 [&](VkFormat format)
@@ -515,8 +515,19 @@ inline VkResult gvk_sample_create_render_target(const gvk::Context& context, Gvk
                         createInfo.depthFormat = format;
                     }
                     if (createInfo.depthFormat != requestedDepthFormat) {
-                        auto actualDepthBits = createInfo.depthFormat ? gvk::get_format_info(createInfo.depthFormat).components[0].bits : 0;
-                        auto formatDepthBits = gvk::get_format_info(format).components[0].bits;
+                        uint32_t actualDepthBits = 0;
+                        if (createInfo.depthFormat) {
+                            GvkFormatInfo depthFormatInfo { };
+                            gvk::get_format_info(createInfo.depthFormat, &depthFormatInfo);
+                            assert(depthFormatInfo.componentCount);
+                            assert(depthFormatInfo.pComponents);
+                            actualDepthBits = depthFormatInfo.pComponents[0].bits;
+                        }
+                        GvkFormatInfo formatInfo { };
+                        gvk::get_format_info(format, &formatInfo);
+                        assert(formatInfo.componentCount);
+                        assert(formatInfo.pComponents);
+                        auto formatDepthBits = formatInfo.pComponents[0].bits;
                         if (actualDepthBits < formatDepthBits && formatDepthBits <= requestedDepthBits) {
                             createInfo.depthFormat = format;
                         }

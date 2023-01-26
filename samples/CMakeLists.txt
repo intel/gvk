@@ -24,6 +24,7 @@ if(GVK_BUILD_LAYER)
     gvk_add_layer(
         target VK_LAYER_INTEL_gvk_sample
         folder "samples/"
+        linkLibraries gvk
         sourceFiles "${CMAKE_CURRENT_LIST_DIR}/gvk-sample-layer.cpp"
         description "Intel(R) GPA Utilities for Vulkan* sample layer"
     )

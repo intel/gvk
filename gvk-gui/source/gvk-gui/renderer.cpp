@@ -26,8 +26,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-gui/renderer.hpp"
 #include "gvk-spirv/context.hpp"
-#include "gvk/generated/dispatch-table.hpp"
-#include "gvk/format.hpp"
+#include "gvk-dispatch-table.hpp"
+#include "gvk-format-info.hpp"
+#include "gvk-structures/defaults.hpp"
 
 #include <algorithm>
 #include <iostream>

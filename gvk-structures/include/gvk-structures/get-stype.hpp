@@ -26,5 +26,4 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-structures/generated/command-structures-get-stype.hpp"
-#include "gvk-structures/generated/core-structures-get-stype.hpp"
+#include "gvk-structures/generated/core-structure-get-stype.hpp"

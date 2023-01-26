@@ -24,7 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "gvk-xml/manifest.hpp"
+#include "gvk-xml.hpp"
 #include "basic-cmd-tracker.generator.hpp"
 #include "basic-state-tracker.generator.hpp"
 #include "enumerate-state-tracked-objects.generator.hpp"

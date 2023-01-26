@@ -26,7 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-cppgen/include.hpp"
+#include "gvk-cppgen.hpp"
 
 namespace gvk {
 namespace cppgen {
@@ -40,7 +40,7 @@ public:
         file << std::endl;
         file << "#include \"gvk-structures/detail/cerealization-manual.hpp\"" << std::endl;
         file << "#include \"gvk-structures/detail/cerealization-utilities.hpp\"" << std::endl;
-        file << "#include \"gvk-structures/generated/core-structures-cerealization.hpp\"" << std::endl;
+        file << "#include \"gvk-structures/generated/core-structure-cerealization.hpp\"" << std::endl;
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk::detail");
         file << std::endl;

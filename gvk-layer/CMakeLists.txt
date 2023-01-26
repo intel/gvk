@@ -48,13 +48,14 @@ gvk_add_static_library(
     folder
         "gvk-layer/"
     linkLibraries
-        gvk-core
+        gvk-runtime
     includeDirectories
         "${generatedIncludeDirectory}"
         "${includeDirectory}"
     includeFiles
         "${generatedIncludeFiles}"
         "${includePath}/registry.hpp"
+        "${includeDirectory}/gvk-layer.hpp"
     sourceFiles
         "${generatedSourceFiles}"
         "${sourcePath}/registry.cpp"

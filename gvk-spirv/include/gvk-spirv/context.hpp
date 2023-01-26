@@ -26,8 +26,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk/defines.hpp"
-#include "gvk/handles.hpp"
+#include "gvk-defines.hpp"
+#include "gvk-handles/handles.hpp"
 
 #include <array>
 #include <map>

@@ -26,8 +26,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-structures/defines.hpp"
-#include "gvk-structures/generated/command-structures-create-copy.hpp"
-#include "gvk-structures/generated/command-structures-destroy-copy.hpp"
-#include "gvk-structures/generated/core-structures-create-copy.hpp"
-#include "gvk-structures/generated/core-structures-destroy-copy.hpp"
+#include "gvk-structures/generated/core-structure-create-copy.hpp"
+#include "gvk-structures/generated/core-structure-destroy-copy.hpp"
+#include "gvk-defines.hpp"

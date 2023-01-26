@@ -18,6 +18,7 @@ gvk_add_static_library(
         "${includePath}/color.hpp"
         "${includePath}/defines.hpp"
         "${includePath}/transform.hpp"
+        "${includeDirectory}/gvk-math.hpp"
     sourceFiles
         "${sourcePath}/camera.cpp"
         "${sourcePath}/transform.cpp"

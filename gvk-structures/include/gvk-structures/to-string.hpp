@@ -26,13 +26,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-structures/generated/command-structures-to-string.hpp"
-#include "gvk-structures/generated/command-structure-type-to-string.hpp"
-#include "gvk-structures/generated/core-structures-to-string.hpp"
+#include "gvk-structures/generated/core-structure-to-string.hpp"
 #include "gvk-structures/generated/core-enumerations-to-string.hpp"
 #include "gvk-structures/generated/handle-to-string.hpp"
 #include "gvk-structures/auto.hpp"
-#include "gvk-structures/defines.hpp"
+#include "gvk-defines.hpp"
 
 namespace gvk {
 

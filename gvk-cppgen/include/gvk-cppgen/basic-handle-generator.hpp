@@ -27,7 +27,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 #include "gvk-cppgen/file-generator.hpp"
-#include "gvk-xml/include.hpp"
+#include "gvk-xml.hpp"
 
 #include <set>
 #include <string>

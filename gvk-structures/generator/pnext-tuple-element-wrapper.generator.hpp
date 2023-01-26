@@ -26,7 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-cppgen/include.hpp"
+#include "gvk-cppgen.hpp"
 
 namespace gvk {
 namespace cppgen {
@@ -38,7 +38,7 @@ public:
     {
         FileGenerator file(GVK_STRUCTURES_GENERATED_SOURCE_PATH "/pnext-tuple-element-wrapper.cpp");
         file << std::endl;
-        file << "#include \"gvk-structures/generated/core-structures-comparison-operators.hpp\"" << std::endl;
+        file << "#include \"gvk-structures/generated/core-structure-comparison-operators.hpp\"" << std::endl;
         file << "#include \"gvk-structures/detail/make-tuple-utilities.hpp\"" << std::endl;
         file << std::endl;
         file << "#include <cassert>" << std::endl;

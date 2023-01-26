@@ -10,7 +10,7 @@ gvk_add_static_library(
     folder
         "gvk-gui/"
     linkLibraries
-        gvk-core
+        gvk-handles
         gvk-spirv
         gvk-system
         imgui
@@ -18,6 +18,7 @@ gvk_add_static_library(
         "${includeDirectory}"
     includeFiles
         "${includePath}/renderer.hpp"
+        "${includeDirectory}/gvk-gui.hpp"
     sourceFiles
         "${sourcePath}/renderer.cpp"
 )

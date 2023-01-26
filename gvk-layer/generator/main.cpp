@@ -24,7 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "gvk-xml/manifest.hpp"
+#include "gvk-xml.hpp"
 #include "basic-layer.generator.hpp"
 #include "layer-hooks.generator.hpp"
 

@@ -7,6 +7,7 @@ set(generatedSourcePath "${CMAKE_CURRENT_BINARY_DIR}/source/gvk-state-tracker/ge
 set(generatedIncludeFiles
     "${generatedIncludePath}/basic-state-tracker.hpp"
     "${generatedIncludePath}/basic-cmd-tracker.hpp"
+    "${generatedIncludePath}/forward-declarations.inl"
     "${generatedIncludePath}/state-tracked-handles.hpp"
 )
 set(generatedSourceFiles
@@ -57,7 +58,9 @@ gvk_add_layer(
     folder
         "gvk-state-tracker/"
     linkLibraries
-        gvk-core
+        gvk-command-structures
+        gvk-reference
+        gvk-runtime
     includeDirectories
         "${generatedIncludeDirectory}"
         "${includeDirectory}"
@@ -113,7 +116,7 @@ gvk_add_target_test(
     folder
         "gvk-state-tracker/"
     linkLibraries
-        gvk-core
+        gvk-handles
         gvk-math
         gvk-spirv
         gvk-system

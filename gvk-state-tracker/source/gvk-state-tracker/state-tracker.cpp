@@ -27,12 +27,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-layer/registry.hpp"
 #include "gvk-state-tracker/state-tracker.hpp"
 #include "gvk-state-tracker/generated/state-tracked-handles.hpp"
+#include "gvk-structures/defaults.hpp"
+#include "gvk-structures/get-stype.hpp"
 
 #include <cassert>
 #include <vector>
-
-#include "gvk/to-string.hpp"
-#include <iostream>
 
 namespace gvk {
 namespace state_tracker {

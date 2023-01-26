@@ -25,7 +25,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include "gvk-layer/registry.hpp"
-#include "gvk/to-string.hpp"
+#include "gvk-structures/to-string.hpp"
 
 #include <iostream>
 

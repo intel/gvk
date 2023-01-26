@@ -23,6 +23,7 @@ gvk_add_static_library(
         "${includePath}/surface.hpp"
         "${includePath}/time.hpp"
         "${includePath}/updateable.hpp"
+        "${includeDirectory}/gvk-system.hpp"
     sourceFiles
         "${sourcePath}/surface.cpp"
 )

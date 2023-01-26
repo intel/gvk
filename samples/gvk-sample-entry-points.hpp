@@ -26,8 +26,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk/defines.hpp"
-#include "gvk/handles.hpp"
+#include "gvk-defines.hpp"
+#include "gvk-handles/handles.hpp"
 
 #ifdef VK_NO_PROTOTYPES
 extern PFN_vkCreateInstance vkCreateInstance;

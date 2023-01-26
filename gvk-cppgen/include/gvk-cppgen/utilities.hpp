@@ -27,8 +27,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 #include "gvk-cppgen/file-generator.hpp"
-#include "gvk-string/utilities.hpp"
-#include "gvk-xml/include.hpp"
+#include "gvk-string.hpp"
+#include "gvk-xml.hpp"
 
 #include <string>
 
@@ -37,8 +37,6 @@ namespace cppgen {
 
 bool is_static_const_value(const std::string& apiElementName);
 bool is_strongly_typed_bitmask(const xml::Manifest& manifest, const std::string& apiElementName);
-bool structure_requires_custom_implementation(const std::string& name);
-bool structure_requires_custom_serialization(const std::string& name);
 xml::Command append_return_result_parameter(xml::Command command);
 std::string get_parameter_list(const std::vector<xml::Parameter>& parameters, bool types = true, bool names = true);
 

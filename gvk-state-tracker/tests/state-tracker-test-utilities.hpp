@@ -29,15 +29,18 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-math/defines.hpp"
 #include "gvk-spirv/context.hpp"
 #include "gvk-system/surface.hpp"
-#include "gvk/context.hpp"
-#include "gvk/defines.hpp"
-#include "gvk/environment.hpp"
-#include "gvk/format.hpp"
-#include "gvk/mesh.hpp"
-#include "gvk/render-target.hpp"
-#include "gvk/to-string.hpp"
-#include "gvk/utilities.hpp"
-#include "gvk/wsi-manager.hpp"
+#include "gvk-handles/context.hpp"
+#include "gvk-defines.hpp"
+#include "gvk-environment.hpp"
+#include "gvk-format-info.hpp"
+#include "gvk-handles/mesh.hpp"
+#include "gvk-handles/render-target.hpp"
+#include "gvk-structures/defaults.hpp"
+#include "gvk-structures/get-stype.hpp"
+#include "gvk-structures/to-string.hpp"
+#include "gvk-handles/utilities.hpp"
+#include "gvk-handles/wsi-manager.hpp"
+#include "gvk-structures/to-string.hpp"
 #include "VK_LAYER_INTEL_gvk_state_tracker.hpp"
 
 #ifdef VK_USE_PLATFORM_XLIB_KHR
@@ -477,17 +480,21 @@ public:
 inline VkFormat get_render_pass_color_format(const gvk::Context& context)
 {
     auto colorFormat = VK_FORMAT_UNDEFINED;
+    auto physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
     gvk::enumerate_formats(
-        context.get_devices()[0].get<gvk::PhysicalDevice>(),
+        physicalDevice.get<gvk::DispatchTable>().gvkGetPhysicalDeviceFormatProperties2,
+        physicalDevice,
         VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT,
         [&](VkFormat format)
         {
-            const auto& formatInfo = gvk::get_format_info(format);
-            if (formatInfo.components.size() == 4 &&
-                formatInfo.bits_per_pixel() == 32 &&
-                formatInfo.compressionType == gvk::CompressionType::CT_None &&
-                formatInfo.numericFormat == gvk::NumericFormat::NF_UNORM &&
+            // TODO : Revisit this logic
+            GvkFormatInfo formatInfo { };
+            gvk::get_format_info(format, &formatInfo);
+            if (gvk::get_bits_per_texel(format) == 32 &&
+                formatInfo.componentCount == 4 &&
+                formatInfo.compressionType == GVK_FORMAT_COMPRESSION_TYPE_NONE &&
+                formatInfo.numericFormat == GVK_NUMERIC_FORMAT_UNORM &&
                 !formatInfo.packed &&
                 !formatInfo.chroma
             ) {

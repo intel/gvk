@@ -26,7 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-cppgen/include.hpp"
+#include "gvk-cppgen.hpp"
 
 namespace gvk {
 namespace cppgen {
@@ -38,7 +38,7 @@ public:
     {
         FileGenerator file(GVK_STRUCTURES_GENERATED_SOURCE_PATH "/create-pnext-copy.cpp");
         file << std::endl;
-        file << "#include \"gvk-structures/generated/core-structures-create-copy.hpp\"" << std::endl;
+        file << "#include \"gvk-structures/generated/core-structure-create-copy.hpp\"" << std::endl;
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk::detail");
         file << std::endl;

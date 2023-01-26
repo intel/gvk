@@ -26,7 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-cppgen/include.hpp"
+#include "gvk-cppgen.hpp"
 
 namespace gvk {
 namespace cppgen {
@@ -51,8 +51,8 @@ private:
     {
         file << "#include \"gvk-state-tracker/image-layout-tracker.hpp\"" << std::endl;
         file << "#include \"gvk-structures/auto.hpp\"" << std::endl;
-        file << "#include \"gvk-structures/command-structures.hpp\"" << std::endl;
-        file << "#include \"gvk/defines.hpp\"" << std::endl;
+        file << "#include \"gvk-command-structures.hpp\"" << std::endl;
+        file << "#include \"gvk-defines.hpp\"" << std::endl;
         file << std::endl;
         file << "#include <unordered_map>" << std::endl;
         file << "#include <vector>" << std::endl;

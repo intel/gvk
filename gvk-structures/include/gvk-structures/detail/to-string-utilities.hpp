@@ -26,9 +26,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-structures/defines.hpp"
-#include "gvk-string/printer.hpp"
-#include "gvk-string/to-string.hpp"
+#include "gvk-defines.hpp"
+#include "gvk-string.hpp"
+
+#define GVK_STUB_TO_STRING_DEFINITION(VK_STRUCTURE_TYPE) \
+template <> void print<VK_STRUCTURE_TYPE>(Printer&, const VK_STRUCTURE_TYPE&) { }
 
 namespace gvk {
 

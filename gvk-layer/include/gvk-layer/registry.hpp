@@ -28,8 +28,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-layer/generated/basic-layer.hpp"
 #include "gvk-layer/generated/layer-hooks.hpp"
-#include "gvk/generated/dispatch-table.hpp"
-#include "gvk/defines.hpp"
+#include "gvk-defines.hpp"
+#include "gvk-dispatch-table.hpp"
 
 #include "vulkan/vk_layer.h"
 

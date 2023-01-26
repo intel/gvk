@@ -12,10 +12,10 @@ gvk_add_static_library(
     includeDirectories
         "${includeDirectory}"
     includeFiles
-        "${includePath}/include.hpp"
         "${includePath}/printer.hpp"
         "${includePath}/to-string.hpp"
         "${includePath}/utilities.hpp"
+        "${includeDirectory}/gvk-string.hpp"
     sourceFiles
         "${sourcePath}/utilities.cpp"
 )

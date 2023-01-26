@@ -10,13 +10,14 @@ gvk_add_static_library(
     folder
         "gvk-spirv/"
     linkLibraries
-        gvk-core
+        gvk-handles
         glslang_INTERFACE
         SPIRV-Cross_INTERFACE
     includeDirectories
         "${includeDirectory}"
     includeFiles
         "${includePath}/context.hpp"
+        "${includeDirectory}/gvk-spirv.hpp"
     sourceFiles
         "${sourcePath}/context.cpp"
 )

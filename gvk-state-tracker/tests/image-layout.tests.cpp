@@ -455,17 +455,21 @@ TEST(ImageLayout, RenderPass)
 
     // Get color VkFormat
     auto colorFormat = VK_FORMAT_UNDEFINED;
+    auto physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
     gvk::enumerate_formats(
-        context.get_devices()[0].get<gvk::PhysicalDevice>(),
+        physicalDevice.get<gvk::DispatchTable>().gvkGetPhysicalDeviceFormatProperties2,
+        physicalDevice,
         VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT,
         [&](VkFormat format)
         {
-            const auto& formatInfo = gvk::get_format_info(format);
-            if (formatInfo.components.size() == 4 &&
-                formatInfo.bits_per_pixel() == 32 &&
-                formatInfo.compressionType == gvk::CompressionType::CT_None &&
-                formatInfo.numericFormat == gvk::NumericFormat::NF_UNORM &&
+            // TODO : Revisit this logic
+            GvkFormatInfo formatInfo { };
+            gvk::get_format_info(format, &formatInfo);
+            if (gvk::get_bits_per_texel(format) == 32 &&
+                formatInfo.componentCount == 4 &&
+                formatInfo.compressionType == GVK_FORMAT_COMPRESSION_TYPE_NONE &&
+                formatInfo.numericFormat == GVK_NUMERIC_FORMAT_UNORM &&
                 !formatInfo.packed &&
                 !formatInfo.chroma
             ) {
@@ -477,6 +481,7 @@ TEST(ImageLayout, RenderPass)
     EXPECT_EQ(colorFormat, VK_FORMAT_R8G8B8A8_UNORM);
 
     // Get depth VkFormat
+#if 0
     auto depthFormat = VK_FORMAT_UNDEFINED;
     auto requestedDepthFormat = VK_FORMAT_D32_SFLOAT;
     auto requestedDepthBits = gvk::get_format_info(requestedDepthFormat).components[0].bits;
@@ -486,6 +491,7 @@ TEST(ImageLayout, RenderPass)
         VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT,
         [&](VkFormat format)
         {
+            // TODO : Revisit this logic
             if (format == requestedDepthFormat) {
                 depthFormat = requestedDepthFormat;
             } else {
@@ -498,10 +504,48 @@ TEST(ImageLayout, RenderPass)
             return depthFormat != requestedDepthFormat;
         }
     );
+#else
+    auto depthFormat = VK_FORMAT_UNDEFINED;
+    auto requestedDepthFormat = VK_FORMAT_D32_SFLOAT;
+    GvkFormatInfo depthFormatInfo { };
+    gvk::get_format_info(requestedDepthFormat, &depthFormatInfo);
+    assert(depthFormatInfo.componentCount);
+    assert(depthFormatInfo.pComponents);
+    auto requestedDepthBits = depthFormatInfo.pComponents[0].bits;
+    gvk::enumerate_formats(
+        physicalDevice.get<gvk::DispatchTable>().gvkGetPhysicalDeviceFormatProperties2,
+        physicalDevice,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT,
+        [&](VkFormat format)
+        {
+            // TODO : Revisit this logic
+            if (format == requestedDepthFormat) {
+                depthFormat = requestedDepthFormat;
+            } else {
+                uint32_t actualDepthBits = 0;
+                if (depthFormat) {
+                    gvk::get_format_info(depthFormat, &depthFormatInfo);
+                    assert(depthFormatInfo.componentCount);
+                    assert(depthFormatInfo.pComponents);
+                    actualDepthBits = depthFormatInfo.pComponents[0].bits;
+                }
+                GvkFormatInfo formatInfo { };
+                gvk::get_format_info(format, &formatInfo);
+                assert(formatInfo.componentCount);
+                assert(formatInfo.pComponents);
+                auto formatDepthBits = formatInfo.pComponents[0].bits;
+                if (actualDepthBits < formatDepthBits && formatDepthBits <= requestedDepthBits) {
+                    depthFormat = format;
+                }
+            }
+            return depthFormat != requestedDepthFormat;
+        }
+    );
+#endif
     EXPECT_NE(depthFormat, VK_FORMAT_UNDEFINED);
 
     // Get VkSampleCountFlagBits
-    const auto& physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
     auto sampleCount = gvk::get_max_framebuffer_sample_count(physicalDevice, VK_TRUE, VK_TRUE, VK_FALSE);
 
     // Create gvk::RenderTarget
@@ -555,6 +599,7 @@ TEST(ImageLayout, RenderPass2)
     load_gvk_state_tracker_entry_points();
 
     // Get color VkFormat
+#if 0
     auto colorFormat = VK_FORMAT_UNDEFINED;
     gvk::enumerate_formats(
         context.get_devices()[0].get<gvk::PhysicalDevice>(),
@@ -575,9 +620,36 @@ TEST(ImageLayout, RenderPass2)
             return colorFormat == VK_FORMAT_UNDEFINED;
         }
     );
+#else
+    auto colorFormat = VK_FORMAT_UNDEFINED;
+    auto physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
+    gvk::enumerate_formats(
+        physicalDevice.get<gvk::DispatchTable>().gvkGetPhysicalDeviceFormatProperties2,
+        physicalDevice,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT,
+        [&](VkFormat format)
+        {
+            // TODO : Revisit this logic
+            GvkFormatInfo formatInfo { };
+            gvk::get_format_info(format, &formatInfo);
+            if (gvk::get_bits_per_texel(format) == 32 &&
+                formatInfo.componentCount == 4 &&
+                formatInfo.compressionType == GVK_FORMAT_COMPRESSION_TYPE_NONE &&
+                formatInfo.numericFormat == GVK_NUMERIC_FORMAT_UNORM &&
+                !formatInfo.packed &&
+                !formatInfo.chroma
+            ) {
+                colorFormat = format;
+            }
+            return colorFormat == VK_FORMAT_UNDEFINED;
+        }
+    );
+#endif
     EXPECT_EQ(colorFormat, VK_FORMAT_R8G8B8A8_UNORM);
 
     // Get depth VkFormat
+#if 0
     auto depthFormat = VK_FORMAT_UNDEFINED;
     auto requestedDepthFormat = VK_FORMAT_D32_SFLOAT;
     auto requestedDepthBits = gvk::get_format_info(requestedDepthFormat).components[0].bits;
@@ -599,10 +671,48 @@ TEST(ImageLayout, RenderPass2)
             return depthFormat != requestedDepthFormat;
         }
     );
+#else
+    auto depthFormat = VK_FORMAT_UNDEFINED;
+    auto requestedDepthFormat = VK_FORMAT_D32_SFLOAT;
+    GvkFormatInfo depthFormatInfo { };
+    gvk::get_format_info(requestedDepthFormat, &depthFormatInfo);
+    assert(depthFormatInfo.componentCount);
+    assert(depthFormatInfo.pComponents);
+    auto requestedDepthBits = depthFormatInfo.pComponents[0].bits;
+    gvk::enumerate_formats(
+        physicalDevice.get<gvk::DispatchTable>().gvkGetPhysicalDeviceFormatProperties2,
+        physicalDevice,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT,
+        [&](VkFormat format)
+        {
+            // TODO : Revisit this logic
+            if (format == requestedDepthFormat) {
+                depthFormat = requestedDepthFormat;
+            } else {
+                uint32_t actualDepthBits = 0;
+                if (depthFormat) {
+                    gvk::get_format_info(depthFormat, &depthFormatInfo);
+                    assert(depthFormatInfo.componentCount);
+                    assert(depthFormatInfo.pComponents);
+                    actualDepthBits = depthFormatInfo.pComponents[0].bits;
+                }
+                GvkFormatInfo formatInfo { };
+                gvk::get_format_info(format, &formatInfo);
+                assert(formatInfo.componentCount);
+                assert(formatInfo.pComponents);
+                auto formatDepthBits = formatInfo.pComponents[0].bits;
+                if (actualDepthBits < formatDepthBits && formatDepthBits <= requestedDepthBits) {
+                    depthFormat = format;
+                }
+            }
+            return depthFormat != requestedDepthFormat;
+        }
+    );
+#endif
     EXPECT_NE(depthFormat, VK_FORMAT_UNDEFINED);
 
     // Get VkSampleCountFlagBits
-    const auto& physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
     auto sampleCount = gvk::get_max_framebuffer_sample_count(physicalDevice, VK_TRUE, VK_TRUE, VK_FALSE);
 
     // Create gvk::RenderTarget

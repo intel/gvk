@@ -26,6 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-state-tracker/descriptor.hpp"
 #include "gvk-state-tracker/state-tracker.hpp"
+#include "gvk-structures/get-stype.hpp"
 
 namespace gvk {
 namespace state_tracker {

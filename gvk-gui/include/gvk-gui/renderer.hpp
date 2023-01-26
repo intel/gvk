@@ -28,10 +28,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-system/input.hpp"
 #include "gvk-system/time.hpp"
-#include "gvk/defines.hpp"
-#include "gvk/handles.hpp"
-#include "gvk/mesh.hpp"
-#include "gvk/utilities.hpp"
+#include "gvk-defines.hpp"
+#include "gvk-handles/handles.hpp"
+#include "gvk-handles/mesh.hpp"
+#include "gvk-handles/utilities.hpp"
 
 #include "imgui.h"
 

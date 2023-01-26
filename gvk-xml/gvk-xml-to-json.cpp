@@ -24,8 +24,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "gvk-string/include.hpp"
-#include "gvk-xml/manifest.hpp"
+#include "gvk-string.hpp"
+#include "gvk-xml.hpp"
 
 #include <iostream>
 

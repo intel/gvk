@@ -26,7 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-cppgen/include.hpp"
+#include "gvk-cppgen.hpp"
 
 namespace gvk {
 namespace cppgen {
@@ -37,9 +37,10 @@ public:
     static void generate(const xml::Manifest& manifest)
     {
         FileGenerator file(GVK_STRUCTURES_GENERATED_SOURCE_PATH "/pnext-to-string.cpp");
-        file << "#include \"gvk-structures/generated/core-structures-to-string.hpp\"" << std::endl;
+        file << std::endl;
+        file << "#include \"gvk-structures/generated/core-structure-to-string.hpp\"" << std::endl;
         file << "#include \"gvk-structures/detail/to-string-utilities.hpp\"" << std::endl;
-        file << "#include \"gvk-structures/defines.hpp\"" << std::endl;
+        file << "#include \"gvk-defines.hpp\"" << std::endl;
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk::detail");
         file << std::endl;

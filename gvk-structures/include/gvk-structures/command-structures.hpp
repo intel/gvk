@@ -26,5 +26,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
+#if 0
+
 #include "gvk-structures/defines.hpp"
 #include "gvk-structures/generated/command-structures.h"
+
+#endif

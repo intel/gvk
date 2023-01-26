@@ -26,6 +26,5 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-structures/defines.hpp"
-#include "gvk-structures/generated/command-structures-comparison-operators.hpp"
-#include "gvk-structures/generated/core-structures-comparison-operators.hpp"
+#include "gvk-defines.hpp"
+#include "gvk-structures/generated/core-structure-comparison-operators.hpp"

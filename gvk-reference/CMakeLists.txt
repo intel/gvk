@@ -13,8 +13,8 @@ gvk_add_static_library(
         "${includeDirectory}"
     includeFiles
         "${includePath}/handle-id.hpp"
-        "${includePath}/include.hpp"
         "${includePath}/reference.hpp"
+        "${includeDirectory}/gvk-reference.hpp"
     sourceFiles
         "${sourcePath}/reference.cpp"
 )

@@ -26,16 +26,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-structures/defines.hpp"
-#include "gvk-structures/generated/command-structures.h"
+#include "gvk-defines.hpp"
 #include "gvk-structures/detail/make-tuple-utilities.hpp"
 
 #include <tuple>
 
-namespace gvk {
-
 #define GVK_STUB_MAKE_TUPLE_DEFINITION(VK_STRUCTURE_TYPE) \
 inline auto make_tuple(const VK_STRUCTURE_TYPE&) { return std::make_tuple(0); }
+
+namespace gvk {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Linux
@@ -308,22 +307,5 @@ inline auto make_tuple(const VkPipelineExecutableStatisticValueKHR& obj)
         obj.u64
     );
 }
-
-////////////////////////////////////////////////////////////////////////////////
-// GvkCommandStructures
-GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureAllocateCommandBuffers)
-GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureAllocateDescriptorSets)
-GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureBuildAccelerationStructuresKHR)
-GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureCmdBuildAccelerationStructuresIndirectKHR)
-GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureCmdBuildAccelerationStructuresKHR)
-GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureCmdSetBlendConstants)
-GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureCmdSetSampleMaskEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureCmdSetFragmentShadingRateEnumNV)
-GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureCmdSetFragmentShadingRateKHR)
-GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureGetAccelerationStructureBuildSizesKHR)
-#ifdef VK_USE_PLATFORM_XLIB_KHR
-GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureCreateXlibSurfaceKHR)
-GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureGetPhysicalDeviceXlibPresentationSupportKHR)
-#endif // VK_USE_PLATFORM_XLIB_KHR
 
 } // namespace gvk
