@@ -181,11 +181,14 @@ public:
     /**
     Gets this WsiManager object's Fence objects
     @return This WsiManager object's Fence objects
+        @note This method returns the Fence objects that managed the raw VkFence objects returned by get_vk_fences()
     */
     const std::vector<Fence>& get_fences() const;
 
     /**
-    TODO : Documentation
+    Gets this WsiManager object's VkFence objects
+    @return This WsiManager object's VkFence objects
+        @note This method returns the raw VkFence objects managed by the Fence objects returned by get_fences()
     */
     const std::vector<VkFence>& get_vk_fences() const;
 

@@ -46,7 +46,6 @@ public:
         NamespaceGenerator namespaceGenerator(file, "gvk::state_tracker");
         file << std::endl;
 
-        // TODO : Documentation
         file << "template <typename HandleIdType>" << std::endl;
         file << "HandleIdType to_handle_id(const GvkStateTrackedObject&)" << std::endl;
         file << "{" << std::endl;
@@ -71,7 +70,6 @@ public:
             }
         }
 
-        // TODO : Documentation
         file << "void StateTracker::enumerate_state_tracked_objects(const GvkStateTrackedObject* pStateTrackedObject, const GvkStateTrackedObjectEnumerateInfo* pEnumerateInfo)" << std::endl;
         file << "{" << std::endl;
         file << "    assert(pStateTrackedObject);" << std::endl;
@@ -104,7 +102,6 @@ public:
         file << "    }" << std::endl;
         file << "}" << std::endl;
 
-        // TODO : Documentation
         file << "void StateTracker::enumerate_state_tracked_object_dependencies(const GvkStateTrackedObject* pStateTrackedObject, const GvkStateTrackedObjectEnumerateInfo* pEnumerateInfo)" << std::endl;
         file << "{" << std::endl;
         file << "    assert(pStateTrackedObject);" << std::endl;

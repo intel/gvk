@@ -36,17 +36,30 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 
 /*
-TODO : Documentation
+Gets the indices of phyiscal device memory types compatible with specified VkMemoryPropertyFlags
+@param [in] physicalDevice The PhysicalDevice to request memory properties from
+@param [in] memoryTypeBits A bitmask with one bit set for each memory type to check for compatibility
+    @note This is generally expected to be the memoryTypeBits member of a resource's VkMemoryRequirements
+@param [in] memoryPropertyFlags a bitmask of required memory properties
+@param [in,out] pMemoryTypeCount The number of compatible memory type indices
+    @note If pMemoryTypeIndices is null, pMemoryTypeCount will be populated with the number of compatible memory type indices
+    @note If pMemoryTypeIndices is not null, pMemoryTypeCount indicates the max number of compatible memory type indices to write to pMemoryTypeIndices
+@param [out] pMemoryTypeIndices The indices of compatible memory types
 */
 void get_compatible_memory_type_indices(const PhysicalDevice& physicalDevice, uint32_t memoryTypeBits, VkMemoryPropertyFlags memoryPropertyFlags, uint32_t* pMemoryTypeCount, uint32_t* pMemoryTypeIndices);
 
 /**
-TODO : Documentation
+Gets the number of mip levels for an image with a specified VkExtent3D
+@param [in] imageExtent The VkExtent3D of the image to get the specified mip level for
+@return The number of mip levels for an image with the specified VkExtent3D
 */
 uint32_t get_mip_level_count(const VkExtent3D& imageExtent);
 
 /**
-TODO : Documentation
+Gets the VkExtent3D of a specified mip level for a VkImage with a specified VkExtent3D
+@param [in] imageExtent The VkExtent3D of the VkImage to get the specified mip level for
+@param [in] mipLevel The mip level to get the VkExtent3D for
+@return The VkExtent3D of the specified VkImage mip level
 */
 VkExtent3D get_mip_level_extent(const VkExtent3D& imageExtent, uint32_t mipLevel);
 

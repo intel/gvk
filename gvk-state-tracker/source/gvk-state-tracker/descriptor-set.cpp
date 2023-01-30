@@ -348,7 +348,6 @@ void StateTracker::copy_descriptor_sets(const Device& gvkDevice, uint32_t descri
         for (uint32_t i = 0; i < descriptorCopyCount; ++i) {
             const auto& descriptorCopy = pDescriptorCopies[i];
 
-            // TODO : Documentation
             if (srcSet != descriptorCopy.srcSet) {
                 srcSet = DescriptorSet({ gvkDevice, descriptorCopy.srcSet });
             }
@@ -360,7 +359,6 @@ void StateTracker::copy_descriptor_sets(const Device& gvkDevice, uint32_t descri
                 srcArrayElement = 0;
             }
 
-            // TODO : Documentation
             if (dstSet != descriptorCopy.dstSet) {
                 dstSet = DescriptorSet({ gvkDevice, descriptorCopy.dstSet });
             }

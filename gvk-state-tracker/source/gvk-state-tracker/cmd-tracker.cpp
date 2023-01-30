@@ -93,7 +93,6 @@ void CmdTracker::record_vkCmdEndRenderPass(VkCommandBuffer commandBuffer)
     auto gvkDevice = gvkCommandBuffer.get<Device>();
     assert(gvkDevice);
 
-    // TODO : Documentation
     RenderPass gvkRenderPass;
     Framebuffer gvkFramebuffer;
     if (mBeginRenderPass->sType == get_stype<GvkCommandStructureCmdBeginRenderPass>()) {
@@ -108,7 +107,6 @@ void CmdTracker::record_vkCmdEndRenderPass(VkCommandBuffer commandBuffer)
     assert(gvkRenderPass);
     assert(gvkFramebuffer);
 
-    // TODO : Documentation
     auto renderPassCreateInfo = gvkRenderPass.get<VkRenderPassCreateInfo>();
     if (renderPassCreateInfo.sType == get_stype<VkRenderPassCreateInfo>()) {
         record_render_pass_layout_transitions(gvkDevice, renderPassCreateInfo, gvkFramebuffer.get<const std::vector<ImageView>&>(),
@@ -128,7 +126,6 @@ void CmdTracker::record_vkCmdEndRenderPass(VkCommandBuffer commandBuffer)
         );
     }
 
-    // TODO : Documentation
     mBeginRenderPass.reset();
     mBeginRenderPass2.reset();
 }

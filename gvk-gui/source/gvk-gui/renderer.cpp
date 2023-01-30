@@ -638,7 +638,6 @@ VkResult Renderer::create_image_view_and_sampler(VkQueue vkQueue, VkCommandBuffe
     assert(vkQueue);
     assert(vkCommandBuffer);
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
-        // TODO : Documentation
         int fontWidth = 0;
         int fontHeight = 0;
         unsigned char* pFontData = nullptr;
@@ -647,7 +646,6 @@ VkResult Renderer::create_image_view_and_sampler(VkQueue vkQueue, VkCommandBuffe
         assert(fontHeight);
         assert(pFontData);
 
-        // TODO : Documentation
         auto imageCreateInfo = get_default<VkImageCreateInfo>();
         imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
         imageCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -659,7 +657,6 @@ VkResult Renderer::create_image_view_and_sampler(VkQueue vkQueue, VkCommandBuffe
         Image image;
         gvk_result(Image::create(mDevice, &imageCreateInfo, &allocationCreateInfo, &image));
 
-        // TODO : Documentation
         auto bufferCreateInfo = get_default<VkBufferCreateInfo>();
         bufferCreateInfo.size = fontWidth * fontHeight * 4 * sizeof(unsigned char);
         bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
@@ -668,23 +665,19 @@ VkResult Renderer::create_image_view_and_sampler(VkQueue vkQueue, VkCommandBuffe
         Buffer buffer;
         gvk_result(Buffer::create(mDevice, &bufferCreateInfo, &allocationCreateInfo, &buffer));
 
-        // TODO : Documentation
         uint8_t* pData = nullptr;
         gvk_result(vmaMapMemory(mDevice.get<VmaAllocator>(), buffer.get<VmaAllocation>(), (void**)&pData));
         memcpy(pData, pFontData, bufferCreateInfo.size);
         vmaFlushAllocation(mDevice.get<VmaAllocator>(), buffer.get<VmaAllocation>(), 0, bufferCreateInfo.size);
         vmaUnmapMemory(mDevice.get<VmaAllocator>(), buffer.get<VmaAllocation>());
 
-        // TODO : Documentation
         gvk_result(execute_immediately(mDevice, vkQueue, vkCommandBuffer, VK_NULL_HANDLE,
             [&](auto)
             {
-                // TODO : Documentation
                 auto dispatchTable = mDevice.get<DispatchTable>();
                 assert(dispatchTable.gvkCmdPipelineBarrier);
                 assert(dispatchTable.gvkCmdCopyBufferToImage);
 
-                // TODO : Documentation
                 auto imageMemoryBarrier = get_default<VkImageMemoryBarrier>();
                 imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
                 imageMemoryBarrier.oldLayout = imageCreateInfo.initialLayout;
@@ -692,13 +685,11 @@ VkResult Renderer::create_image_view_and_sampler(VkQueue vkQueue, VkCommandBuffe
                 imageMemoryBarrier.image = image;
                 dispatchTable.gvkCmdPipelineBarrier(vkCommandBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 
-                // TODO : Documentation
                 auto bufferImageCopy = get_default<VkBufferImageCopy>();
                 bufferImageCopy.imageExtent = imageCreateInfo.extent;
                 bufferImageCopy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                 dispatchTable.gvkCmdCopyBufferToImage(vkCommandBuffer, buffer, image, imageMemoryBarrier.newLayout, 1, &bufferImageCopy);
 
-                // TODO : Documentation
                 imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
                 imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
                 imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
@@ -707,14 +698,11 @@ VkResult Renderer::create_image_view_and_sampler(VkQueue vkQueue, VkCommandBuffe
             }
         ));
 
-        // TODO : Documentation
         auto imageViewCreateInfo = get_default<VkImageViewCreateInfo>();
         imageViewCreateInfo.image = image;
         imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
         imageViewCreateInfo.format = imageCreateInfo.format;
         gvk_result(ImageView::create(mDevice, &imageViewCreateInfo, pAllocator, &mFontImageView));
-
-        // TODO : Documentation
         gvk_result(Sampler::create(mDevice, &get_default<VkSamplerCreateInfo>(), pAllocator, &mFontSampler));
     } gvk_result_scope_end;
     return gvkResult;
@@ -733,7 +721,6 @@ VkResult Renderer::allocate_and_update_descriptor_set(const VkAllocationCallback
     assert(mFontImageView);
     assert(mFontSampler);
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
-        // TODO : Documentation
         auto descriptorPoolSize = get_default<VkDescriptorPoolSize>();
         descriptorPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         descriptorPoolSize.descriptorCount = 1;
@@ -744,14 +731,12 @@ VkResult Renderer::allocate_and_update_descriptor_set(const VkAllocationCallback
         DescriptorPool descriptorPool;
         gvk_result(DescriptorPool::create(mDevice, &descriptorPoolCreateInfo, pAllocator, &descriptorPool));
 
-        // TODO : Documentation
         auto descriptorSetAllocateInfo = get_default<VkDescriptorSetAllocateInfo>();
         descriptorSetAllocateInfo.descriptorPool = descriptorPool;
         descriptorSetAllocateInfo.descriptorSetCount = 1;
         descriptorSetAllocateInfo.pSetLayouts = &descriptorSetLayouts[0].get<const VkDescriptorSetLayout&>();
         gvk_result(DescriptorSet::allocate(mDevice, &descriptorSetAllocateInfo, &mFontDescriptorSet));
 
-        // TODO : Documentation
         auto descriptorImageInfo = get_default<VkDescriptorImageInfo>();
         descriptorImageInfo.sampler = mFontSampler;
         descriptorImageInfo.imageView = mFontImageView;
@@ -764,8 +749,6 @@ VkResult Renderer::allocate_and_update_descriptor_set(const VkAllocationCallback
         auto dispatchTable = mDevice.get<DispatchTable>();
         assert(dispatchTable.gvkUpdateDescriptorSets);
         dispatchTable.gvkUpdateDescriptorSets(mDevice, 1, &writeDescriptorSet, 0, nullptr);
-
-        // TODO : Documentation
         ImGui::GetIO().Fonts->SetTexID(mFontDescriptorSet);
     } gvk_result_scope_end;
     return gvkResult;

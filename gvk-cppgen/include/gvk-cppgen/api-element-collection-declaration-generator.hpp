@@ -27,6 +27,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 #include "gvk-cppgen/api-element-collection-info.hpp"
+#include "gvk-cppgen/file-generator.hpp"
 
 namespace gvk {
 namespace cppgen {
@@ -34,7 +35,11 @@ namespace cppgen {
 class ApiElementCollectionDeclarationGenerator final
 {
 public:
-    static void generate(const ApiElementCollectionInfo& structureCollectionInfo);
+    static void generate(const ApiElementCollectionInfo& apiElements);
+
+private:
+    static void generate_enumeration_declarations(FileGenerator& file, const ApiElementCollectionInfo& apiElements);
+    static void generate_structure_declarations(FileGenerator& file, const ApiElementCollectionInfo& apiElements);
 };
 
 } // namespace cppgen

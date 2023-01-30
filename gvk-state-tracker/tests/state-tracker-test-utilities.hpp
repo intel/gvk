@@ -488,7 +488,6 @@ inline VkFormat get_render_pass_color_format(const gvk::Context& context)
         VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT,
         [&](VkFormat format)
         {
-            // TODO : Revisit this logic
             GvkFormatInfo formatInfo { };
             gvk::get_format_info(format, &formatInfo);
             if (gvk::get_bits_per_texel(format) == 32 &&
@@ -680,10 +679,8 @@ inline void create_memory_bound_image(const gvk::Context& context, const VkImage
     assert(pImage);
     assert(pDeviceMemory);
 
-    // TODO : Documentation
     ASSERT_EQ(gvk::Image::create(context.get_devices()[0], &imageCreateInfo, (const VkAllocationCallbacks*)nullptr, pImage), VK_SUCCESS);
 
-    // TODO : Documentation
     auto imageMemoryRequirementsInfo = gvk::get_default<VkImageMemoryRequirementsInfo2>();
     imageMemoryRequirementsInfo.image = *pImage;
     auto memoryRequirements = gvk::get_default<VkMemoryRequirements2>();
@@ -696,13 +693,11 @@ inline void create_memory_bound_image(const gvk::Context& context, const VkImage
     gvk::get_compatible_memory_type_indices(context.get_devices()[0].get<gvk::PhysicalDevice>(), memoryRequirements.memoryRequirements.memoryTypeBits, memoryPropertyFlags, &memoryTypeCount, memoryTypeIndices.data());
     ASSERT_TRUE(1 <= memoryTypeCount);
 
-    // TODO : Documentation
     auto memoryAllocateInfo = gvk::get_default<VkMemoryAllocateInfo>();
     memoryAllocateInfo.memoryTypeIndex = memoryTypeIndices[0];
     memoryAllocateInfo.allocationSize = memoryRequirements.memoryRequirements.size;
     ASSERT_EQ(gvk::DeviceMemory::allocate(pImage->get<gvk::Device>(), &memoryAllocateInfo, nullptr, pDeviceMemory), VK_SUCCESS);
 
-    // TODO : Documentation
     auto bindImageMemoryInfo = gvk::get_default<VkBindImageMemoryInfo>();
     bindImageMemoryInfo.image = *pImage;
     bindImageMemoryInfo.memory = *pDeviceMemory;

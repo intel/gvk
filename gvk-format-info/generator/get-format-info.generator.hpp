@@ -53,7 +53,6 @@ public:
             const auto& format = formatItr.second;
             file << "    case " << format.name << ": {" << std::endl;
 
-            // TODO : Documentation
             file << "        pFormatInfo->blockSize = " << format.blockSize << ";" << std::endl;
             file << "        pFormatInfo->texelsPerBlock = " << format.texelsPerBlock << ";" << std::endl;
             file << "        pFormatInfo->chroma = " << format.chroma << ";" << std::endl;
@@ -62,14 +61,12 @@ public:
             file << "        pFormatInfo->blockExtent[1] = " << format.blockExtent[1] << ";" << std::endl;
             file << "        pFormatInfo->blockExtent[2] = " << format.blockExtent[2] << ";" << std::endl;
 
-            // TODO : Documentation
             if (!format.compressionType.empty()) {
                 file << "        pFormatInfo->compressionType = GVK_FORMAT_COMPRESSION_TYPE_" << string::replace(format.compressionType, " ", "_") << ";" << std::endl;
             } else {
                 file << "        pFormatInfo->compressionType = GVK_FORMAT_COMPRESSION_TYPE_NONE;" << std::endl;
             }
 
-            // TODO : Documentation
             std::string numericFormat = "UNDEFINED";
             if (!format.components.empty()) {
                 numericFormat = format.components.front().numericFormat;
@@ -82,11 +79,9 @@ public:
             }
             file << "        pFormatInfo->numericFormat = GVK_NUMERIC_FORMAT_" << numericFormat << ";" << std::endl;
 
-            // TODO : Documentation
             auto spirvImageFormat = !format.spirvImageFormat.empty() ? "\"" + format.spirvImageFormat + "\"" : "nullptr";
             file << "        pFormatInfo->pSpirvImageFormat = " << spirvImageFormat << ";" << std::endl;
 
-            // TODO : Documentation
             if (!format.classes.empty()) {
                 file << "        static const std::array<GvkFormatClass, " << format.classes.size() << "> scClasses {" << std::endl;
                 for (const auto& formatClass : format.classes) {
@@ -100,7 +95,6 @@ public:
                 file << "        pFormatInfo->pClasses = nullptr;" << std::endl;
             }
 
-            // TODO : Documentation
             if (!format.planes.empty()) {
                 file << "        static const std::array<GvkFormatPlaneInfo, " << format.planes.size() << "> scPlanes {" << std::endl;
                 for (const auto& plane : format.planes) {
@@ -119,7 +113,6 @@ public:
                 file << "        pFormatInfo->pPlanes = nullptr;" << std::endl;
             }
 
-            // TODO : Documentation
             if (!format.components.empty()) {
                 file << "        static const std::array<GvkFormatComponentInfo, " << format.components.size() << "> scComponents {" << std::endl;
                 for (const auto& component : format.components) {

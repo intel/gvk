@@ -135,22 +135,28 @@ public:
     }
 
     /**
-    TODO : Documentation
+    Copies an instance of Reference<>
+    @param [in] other The Reference<> to copy
     */
     Reference(const Reference<ObjType, IdType>& other) = default;
 
     /**
-    TODO : Documentation
+    Copies an instance of Reference<>
+    @param [in] other The Reference<> to copy
+    @return A reference to this Reference<>
     */
     Reference<ObjType, IdType>& operator=(const Reference<ObjType, IdType>& other) = default;
 
     /**
-    TODO : Documentation
+    Moves an instance of Reference<>
+    @param [in] other The Reference<> to move from
     */
     Reference(Reference<ObjType, IdType>&& other) = default;
 
     /**
-    TODO : Documentation
+    Moves an instance of Reference<>
+    @param [in] other The Reference<> to move from
+    @return A reference to this Reference<>
     */
     Reference<ObjType, IdType>& operator=(Reference<ObjType, IdType>&& other) = default;
 

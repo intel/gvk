@@ -76,7 +76,7 @@ VkResult WsiManager::create(const Device& device, const CreateInfo* pCreateInfo,
                     VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT,
                     [&](VkFormat format)
                     {
-                        // TODO : Revisit this logic
+                        // TODO : Abstract this logic into a utility function
                         if (format == pCreateInfo->depthFormat) {
                             pWsiManager->mDepthFormat = format;
                         }

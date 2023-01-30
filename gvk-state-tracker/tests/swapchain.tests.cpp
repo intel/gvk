@@ -28,19 +28,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 TEST(Swapchain, SwapchainResourceLifetime)
 {
-    // TODO : Documentation
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
     load_gvk_state_tracker_entry_points();
     auto expectedInstanceObjects = get_expected_instance_objects(context);
 
-    // TODO : Documentation
     auto systemSurfaceCreateInfo = gvk::get_default<gvk::system::Surface::CreateInfo>();
     systemSurfaceCreateInfo.pTitle = "VK_LAYER_INTEL_gvk_state_tracker - Tests - Swapchain - SwapchainResourceLifetime";
     gvk::system::Surface systemSurface;
     ASSERT_TRUE(gvk::system::Surface::create(&systemSurfaceCreateInfo, &systemSurface));
 
-    // TODO : Documentation
     auto wsiManagerCreateInfo = gvk::get_default<gvk::WsiManager::CreateInfo>();
 #ifdef VK_USE_PLATFORM_XLIB_KHR
     auto xlibSurfaceCreateInfo = gvk::get_default<VkXlibSurfaceCreateInfoKHR>();
@@ -90,7 +87,6 @@ TEST(Swapchain, SwapchainResourceLifetime)
     ASSERT_TRUE(create_state_tracked_object_record(wsiManager.get_image_acquired_semaphore(), wsiManager.get_image_acquired_semaphore().get<VkSemaphoreCreateInfo>(), expectedInstanceObjects));
     ASSERT_TRUE(create_state_tracked_object_record(wsiManager.get_image_rendered_semaphore(), wsiManager.get_image_rendered_semaphore().get<VkSemaphoreCreateInfo>(), expectedInstanceObjects));
 
-    // TODO : Documentation
     std::map<GvkStateTrackedObject, ObjectRecord> expectedImageDependencies;
     ASSERT_TRUE(create_state_tracked_object_record(wsiManager.get_swapchain(), wsiManager.get_swapchain().get<VkSwapchainCreateInfoKHR>(), expectedImageDependencies));
 #ifdef VK_USE_PLATFORM_XLIB_KHR
@@ -103,7 +99,6 @@ TEST(Swapchain, SwapchainResourceLifetime)
     ASSERT_TRUE(create_state_tracked_object_record(context.get_physical_devices()[0], context.get_instance().get<VkInstanceCreateInfo>(), expectedImageDependencies));
     ASSERT_TRUE(create_state_tracked_object_record(context.get_instance(), context.get_instance().get<VkInstanceCreateInfo>(), expectedImageDependencies));
 
-    // TODO : Documentation
     StateTrackerValidationEnumerator enumerator;
     auto enumerateInfo = gvk::get_default<GvkStateTrackedObjectEnumerateInfo>();
     enumerateInfo.pfnCallback = StateTrackerValidationEnumerator::enumerate;
@@ -112,7 +107,6 @@ TEST(Swapchain, SwapchainResourceLifetime)
     pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
-    // TODO : Documentation
     for (const auto& image : wsiManager.get_swapchain().get<gvk::Images>()) {
         enumerator.records.clear();
         auto stateTrackedImage = gvk::get_state_tracked_object(image);

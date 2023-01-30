@@ -77,7 +77,10 @@ BasicHandleGenerator::BasicHandleGenerator(const xml::Manifest& manifest, const 
         mDtor.compileGuards = get_inner_scope_compile_guards(mHandle.compileGuards, mDtor.compileGuards);
     }
 
-    // TODO : Documentation
+    // NOTE : VkDescriptorSetAllocateInfo has an array of VkDescriptorSetLayouts
+    //  that are referenced by the allocated VkDescriptorSets, but each allocated
+    //  DescriptorSet only references one DescriptorSetLayout so the std::vector<>
+    //  member is erased() and replaced with a single DescriptorSetLayout reference.
     if (handle.name == "VkDescriptorSet") {
         mMemberInfos.erase(MemberInfo("std::vector<DescriptorSetLayout>"));
         memberInfo.storageType = "DescriptorSetLayout";

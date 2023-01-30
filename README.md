@@ -12,10 +12,13 @@ Features:
  - Managed WSI (Window System Integration)
  - Managed Mesh
  - Managed RenderTarget
+ - VK_LAYER_INTEL_gvk_state_tracker
+ - [ImGui](https://github.com/ocornut/imgui) integration
  - SPIR-V compilation via [glslang](https://github.com/KhronosGroup/glslang)
  - SPIR-V reflection via [SPIRV-Cross](https://github.com/KhronosGroup/SPIRV-Cross)
  - [Vulkan Memory Allocator](https://gpuopen.com/vulkan-memory-allocator/) integration
  - Vulkan XML parsing utilities (used to keep the project up to date with the vk.xml)
+ - ...and more...
 
 # Getting Started
 Ensure the following tools are installed...
@@ -23,12 +26,12 @@ Ensure the following tools are installed...
  - [Git](https://git-scm.com/)
  - [Python](https://www.python.org/downloads/) v3+ (Make sure to select "Add to PATH" when prompted)
  - [Visual Studio](https://visualstudio.microsoft.com/vs/community/) 2019 (Make sure to select "Desktop development with C++" when prompted)
- - [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) v1.3.231.1+
+ - [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) v1.3.236.0
 
-The following command lines are for configuring a Visual Studio solution using a  `bash` like terminal (Git Bash comes with the Git install by default on Windows)...
+The following command lines are for configuring a Visual Studio solution using a  `bash` like terminal (Git Bash comes with the Git install by default on Windows) in a directory called `gitrepos/intel` on drive `C:`...
 ```
 cd c:
-cd <desired/directory/location/>
+cd gitrepos/intel
 git clone https://github.com/intel/gvk.git
 cd gvk/
 mkdir build
@@ -37,6 +40,8 @@ cmake -G "Visual Studio 16 2019" -A x64 ..
 cmake --build .
 ```
 ...open `gvk/build/gvk.sln` in Visual Studio, navigate to `gvk/samples/getting-started-00-triangle`, right click and select "Set as Startup Project", run.
+
+For Linux, replace `cmake -G "Visual Studio 16 2019" -A x64 ..` with `cmake ..` for the default Makefile generator.  See CMake's documentation for other generators.  Note that Windows support is further along than Linux, ymmv.
 
 # External use
 Somewhere in your CMakeLists, add the following...
@@ -59,15 +64,3 @@ target_link_libraries(someTarget PUBLIC gvk)
 ```
 target_link_libraries(someTarget PUBLIC gvk-handles gvk-xml)
 ```
-
-# TODO : (in no particular order)
- - BuildOptions.cmake (enable/disable/customize dependencies/tests/samples/etc)
- - VkLayer_INTEL_gvk_state_tracker
- - VkLayer_INTEL_gvk_restore_point
- - glTF save/load https://www.khronos.org/gltf/
- - imgui integration https://github.com/ocornut/imgui
- - Android support
- - HLSL support
- - CMake functionality to add shader compilation to build (both for gvk itself and consuming libraries)
- - Break direct dependency on GLFW (so gvk::system::Surface can be created from an SDL_Window, for instance)
- - ...and of course, always new Vulkan features/extensions to stay on top of...

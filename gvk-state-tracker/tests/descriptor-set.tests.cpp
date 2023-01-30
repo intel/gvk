@@ -30,20 +30,17 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 static void create_descriptor_set_layouts(const gvk::Device& device, gvk::spirv::ShaderInfo shaderInfo, std::vector<gvk::DescriptorSetLayout>& descriptorSetLayouts)
 {
-    // TODO : Documentation
     gvk::spirv::Context spirvContext;
     ASSERT_EQ(gvk::spirv::Context::create(&gvk::get_default<gvk::spirv::Context::CreateInfo>(), &spirvContext), VK_SUCCESS);
     ASSERT_EQ(spirvContext.compile(&shaderInfo), VK_SUCCESS);
     ASSERT_FALSE(shaderInfo.spirv.empty());
 
-    // TODO : Documentation
     auto shaderMoudleCreateInfo = gvk::get_default<VkShaderModuleCreateInfo>();
     shaderMoudleCreateInfo.codeSize = (uint32_t)shaderInfo.spirv.size() * sizeof(uint32_t);
     shaderMoudleCreateInfo.pCode = shaderInfo.spirv.data();
     gvk::ShaderModule shaderModule;
     ASSERT_EQ(gvk::ShaderModule::create(device, &shaderMoudleCreateInfo, nullptr, &shaderModule), VK_SUCCESS);
 
-    // TODO : Documentation
     gvk::spirv::BindingInfo bindingInfo;
     bindingInfo.add_shader(shaderInfo);
     uint32_t descriptorSetLayoutCount = 0;
@@ -124,18 +121,13 @@ static void create_descriptor_pool(const gvk::Device& device, const std::vector<
     ASSERT_EQ(gvk::DescriptorPool::create(device, &descriptorPoolCreateInfo, nullptr, pDescriptorPool), VK_SUCCESS);
 }
 
-/**
-TODO : Documentation
-*/
 TEST(DescriptorSet, BasicDescriptorBinding)
 {
-    // TODO : Documentation
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
     load_gvk_state_tracker_entry_points();
     auto expectedInstanceObjects = get_expected_instance_objects(context);
 
-    // TODO : Documentation
     auto shaderInfo = gvk::get_default<gvk::spirv::ShaderInfo>();
     shaderInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
     shaderInfo.lineOffset = __LINE__;
@@ -154,12 +146,10 @@ TEST(DescriptorSet, BasicDescriptorBinding)
     ASSERT_EQ(descriptorSetLayouts.size(), 1);
     ASSERT_TRUE(create_state_tracked_object_record(descriptorSetLayouts[0], descriptorSetLayouts[0].get<VkDescriptorSetLayoutCreateInfo>(), expectedInstanceObjects));
 
-    // TODO : Documentation
     gvk::DescriptorPool descriptorPool;
     create_descriptor_pool(context.get_devices()[0], descriptorSetLayouts, &descriptorPool);
     ASSERT_TRUE(create_state_tracked_object_record(descriptorPool, descriptorPool.get<VkDescriptorPoolCreateInfo>(), expectedInstanceObjects));
 
-    // TODO : Documentation
     auto descriptorSetAllocateInfo = gvk::get_default<VkDescriptorSetAllocateInfo>();
     descriptorSetAllocateInfo.descriptorPool = descriptorPool;
     descriptorSetAllocateInfo.descriptorSetCount = 1;
@@ -168,7 +158,6 @@ TEST(DescriptorSet, BasicDescriptorBinding)
     ASSERT_EQ(gvk::DescriptorSet::allocate(context.get_devices()[0], &descriptorSetAllocateInfo, &descriptorSet), VK_SUCCESS);
     ASSERT_TRUE(create_state_tracked_object_record(descriptorSet, descriptorSet.get<VkDescriptorSetAllocateInfo>(), expectedInstanceObjects));
 
-    // TODO : Documentation
     auto imageCreateInfo = gvk::get_default<VkImageCreateInfo>();
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
     imageCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -181,12 +170,10 @@ TEST(DescriptorSet, BasicDescriptorBinding)
     ASSERT_EQ(gvk::Image::create(context.get_devices()[0], &imageCreateInfo, &allocationCreateInfo, &image), VK_SUCCESS);
     ASSERT_TRUE(create_state_tracked_object_record(image, image.get<VkImageCreateInfo>(), expectedInstanceObjects));
 
-    // TODO : Documentation
     VmaAllocationInfo allocationInfo { };
     auto vmaAllocator = context.get_devices()[0].get<VmaAllocator>();
     vmaGetAllocationInfo(vmaAllocator, image.get<VmaAllocation>(), &allocationInfo);
 
-    // TODO : Documentation
     GvkStateTrackedObject stateTrackedDeviceMemory { };
     stateTrackedDeviceMemory.type = VK_OBJECT_TYPE_DEVICE_MEMORY;
     stateTrackedDeviceMemory.handle = (uint64_t)allocationInfo.deviceMemory;
@@ -201,7 +188,6 @@ TEST(DescriptorSet, BasicDescriptorBinding)
     stateTrackedDeviceMemoryRecord.mStateTrackedObjectInfo.flags = GVK_STATE_TRACKED_OBJECT_STATUS_ACTIVE_BIT;
     stateTrackedDeviceMemoryRecord.mMemoryAllocateInfo = memoryAllocateInfo;
 
-    // TODO : Documentation
     auto imageViewCreateInfo = gvk::get_default<VkImageViewCreateInfo>();
     imageViewCreateInfo.image = image;
     imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
@@ -210,7 +196,6 @@ TEST(DescriptorSet, BasicDescriptorBinding)
     ASSERT_EQ(gvk::ImageView::create(context.get_devices()[0], &imageViewCreateInfo, nullptr, &imageView), VK_SUCCESS);
     ASSERT_TRUE(create_state_tracked_object_record(imageView, imageView.get<VkImageViewCreateInfo>(), expectedInstanceObjects));
 
-    // TODO : Documentation
     auto descriptorImageInfo = gvk::get_default<VkDescriptorImageInfo>();
     descriptorImageInfo.imageView = imageView;
     descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
@@ -226,7 +211,6 @@ TEST(DescriptorSet, BasicDescriptorBinding)
     assert(dispatchTable.gvkUpdateDescriptorSets);
     dispatchTable.gvkUpdateDescriptorSets(context.get_devices()[0], 1, &descriptorWrite, 0, nullptr);
 
-    // TODO : Documentation
     std::map<GvkStateTrackedObject, ObjectRecord> expectedDescriptorSetDependencies;
     ASSERT_TRUE(create_state_tracked_object_record(descriptorPool, descriptorPool.get<VkDescriptorPoolCreateInfo>(), expectedDescriptorSetDependencies));
     ASSERT_TRUE(create_state_tracked_object_record(descriptorSetLayouts[0], descriptorSetLayouts[0].get<VkDescriptorSetLayoutCreateInfo>(), expectedDescriptorSetDependencies));
@@ -234,12 +218,10 @@ TEST(DescriptorSet, BasicDescriptorBinding)
     ASSERT_TRUE(create_state_tracked_object_record(context.get_physical_devices()[0], context.get_instance().get<VkInstanceCreateInfo>(), expectedDescriptorSetDependencies));
     ASSERT_TRUE(create_state_tracked_object_record(context.get_instance(), context.get_instance().get<VkInstanceCreateInfo>(), expectedDescriptorSetDependencies));
 
-    // TODO : Documentation
     std::map<GvkStateTrackedObject, ObjectRecord> expectedDescriptorSetBindings;
     ASSERT_TRUE(create_state_tracked_object_record(descriptorSet, descriptorSet.get<VkDescriptorSetAllocateInfo>(), expectedDescriptorSetBindings));
     expectedDescriptorSetBindings[gvk::get_state_tracked_object(descriptorSet)].mDescriptorSetBindingInfos.push_back(descriptorWrite);
 
-    // TODO : Documentation
     StateTrackerValidationEnumerator enumerator;
     auto enumerateInfo = gvk::get_default<GvkStateTrackedObjectEnumerateInfo>();
     enumerateInfo.pfnCallback = StateTrackerValidationEnumerator::enumerate;
@@ -248,30 +230,23 @@ TEST(DescriptorSet, BasicDescriptorBinding)
     pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
-    // TODO : Documentation
     enumerator.records.clear();
     auto stateTrackedDescriptorSet = gvk::get_state_tracked_object(descriptorSet);
     pfnGvkEnumerateStateTrackedObjectDependencies(&stateTrackedDescriptorSet, &enumerateInfo);
     validate(gvk_file_line, expectedDescriptorSetDependencies, enumerator.records);
 
-    // TODO : Documentation
     enumerator.records.clear();
     pfnGvkEnumerateStateTrackedObjectBindings(&stateTrackedDescriptorSet, &enumerateInfo);
     validate(gvk_file_line, expectedDescriptorSetBindings, enumerator.records);
 }
 
-/**
-TODO : Documentation
-*/
 TEST(DescriptorSet, DescriptorSetResourceLifetime)
 {
-    // TODO : Documentation
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
     load_gvk_state_tracker_entry_points();
     auto expectedInstanceObjects = get_expected_instance_objects(context);
 
-    // TODO : Documentation
     auto shaderInfo = gvk::get_default<gvk::spirv::ShaderInfo>();
     shaderInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
     shaderInfo.lineOffset = __LINE__;
@@ -294,12 +269,10 @@ TEST(DescriptorSet, DescriptorSetResourceLifetime)
         descriptorSetLayout = descriptorSetLayouts[0];
     }
 
-    // TODO : Documentation
     gvk::DescriptorPool descriptorPool;
     create_descriptor_pool(context.get_devices()[0], descriptorSetLayouts, &descriptorPool);
     ASSERT_TRUE(create_state_tracked_object_record(descriptorPool, descriptorPool.get<VkDescriptorPoolCreateInfo>(), expectedInstanceObjects));
 
-    // TODO : Documentation
     auto vkDescriptorSetLayouts = gvk::get_vk_handles(descriptorSetLayouts);
     auto descriptorSetAllocateInfo = gvk::get_default<VkDescriptorSetAllocateInfo>();
     descriptorSetAllocateInfo.descriptorPool = descriptorPool;
@@ -317,7 +290,6 @@ TEST(DescriptorSet, DescriptorSetResourceLifetime)
         ASSERT_TRUE(create_state_tracked_object_record(stateTrackedDescriptorSet, descriptorSetAllocateInfo, expectedInstanceObjects));
     }
 
-    // TODO : Documentation
     StateTrackerValidationEnumerator enumerator;
     auto enumerateInfo = gvk::get_default<GvkStateTrackedObjectEnumerateInfo>();
     enumerateInfo.pfnCallback = StateTrackerValidationEnumerator::enumerate;
@@ -326,7 +298,6 @@ TEST(DescriptorSet, DescriptorSetResourceLifetime)
     pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
-    // TODO : Documentation
     std::vector<VkDescriptorSet> vkDescriptorSetsToFree(3);
     ASSERT_LT(vkDescriptorSetsToFree.size(), vkDescriptorSets.size());
     for (auto& vkDescriptorSetToFree : vkDescriptorSetsToFree) {
@@ -341,12 +312,10 @@ TEST(DescriptorSet, DescriptorSetResourceLifetime)
     assert(dispatchTable.gvkFreeDescriptorSets);
     ASSERT_EQ(dispatchTable.gvkFreeDescriptorSets(context.get_devices()[0], descriptorPool, (uint32_t)vkDescriptorSetsToFree.size(), vkDescriptorSetsToFree.data()), VK_SUCCESS);
 
-    // TODO : Documentation
     enumerator.records.clear();
     pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
-    // TODO : Documentation
     for (auto& vkDescriptorSet : vkDescriptorSets) {
         GvkStateTrackedObject stateTrackedDescriptorSet { };
         stateTrackedDescriptorSet.type = VK_OBJECT_TYPE_DESCRIPTOR_SET;
@@ -357,12 +326,10 @@ TEST(DescriptorSet, DescriptorSetResourceLifetime)
     assert(dispatchTable.gvkResetDescriptorPool);
     ASSERT_EQ(dispatchTable.gvkResetDescriptorPool(context.get_devices()[0], descriptorPool, 0), VK_SUCCESS);
 
-    // TODO : Documentation
     enumerator.records.clear();
     pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
-    // TODO : Documentation
     vkDescriptorSets.resize(descriptorSetAllocateInfo.descriptorSetCount);
     assert(dispatchTable.gvkAllocateDescriptorSets);
     ASSERT_EQ(dispatchTable.gvkAllocateDescriptorSets(context.get_devices()[0], &descriptorSetAllocateInfo, vkDescriptorSets.data()), VK_SUCCESS);
@@ -374,12 +341,10 @@ TEST(DescriptorSet, DescriptorSetResourceLifetime)
         ASSERT_TRUE(create_state_tracked_object_record(stateTrackedDescriptorSet, descriptorSetAllocateInfo, expectedInstanceObjects));
     }
 
-    // TODO : Documentation
     enumerator.records.clear();
     pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
-    // TODO : Documentation
     for (auto& vkDescriptorSet : vkDescriptorSets) {
         GvkStateTrackedObject stateTrackedDescriptorSet { };
         stateTrackedDescriptorSet.type = VK_OBJECT_TYPE_DESCRIPTOR_SET;
@@ -390,7 +355,6 @@ TEST(DescriptorSet, DescriptorSetResourceLifetime)
     expectedInstanceObjects.erase(gvk::get_state_tracked_object(descriptorPool));
     descriptorPool.reset();
 
-    // TODO : Documentation
     enumerator.records.clear();
     pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);

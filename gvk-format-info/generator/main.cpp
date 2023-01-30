@@ -38,7 +38,6 @@ std::vector<xml::Structure> get_format_info_structures(const xml::Manifest& mani
     xml::Structure structure;
     xml::Parameter parameter;
 
-    // TODO : Documentation
     structure.name = "GvkFormatPlaneInfo";
     parameter.type = "uint32_t";
     parameter.name = "index";
@@ -54,7 +53,6 @@ std::vector<xml::Structure> get_format_info_structures(const xml::Manifest& mani
 
     structure.members.clear();
 
-    // TODO : Documentation
     structure.name = "GvkFormatComponentInfo";
     parameter.type = "GvkFormatComponentName";
     parameter.name = "name";
@@ -72,7 +70,6 @@ std::vector<xml::Structure> get_format_info_structures(const xml::Manifest& mani
 
     structure.members.clear();
 
-    // TODO : Documentation
     structure.name = "GvkFormatInfo";
     parameter.type = "uint32_t";
     parameter.name = "blockSize";
@@ -167,7 +164,6 @@ std::vector<xml::Enumeration> get_format_info_enumerations(const xml::Manifest& 
     xml::Enumeration enumeration;
     xml::Enumerator enumerator;
 
-    // TODO : Documentation
     enumeration.name = "GvkFormatComponentName";
     enumerator.name = "GVK_FORMAT_COMPONENT_NAME_UNDEFINED";
     enumerator.value = "0";
@@ -185,7 +181,6 @@ std::vector<xml::Enumeration> get_format_info_enumerations(const xml::Manifest& 
     }
     enumerations.push_back(enumeration);
 
-    // TODO : Documentation
     enumeration.enumerators.clear();
     enumeration.name = "GvkFormatCompressionType";
     enumerator.name = "GVK_FORMAT_COMPRESSION_TYPE_NONE";
@@ -203,7 +198,6 @@ std::vector<xml::Enumeration> get_format_info_enumerations(const xml::Manifest& 
     }
     enumerations.push_back(enumeration);
 
-    // TODO : Documentation
     enumeration.enumerators.clear();
     enumeration.name = "GvkFormatClass";
     enumerator.name = "GVK_FORMAT_CLASS_UNDEFINED";
@@ -222,7 +216,6 @@ std::vector<xml::Enumeration> get_format_info_enumerations(const xml::Manifest& 
     }
     enumerations.push_back(enumeration);
 
-    // TODO : Documentation
     enumeration.enumerators.clear();
     enumeration.name = "GvkNumericFormat";
     enumerator.name = "GVK_NUMERIC_FORMAT_UNDEFINED";
@@ -250,8 +243,6 @@ int main(int, const char*[])
     auto xmlResult = xmlDocument.LoadFile(GVK_XML_FILE_PATH);
     if (xmlResult == tinyxml2::XML_SUCCESS) {
         gvk::xml::Manifest manifest(xmlDocument);
-
-        // TODO : Documentation
         gvk::cppgen::ApiElementCollectionInfo apiElements { };
         apiElements.name = "format-info";
         apiElements.headerGuard = "gvk_format_info_h";
@@ -278,8 +269,6 @@ int main(int, const char*[])
         gvk::cppgen::StructureMakeTupleGenerator::generate(manifest, apiElements);
         gvk::cppgen::StructureSerializationGenerator::generate(apiElements);
         gvk::cppgen::StructureToStringGeneratorEx::generate(manifest, apiElements);
-
-        // TODO : Documentation
         gvk::cppgen::EnumerateFormatsGenerator::generate(manifest);
         gvk::cppgen::GetFormatInfoGenerator::generate(manifest);
     }

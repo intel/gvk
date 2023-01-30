@@ -255,7 +255,9 @@ Gets a copy of a string with all occurences of "vk", "Vk", and "VK_" removed
 std::string strip_vk(const std::string& str);
 
 /**
-TODO : Documentation
+Gets a 32-bit hash for a given string
+@param [in] The string to get the 32-bit hash for
+@return The 32-bit hash of the given string
 */
 uint32_t hash(const std::string& str);
 
@@ -263,7 +265,7 @@ uint32_t hash(const std::string& str);
 Converts a given string to a number of a specified type
 @typename T The type of number to convert the given string to
 @param [in] str The string to convert into a number
-    @NOTE : The given string may be prepended with "0x" (case insensitive) to indicate that the provided value is hexidecimal
+    @note The given string may be prepended with "0x" (case insensitive) to indicate that the provided value is hexidecimal
 @return The number converted from the given string
 */
 template <typename T>

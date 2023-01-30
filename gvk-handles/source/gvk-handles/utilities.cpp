@@ -48,7 +48,9 @@ void get_compatible_memory_type_indices(const PhysicalDevice& physicalDevice, ui
             }
         }
     }
-    *pMemoryTypeCount = memoryTypeCount;
+    if (!pMemoryTypeIndices) {
+        *pMemoryTypeCount = memoryTypeCount;
+    }
 }
 
 uint32_t get_mip_level_count(const VkExtent3D& imageExtent)

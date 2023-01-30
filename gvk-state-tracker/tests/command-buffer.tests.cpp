@@ -28,26 +28,20 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <vector>
 
-/**
-TODO : Documentation
-*/
 TEST(CommandBuffer, CommandBufferResourceLifetime)
 {
-    // TODO : Documentation
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
     load_gvk_state_tracker_entry_points();
     auto expectedInstanceObjects = get_expected_instance_objects(context);
     const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
 
-    // TODO : Documentation
     auto commandPoolCreateInfo = gvk::get_default<VkCommandPoolCreateInfo>();
     commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     gvk::CommandPool commandPool;
     ASSERT_EQ(gvk::CommandPool::create(context.get_devices()[0], &commandPoolCreateInfo, nullptr, &commandPool), VK_SUCCESS);
     ASSERT_TRUE(create_state_tracked_object_record(commandPool, commandPool.get<VkCommandPoolCreateInfo>(), expectedInstanceObjects));
 
-    // TODO : Documentation
     auto commandBufferAllocateInfo = gvk::get_default<VkCommandBufferAllocateInfo>();
     commandBufferAllocateInfo.commandPool = commandPool;
     commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -63,7 +57,6 @@ TEST(CommandBuffer, CommandBufferResourceLifetime)
         ASSERT_TRUE(create_state_tracked_object_record(stateTrackedCommandBuffer, commandBufferAllocateInfo, expectedInstanceObjects));
     }
 
-    // TODO : Documentation
     StateTrackerValidationEnumerator enumerator;
     auto enumerateInfo = gvk::get_default<GvkStateTrackedObjectEnumerateInfo>();
     enumerateInfo.pfnCallback = StateTrackerValidationEnumerator::enumerate;
@@ -72,7 +65,6 @@ TEST(CommandBuffer, CommandBufferResourceLifetime)
     pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
-    // TODO : Documentation
     std::vector<VkCommandBuffer> vkCommandBuffersToFree(3);
     for (uint32_t i = 0; i < vkCommandBuffersToFree.size(); ++i) {
         GvkStateTrackedObject stateTrackedCommandBuffer { };
@@ -86,12 +78,10 @@ TEST(CommandBuffer, CommandBufferResourceLifetime)
     ASSERT_NE(dispatchTable.gvkFreeCommandBuffers, nullptr);
     dispatchTable.gvkFreeCommandBuffers(context.get_devices()[0], commandPool, (uint32_t)vkCommandBuffersToFree.size(), vkCommandBuffersToFree.data());
 
-    // TODO : Documentation
     enumerator.records.clear();
     pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
-    // TODO : Documentation
     GvkStateTrackedObject stateTrackedCommandPool { };
     stateTrackedCommandPool.type = VK_OBJECT_TYPE_COMMAND_POOL;
     stateTrackedCommandPool.handle = (uint64_t)(VkCommandPool)commandPool;
@@ -106,7 +96,6 @@ TEST(CommandBuffer, CommandBufferResourceLifetime)
     }
     commandPool.reset();
 
-    // TODO : Documentation
     enumerator.records.clear();
     pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);

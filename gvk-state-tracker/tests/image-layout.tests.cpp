@@ -26,17 +26,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "state-tracker-test-utilities.hpp"
 
-/**
-TODO : Documentation
-*/
 TEST(ImageLayout, SingleMipSingleArray)
 {
-    // TODO : Documentation
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
     load_gvk_state_tracker_entry_points();
 
-    // TODO : Documentation
     auto imageCreateInfo = gvk::get_default<VkImageCreateInfo>();
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
     imageCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -45,37 +40,28 @@ TEST(ImageLayout, SingleMipSingleArray)
     gvk::DeviceMemory deviceMemory;
     create_memory_bound_image(context, imageCreateInfo, &image, &deviceMemory);
 
-    // TODO : Documentation
     auto stateTrackedImage = gvk::get_state_tracked_object(image);
     VkImageLayout imageLayout { };
     pfnGvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), &imageLayout);
     EXPECT_EQ(imageLayout, VK_IMAGE_LAYOUT_UNDEFINED);
 
-    // TODO : Documentation
     imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
     create_memory_bound_image(context, imageCreateInfo, &image, &deviceMemory);
 
-    // TODO : Documentation
     stateTrackedImage = gvk::get_state_tracked_object(image);
     pfnGvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), &imageLayout);
     EXPECT_EQ(imageLayout, VK_IMAGE_LAYOUT_PREINITIALIZED);
 }
 
-/**
-TODO : Documentation
-*/
 TEST(ImageLayout, MultiMipMultiArray)
 {
-    // TODO : Documentation
     const VkExtent3D Extent { 512, 512, 1 };
     const uint32_t ArrayLayers = 4;
 
-    // TODO : Documentation
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
     load_gvk_state_tracker_entry_points();
 
-    // TODO : Documentation
     auto imageCreateInfo = gvk::get_default<VkImageCreateInfo>();
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
     imageCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -87,7 +73,6 @@ TEST(ImageLayout, MultiMipMultiArray)
     gvk::DeviceMemory deviceMemory;
     create_memory_bound_image(context, imageCreateInfo, &image, &deviceMemory);
 
-    // TODO : Documentation
     auto stateTrackedImage = gvk::get_state_tracked_object(image);
     std::vector<VkImageLayout> imageLayouts(imageCreateInfo.mipLevels * imageCreateInfo.arrayLayers);
     pfnGvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), imageLayouts.data());
@@ -95,11 +80,9 @@ TEST(ImageLayout, MultiMipMultiArray)
         EXPECT_EQ(imageLayout, VK_IMAGE_LAYOUT_UNDEFINED);
     }
 
-    // TODO : Documentation
     imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
     create_memory_bound_image(context, imageCreateInfo, &image, &deviceMemory);
 
-    // TODO : Documentation
     stateTrackedImage = gvk::get_state_tracked_object(image);
     pfnGvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), imageLayouts.data());
     for (const auto& imageLayout : imageLayouts) {
@@ -107,21 +90,15 @@ TEST(ImageLayout, MultiMipMultiArray)
     }
 }
 
-/**
-TODO : Documentation
-*/
 TEST(ImageLayout, PipelineBarrier)
 {
-    // TODO : Documentation
     const VkExtent3D Extent { 512, 512, 1 };
     const uint32_t ArrayLayers = 4;
 
-    // TODO : Documentation
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
     load_gvk_state_tracker_entry_points();
 
-    // TODO : Documentation
     auto imageCreateInfo = gvk::get_default<VkImageCreateInfo>();
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
     imageCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -133,7 +110,6 @@ TEST(ImageLayout, PipelineBarrier)
     gvk::DeviceMemory deviceMemory;
     create_memory_bound_image(context, imageCreateInfo, &image, &deviceMemory);
 
-    // TODO : Documentation
     std::array<VkImageMemoryBarrier, 2> imageMemoryBarriers { };
     for (auto& imageMemoryBarrier : imageMemoryBarriers) {
         imageMemoryBarrier = gvk::get_default<VkImageMemoryBarrier>();
@@ -150,7 +126,6 @@ TEST(ImageLayout, PipelineBarrier)
     imageMemoryBarriers[1].subresourceRange.baseArrayLayer = imageCreateInfo.arrayLayers / 2;
     imageMemoryBarriers[1].subresourceRange.baseMipLevel = imageCreateInfo.mipLevels / 2;
 
-    // TODO : Documentation
     gvk::execute_immediately(
         context.get_devices()[0],
         gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
@@ -173,7 +148,6 @@ TEST(ImageLayout, PipelineBarrier)
         }
     );
 
-    // TODO : Documentation
     auto stateTrackedImage = gvk::get_state_tracked_object(image);
     std::vector<VkImageLayout> imageLayouts(imageCreateInfo.mipLevels * imageCreateInfo.arrayLayers);
     pfnGvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), imageLayouts.data());
@@ -189,21 +163,15 @@ TEST(ImageLayout, PipelineBarrier)
     }
 }
 
-/**
-TODO : Documentation
-*/
 TEST(ImageLayout, PipelineBarrier2)
 {
-    // TODO : Documentation
     const VkExtent3D Extent { 512, 512, 1 };
     const uint32_t ArrayLayers = 4;
 
-    // TODO : Documentation
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
     load_gvk_state_tracker_entry_points();
 
-    // TODO : Documentation
     auto imageCreateInfo = gvk::get_default<VkImageCreateInfo>();
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
     imageCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -215,7 +183,6 @@ TEST(ImageLayout, PipelineBarrier2)
     gvk::DeviceMemory deviceMemory;
     create_memory_bound_image(context, imageCreateInfo, &image, &deviceMemory);
 
-    // TODO : Documentation
     std::array<VkImageMemoryBarrier2, 2> imageMemoryBarriers { };
     for (auto& imageMemoryBarrier : imageMemoryBarriers) {
         imageMemoryBarrier = gvk::get_default<VkImageMemoryBarrier2>();
@@ -232,12 +199,10 @@ TEST(ImageLayout, PipelineBarrier2)
     imageMemoryBarriers[1].subresourceRange.baseArrayLayer = imageCreateInfo.arrayLayers / 2;
     imageMemoryBarriers[1].subresourceRange.baseMipLevel = imageCreateInfo.mipLevels / 2;
 
-    // TODO : Documentation
     auto dependencyInfo = gvk::get_default<VkDependencyInfo>();
     dependencyInfo.imageMemoryBarrierCount = (uint32_t)imageMemoryBarriers.size();
     dependencyInfo.pImageMemoryBarriers = imageMemoryBarriers.data();
 
-    // TODO : Documentation
     gvk::execute_immediately(
         context.get_devices()[0],
         gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
@@ -251,7 +216,6 @@ TEST(ImageLayout, PipelineBarrier2)
         }
     );
 
-    // TODO : Documentation
     auto stateTrackedImage = gvk::get_state_tracked_object(image);
     std::vector<VkImageLayout> imageLayouts(imageCreateInfo.mipLevels * imageCreateInfo.arrayLayers);
     pfnGvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), imageLayouts.data());
@@ -267,21 +231,15 @@ TEST(ImageLayout, PipelineBarrier2)
     }
 }
 
-/**
-TODO : Documentation
-*/
 TEST(ImageLayout, WaitEvents)
 {
-    // TODO : Documentation
     const VkExtent3D Extent { 512, 512, 1 };
     const uint32_t ArrayLayers = 4;
 
-    // TODO : Documentation
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
     load_gvk_state_tracker_entry_points();
 
-    // TODO : Documentation
     auto imageCreateInfo = gvk::get_default<VkImageCreateInfo>();
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
     imageCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -293,7 +251,6 @@ TEST(ImageLayout, WaitEvents)
     gvk::DeviceMemory deviceMemory;
     create_memory_bound_image(context, imageCreateInfo, &image, &deviceMemory);
 
-    // TODO : Documentation
     std::array<VkImageMemoryBarrier, 2> imageMemoryBarriers { };
     for (auto& imageMemoryBarrier : imageMemoryBarriers) {
         imageMemoryBarrier = gvk::get_default<VkImageMemoryBarrier>();
@@ -310,7 +267,6 @@ TEST(ImageLayout, WaitEvents)
     imageMemoryBarriers[1].subresourceRange.baseArrayLayer = imageCreateInfo.arrayLayers / 2;
     imageMemoryBarriers[1].subresourceRange.baseMipLevel = imageCreateInfo.mipLevels / 2;
 
-    // TODO : Documentation
     auto eventCreateInfo = gvk::get_default<VkEventCreateInfo>();
     gvk::Event event;
     ASSERT_EQ(gvk::Event::create(context.get_devices()[0], &eventCreateInfo, nullptr, &event), VK_SUCCESS);
@@ -318,7 +274,6 @@ TEST(ImageLayout, WaitEvents)
     assert(dispatchTable.gvkSetEvent);
     ASSERT_EQ(dispatchTable.gvkSetEvent(context.get_devices()[0], event), VK_SUCCESS);
 
-    // TODO : Documentation
     gvk::execute_immediately(
         context.get_devices()[0],
         gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
@@ -341,7 +296,6 @@ TEST(ImageLayout, WaitEvents)
         }
     );
 
-    // TODO : Documentation
     auto stateTrackedImage = gvk::get_state_tracked_object(image);
     std::vector<VkImageLayout> imageLayouts(imageCreateInfo.mipLevels * imageCreateInfo.arrayLayers);
     pfnGvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), imageLayouts.data());
@@ -357,21 +311,15 @@ TEST(ImageLayout, WaitEvents)
     }
 }
 
-/**
-TODO : Documentation
-*/
 TEST(ImageLayout, WaitEvents2)
 {
-    // TODO : Documentation
     const VkExtent3D Extent { 512, 512, 1 };
     const uint32_t ArrayLayers = 4;
 
-    // TODO : Documentation
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
     load_gvk_state_tracker_entry_points();
 
-    // TODO : Documentation
     auto imageCreateInfo = gvk::get_default<VkImageCreateInfo>();
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
     imageCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -383,7 +331,6 @@ TEST(ImageLayout, WaitEvents2)
     gvk::DeviceMemory deviceMemory;
     create_memory_bound_image(context, imageCreateInfo, &image, &deviceMemory);
 
-    // TODO : Documentation
     std::array<VkImageMemoryBarrier2, 2> imageMemoryBarriers { };
     for (auto& imageMemoryBarrier : imageMemoryBarriers) {
         imageMemoryBarrier = gvk::get_default<VkImageMemoryBarrier2>();
@@ -401,12 +348,10 @@ TEST(ImageLayout, WaitEvents2)
     imageMemoryBarriers[1].subresourceRange.baseArrayLayer = imageCreateInfo.arrayLayers / 2;
     imageMemoryBarriers[1].subresourceRange.baseMipLevel = imageCreateInfo.mipLevels / 2;
 
-    // TODO : Documentation
     auto dependencyInfo = gvk::get_default<VkDependencyInfo>();
     dependencyInfo.imageMemoryBarrierCount = (uint32_t)imageMemoryBarriers.size();
     dependencyInfo.pImageMemoryBarriers = imageMemoryBarriers.data();
 
-    // TODO : Documentation
     auto eventCreateInfo = gvk::get_default<VkEventCreateInfo>();
     gvk::Event event;
     ASSERT_EQ(gvk::Event::create(context.get_devices()[0], &eventCreateInfo, nullptr, &event), VK_SUCCESS);
@@ -414,7 +359,6 @@ TEST(ImageLayout, WaitEvents2)
     assert(dispatchTable.gvkSetEvent);
     ASSERT_EQ(dispatchTable.gvkSetEvent(context.get_devices()[0], event), VK_SUCCESS);
 
-    // TODO : Documentation
     gvk::execute_immediately(
         context.get_devices()[0],
         gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
@@ -427,7 +371,6 @@ TEST(ImageLayout, WaitEvents2)
         }
     );
 
-    // TODO : Documentation
     auto stateTrackedImage = gvk::get_state_tracked_object(image);
     std::vector<VkImageLayout> imageLayouts(imageCreateInfo.mipLevels * imageCreateInfo.arrayLayers);
     pfnGvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), imageLayouts.data());
@@ -443,17 +386,12 @@ TEST(ImageLayout, WaitEvents2)
     }
 }
 
-/**
-TODO : Documentation
-*/
 TEST(ImageLayout, RenderPass)
 {
-    // TODO : Documentation
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
     load_gvk_state_tracker_entry_points();
 
-    // Get color VkFormat
     auto colorFormat = VK_FORMAT_UNDEFINED;
     auto physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
     gvk::enumerate_formats(
@@ -463,7 +401,6 @@ TEST(ImageLayout, RenderPass)
         VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT,
         [&](VkFormat format)
         {
-            // TODO : Revisit this logic
             GvkFormatInfo formatInfo { };
             gvk::get_format_info(format, &formatInfo);
             if (gvk::get_bits_per_texel(format) == 32 &&
@@ -481,30 +418,6 @@ TEST(ImageLayout, RenderPass)
     EXPECT_EQ(colorFormat, VK_FORMAT_R8G8B8A8_UNORM);
 
     // Get depth VkFormat
-#if 0
-    auto depthFormat = VK_FORMAT_UNDEFINED;
-    auto requestedDepthFormat = VK_FORMAT_D32_SFLOAT;
-    auto requestedDepthBits = gvk::get_format_info(requestedDepthFormat).components[0].bits;
-    gvk::enumerate_formats(
-        context.get_devices()[0].get<gvk::PhysicalDevice>(),
-        VK_IMAGE_TILING_OPTIMAL,
-        VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT,
-        [&](VkFormat format)
-        {
-            // TODO : Revisit this logic
-            if (format == requestedDepthFormat) {
-                depthFormat = requestedDepthFormat;
-            } else {
-                auto actualDepthBits = depthFormat ? gvk::get_format_info(depthFormat).components[0].bits : 0;
-                auto formatDepthBits = gvk::get_format_info(format).components[0].bits;
-                if (actualDepthBits < formatDepthBits && formatDepthBits <= requestedDepthBits) {
-                    depthFormat = format;
-                }
-            }
-            return depthFormat != requestedDepthFormat;
-        }
-    );
-#else
     auto depthFormat = VK_FORMAT_UNDEFINED;
     auto requestedDepthFormat = VK_FORMAT_D32_SFLOAT;
     GvkFormatInfo depthFormatInfo { };
@@ -519,7 +432,7 @@ TEST(ImageLayout, RenderPass)
         VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT,
         [&](VkFormat format)
         {
-            // TODO : Revisit this logic
+            // TODO : Abstract this logic into a utility function
             if (format == requestedDepthFormat) {
                 depthFormat = requestedDepthFormat;
             } else {
@@ -542,7 +455,6 @@ TEST(ImageLayout, RenderPass)
             return depthFormat != requestedDepthFormat;
         }
     );
-#endif
     EXPECT_NE(depthFormat, VK_FORMAT_UNDEFINED);
 
     // Get VkSampleCountFlagBits
@@ -557,7 +469,6 @@ TEST(ImageLayout, RenderPass)
     gvk::RenderTarget renderTarget;
     create_render_target(context, &renderTargetValidationCreateInfo, &renderTarget);
 
-    // TODO : Documentation
     gvk::execute_immediately(
         context.get_devices()[0],
         gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
@@ -574,7 +485,6 @@ TEST(ImageLayout, RenderPass)
         }
     );
 
-    // TODO : Documentation
     auto renderPass = renderTarget.get_render_pass();
     ASSERT_TRUE(renderPass);
     auto renderPassCreateInfo = renderPass.get<VkRenderPassCreateInfo2>();
@@ -588,39 +498,13 @@ TEST(ImageLayout, RenderPass)
     }
 }
 
-/**
-TODO : Documentation
-*/
 TEST(ImageLayout, RenderPass2)
 {
-    // TODO : Documentation
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
     load_gvk_state_tracker_entry_points();
 
     // Get color VkFormat
-#if 0
-    auto colorFormat = VK_FORMAT_UNDEFINED;
-    gvk::enumerate_formats(
-        context.get_devices()[0].get<gvk::PhysicalDevice>(),
-        VK_IMAGE_TILING_OPTIMAL,
-        VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT,
-        [&](VkFormat format)
-        {
-            const auto& formatInfo = gvk::get_format_info(format);
-            if (formatInfo.components.size() == 4 &&
-                formatInfo.bits_per_pixel() == 32 &&
-                formatInfo.compressionType == gvk::CompressionType::CT_None &&
-                formatInfo.numericFormat == gvk::NumericFormat::NF_UNORM &&
-                !formatInfo.packed &&
-                !formatInfo.chroma
-            ) {
-                colorFormat = format;
-            }
-            return colorFormat == VK_FORMAT_UNDEFINED;
-        }
-    );
-#else
     auto colorFormat = VK_FORMAT_UNDEFINED;
     auto physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
     gvk::enumerate_formats(
@@ -630,7 +514,6 @@ TEST(ImageLayout, RenderPass2)
         VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT,
         [&](VkFormat format)
         {
-            // TODO : Revisit this logic
             GvkFormatInfo formatInfo { };
             gvk::get_format_info(format, &formatInfo);
             if (gvk::get_bits_per_texel(format) == 32 &&
@@ -645,33 +528,9 @@ TEST(ImageLayout, RenderPass2)
             return colorFormat == VK_FORMAT_UNDEFINED;
         }
     );
-#endif
     EXPECT_EQ(colorFormat, VK_FORMAT_R8G8B8A8_UNORM);
 
     // Get depth VkFormat
-#if 0
-    auto depthFormat = VK_FORMAT_UNDEFINED;
-    auto requestedDepthFormat = VK_FORMAT_D32_SFLOAT;
-    auto requestedDepthBits = gvk::get_format_info(requestedDepthFormat).components[0].bits;
-    gvk::enumerate_formats(
-        context.get_devices()[0].get<gvk::PhysicalDevice>(),
-        VK_IMAGE_TILING_OPTIMAL,
-        VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT,
-        [&](VkFormat format)
-        {
-            if (format == requestedDepthFormat) {
-                depthFormat = requestedDepthFormat;
-            } else {
-                auto actualDepthBits = depthFormat ? gvk::get_format_info(depthFormat).components[0].bits : 0;
-                auto formatDepthBits = gvk::get_format_info(format).components[0].bits;
-                if (actualDepthBits < formatDepthBits && formatDepthBits <= requestedDepthBits) {
-                    depthFormat = format;
-                }
-            }
-            return depthFormat != requestedDepthFormat;
-        }
-    );
-#else
     auto depthFormat = VK_FORMAT_UNDEFINED;
     auto requestedDepthFormat = VK_FORMAT_D32_SFLOAT;
     GvkFormatInfo depthFormatInfo { };
@@ -686,7 +545,7 @@ TEST(ImageLayout, RenderPass2)
         VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT,
         [&](VkFormat format)
         {
-            // TODO : Revisit this logic
+            // TODO : Abstract this logic into a utility function
             if (format == requestedDepthFormat) {
                 depthFormat = requestedDepthFormat;
             } else {
@@ -709,7 +568,6 @@ TEST(ImageLayout, RenderPass2)
             return depthFormat != requestedDepthFormat;
         }
     );
-#endif
     EXPECT_NE(depthFormat, VK_FORMAT_UNDEFINED);
 
     // Get VkSampleCountFlagBits
@@ -724,7 +582,6 @@ TEST(ImageLayout, RenderPass2)
     gvk::RenderTarget renderTarget;
     create_render_target(context, &renderTargetValidationCreateInfo, &renderTarget);
 
-    // TODO : Documentation
     gvk::execute_immediately(
         context.get_devices()[0],
         gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
@@ -743,7 +600,6 @@ TEST(ImageLayout, RenderPass2)
         }
     );
 
-    // TODO : Documentation
     auto renderPass = renderTarget.get_render_pass();
     ASSERT_TRUE(renderPass);
     auto renderPassCreateInfo = renderPass.get<VkRenderPassCreateInfo2>();

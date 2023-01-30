@@ -125,7 +125,9 @@ int main(int, const char*[])
             //  gvk::system::Surface objects to process window/input events...
             gvk::system::Surface::update();
 
-            // TODO : Documentation
+            // Call wsiManager.update().  This will cause the WsiManager to respond to system
+            //  updates for the SurfaceKHR it's managing.  This call may cause resources to
+            //  be created/destroyed.  If there's a valid SwapchainKHR, render and present.
             wsiManager.update();
             auto swapchain = wsiManager.get_swapchain();
             if (swapchain) {

@@ -496,7 +496,6 @@ inline VkResult gvk_sample_create_render_target(const gvk::Context& context, Gvk
         //  the supported VkFormat with the highest bit depth that is less than or
         //  equal to the requested VkFormat.
         if (createInfo.depthFormat) {
-            // TODO : Revisit this logic
             auto requestedDepthFormat = createInfo.depthFormat;
             GvkFormatInfo requestedDepthFormatInfo { };
             gvk::get_format_info(requestedDepthFormat, &requestedDepthFormatInfo);

@@ -117,7 +117,6 @@ private:
                 assert(targetHandleItr != manifest.handles.end());
                 auto targetHandle = targetHandleItr->second;
 
-                // TODO : Documentation
                 std::vector<string::Replacement> replacements {
                     { "{returnType}", command.returnType },
                     { "{commandName}", command.name },
@@ -131,7 +130,6 @@ private:
                     { "{parentGvkHandleType}", string::strip_vk(command.parameters.front().type) },
                 };
 
-                // TODO : Documentation
                 std::string objectTrackerExpression;
                 if (targetHandle.name == "VkInstance") {
                     objectTrackerExpression = "mInstanceTracker";
@@ -142,13 +140,11 @@ private:
                 }
                 replacements.push_back({ "{objectTrackerExpression}", objectTrackerExpression });
 
-                // TODO : Documentation
                 auto dispatchableHandleIdExpression = "*{vkHandleArgument}";
                 auto nonDispatchableHandleIdExpression = get_handle_id_type(manifest, targetHandle) + "({parentVkHandleArgument}, *{vkHandleArgument})";
                 auto handleIdExpression = string::replace(targetHandle.isDispatchable ? dispatchableHandleIdExpression : nonDispatchableHandleIdExpression, replacements);
                 replacements.push_back({ "{handleIdExpression}", handleIdExpression });
 
-                // TODO : Documentation
                 auto dispatchableHandleLookupExpression = "{gvkHandleType}({vkHandleArgument})";
                 auto nonDispatchableHandleLookupExpression = "{gvkHandleType}({ {parentVkHandleArgument}, {vkHandleArgument} })";
                 auto handleLookupExpression = string::replace(targetHandle.isDispatchable ? dispatchableHandleLookupExpression : nonDispatchableHandleLookupExpression, replacements);

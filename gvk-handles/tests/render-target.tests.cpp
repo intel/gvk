@@ -226,7 +226,6 @@ TEST(RenderTarget, ResourceCreation)
         VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT,
         [&](VkFormat format)
         {
-            // TODO : Revisit this logic
             GvkFormatInfo formatInfo { };
             gvk::get_format_info(format, &formatInfo);
             if (gvk::get_bits_per_texel(format) == 32 &&
@@ -258,7 +257,7 @@ TEST(RenderTarget, ResourceCreation)
         VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT,
         [&](VkFormat format)
         {
-            // TODO : Revisit this logic
+            // TODO : Abstract this logic into a utility function
             if (format == requestedDepthFormat) {
                 depthFormat = requestedDepthFormat;
             } else {

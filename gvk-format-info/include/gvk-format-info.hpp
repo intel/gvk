@@ -43,10 +43,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 
 /**
-TODO : Documentation
 Gets the FormatInfo for a specified VkFormat
 @param [in] format The VkFormat to get FormatInfo for
-@return The FormatInfo for the specified VkFormat
+@param [out] pFormatInfo The FormatInfo for the specified VkFormat
 */
 void get_format_info(VkFormat format, GvkFormatInfo* pFormatInfo);
 
@@ -58,16 +57,17 @@ Gets the VkImageAspectFlags for a specified VkFormat
 VkImageAspectFlags get_image_aspect_flags(VkFormat format);
 
 /**
-TODO : Documentation
 Gets the nubmer of bits per texel (if applicable) of a specific VkFormat
+@param [in] format The VkFormat to get bits per texel for
+@return The bits per texel of the specified VkFormat
 */
 uint32_t get_bits_per_texel(VkFormat format);
 
 /**
-TODO : Documentation
 Executes a given function for every VkFormat the fulfills the provided criteria
 @typename <ProcessFormatFunctionType> The type of function to execute for each VkFormat the fulfills the provided criteria
     @note The function type must accept a single VkFormat argument and return a bool indicating whether or not to continue enumerating
+@param [in] pfnVkGetPhysicalDeviceFormatProperties2 A pointer to vkGetPhysicalDeviceFormatProperties2
 @param [in] vkPhysicalDevice The VkPhysicalDevice to get VkFormat properties from
 @param [in] imageTiling The VkImageTiling features to check for support
 @param [in] featureFlags The VkFormatFeatureFlags2 to check for support

@@ -112,7 +112,7 @@ int main(int, const char*[])
         gvk::WsiManager wsiManager;
         gvk_result(gvk_sample_create_wsi_manager(context, systemSurface, &wsiManager));
 
-        // TODO : Documentation
+        // Create a gvk::gui::Renderer
         gvk::gui::Renderer guiRenderer;
         gvk_result(gvk::gui::Renderer::create(
             context.get_devices()[0],
@@ -407,7 +407,8 @@ int main(int, const char*[])
         };
         vkUpdateDescriptorSets(context.get_devices()[0], (uint32_t)writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
 
-        // TODO : Documentation
+        // In addition to the DescriptorSets used for the 3D scene, we'll need one more
+        //  to provide ImGui with the render target for display in the gui
         std::vector<gvk::DescriptorSet> guiDescriptorSets;
         gvk_result(gvk_sample_allocate_descriptor_sets(guiRenderer.get_pipeline(), guiDescriptorSets));
         assert(guiDescriptorSets.size() == 1);
@@ -418,7 +419,7 @@ int main(int, const char*[])
         writeDescriptorSet.pImageInfo = &renderTargetColorAttachmentDescriptorInfo;
         vkUpdateDescriptorSets(context.get_devices()[0], 1, &writeDescriptorSet, 0, nullptr);
 
-        // TODO : Documentation
+        // These variables will be controlled via gui widgets
         bool showGui = true;
         float anchor = 1.5f;
         float amplitude = 0.5f;
@@ -443,12 +444,12 @@ int main(int, const char*[])
             auto deltaTime = clock.elapsed<gvk::system::Seconds<float>>();
             const auto& input = systemSurface.get_input();
 
-            // TODO : Documentation
+            // Toggle the gui display with [`]
             if (input.keyboard.pressed(gvk::system::Key::OEM_Tilde)) {
                 showGui = !showGui;
             }
 
-            // TODO : Documentation
+            // When ImGui wants mouse/keyboard input, input should be ignored by the scene
             if (!ImGui::GetIO().WantCaptureMouse && !ImGui::GetIO().WantCaptureKeyboard) {
                 gvk::math::FreeCameraController::UpdateInfo cameraControllerUpdateInfo {
                     /* .deltaTime           = */ deltaTime,
@@ -520,12 +521,14 @@ int main(int, const char*[])
                 auto extent = wsiManager.get_swapchain().get<VkSwapchainCreateInfoKHR>().imageExtent;
                 camera.set_aspect_ratio(extent.width, extent.height);
 
-                // TODO : Documentation
+                // Get VkFences from the WsiManager.  The gvk::gui::Renderer will wait on these
+                //  VkFences to ensure that it doesn't destroy any resources that are still in
+                //  use by the WsiManager
                 const auto& vkFences = wsiManager.get_vk_fences();
 
-                // TODO : Documentation
+                // If the gvk::gui::Renderer is enabled, update values based on gui interaction
                 if (showGui) {
-                    // TODO : Documentation
+                    // Update the gvk::system::Surface::CursorMode mode based on gui interaction
                     auto imguiCursor = ImGui::GetMouseCursor();
                     if (imguiCursor == ImGuiMouseCursor_None || ImGui::GetIO().MouseDrawCursor) {
                         systemSurface.set_cursor_mode(gvk::system::Surface::CursorMode::Hidden);
@@ -550,7 +553,7 @@ int main(int, const char*[])
                         ImGui::GetIO().AddFocusEvent(false);
                     }
 
-                    // TODO : Documentation
+                    // Prepare a gvk::gui::Renderer::BeginInfo
                     const auto& textStream = systemSurface.get_text_stream();
                     auto guiRendererBeginInfo = gvk::get_default<gvk::gui::Renderer::BeginInfo>();
                     guiRendererBeginInfo.deltaTime = deltaTime;
@@ -559,7 +562,8 @@ int main(int, const char*[])
                     guiRendererBeginInfo.textStreamCodePointCount = (uint32_t)textStream.size();
                     guiRendererBeginInfo.pTextStreamCodePoints = !textStream.empty() ? textStream.data() : nullptr;
 
-                    // TODO : Documentation
+                    // Call guiRenderer.begin_gui().  Note that all ImGui widgets must be handled
+                    //  between calls to begin_gui()/end_gui()
                     guiRenderer.begin_gui(guiRendererBeginInfo);
                     ImGui::ShowDemoWindow();
                     ImGui::DragFloat("anchor", &anchor, 0.01f);
@@ -628,6 +632,7 @@ int main(int, const char*[])
                     cubeMesh.record_cmds(commandBuffer);
                 }
 
+                // If the gvk::gui::Renderer is enabled, record cmds to render it
                 if (showGui) {
                     guiRenderer.record_cmds(commandBuffer);
                 }

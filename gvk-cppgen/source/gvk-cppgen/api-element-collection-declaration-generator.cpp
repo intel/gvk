@@ -40,8 +40,13 @@ void ApiElementCollectionDeclarationGenerator::generate(const ApiElementCollecti
     HeaderGuardGenerator headerGuardGenerator(file, apiElements.headerGuard);
     file << std::endl;
     file << "#include \"vulkan/vulkan.h\"" << std::endl;
+    generate_enumeration_declarations(file, apiElements);
+    generate_structure_declarations(file, apiElements);
+    file << std::endl;
+}
 
-    // TODO : Documentation
+void ApiElementCollectionDeclarationGenerator::generate_enumeration_declarations(FileGenerator& file, const ApiElementCollectionInfo& apiElements)
+{
     for (const auto& enumeration : apiElements.enumerations) {
         file << std::endl;
         file << "typedef enum " << enumeration.name << " {" << std::endl;
@@ -55,8 +60,10 @@ void ApiElementCollectionDeclarationGenerator::generate(const ApiElementCollecti
         file << "MAX_ENUM = 0x7FFFFFFF" << std::endl;
         file << "} " << enumeration.name << ";" << std::endl;
     }
+}
 
-    // TODO : Documentation
+void ApiElementCollectionDeclarationGenerator::generate_structure_declarations(FileGenerator& file, const ApiElementCollectionInfo& apiElements)
+{
     for (const auto& structure : apiElements.structures) {
         file << std::endl;
         CompileGuardGenerator compileGuardGenerator(file, structure.compileGuards);
@@ -70,7 +77,6 @@ void ApiElementCollectionDeclarationGenerator::generate(const ApiElementCollecti
         }
         file << "} " << structure.name << ";" << std::endl;
     }
-    file << std::endl;
 }
 
 } // namespace cppgen
