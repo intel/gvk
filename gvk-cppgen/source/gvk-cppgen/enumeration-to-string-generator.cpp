@@ -110,7 +110,11 @@ void EnumerationToStringGenerator::generate_source(FileGenerator& file, const Ap
                 for (const auto& enumerator : enumeration.enumerators) {
                     if (enumerator.alias.empty()) {
                         CompileGuardGenerator enumeratorCompileGuardGenerator(file, enumerator.compileGuards);
-                        file << string::replace("    if (flags & {enumIdentifier}) strStrm << \"{enumIdentifier}|\";", "{enumIdentifier}", enumerator.name) << std::endl;
+                        if (enumerator.value == "0") {
+                            file << string::replace("    if (!flags) strStrm << \"{enumIdentifier}|\";", "{enumIdentifier}", enumerator.name) << std::endl;
+                        } else {
+                            file << string::replace("    if (flags & {enumIdentifier}) strStrm << \"{enumIdentifier}|\";", "{enumIdentifier}", enumerator.name) << std::endl;
+                        }
                     }
                 }
                 file << "    auto str = strStrm.str();" << std::endl;

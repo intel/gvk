@@ -24,12 +24,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "gvk-handles/detail/handle-utilities.hpp"
 #include "gvk-dispatch-table.hpp"
+#include "gvk-handles/detail/handle-utilities.hpp"
 #include "gvk-handles/generated/handles.hpp"
-// #include "gvk/structures.hpp"
-#include "gvk-structures/defaults.hpp"
 #include "gvk-handles/handles.hpp"
+#include "gvk-structures/defaults.hpp"
 
 #include <cassert>
 
@@ -82,6 +81,25 @@ VkResult Image::create(const Device& device, const VkImageCreateInfo* pImageCrea
             imageControlBlock.mVmaAllocation = vmaAllocation;
             gvk_result(detail::initialize_control_block(imageControlBlock));
         }
+    } gvk_result_scope_end;
+    return gvkResult;
+}
+
+VkResult DeferredOperationKHR::create(const Device& device, const VkAllocationCallbacks* pAllocator, DeferredOperationKHR* pDeferredOperation)
+{
+    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+        assert(pDeferredOperation);
+        auto dispatchTable = device.get<DispatchTable>();
+        assert(dispatchTable.gvkCreateDeferredOperationKHR);
+        VkDeferredOperationKHR vkDeferredOperationKHR = VK_NULL_HANDLE;
+        auto pVkDeferredOperationKHR = &vkDeferredOperationKHR;
+        gvk_result(dispatchTable.gvkCreateDeferredOperationKHR(device, pAllocator, pVkDeferredOperationKHR));
+        pDeferredOperation->mReference.reset(gvk::newref, gvk::HandleId<VkDevice, VkDeferredOperationKHR>(device, *pVkDeferredOperationKHR));
+        auto& controlBlock = pDeferredOperation->mReference.get_obj();
+        controlBlock.mVkDeferredOperationKHR = *pVkDeferredOperationKHR;
+        controlBlock.mDevice = device;
+        controlBlock.mAllocationCallbacks = pAllocator ? *pAllocator : VkAllocationCallbacks { };
+        gvk_result(gvk::detail::initialize_control_block(*pDeferredOperation));
     } gvk_result_scope_end;
     return gvkResult;
 }

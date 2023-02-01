@@ -149,16 +149,18 @@ std::string BasicHandleGenerator::get_member_assignment_expression(const xml::Ma
                     assert(parameter.flags & xml::Pointer);
                     auto parameterDereference = string::replace(
                         "{dereference}{parameterName}{index}", {
-                            { "{parameterName}", parameter.name },
                             { "{dereference}", parameter.flags & xml::Array ? std::string() : "*" },
+                            { "{parameterName}", parameter.name },
                             { "{index}", parameter.flags & xml::Array ? "[i]" : std::string() },
                         }
                     );
                     return string::replace(
-                        "{parameterName} ? {parameterDereference} : {parameterUnqualifiedType} { }", {
-                            { "{parameterName}", parameter.name },
-                            { "{parameterDereference}", parameterDereference },
-                            { "{parameterUnqualifiedType}", parameter.unqualifiedType },
+                        mHandle.createInfos.count(parameter.unqualifiedType) ?
+                            "{parameterDereference}" :
+                            "{parameterName} ? {parameterDereference} : {parameterUnqualifiedType} { }", {
+                                { "{parameterName}", parameter.name },
+                                { "{parameterDereference}", parameterDereference },
+                                { "{parameterUnqualifiedType}", parameter.unqualifiedType },
                         }
                     );
                 }
@@ -211,7 +213,7 @@ std::string BasicHandleGenerator::get_member_assignment_expression(const xml::Ma
                                     );
                                 } else {
                                     return string::replace(
-                                        "{handleIdType}({dispatchableHandleParameterName}, {parameterName} ? {parameterDereference}{parameterMemberDereference} : VK_NULL_HANDLE)", {
+                                        "{handleIdType}({dispatchableHandleParameterName}, {parameterDereference}{parameterMemberDereference})", {
                                             { "{handleIdType}", get_handle_id_type(manifest, memberHandle) },
                                             { "{dispatchableHandleParameterName}", command.parameters.begin()->name },
                                             { "{parameterName}", parameter.name },

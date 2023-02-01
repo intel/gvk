@@ -294,7 +294,7 @@ void gvk::print<gvk::xml::Extension>(gvk::Printer& printer, const gvk::xml::Exte
                 printer.print_collection("types", obj.types);
             }
             if (!obj.enumerations.empty()) {
-                printer.print_collection("enumerations", obj.enumerations, [](auto itr) { return itr.second; });
+                printer.print_collection("enumerations", obj.enumerations, [](const auto& itr) { return itr.second; });
             }
             if (!obj.commands.empty()) {
                 printer.print_collection("commands", obj.commands);
@@ -319,7 +319,7 @@ void gvk::print<gvk::xml::Feature>(gvk::Printer& printer, const gvk::xml::Featur
                 printer.print_collection("types", obj.types);
             }
             if (!obj.enumerations.empty()) {
-                printer.print_collection("enumerations", obj.enumerations, [](auto itr) { return itr.second; });
+                printer.print_collection("enumerations", obj.enumerations, [](const auto& itr) { return itr.second; });
             }
             if (!obj.commands.empty()) {
                 printer.print_collection("commands", obj.commands);

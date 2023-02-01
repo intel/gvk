@@ -70,6 +70,9 @@ public:
             add_member(MemberInfo("VmaAllocation", "mVmaAllocation", "VmaAllocation"));
             add_manually_implemented_dtor();
         }
+        if (handle.name == "VkDeferredOperationKHR") {
+            generate_ctors(true, false);
+        }
         if (handle.name == "VkSwapchainKHR") {
             add_member(MemberInfo("std::vector<Image>", "mImages", "const std::vector<Image>&"));
         }
@@ -99,6 +102,14 @@ protected:
         if (parameters.back().flags & xml::Array) {
             parameters.back().name += "s";
         }
+
+        std::string createInfoArg;
+        for (const auto& parameter : parameters) {
+            if (get_handle().createInfos.count(parameter.unqualifiedType)) {
+                createInfoArg = parameter.name;
+            }
+        }
+
         auto handleId = parameters.back().flags & xml::Array ? parameters.back().name + "[i]" : "*" + parameters.back().name;
         if (!get_handle().isDispatchable) {
             auto dispatchableHandle = get_handle().get_dispatchable_handle(manifest);
@@ -114,6 +125,7 @@ protected:
             { "{handleName}", get_handle_name() },
             { "{handleCount}", parameters.back().flags & xml::Array ? ctor.parameters.back().length : "1" },
             { "{outArg}", ctor.parameters.back().name },
+            { "{createInfoArg}", createInfoArg },
             { "{ctorName}", get_ctor_name(ctor) },
             { "{ctorParameterList}", get_parameter_list(get_ctor_parameters(manifest, ctor)) },
             { "{vkCreateCommand}", ctor.name },
@@ -130,6 +142,7 @@ protected:
 R"(VkResult {handleName}::{ctorName}({ctorParameterList})
 {
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+        assert({createInfoArg});
         assert({handleCount});
         assert({outArg});
         for (uint32_t i = 0; i < {handleCount}; ++i) {
@@ -160,6 +173,7 @@ R"(VkResult {handleName}::{ctorName}({ctorParameterList})
 R"(VkResult {handleName}::{ctorName}({ctorParameterList})
 {
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+        assert({createInfoArg});
         assert({outArg});
         DispatchTable dispatchTable { };
         {initializeDispatchTableExpression};

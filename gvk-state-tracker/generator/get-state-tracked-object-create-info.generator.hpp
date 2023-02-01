@@ -37,7 +37,7 @@ namespace cppgen {
 class GetStateTrackedObjectCreateInfoGenerator final
 {
 public:
-    static void generate(xml::Manifest manifest)
+    static void generate(const xml::Manifest& manifest)
     {
         FileGenerator file(GVK_STATE_TRACKER_GENERATED_SOURCE_PATH "/get-state-tracked-object-create-info.cpp");
         file << std::endl;
