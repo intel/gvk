@@ -4,15 +4,9 @@
 A collection of Vulkan C++ utilities with a general focus on tools development, and a specific focus on supporting [Intel Graphics Performance Analyzers Framework](https://intel.github.io/gpasdk-doc/).
 
 Features:
- - Comparison operators for Vulkan structures
- - Auto copy/destroy Vulkan structures
- - Stringify Vulkan structures
- - Serialize/deserialize Vulkan structures
+ - Vulkan structure utilities (compare/copy/serialize/stringify)
  - Managed Vulkan handles
  - Managed WSI (Window System Integration)
- - Managed Mesh
- - Managed RenderTarget
- - VK_LAYER_INTEL_gvk_state_tracker
  - [ImGui](https://github.com/ocornut/imgui) integration
  - SPIR-V compilation via [glslang](https://github.com/KhronosGroup/glslang)
  - SPIR-V reflection via [SPIRV-Cross](https://github.com/KhronosGroup/SPIRV-Cross)
@@ -26,7 +20,7 @@ Ensure the following tools are installed...
  - [Git](https://git-scm.com/)
  - [Python](https://www.python.org/downloads/) v3+ (Make sure to select "Add to PATH" when prompted)
  - [Visual Studio](https://visualstudio.microsoft.com/vs/community/) 2019 (Make sure to select "Desktop development with C++" when prompted)
- - [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) v1.3.236.0
+ - [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) v1.3.239.0
 
 The following command lines are for configuring a Visual Studio solution using a  `bash` like terminal (Git Bash comes with the Git install by default on Windows) in a directory called `gitrepos/intel` on drive `C:`...
 ```
@@ -52,7 +46,7 @@ set(GVK_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     gvk
     GIT_REPOSITORY "https://github.com/intel/gvk.git"
-    GIT_TAG <desired commit hash/tag>
+    GIT_TAG <desired commit hash>
 )
 FetchContent_MakeAvailable(gvk)
 ```

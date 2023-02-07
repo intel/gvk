@@ -8,7 +8,7 @@ set(SKIP_SPIRV_TOOLS_INSTALL ON  CACHE BOOL "" FORCE)
 FetchContent_Declare(
     SPIRV-Tools
     GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Tools.git"
-    GIT_TAG eb0a36633d2acf4de82588504f951ad0f2cecacb # sdk-1.3.231.1
+    GIT_TAG 63de608daeb7e91fbea6d7477a50debe7cac57ce # sdk-1.3.239.0
     GIT_PROGRESS TRUE
 )
 if(CMAKE_FOLDER)

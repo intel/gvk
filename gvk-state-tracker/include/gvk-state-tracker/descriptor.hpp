@@ -44,6 +44,7 @@ public:
     std::vector<VkDescriptorImageInfo> descriptorImageInfos;
     std::vector<VkBufferView> texelBufferViews;
     std::vector<uint8_t> inlineUniformBlock;
+    bool immutableSamplers { false };
 };
 
 } // namespace state_tracker

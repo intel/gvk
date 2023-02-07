@@ -73,6 +73,9 @@ public:
         if (handle.name == "VkDescriptorSet") {
             add_member(MemberInfo("std::map<uint32_t, Descriptor>", "mDescriptors"));
         }
+        if (handle.name == "VkDescriptorSetLayout") {
+            add_member(MemberInfo("std::map<uint32_t, std::vector<Sampler>>", "mImmutableSamplers"));
+        }
         if (handle.name == "VkCommandBuffer") {
             add_member(MemberInfo("gvk::Auto<VkCommandBufferBeginInfo>", "mCommandbufferBeginInfo"));
             add_member(MemberInfo("CmdTracker", "mCmdTracker"));

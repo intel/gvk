@@ -98,7 +98,7 @@ void StateTracker::enumerate_state_tracked_object_bindings(const GvkStateTracked
     } break;
     case VK_OBJECT_TYPE_COMMAND_BUFFER:
     {
-
+        // TODO : Enumerate cmd bindings
     } break;
     case VK_OBJECT_TYPE_DESCRIPTOR_SET:
     {

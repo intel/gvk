@@ -48,8 +48,12 @@ Descriptor::Descriptor(const VkDescriptorSetLayoutBinding& binding)
     case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
     case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
     {
-        // TODO : immutable samplers
         descriptorImageInfos.resize(descriptorSetLayoutBinding.descriptorCount);
+        if (descriptorSetLayoutBinding.pImmutableSamplers) {
+            for (uint32_t i = 0; i < descriptorSetLayoutBinding.descriptorCount; ++i) {
+                descriptorImageInfos[i].sampler = descriptorSetLayoutBinding.pImmutableSamplers[i];
+            }
+        }
     } break;
     case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
     case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
@@ -105,10 +109,13 @@ uint32_t Descriptor::write(const VkWriteDescriptorSet& descriptorWrite)
         case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
         case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
         {
-            // TODO : immutable samplers
             if (descriptorWrite.pImageInfo) {
                 while (descriptorCount && dstArrayElement < descriptorImageInfos.size()) {
-                    descriptorImageInfos[dstArrayElement] = descriptorWrite.pImageInfo[resourceIndex];
+                    descriptorImageInfos[dstArrayElement].imageView = descriptorWrite.pImageInfo[resourceIndex].imageView;
+                    descriptorImageInfos[dstArrayElement].imageLayout = descriptorWrite.pImageInfo[resourceIndex].imageLayout;
+                    if (!immutableSamplers) {
+                        descriptorImageInfos[dstArrayElement].sampler = descriptorWrite.pImageInfo[resourceIndex].sampler;
+                    }
                     updateIndices();
                 }
             }
@@ -151,6 +158,38 @@ uint32_t Descriptor::write(const VkWriteDescriptorSet& descriptorWrite)
         }
     }
     return writeCount;
+}
+
+VkResult StateTracker::post_vkCreateDescriptorSetLayout(VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorSetLayout* pSetLayout, VkResult gvkResult)
+{
+    gvkResult = BasicStateTracker::post_vkCreateDescriptorSetLayout(device, pCreateInfo, pAllocator, pSetLayout, gvkResult);
+    if (gvkResult == VK_SUCCESS) {
+        assert(pSetLayout);
+        DescriptorSetLayout gvkDescriptorSetLayout({ device, *pSetLayout });
+        assert(gvkDescriptorSetLayout);
+        assert(pCreateInfo);
+        assert(!pCreateInfo->bindingCount == !pCreateInfo->pBindings);
+        for (uint32_t binding_i = 0; binding_i < pCreateInfo->bindingCount; ++binding_i) {
+            const auto& binding = pCreateInfo->pBindings[binding_i];
+            switch (binding.descriptorType) {
+            case VK_DESCRIPTOR_TYPE_SAMPLER:
+            case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+            {
+                if (binding.pImmutableSamplers) {
+                    auto& immutableSamplers = gvkDescriptorSetLayout.mReference.get_obj().mImmutableSamplers[binding_i];
+                    for (uint32_t immutableSampler_i = 0; immutableSampler_i < binding.descriptorCount; ++immutableSampler_i) {
+                        immutableSamplers.push_back(Sampler({ device, binding.pImmutableSamplers[immutableSampler_i] }));
+                        assert(immutableSamplers.back());
+                    }
+                }
+            } break;
+            default:
+            {
+            } break;
+            }
+        }
+    }
+    return gvkResult;
 }
 
 VkResult StateTracker::post_vkResetDescriptorPool(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorPoolResetFlags flags, VkResult gvkResult)
@@ -233,13 +272,11 @@ void StateTracker::post_vkUpdateDescriptorSetWithTemplateKHR(VkDevice device, Vk
 
 void StateTracker::post_vkUpdateDescriptorSets(VkDevice device, uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites, uint32_t descriptorCopyCount, const VkCopyDescriptorSet* pDescriptorCopies)
 {
-    auto gvkDevice = Device(device);
-    assert(gvkDevice);
-    write_descriptor_sets(gvkDevice, descriptorWriteCount, pDescriptorWrites);
-    copy_descriptor_sets(gvkDevice, descriptorCopyCount, pDescriptorCopies);
+    write_descriptor_sets(device, descriptorWriteCount, pDescriptorWrites);
+    copy_descriptor_sets(device, descriptorCopyCount, pDescriptorCopies);
 }
 
-void StateTracker::write_descriptor_sets(const Device& gvkDevice, uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites)
+void StateTracker::write_descriptor_sets(VkDevice vkDevice, uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites)
 {
     // NOTE : Updating VkDescriptorSets requires logic to handle rollover of
     //  descriptor entries.  This is necessary when updates specify arrays that
@@ -247,13 +284,13 @@ void StateTracker::write_descriptor_sets(const Device& gvkDevice, uint32_t descr
     //  occurs, the next binding with a non zero descriptor count will consume
     //  the remaining updates recursively.
     //  https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#descriptorsets-updates-consecutive
-    assert(gvkDevice);
+    assert(vkDevice);
     if (descriptorWriteCount && pDescriptorWrites) {
         DescriptorSet dstSet;
         for (uint32_t i = 0; i < descriptorWriteCount; ++i) {
             const auto& descriptorWrite = pDescriptorWrites[i];
             if (dstSet != descriptorWrite.dstSet) {
-                dstSet = DescriptorSet({ gvkDevice, descriptorWrite.dstSet });
+                dstSet = DescriptorSet({ vkDevice, descriptorWrite.dstSet });
             }
             assert(dstSet);
             auto descriptorCount = descriptorWrite.descriptorCount;
@@ -333,7 +370,7 @@ void StateTracker::write_descriptor_sets(const Device& gvkDevice, uint32_t descr
     }
 }
 
-void StateTracker::copy_descriptor_sets(const Device& gvkDevice, uint32_t descriptorCopyCount, const VkCopyDescriptorSet* pDescriptorCopies)
+void StateTracker::copy_descriptor_sets(VkDevice vkDevice, uint32_t descriptorCopyCount, const VkCopyDescriptorSet* pDescriptorCopies)
 {
     // NOTE : Updating VkDescriptorSets requires logic to handle rollover of
     //  descriptor entries.  This is necessary when updates specify arrays that
@@ -341,7 +378,7 @@ void StateTracker::copy_descriptor_sets(const Device& gvkDevice, uint32_t descri
     //  occurs, the next binding with a non zero descriptor count will consume
     //  the remaining updates recursively.
     //  https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#descriptorsets-updates-consecutive
-    assert(gvkDevice);
+    assert(vkDevice);
     if (descriptorCopyCount && pDescriptorCopies) {
         DescriptorSet srcSet;
         DescriptorSet dstSet;
@@ -349,7 +386,7 @@ void StateTracker::copy_descriptor_sets(const Device& gvkDevice, uint32_t descri
             const auto& descriptorCopy = pDescriptorCopies[i];
 
             if (srcSet != descriptorCopy.srcSet) {
-                srcSet = DescriptorSet({ gvkDevice, descriptorCopy.srcSet });
+                srcSet = DescriptorSet({ vkDevice, descriptorCopy.srcSet });
             }
             assert(srcSet);
             auto srcArrayElement = descriptorCopy.srcArrayElement;
@@ -360,7 +397,7 @@ void StateTracker::copy_descriptor_sets(const Device& gvkDevice, uint32_t descri
             }
 
             if (dstSet != descriptorCopy.dstSet) {
-                dstSet = DescriptorSet({ gvkDevice, descriptorCopy.dstSet });
+                dstSet = DescriptorSet({ vkDevice, descriptorCopy.dstSet });
             }
             assert(dstSet);
             auto dstArrayElement = descriptorCopy.dstArrayElement;
@@ -393,10 +430,15 @@ void StateTracker::copy_descriptor_sets(const Device& gvkDevice, uint32_t descri
                         case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
                         case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
                         {
-                            // TODO : immutable samplers
                             assert(srcArrayElement < srcDescriptorItr->second.descriptorImageInfos.size());
                             assert(dstArrayElement < dstDescriptorItr->second.descriptorImageInfos.size());
-                            dstDescriptorItr->second.descriptorImageInfos[dstArrayElement++] = srcDescriptorItr->second.descriptorImageInfos[srcArrayElement++];
+                            dstDescriptorItr->second.descriptorImageInfos[dstArrayElement].imageView = srcDescriptorItr->second.descriptorImageInfos[srcArrayElement].imageView;
+                            dstDescriptorItr->second.descriptorImageInfos[dstArrayElement].imageLayout = srcDescriptorItr->second.descriptorImageInfos[srcArrayElement].imageLayout;
+                            if (!dstDescriptorItr->second.immutableSamplers) {
+                                dstDescriptorItr->second.descriptorImageInfos[dstArrayElement].sampler = srcDescriptorItr->second.descriptorImageInfos[srcArrayElement].sampler;
+                            }
+                            ++dstArrayElement;
+                            ++srcArrayElement;
                             --descriptorCount;
                         } break;
                         case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:

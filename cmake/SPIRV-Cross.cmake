@@ -11,7 +11,7 @@ set(SPIRV_CROSS_SKIP_INSTALL             ON  CACHE BOOL "" FORCE)
 FetchContent_Declare(
     SPIRV-Cross
     GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Cross.git"
-    GIT_TAG f09ba2777714871bddb70d049878af34b94fa54d # sdk-1.3.231.1
+    GIT_TAG 4212eef67ed0ca048cb726a6767185504e7695e5 # sdk-1.3.239.0
     GIT_PROGRESS TRUE
 )
 FetchContent_MakeAvailable(SPIRV-Cross)

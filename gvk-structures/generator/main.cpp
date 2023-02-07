@@ -60,84 +60,46 @@ int main(int, const char*[])
             }
         }
         for (const auto& structureItr : manifest.structures) {
-            if (structureItr.second.alias.empty()) {
+            const auto& structure = structureItr.second;
+            if (structure.alias.empty()) {
                 apiElements.structures.push_back(structureItr.second);
+                if (gvk::string::contains(structure.name, "VkVideo")) {
+                    apiElements.manuallyImplemented.insert(structure.name);
+                }
             }
         }
-        apiElements.manuallyImplemented = {
-            // Linux
-            "VkXlibSurfaceCreateInfoKHR",
-            // Win32
-            "VkExportFenceWin32HandleInfoKHR",
-            "VkExportMemoryWin32HandleInfoKHR",
-            "VkExportMemoryWin32HandleInfoNV",
-            "VkExportSemaphoreWin32HandleInfoKHR",
-            "VkImportFenceWin32HandleInfoKHR",
-            "VkImportMemoryWin32HandleInfoKHR",
-            "VkImportMemoryWin32HandleInfoNV",
-            "VkImportSemaphoreWin32HandleInfoKHR",
-            // Decode H264
-            "VkVideoDecodeH264ProfileInfoEXT",
-            "VkVideoDecodeH264CapabilitiesEXT",
-            "VkVideoDecodeH264SessionParametersAddInfoEXT",
-            "VkVideoDecodeH264SessionParametersCreateInfoEXT",
-            "VkVideoDecodeH264PictureInfoEXT",
-            "VkVideoDecodeH264DpbSlotInfoEXT",
-            // Decode H265
-            "VkVideoDecodeH265ProfileInfoEXT",
-            "VkVideoDecodeH265CapabilitiesEXT",
-            "VkVideoDecodeH265SessionParametersAddInfoEXT",
-            "VkVideoDecodeH265SessionParametersCreateInfoEXT",
-            "VkVideoDecodeH265PictureInfoEXT",
-            "VkVideoDecodeH265DpbSlotInfoEXT",
-            // Encode H264
-            "VkVideoEncodeH264CapabilitiesEXT",
-            "VkVideoEncodeH264SessionParametersAddInfoEXT",
-            "VkVideoEncodeH264SessionParametersCreateInfoEXT",
-            "VkVideoEncodeH264DpbSlotInfoEXT",
-            "VkVideoEncodeH264ReferenceListsInfoEXT",
-            "VkVideoEncodeH264NaluSliceInfoEXT",
-            "VkVideoEncodeH264VclFrameInfoEXT",
-            "VkVideoEncodeH264EmitPictureParametersInfoEXT",
-            "VkVideoEncodeH264ProfileInfoEXT",
-            "VkVideoEncodeH264RateControlInfoEXT",
-            "VkVideoEncodeH264QpEXT",
-            "VkVideoEncodeH264FrameSizeEXT",
-            "VkVideoEncodeH264RateControlLayerInfoEXT",
-            // Encode H265
-            "VkVideoEncodeH265CapabilitiesEXT",
-            "VkVideoEncodeH265SessionParametersAddInfoEXT",
-            "VkVideoEncodeH265SessionParametersCreateInfoEXT",
-            "VkVideoEncodeH265DpbSlotInfoEXT",
-            "VkVideoEncodeH265ReferenceListsInfoEXT",
-            "VkVideoEncodeH265NaluSliceSegmentInfoEXT",
-            "VkVideoEncodeH265VclFrameInfoEXT",
-            "VkVideoEncodeH265EmitPictureParametersInfoEXT",
-            "VkVideoEncodeH265ProfileInfoEXT",
-            "VkVideoEncodeH265RateControlInfoEXT",
-            "VkVideoEncodeH265QpEXT",
-            "VkVideoEncodeH265FrameSizeEXT",
-            "VkVideoEncodeH265RateControlLayerInfoEXT",
-            // Special case members
-            "VkAccelerationStructureBuildGeometryInfoKHR",
-            "VkAccelerationStructureTrianglesOpacityMicromapEXT",
-            "VkAccelerationStructureVersionInfoKHR",
-            "VkMicromapBuildInfoEXT",
-            "VkMicromapVersionInfoEXT",
-            "VkPipelineMultisampleStateCreateInfo",
-            "VkShaderModuleCreateInfo",
-            "VkTransformMatrixKHR",
-            // Unions
-            "VkAccelerationStructureGeometryDataKHR",
-            "VkAccelerationStructureMotionInstanceDataNV",
-            "VkClearColorValue",
-            "VkClearValue",
-            "VkDeviceOrHostAddressConstKHR",
-            "VkDeviceOrHostAddressKHR",
-            "VkPerformanceCounterResultKHR",
-            "VkPerformanceValueDataINTEL",
-            "VkPipelineExecutableStatisticValueKHR",
-        };
+
+        // Linux
+        apiElements.manuallyImplemented.insert("VkXlibSurfaceCreateInfoKHR");
+        // Win32
+        apiElements.manuallyImplemented.insert("VkExportFenceWin32HandleInfoKHR");
+        apiElements.manuallyImplemented.insert("VkExportMemoryWin32HandleInfoKHR");
+        apiElements.manuallyImplemented.insert("VkExportMemoryWin32HandleInfoNV");
+        apiElements.manuallyImplemented.insert("VkExportSemaphoreWin32HandleInfoKHR");
+        apiElements.manuallyImplemented.insert("VkImportFenceWin32HandleInfoKHR");
+        apiElements.manuallyImplemented.insert("VkImportMemoryWin32HandleInfoKHR");
+        apiElements.manuallyImplemented.insert("VkImportMemoryWin32HandleInfoNV");
+        apiElements.manuallyImplemented.insert("VkImportSemaphoreWin32HandleInfoKHR");
+        // Special case members
+        apiElements.manuallyImplemented.insert("VkAccelerationStructureBuildGeometryInfoKHR");
+        apiElements.manuallyImplemented.insert("VkAccelerationStructureTrianglesOpacityMicromapEXT");
+        apiElements.manuallyImplemented.insert("VkAccelerationStructureVersionInfoKHR");
+        apiElements.manuallyImplemented.insert("VkMicromapBuildInfoEXT");
+        apiElements.manuallyImplemented.insert("VkMicromapVersionInfoEXT");
+        apiElements.manuallyImplemented.insert("VkPipelineMultisampleStateCreateInfo");
+        apiElements.manuallyImplemented.insert("VkShaderModuleCreateInfo");
+        apiElements.manuallyImplemented.insert("VkTransformMatrixKHR");
+        // Unions
+        apiElements.manuallyImplemented.insert("VkAccelerationStructureGeometryDataKHR");
+        apiElements.manuallyImplemented.insert("VkAccelerationStructureMotionInstanceDataNV");
+        apiElements.manuallyImplemented.insert("VkClearColorValue");
+        apiElements.manuallyImplemented.insert("VkClearValue");
+        apiElements.manuallyImplemented.insert("VkDeviceOrHostAddressConstKHR");
+        apiElements.manuallyImplemented.insert("VkDeviceOrHostAddressKHR");
+        apiElements.manuallyImplemented.insert("VkPerformanceCounterResultKHR");
+        apiElements.manuallyImplemented.insert("VkPerformanceValueDataINTEL");
+        apiElements.manuallyImplemented.insert("VkPipelineExecutableStatisticValueKHR");
+
         gvk::cppgen::EnumerationToStringGenerator::generate(apiElements);
         gvk::cppgen::StructureComparisonOperatorsGenerator::generate(apiElements);
         gvk::cppgen::StructureCreateCopyGenerator::generate(manifest, apiElements);
@@ -146,11 +108,13 @@ int main(int, const char*[])
         gvk::cppgen::StructureMakeTupleGenerator::generate(manifest, apiElements);
         gvk::cppgen::StructureToStringGeneratorEx::generate(manifest, apiElements);
 
+        // Manually implemented serialization
         apiElements.manuallyImplemented.insert("VkAccelerationStructureInstanceKHR");
         apiElements.manuallyImplemented.insert("VkAccelerationStructureMatrixMotionInstanceNV");
         apiElements.manuallyImplemented.insert("VkAccelerationStructureSRTMotionInstanceNV");
         apiElements.manuallyImplemented.insert("VkSurfaceFullScreenExclusiveWin32InfoEXT");
         apiElements.manuallyImplemented.insert("VkWin32SurfaceCreateInfoKHR");
+
         gvk::cppgen::StructureCerealizationGenerator::generate(manifest, apiElements);
         gvk::cppgen::StructureDecerealizationGenerator::generate(manifest, apiElements);
         gvk::cppgen::StructureDeserializationGenerator::generate(apiElements);

@@ -54,14 +54,15 @@ public:
 
     ///////////////////////////////////////////////////////////////////////////////
     // Defined in /source/gvk-state-tracker/descriptor-set.cpp
+    VkResult post_vkCreateDescriptorSetLayout(VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorSetLayout* pSetLayout, VkResult gvkResult) override final;
     VkResult post_vkResetDescriptorPool(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorPoolResetFlags flags, VkResult gvkResult) override final;
     VkResult post_vkAllocateDescriptorSets(VkDevice device, const VkDescriptorSetAllocateInfo* pAllocateInfo, VkDescriptorSet* pDescriptorSets, VkResult gvkResult) override final;
     VkResult post_vkFreeDescriptorSets(VkDevice device, VkDescriptorPool descriptorPool, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets, VkResult gvkResult) override final;
     void post_vkUpdateDescriptorSetWithTemplate(VkDevice device, VkDescriptorSet descriptorSet, VkDescriptorUpdateTemplate descriptorUpdateTemplate, const void* pData) override final;
     void post_vkUpdateDescriptorSetWithTemplateKHR(VkDevice device, VkDescriptorSet descriptorSet, VkDescriptorUpdateTemplate descriptorUpdateTemplate, const void* pData) override final;
     void post_vkUpdateDescriptorSets(VkDevice device, uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites, uint32_t descriptorCopyCount, const VkCopyDescriptorSet* pDescriptorCopies) override final;
-    void write_descriptor_sets(const Device& gvkDevice, uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites);
-    void copy_descriptor_sets(const Device& gvkDevice, uint32_t descriptorCopyCount, const VkCopyDescriptorSet* pDescriptorCopies);
+    void write_descriptor_sets(VkDevice vkDevice, uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites);
+    void copy_descriptor_sets(VkDevice vkDevice, uint32_t descriptorCopyCount, const VkCopyDescriptorSet* pDescriptorCopies);
 
     ///////////////////////////////////////////////////////////////////////////////
     // Defined in /source/gvk-state-tracker/device.cpp

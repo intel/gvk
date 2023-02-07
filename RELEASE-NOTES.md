@@ -1,5 +1,5 @@
 
-VERSION 2023.1
+VERSION 2023.1.0
 --
 NEW : Basic Ubuntu 20.04 support
 NEW : Basic VK_KHR_xlib_surface support
@@ -12,6 +12,6 @@ NEW : SPIRV-Tools integration
 NEW : gvk-command-structures provides serialization/stringification and comparison operators for Vulkan commands
 NEW : GvkFormatInfo provides detailed information regarding VkFormat
 
-VERSION 2022.3
+VERSION 2022.3.0
 --
 Initial release

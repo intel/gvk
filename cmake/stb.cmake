@@ -6,7 +6,7 @@ include(FetchContent)
 FetchContent_Declare(
     stb
     GIT_REPOSITORY "https://github.com/nothings/stb.git"
-    GIT_TAG af1a5bc352164740c1cc1354942b1c6b72eacb8a
+    GIT_TAG 5736b15f7ea0ffb08dd38af21067c314d6a3aae9
     GIT_PROGRESS TRUE
 )
 FetchContent_MakeAvailable(stb)
@@ -19,7 +19,18 @@ macro(add_stb_file stbFile implementationMacro)
     set(sourceFile "${stbBinaryDirectory}/stb/${stbFile}.cpp")
     list(APPEND sourceFiles "${sourceFile}")
     if(NOT EXISTS "${sourceFile}")
-        file(WRITE "${sourceFile}" "\n#define ${implementationMacro}\n#include \"${stbFile}.h\"\n")
+        file(WRITE "${sourceFile}"
+"
+#ifdef _MSVC_LANG
+#pragma warning(push, 0)
+#endif
+#define ${implementationMacro}
+#include \"${stbFile}.h\"
+#ifdef _MSVC_LANG
+#pragma warning(pop)
+#endif
+"
+        )
     endif()
 endmacro()
 

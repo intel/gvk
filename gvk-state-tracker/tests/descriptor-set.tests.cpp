@@ -27,6 +27,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "state-tracker-test-utilities.hpp"
 
 // TODO : Need to setup tests that exercise complex vkUpdateDescriptorSets() logic
+// TODO : Immutable samplers
+// TODO : vkUpdateDescriptorSetWithTemplate
 
 static void create_descriptor_set_layouts(const gvk::Device& device, gvk::spirv::ShaderInfo shaderInfo, std::vector<gvk::DescriptorSetLayout>& descriptorSetLayouts)
 {
