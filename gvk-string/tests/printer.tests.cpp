@@ -24,7 +24,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "gvk/printer.hpp"
+#include "gvk-string/printer.hpp"
+#include "gvk-string/to-string.hpp"
 
 #include "gtest/gtest.h"
 
@@ -373,5 +374,4 @@ TEST(Printer, print_flags)
 TEST(Printer, to_hex_string)
 {
     EXPECT_EQ(gvk::to_hex_string(3735928559), "0xdeadbeef");
-    EXPECT_EQ(gvk::to_hex_string(3735928559, false), "deadbeef");
 }

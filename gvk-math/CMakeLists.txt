@@ -2,17 +2,15 @@
 ################################################################################
 # gvk-math
 set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
-set(includePath "${includeDirectory}/gvk/math/")
-set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk/math/")
-set(linkLibraries "")
-if(GVK_GLM_ENABLED)
-    list(APPEND linkLibraries glm)
-endif()
+set(includePath "${includeDirectory}/gvk-math/")
+set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk-math/")
 gvk_add_static_library(
     target
         gvk-math
+    folder
+        "gvk-math/"
     linkLibraries
-        ${linkLibraries}
+        glm
     includeDirectories
         "${includeDirectory}"
     includeFiles
@@ -20,6 +18,7 @@ gvk_add_static_library(
         "${includePath}/color.hpp"
         "${includePath}/defines.hpp"
         "${includePath}/transform.hpp"
+        "${includeDirectory}/gvk-math.hpp"
     sourceFiles
         "${sourcePath}/camera.cpp"
         "${sourcePath}/transform.cpp"

@@ -1,16 +1,19 @@
 
+include_guard()
+
+include(FetchContent)
+
+set(BUILD_GMOCK   OFF CACHE BOOL "" FORCE)
+set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     googletest
     GIT_REPOSITORY "https://github.com/google/googletest.git"
-    GIT_TAG 58d77fa8070e8cec2dc1ed015d66b454c8d78850
+    GIT_TAG b796f7d44681514f58a683a3a71ff17c94edb0c1 # 1.13.0
     GIT_PROGRESS TRUE
-    FETCHCONTENT_UPDATES_DISCONNECTED
 )
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
-set(folder "gvk/external/gtest/")
-set_target_properties(gmock PROPERTIES FOLDER "${folder}")
-set_target_properties(gmock_main PROPERTIES FOLDER "${folder}")
+set(folder "${GVK_IDE_FOLDER}/external/gtest/")
 set_target_properties(gtest PROPERTIES FOLDER "${folder}")
 set_target_properties(gtest_main PROPERTIES FOLDER "${folder}")
 include(GoogleTest)

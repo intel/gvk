@@ -41,7 +41,7 @@ DOXYFILE_ENCODING      = UTF-8
 # title of most generated pages and in a few other places.
 # The default value is: My Project.
 
-PROJECT_NAME           = "Intel GVK"
+PROJECT_NAME           = "Intel® Graphics Performance Analyzer Utilities for Vulkan*"
 
 # The PROJECT_NUMBER tag can be used to enter a project or revision number. This
 # could be handy for archiving the generated documentation or if some version
@@ -906,9 +906,27 @@ WARN_LOGFILE           =
 # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = ../gvk/include/
+INPUT                  =
+INPUT                 += ../gvk-command-structures/include/
+INPUT                 += ../build/gvk-command-structures/include/
+INPUT                 += ../gvk-cppgen/include/
+INPUT                 += ../gvk-format-info/include/
+INPUT                 += ../build/gvk-format-info/include/
+INPUT                 += ../gvk-gui/include/
+INPUT                 += ../gvk-handles/include/
+INPUT                 += ../build/gvk-handles/include/
+INPUT                 += ../gvk-layer/include/
+INPUT                 += ../build/gvk-layer/include/
 INPUT                 += ../gvk-math/include/
+INPUT                 += ../gvk-reference/include/
+INPUT                 += ../gvk-runtime/include/
+INPUT                 += ../build/gvk-runtime/include/
+INPUT                 += ../gvk-spirv/include/
+INPUT                 += ../gvk-state-tracker/include/
+INPUT                 += ../build/gvk-state-tracker/include/
 INPUT                 += ../gvk-string/include/
+INPUT                 += ../gvk-structures/include/
+INPUT                 += ../build/gvk-structures/include/
 INPUT                 += ../gvk-system/include/
 INPUT                 += ../gvk-xml/include/
 
