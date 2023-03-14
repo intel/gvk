@@ -34,8 +34,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace gvk {
 
-////////////////////////////////////////////////////////////////////////////////
-// GvkCommandStructures
 GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureAllocateCommandBuffers)
 GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureAllocateDescriptorSets)
 GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureBuildAccelerationStructuresKHR)
@@ -50,5 +48,18 @@ GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureGetAccelerationStructureBuildS
 GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureCreateXlibSurfaceKHR)
 GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureGetPhysicalDeviceXlibPresentationSupportKHR)
 #endif // VK_USE_PLATFORM_XLIB_KHR
+
+inline auto make_tuple(const GvkCommandStructureCmdPushConstants& obj)
+{
+    return std::make_tuple(
+        obj.sType,
+        obj.commandBuffer,
+        obj.layout,
+        obj.stageFlags,
+        obj.offset,
+        obj.size,
+        detail::ArrayTupleElementWrapper<uint8_t> { obj.size, (const uint8_t*)obj.pValues }
+    );
+}
 
 } // namespace gvk

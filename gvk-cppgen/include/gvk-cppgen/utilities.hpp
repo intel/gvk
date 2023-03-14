@@ -31,6 +31,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-xml.hpp"
 
 #include <string>
+#include <utility>
 
 namespace gvk {
 namespace cppgen {
@@ -39,17 +40,12 @@ bool is_static_const_value(const std::string& apiElementName);
 bool is_strongly_typed_bitmask(const xml::Manifest& manifest, const std::string& apiElementName);
 xml::Command append_return_result_parameter(xml::Command command);
 std::string get_parameter_list(const std::vector<xml::Parameter>& parameters, bool types = true, bool names = true);
-
-std::set<std::string> get_inner_scope_compile_guards(
-    const std::set<std::string>& outerScopeCompileGuards,
-    std::set<std::string> innerScopeCompileGuards
-);
-
-std::vector<string::Replacement> get_inner_scope_replacements(
-    const std::vector<string::Replacement>& outerScopeReplacements,
-    std::vector<string::Replacement> innerScopeReplacements
-);
-
+std::string get_extension_vendor(const std::string& str);
+xml::Parameter create_parameter(const std::string& type, const std::string& name);
+std::pair<xml::Parameter, xml::Parameter> get_array_parameters(const std::string& countName, const std::string& arrayName, const std::string& unqualifiedType);
+void add_array_members_to_structure(const std::string& unqualifiedType, const std::string& countName, const std::string& arrayName, xml::Structure& structure);
+std::set<std::string> get_inner_scope_compile_guards(const std::set<std::string>& outerScopeCompileGuards, std::set<std::string> innerScopeCompileGuards);
+std::vector<string::Replacement> get_inner_scope_replacements(const std::vector<string::Replacement>& outerScopeReplacements, std::vector<string::Replacement> innerScopeReplacements);
 void generate_noop_command_body(FileGenerator& file, const xml::Command& command);
 
 void generate_pnext_switch(
@@ -58,6 +54,15 @@ void generate_pnext_switch(
     const std::string& indentation,
     const std::string& evaluation,
     const std::string& caseProcessor,
+    const std::string& defaultProcessor = std::string()
+);
+
+void generate_pnext_switch(
+    FileGenerator& file,
+    const xml::Manifest& manifest,
+    const std::string& indentation,
+    const std::string& evaluation,
+    const std::vector<std::string>& caseProcessor,
     const std::string& defaultProcessor = std::string()
 );
 

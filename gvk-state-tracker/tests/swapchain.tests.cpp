@@ -81,6 +81,8 @@ TEST(Swapchain, SwapchainResourceLifetime)
         ASSERT_TRUE(create_state_tracked_object_record(commandBuffer, commandBuffer.get<VkCommandBufferAllocateInfo>(), expectedInstanceObjects));
         ASSERT_TRUE(create_state_tracked_object_record(commandPool, commandPool.get<VkCommandPoolCreateInfo>(), expectedInstanceObjects));
     }
+    ASSERT_FALSE(wsiManager.get_command_buffers().empty());
+    expectedInstanceObjects[gvk::get_state_tracked_object(wsiManager.get_command_buffers()[0])].mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKER_OBJECT_STATUS_INVALID_BIT;
     for (const auto& fence : wsiManager.get_fences()) {
         ASSERT_TRUE(create_state_tracked_object_record(fence, fence.get<VkFenceCreateInfo>(), expectedInstanceObjects));
     }
@@ -96,7 +98,7 @@ TEST(Swapchain, SwapchainResourceLifetime)
     ASSERT_TRUE(create_state_tracked_object_record(wsiManager.get_surface(), wsiManager.get_surface().get<VkWin32SurfaceCreateInfoKHR>(), expectedImageDependencies));
 #endif
     ASSERT_TRUE(create_state_tracked_object_record(context.get_devices()[0], context.get_devices()[0].get<VkDeviceCreateInfo>(), expectedImageDependencies));
-    ASSERT_TRUE(create_state_tracked_object_record(context.get_physical_devices()[0], context.get_instance().get<VkInstanceCreateInfo>(), expectedImageDependencies));
+    ASSERT_TRUE(create_state_tracked_object_record(context.get_physical_devices()[0], VkApplicationInfo { }, expectedImageDependencies));
     ASSERT_TRUE(create_state_tracked_object_record(context.get_instance(), context.get_instance().get<VkInstanceCreateInfo>(), expectedImageDependencies));
 
     StateTrackerValidationEnumerator enumerator;

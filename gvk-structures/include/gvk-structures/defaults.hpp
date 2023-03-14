@@ -69,6 +69,8 @@ template <> const VkDebugUtilsMessengerCreateInfoEXT& get_default<VkDebugUtilsMe
 template <> const VkDeviceQueueCreateInfo& get_default<VkDeviceQueueCreateInfo>();
 template <> const VkFramebufferCreateInfo& get_default<VkFramebufferCreateInfo>();
 template <> const VkImageCreateInfo& get_default<VkImageCreateInfo>();
+template <> const VkBufferMemoryBarrier& get_default<VkBufferMemoryBarrier>();
+template <> const VkBufferMemoryBarrier2& get_default<VkBufferMemoryBarrier2>();
 template <> const VkImageMemoryBarrier& get_default<VkImageMemoryBarrier>();
 template <> const VkImageMemoryBarrier2& get_default<VkImageMemoryBarrier2>();
 template <> const VkImageSubresourceLayers& get_default<VkImageSubresourceLayers>();

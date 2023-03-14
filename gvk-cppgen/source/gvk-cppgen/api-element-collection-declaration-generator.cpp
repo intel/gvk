@@ -28,6 +28,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-cppgen/compile-guard-generator.hpp"
 #include "gvk-cppgen/file-generator.hpp"
 #include "gvk-cppgen/header-guard-generator.hpp"
+#include "gvk-cppgen/utilities.hpp"
 #include "gvk-string.hpp"
 
 namespace gvk {
@@ -59,6 +60,9 @@ void ApiElementCollectionDeclarationGenerator::generate_enumeration_declarations
         }
         file << "MAX_ENUM = 0x7FFFFFFF" << std::endl;
         file << "} " << enumeration.name << ";" << std::endl;
+        if (enumeration.isBitmask) {
+            file << "typedef VkFlags " << string::replace(enumeration.name, "FlagBits", "Flags") << ";" << std::endl;
+        }
     }
 }
 
@@ -69,6 +73,7 @@ void ApiElementCollectionDeclarationGenerator::generate_structure_declarations(F
         CompileGuardGenerator compileGuardGenerator(file, structure.compileGuards);
         file << "typedef struct " << structure.name << " {" << std::endl;
         for (const auto& member : structure.members) {
+            CompileGuardGenerator memberCompileGuardGenerator(file, get_inner_scope_compile_guards(structure.compileGuards, member.compileGuards));
             if (member.flags & xml::Static && member.flags & xml::Array) {
                 file << "    " << member.unqualifiedType << " " << member.name << member.length << ";" << std::endl;
             } else {

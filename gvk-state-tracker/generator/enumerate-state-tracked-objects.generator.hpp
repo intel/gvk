@@ -40,7 +40,10 @@ public:
     static void generate(const xml::Manifest& manifest)
     {
         FileGenerator file(GVK_STATE_TRACKER_GENERATED_SOURCE_PATH "/enumerate-state-tracked-objects.cpp");
+        file << std::endl;
+        file << "#include \"gvk-layer/registry.hpp\"" << std::endl;
         file << "#include \"gvk-state-tracker/generated/state-tracked-handles.hpp\"" << std::endl;
+        file << "#include \"gvk-state-tracker/dependency-enumerator.hpp\"" << std::endl;
         file << "#include \"gvk-state-tracker/state-tracker.hpp\"" << std::endl;
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk::state_tracker");
@@ -60,7 +63,9 @@ public:
                 file << string::replace("{gvkHandleType}::HandleIdType to_handle_id<{gvkHandleType}::HandleIdType>(const GvkStateTrackedObject& stateTrackedObject)", "{gvkHandleType}", string::strip_vk(handle.name)) << std::endl;
                 file << "{" << std::endl;
                 file << "    assert(stateTrackedObject.type == " << handle.vkObjectType << ");" << std::endl;
-                if (handle.isDispatchable) {
+                if (handle.name == "VkPhysicalDevice") {
+                    file << "    return StateTracker::get_loader_physical_device_handle((VkPhysicalDevice)stateTrackedObject.handle);" << std::endl;
+                } else if (handle.isDispatchable) {
                     file << "    return (" << string::strip_vk(handle.name) << "::HandleIdType)stateTrackedObject.handle;" << std::endl;
                 } else {
                     file << string::replace("    return {gvkHandleType}::HandleIdType(({gvkHandleType}::DispatchableVkHandleType)stateTrackedObject.dispatchableHandle, ({gvkHandleType}::VkHandleType)stateTrackedObject.handle);", "{gvkHandleType}", string::strip_vk(handle.name)) << std::endl;
@@ -79,8 +84,7 @@ public:
             const auto& handle = handleItr.second;
             if (handle.alias.empty()) {
                 CompileGuardGenerator handleCompileGuardGenerator(file, handle.compileGuards);
-                file << "    case " << handle.vkObjectType << ":" << std::endl;
-                file << "    {" << std::endl;
+                file << "    case " << handle.vkObjectType << ": {" << std::endl;
                 auto tab = "        ";
                 file << tab << string::replace("{gvkHandleType} handle(to_handle_id<{gvkHandleType}::HandleIdType>(*pStateTrackedObject));", "{gvkHandleType}", string::strip_vk(handle.name)) << std::endl;
                 file << tab << "if (handle) {" << std::endl;
@@ -95,10 +99,9 @@ public:
                 file << "    } break;" << std::endl;
             }
         }
-        file << "    default:" << std::endl;
-        file << "    {" << std::endl;
+        file << "    default: {" << std::endl;
         file << "        assert(false && \"Unrecognized VkObjectType\");" << std::endl;
-        file << "    };" << std::endl;
+        file << "    } break;" << std::endl;
         file << "    }" << std::endl;
         file << "}" << std::endl;
 
@@ -106,13 +109,13 @@ public:
         file << "{" << std::endl;
         file << "    assert(pStateTrackedObject);" << std::endl;
         file << "    assert(pEnumerateInfo);" << std::endl;
+        file << "    DependencyEnumerator dependencyEnuemrator(*pEnumerateInfo);" << std::endl;
         file << "    switch (pStateTrackedObject->type) {" << std::endl;
         for (const auto& handleItr : manifest.handles) {
             const auto& handle = handleItr.second;
             if (handle.alias.empty()) {
                 CompileGuardGenerator handleCompileGuardGenerator(file, handle.compileGuards);
-                file << "    case " << handle.vkObjectType << ":" << std::endl;
-                file << "    {" << std::endl;
+                file << "    case " << handle.vkObjectType << ": {" << std::endl;
                 auto tab = "        ";
                 file << tab << string::replace("{gvkHandleType} handle(to_handle_id<{gvkHandleType}::HandleIdType>(*pStateTrackedObject));", "{gvkHandleType}", string::strip_vk(handle.name)) << std::endl;
                 file << tab << "if (handle) {" << std::endl;
@@ -123,13 +126,19 @@ public:
                             CompileGuardGenerator memberCompileGuardGenerator(file, get_inner_scope_compile_guards(handle.compileGuards, member.compileGuards));
                             if (string::contains(member.storageType, "std::vector")) {
                                 file << tab << "    for (const auto& dependency : handle.mReference.get_obj()." << member.storageName << ") {" << std::endl;
-                                file << tab << "        dependency.enumerate_dependencies(pEnumerateInfo->pfnCallback, pEnumerateInfo->pUserData);" << std::endl;
+                                file << tab << "        dependency.enumerate_dependencies(DependencyEnumerator::enumerate, &dependencyEnuemrator);" << std::endl;
                                 file << tab << "    }" << std::endl;
                             } else {
-                                file << tab << "    handle.mReference.get_obj()." << member.storageName << ".enumerate_dependencies(pEnumerateInfo->pfnCallback, pEnumerateInfo->pUserData);" << std::endl;
+                                file << tab << "    handle.mReference.get_obj()." << member.storageName << ".enumerate_dependencies(DependencyEnumerator::enumerate, &dependencyEnuemrator);" << std::endl;
                             }
                         } else if (manifest.handles.count(member.storageType)) {
-                            file << tab << "    handle.get<" << string::strip_vk(member.accessorType) << ">().enumerate_dependencies(pEnumerateInfo->pfnCallback, pEnumerateInfo->pUserData);" << std::endl;
+                            file << tab << "    handle.get<" << string::strip_vk(member.accessorType) << ">().enumerate_dependencies(DependencyEnumerator::enumerate, &dependencyEnuemrator);" << std::endl;
+                        } else if (member.storageName == "mImmutableSamplers") {
+                            file << "            for (const auto& immutableSamplersItr : handle.mReference.get_obj().mImmutableSamplers) {" << std::endl;
+                            file << "                for (const auto& immutableSampler : immutableSamplersItr.second) {" << std::endl;
+                            file << "                    immutableSampler.enumerate_dependencies(DependencyEnumerator::enumerate, &dependencyEnuemrator);" << std::endl;
+                            file << "                }" << std::endl;
+                            file << "            }" << std::endl;
                         }
                     }
                 }
@@ -137,12 +146,12 @@ public:
                 file << "    } break;" << std::endl;
             }
         }
-        file << "    default:" << std::endl;
-        file << "    {" << std::endl;
+        file << "    default: {" << std::endl;
         file << "        assert(false && \"Unrecognized VkObjectType\");" << std::endl;
-        file << "    };" << std::endl;
+        file << "    } break;" << std::endl;
         file << "    }" << std::endl;
         file << "}" << std::endl;
+        file << std::endl;
     }
 };
 

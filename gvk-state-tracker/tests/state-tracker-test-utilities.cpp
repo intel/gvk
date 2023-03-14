@@ -33,6 +33,7 @@ PFN_gvkGetStateTrackedObjectInfo pfnGvkGetStateTrackedObjectInfo;
 PFN_gvkGetStateTrackedObjectCreateInfo pfnGvkGetStateTrackedObjectCreateInfo;
 PFN_gvkGetStateTrackedObjectAllocateInfo pfnGvkGetStateTrackedObjectAllocateInfo;
 PFN_gvkGetStateTrackedImageLayouts pfnGvkGetStateTrackedImageLayouts;
+PFN_gvkSetStateTrackerPhysicalDevices pfnGvkSetStateTrackerPhysicalDevices;
 
 namespace gvk {
 
@@ -104,6 +105,22 @@ VkResult StateTrackerValidationContext::create(StateTrackerValidationContext* pC
 
 VkResult StateTrackerValidationContext::create_devices(const VkDeviceCreateInfo* pDeviceCreateInfo, const VkAllocationCallbacks*)
 {
+    uint32_t physicalDeviceCount = 0;
+    mInstance.get<gvk::DispatchTable>().gvkEnumeratePhysicalDevices(mInstance, &physicalDeviceCount, nullptr);
+    std::vector<VkPhysicalDevice> vkPhysicalDevices(physicalDeviceCount);
+    mInstance.get<gvk::DispatchTable>().gvkEnumeratePhysicalDevices(mInstance, &physicalDeviceCount, vkPhysicalDevices.data());
+    std::vector<VkPhysicalDeviceProperties> physicalDeviceProperties(physicalDeviceCount);
+    for (uint32_t i = 0; i < physicalDeviceCount; ++i) {
+        mInstance.get<gvk::DispatchTable>().gvkGetPhysicalDeviceProperties(vkPhysicalDevices[i], &physicalDeviceProperties[i]);
+    }
+
+    auto dlStateTracker = gvk_dlopen(VK_LAYER_INTEL_GVK_STATE_TRACKER_NAME);
+    assert(dlStateTracker);
+    pfnGvkSetStateTrackerPhysicalDevices = (PFN_gvkSetStateTrackerPhysicalDevices)gvk_dlsym(dlStateTracker, "gvkSetStateTrackerPhysicalDevices");
+    assert(pfnGvkSetStateTrackerPhysicalDevices);
+    pfnGvkSetStateTrackerPhysicalDevices(mInstance, physicalDeviceCount, vkPhysicalDevices.data(), physicalDeviceProperties.data());
+    gvk_dlclose(dlStateTracker);
+
     assert(pDeviceCreateInfo);
     auto physicalDeviceSynchronization2Features = gvk::get_default<VkPhysicalDeviceSynchronization2Features>();
     auto availablePhysicalDeviceFeatures = gvk::get_default<VkPhysicalDeviceFeatures2>();

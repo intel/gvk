@@ -163,6 +163,18 @@ bool operator>(const StringTupleElementWrapper& lhs, const StringTupleElementWra
 bool operator<=(const StringTupleElementWrapper& lhs, const StringTupleElementWrapper& rhs);
 bool operator>=(const StringTupleElementWrapper& lhs, const StringTupleElementWrapper& rhs);
 
+struct WStringTupleElementWrapper final
+{
+    const wchar_t* pwStr { nullptr };
+};
+
+bool operator==(const WStringTupleElementWrapper& lhs, const WStringTupleElementWrapper& rhs);
+bool operator!=(const WStringTupleElementWrapper& lhs, const WStringTupleElementWrapper& rhs);
+bool operator<(const WStringTupleElementWrapper& lhs, const WStringTupleElementWrapper& rhs);
+bool operator>(const WStringTupleElementWrapper& lhs, const WStringTupleElementWrapper& rhs);
+bool operator<=(const WStringTupleElementWrapper& lhs, const WStringTupleElementWrapper& rhs);
+bool operator>=(const WStringTupleElementWrapper& lhs, const WStringTupleElementWrapper& rhs);
+
 struct StringArrayTupleElementWrapper final
 {
     size_t count { };

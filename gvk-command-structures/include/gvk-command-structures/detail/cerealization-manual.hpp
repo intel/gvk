@@ -57,4 +57,28 @@ GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureCreateXlibSurfaceKHR)
 GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureGetPhysicalDeviceXlibPresentationSupportKHR)
 #endif // VK_USE_PLATFORM_XLIB_KHR
 
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const GvkCommandStructureCmdPushConstants& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_handle(archive, obj.commandBuffer);
+    gvk::detail::cerealize_handle(archive, obj.layout);
+    archive(obj.stageFlags);
+    archive(obj.offset);
+    archive(obj.size);
+    gvk::detail::cerealize_dynamic_array(archive, obj.size, (const uint8_t*)obj.pValues);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, GvkCommandStructureCmdPushConstants& obj)
+{
+    archive(obj.sType);
+    obj.commandBuffer = gvk::detail::decerealize_handle<VkCommandBuffer>(archive);
+    obj.layout = gvk::detail::decerealize_handle<VkPipelineLayout>(archive);
+    archive(obj.stageFlags);
+    archive(obj.offset);
+    archive(obj.size);
+    obj.pValues = gvk::detail::decerealize_dynamic_array<uint8_t>(archive);
+}
+
 } // namespace cereal

@@ -75,4 +75,6 @@ gvk_add_static_library(
     sourceFiles
         "${generatedSourceFiles}"
         "${sourceDirectory}/gvk-format-info.cpp"
+    install
+        TRUE
 )

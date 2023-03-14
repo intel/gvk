@@ -32,6 +32,23 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace state_tracker {
 
+VkResult StateTracker::post_vkCreatePipelineLayout(VkDevice device, const VkPipelineLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineLayout* pPipelineLayout, VkResult gvkResult)
+{
+    if (gvkResult == VK_SUCCESS) {
+        gvkResult = BasicStateTracker::post_vkCreatePipelineLayout(device, pCreateInfo, pAllocator, pPipelineLayout, gvkResult);
+        assert(gvkResult == VK_SUCCESS);
+        PipelineLayout gvkPipelineLayout({ device, *pPipelineLayout });
+        assert(gvkPipelineLayout);
+        auto& controlBlock = gvkPipelineLayout.mReference.get_obj();
+        controlBlock.mDescriptorSetLayouts.resize(pCreateInfo->setLayoutCount);
+        for (uint32_t setLayout_i = 0; setLayout_i < pCreateInfo->setLayoutCount; ++setLayout_i) {
+            controlBlock.mDescriptorSetLayouts[setLayout_i] = DescriptorSetLayout({ device, pCreateInfo->pSetLayouts[setLayout_i] });
+            assert(controlBlock.mDescriptorSetLayouts[setLayout_i]);
+        }
+    }
+    return gvkResult;
+}
+
 VkResult StateTracker::post_vkCreateComputePipelines(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkComputePipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines, VkResult gvkResult)
 {
     if (gvkResult == VK_SUCCESS) {

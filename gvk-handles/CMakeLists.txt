@@ -54,10 +54,10 @@ gvk_add_static_library(
         gvk-runtime
         gvk-string
         gvk-structures
-        VulkanMemoryAllocator
     includeDirectories
         "${generatedIncludeDirectory}"
         "${includeDirectory}"
+        "${VulkanMemoryAllocatorSourceDirectory}/include/"
     includeFiles
         "${generatedIncludeFiles}"
         "${includePath}/detail/handle-utilities.hpp"
@@ -77,6 +77,8 @@ gvk_add_static_library(
         "${sourcePath}/render-target.cpp"
         "${sourcePath}/utilities.cpp"
         "${sourcePath}/wsi-manager.cpp"
+    install
+        TRUE
 )
 
 ################################################################################

@@ -88,7 +88,7 @@ TEST(Pipeline, ComputePipelineResourceLifetime)
     ASSERT_TRUE(create_state_tracked_object_record(pipelineLayout, pipelineLayout.get<VkPipelineLayoutCreateInfo>(), expectedPipelineDependencies));
     ASSERT_TRUE(create_state_tracked_object_record(descriptorSetLayouts[0], descriptorSetLayouts[0].get<VkDescriptorSetLayoutCreateInfo>(), expectedPipelineDependencies));
     ASSERT_TRUE(create_state_tracked_object_record(context.get_devices()[0], context.get_devices()[0].get<VkDeviceCreateInfo>(), expectedPipelineDependencies));
-    ASSERT_TRUE(create_state_tracked_object_record(context.get_physical_devices()[0], context.get_instance().get<VkInstanceCreateInfo>(), expectedPipelineDependencies));
+    ASSERT_TRUE(create_state_tracked_object_record(context.get_physical_devices()[0], VkApplicationInfo { }, expectedPipelineDependencies));
     ASSERT_TRUE(create_state_tracked_object_record(context.get_instance(), context.get_instance().get<VkInstanceCreateInfo>(), expectedPipelineDependencies));
 
     StateTrackerValidationEnumerator enumerator;
@@ -300,7 +300,7 @@ TEST(Pipeline, GraphicsPipelineResourceLifetime)
     ASSERT_TRUE(create_state_tracked_object_record(descriptorSetLayouts[0], descriptorSetLayouts[0].get<VkDescriptorSetLayoutCreateInfo>(), expectedPipelineDependencies));
     ASSERT_TRUE(create_state_tracked_object_record(descriptorSetLayouts[1], descriptorSetLayouts[1].get<VkDescriptorSetLayoutCreateInfo>(), expectedPipelineDependencies));
     ASSERT_TRUE(create_state_tracked_object_record(context.get_devices()[0], context.get_devices()[0].get<VkDeviceCreateInfo>(), expectedPipelineDependencies));
-    ASSERT_TRUE(create_state_tracked_object_record(context.get_physical_devices()[0], context.get_instance().get<VkInstanceCreateInfo>(), expectedPipelineDependencies));
+    ASSERT_TRUE(create_state_tracked_object_record(context.get_physical_devices()[0], VkApplicationInfo { }, expectedPipelineDependencies));
     ASSERT_TRUE(create_state_tracked_object_record(context.get_instance(), context.get_instance().get<VkInstanceCreateInfo>(), expectedPipelineDependencies));
 
     StateTrackerValidationEnumerator enumerator;

@@ -18,6 +18,8 @@ gvk_add_static_library(
         "${includeDirectory}/gvk-string.hpp"
     sourceFiles
         "${sourcePath}/utilities.cpp"
+    install
+        TRUE
 )
 
 ################################################################################

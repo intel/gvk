@@ -27,10 +27,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-cppgen.hpp"
 #include "gvk-string.hpp"
 #include "gvk-xml.hpp"
-
-#include <set>
-#include <string>
-#include <vector>
+#include "execute-command-structure.generator.hpp"
 
 std::vector<gvk::xml::Structure> get_command_structures(const gvk::xml::Manifest& manifest)
 {
@@ -122,6 +119,7 @@ int main(int, const char*[])
             "GvkCommandStructureBuildAccelerationStructuresKHR",
             "GvkCommandStructureCmdBuildAccelerationStructuresIndirectKHR",
             "GvkCommandStructureCmdBuildAccelerationStructuresKHR",
+            "GvkCommandStructureCmdPushConstants",
             "GvkCommandStructureCmdSetBlendConstants",
             "GvkCommandStructureCmdSetSampleMaskEXT",
             "GvkCommandStructureCmdSetFragmentShadingRateEnumNV",
@@ -132,12 +130,14 @@ int main(int, const char*[])
         };
         gvk::cppgen::ApiElementCollectionDeclarationGenerator::generate(apiElements);
         gvk::cppgen::EnumerationToStringGenerator::generate(apiElements);
+        gvk::cppgen::ExecuteCommandStructureGenerator::generate(manifest, apiElements);
         gvk::cppgen::StructureComparisonOperatorsGenerator::generate(apiElements);
         gvk::cppgen::StructureCreateCopyGenerator::generate(manifest, apiElements);
         gvk::cppgen::StructureDestroyCopyGenerator::generate(manifest, apiElements);
+        gvk::cppgen::StructureEnumerateHandlesGenerator::generate(manifest, apiElements);
         gvk::cppgen::StructureGetSTypeGenerator::generate(apiElements);
         gvk::cppgen::StructureMakeTupleGenerator::generate(manifest, apiElements, "gvk-command-structures/detail/make-tuple-manual.hpp");
-        gvk::cppgen::StructureToStringGeneratorEx::generate(manifest, apiElements);
+        gvk::cppgen::StructureToStringGenerator::generate(manifest, apiElements);
 
         apiElements.manuallyImplemented.insert("GvkCommandStructureGetDeviceProcAddr");
         apiElements.manuallyImplemented.insert("GvkCommandStructureGetInstanceProcAddr");

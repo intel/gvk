@@ -112,6 +112,23 @@ void print<GvkCommandStructureCmdBuildAccelerationStructuresKHR>(Printer& printe
 }
 
 template <>
+void print<GvkCommandStructureCmdPushConstants>(Printer& printer, const GvkCommandStructureCmdPushConstants& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            printer.print_field("commandBuffer", obj.commandBuffer);
+            printer.print_field("layout", obj.layout);
+            printer.print_flags<VkShaderStageFlagBits>("stageFlags", obj.stageFlags);
+            printer.print_field("offset", obj.offset);
+            printer.print_field("size", obj.size);
+            printer.print_array("pValues", obj.size, (const uint8_t*)obj.pValues);
+        }
+    );
+}
+
+template <>
 void print<GvkCommandStructureCmdSetBlendConstants>(Printer& printer, const GvkCommandStructureCmdSetBlendConstants& obj)
 {
     printer.print_object(

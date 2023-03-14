@@ -96,25 +96,30 @@ inline ObjectType** create_dynamic_pointer_array_copy(CountType objCount, const 
     return ppResult;
 }
 
-inline char* create_dynamic_string_copy(const char* pStr, const VkAllocationCallbacks* pAllocator)
+template <typename CharType>
+inline CharType* create_dynamic_string_copy(const CharType* pStr, const VkAllocationCallbacks* pAllocator)
 {
-    char* pResult = nullptr;
+    CharType* pResult = nullptr;
     if (pStr) {
         pAllocator = validate_allocation_callbacks(pAllocator);
-        auto size = strlen(pStr) + 1;
-        pResult = (char*)pAllocator->pfnAllocation(pAllocator->pUserData, sizeof(char) * size, 0, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
-        memcpy(pResult, pStr, size);
+        auto pEnd = pStr;
+        while (*pEnd) {
+            ++pEnd;
+        }
+        auto strLen = pEnd - pStr + 1;
+        pResult = (CharType*)pAllocator->pfnAllocation(pAllocator->pUserData, sizeof(CharType) * strLen, 0, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+        memcpy(pResult, pStr, strLen);
     }
     return pResult;
 }
 
-template <typename CountType>
-inline char** create_dynamic_string_array_copy(CountType strCount, const char* const* ppStrs, const VkAllocationCallbacks* pAllocator)
+template <typename CountType, typename CharType>
+inline CharType** create_dynamic_string_array_copy(CountType strCount, const CharType* const* ppStrs, const VkAllocationCallbacks* pAllocator)
 {
-    char** ppResult = nullptr;
+    CharType** ppResult = nullptr;
     if (strCount && ppStrs) {
         pAllocator = validate_allocation_callbacks(pAllocator);
-        ppResult = (char**)pAllocator->pfnAllocation(pAllocator->pUserData, sizeof(char*) * strCount, 0, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+        ppResult = (CharType**)pAllocator->pfnAllocation(pAllocator->pUserData, sizeof(CharType*) * strCount, 0, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
         for (CountType i = 0; i < strCount; ++i) {
             ppResult[i] = create_dynamic_string_copy(ppStrs[i], pAllocator);
         }
@@ -133,8 +138,8 @@ inline void create_static_array_copy(ObjectType* pDst, const ObjectType* pSrc, c
     }
 }
 
-template <size_t Size>
-inline void create_static_string_copy(char* pDstStr, const char* pSrcStr)
+template <size_t Size, typename CharType>
+inline void create_static_string_copy(CharType* pDstStr, const CharType* pSrcStr)
 {
     assert(Size);
     assert(pDstStr);
@@ -168,7 +173,8 @@ inline void destroy_dynamic_pointer_array_copy(CountType objCount, const ObjectT
     }
 }
 
-inline void destroy_dynamic_string_copy(const char* pStr, const VkAllocationCallbacks* pAllocator)
+template <typename CharType>
+inline void destroy_dynamic_string_copy(const CharType* pStr, const VkAllocationCallbacks* pAllocator)
 {
     if (pStr) {
         pAllocator = validate_allocation_callbacks(pAllocator);
@@ -176,8 +182,8 @@ inline void destroy_dynamic_string_copy(const char* pStr, const VkAllocationCall
     }
 }
 
-template <typename CountType>
-inline void destroy_dynamic_string_array_copy(CountType strCount, const char* const* ppStrs, const VkAllocationCallbacks* pAllocator)
+template <typename CountType, typename CharType>
+inline void destroy_dynamic_string_array_copy(CountType strCount, const CharType* const* ppStrs, const VkAllocationCallbacks* pAllocator)
 {
     if (strCount && ppStrs) {
         pAllocator = validate_allocation_callbacks(pAllocator);
@@ -198,6 +204,11 @@ inline void destroy_static_array_copy(const ObjectType* pObjs, const VkAllocatio
         destroy_structure_copy(pObjs[i], pAllocator);
     }
 }
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+template <> SECURITY_ATTRIBUTES create_structure_copy<SECURITY_ATTRIBUTES>(const SECURITY_ATTRIBUTES& obj, const VkAllocationCallbacks* pAllocator);
+template <> void destroy_structure_copy<SECURITY_ATTRIBUTES>(const SECURITY_ATTRIBUTES& obj, const VkAllocationCallbacks* pAllocator);
+#endif
 
 } // namespace detail
 } // namespace gvk

@@ -41,16 +41,155 @@ GVK_STUB_TO_STRING_DEFINITION(VkXlibSurfaceCreateInfoKHR)
 ////////////////////////////////////////////////////////////////////////////////
 // Win32
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-GVK_STUB_TO_STRING_DEFINITION(LPCWSTR)
-GVK_STUB_TO_STRING_DEFINITION(SECURITY_ATTRIBUTES)
-GVK_STUB_TO_STRING_DEFINITION(VkExportFenceWin32HandleInfoKHR)
-GVK_STUB_TO_STRING_DEFINITION(VkExportMemoryWin32HandleInfoKHR)
-GVK_STUB_TO_STRING_DEFINITION(VkExportMemoryWin32HandleInfoNV)
-GVK_STUB_TO_STRING_DEFINITION(VkExportSemaphoreWin32HandleInfoKHR)
-GVK_STUB_TO_STRING_DEFINITION(VkImportFenceWin32HandleInfoKHR)
-GVK_STUB_TO_STRING_DEFINITION(VkImportMemoryWin32HandleInfoKHR)
-GVK_STUB_TO_STRING_DEFINITION(VkImportMemoryWin32HandleInfoNV)
-GVK_STUB_TO_STRING_DEFINITION(VkImportSemaphoreWin32HandleInfoKHR)
+template <> void print<HINSTANCE>(Printer& printer, const HINSTANCE& hInstance)
+{
+    printer.mOstrm << "\"" << (hInstance ? to_hex_string(hInstance) : "NULL") << "\"";
+}
+
+template <> void print<HWND>(Printer& printer, const HWND& hWnd)
+{
+    printer.mOstrm << "\"" << (hWnd ? to_hex_string(hWnd) : "NULL") << "\"";
+}
+
+template <> void print<LPCWSTR>(Printer& printer, const LPCWSTR& pwStr)
+{
+    printer.mOstrm << "\"";
+    if (pwStr) {
+        auto strLen = WideCharToMultiByte(CP_UTF8, 0, pwStr, -1, NULL, 0, NULL, NULL);
+        std::string str(strLen, 0);
+        WideCharToMultiByte(CP_UTF8, 0, pwStr, -1, str.data(), 0, NULL, NULL);
+        printer.mOstrm << str;
+    } else {
+        printer.mOstrm << "NULL";
+    }
+    printer.mOstrm << "\"";
+}
+
+template <> void print<SECURITY_ATTRIBUTES>(Printer& printer, const SECURITY_ATTRIBUTES& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("nLength", obj.nLength);
+            printer.print_field("lpSecurityDescriptor", obj.lpSecurityDescriptor);
+            printer.print_field("bInheritHandle", obj.bInheritHandle);
+        }
+    );
+}
+
+template <> void print<VkExportFenceWin32HandleInfoKHR>(Printer& printer, const VkExportFenceWin32HandleInfoKHR& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            detail::print_pnext(printer, obj.pNext);
+            printer.print_pointer("pAttributes", obj.pAttributes);
+            printer.print_field("dwAccess", obj.dwAccess);
+            printer.print_field("name", obj.name);
+        }
+    );
+}
+
+template <> void print<VkExportMemoryWin32HandleInfoKHR>(Printer& printer, const VkExportMemoryWin32HandleInfoKHR& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            detail::print_pnext(printer, obj.pNext);
+            printer.print_pointer("pAttributes", obj.pAttributes);
+            printer.print_field("dwAccess", obj.dwAccess);
+            printer.print_field("name", obj.name);
+        }
+    );
+}
+
+template <> void print<VkExportMemoryWin32HandleInfoNV>(Printer& printer, const VkExportMemoryWin32HandleInfoNV& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            detail::print_pnext(printer, obj.pNext);
+            printer.print_pointer("pAttributes", obj.pAttributes);
+            printer.print_field("dwAccess", obj.dwAccess);
+        }
+    );
+}
+
+template <> void print<VkExportSemaphoreWin32HandleInfoKHR>(Printer& printer, const VkExportSemaphoreWin32HandleInfoKHR& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            detail::print_pnext(printer, obj.pNext);
+            printer.print_pointer("pAttributes", obj.pAttributes);
+            printer.print_field("dwAccess", obj.dwAccess);
+            printer.print_field("name", obj.name);
+        }
+    );
+}
+
+template <> void print<VkImportFenceWin32HandleInfoKHR>(Printer& printer, const VkImportFenceWin32HandleInfoKHR& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            detail::print_pnext(printer, obj.pNext);
+            printer.print_field("fence", obj.fence);
+            printer.print_field("flags", obj.flags);
+            printer.print_field("handleType", obj.handleType);
+            printer.print_field("handle", obj.handle);
+            printer.print_field("name", obj.name);
+        }
+    );
+}
+
+template <> void print<VkImportMemoryWin32HandleInfoKHR>(Printer& printer, const VkImportMemoryWin32HandleInfoKHR& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            detail::print_pnext(printer, obj.pNext);
+            printer.print_field("handleType", obj.handleType);
+            printer.print_field("handle", obj.handle);
+            printer.print_field("name", obj.name);
+        }
+    );
+}
+
+template <> void print<VkImportMemoryWin32HandleInfoNV>(Printer& printer, const VkImportMemoryWin32HandleInfoNV& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            detail::print_pnext(printer, obj.pNext);
+            printer.print_field("handleType", obj.handleType);
+            printer.print_field("handle", obj.handle);
+        }
+    );
+}
+
+template <> void print<VkImportSemaphoreWin32HandleInfoKHR>(Printer& printer, const VkImportSemaphoreWin32HandleInfoKHR& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            detail::print_pnext(printer, obj.pNext);
+            printer.print_field("semaphore", obj.semaphore);
+            printer.print_field("flags", obj.flags);
+            printer.print_field("handleType", obj.handleType);
+            printer.print_field("handle", obj.handle);
+            printer.print_field("name", obj.name);
+        }
+    );
+}
 #endif // VK_USE_PLATFORM_WIN32_KHR
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -235,6 +374,21 @@ void print<VkMicromapVersionInfoEXT>(Printer& printer, const VkMicromapVersionIn
 }
 
 template <>
+void print<VkPipelineCacheCreateInfo>(Printer& printer, const VkPipelineCacheCreateInfo& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            detail::print_pnext(printer, obj.pNext);
+            printer.print_flags<VkPipelineCacheCreateFlagBits>("flags", obj.flags);
+            printer.print_field("initialDataSize", obj.initialDataSize);
+            printer.print_array("pInitialData", obj.initialDataSize, (const uint8_t*)obj.pInitialData);
+        }
+    );
+}
+
+template <>
 void print<VkPipelineMultisampleStateCreateInfo>(Printer& printer, const VkPipelineMultisampleStateCreateInfo& obj)
 {
     printer.print_object(
@@ -264,6 +418,20 @@ void print<VkShaderModuleCreateInfo>(Printer& printer, const VkShaderModuleCreat
             printer.print_field("flags", obj.flags);
             printer.print_field("codeSize", obj.codeSize);
             printer.print_array("pCode", obj.codeSize / sizeof(uint32_t), obj.pCode);
+        }
+    );
+}
+
+template <>
+void print<VkSpecializationInfo>(Printer& printer, const VkSpecializationInfo& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("mapEntryCount", obj.mapEntryCount);
+            printer.print_array("pMapEntries", obj.mapEntryCount, obj.pMapEntries);
+            printer.print_field("dataSize", obj.dataSize);
+            printer.print_array("pData", obj.dataSize, (const uint8_t*)obj.pData);
         }
     );
 }

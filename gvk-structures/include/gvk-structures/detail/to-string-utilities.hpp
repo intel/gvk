@@ -35,6 +35,8 @@ template <> void print<VK_STRUCTURE_TYPE>(Printer&, const VK_STRUCTURE_TYPE&) { 
 namespace gvk {
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
+template <> void print<HINSTANCE>(Printer& printer, const HINSTANCE& hInstance);
+template <> void print<HWND>(Printer& printer, const HWND& hWnd);
 template <> void print<LPCWSTR>(Printer& printer, const LPCWSTR& lpcwStr);
 template <> void print<SECURITY_ATTRIBUTES>(Printer& printer, const SECURITY_ATTRIBUTES& securityAttributes);
 #endif // VK_USE_PLATFORM_WIN32_KHR

@@ -25,9 +25,136 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include "gvk-state-tracker/generated/state-tracked-handles.hpp"
+#include "gvk-state-tracker/state-tracker.hpp"
+
+#include <cassert>
 
 namespace gvk {
 namespace state_tracker {
+
+void PhysicalDevice::enumerate(PFN_gvkEnumerateStateTrackedObjectsCallback pfnCallback, void* pUserData) const
+{
+    assert(pfnCallback);
+    if (mReference) {
+        GvkStateTrackedObject stateTrackedObject { };
+        stateTrackedObject.type = get<VkObjectType>();
+        switch (StateTracker::get_physical_device_enumeration_mode()) {
+        case StateTracker::PhysicalDeviceEnumerationMode::Application: {
+            stateTrackedObject.handle = get<uint64_t>();
+            stateTrackedObject.dispatchableHandle = get<uint64_t>();
+        } break;
+        case StateTracker::PhysicalDeviceEnumerationMode::Loader: {
+            stateTrackedObject.handle = (uint64_t)get<VkPhysicalDevice>();
+            stateTrackedObject.dispatchableHandle = (uint64_t)get<VkPhysicalDevice>();
+        } break;
+        default: {
+            assert(false);
+        } break;
+        }
+        pfnCallback(&stateTrackedObject, nullptr, pUserData);
+        const auto& controlBlock = mReference.get_obj();
+        controlBlock.mDeviceTracker.enumerate(pfnCallback, pUserData);
+        controlBlock.mDisplayKHRTracker.enumerate(pfnCallback, pUserData);
+    }
+}
+
+void PhysicalDevice::enumerate_dependencies(PFN_gvkEnumerateStateTrackedObjectsCallback pfnCallback, void* pUserData) const
+{
+    assert(pfnCallback);
+    if (mReference) {
+        GvkStateTrackedObject stateTrackedObject { };
+        stateTrackedObject.type = get<VkObjectType>();
+        switch (StateTracker::get_physical_device_enumeration_mode()) {
+        case StateTracker::PhysicalDeviceEnumerationMode::Application: {
+            stateTrackedObject.handle = get<uint64_t>();
+            stateTrackedObject.dispatchableHandle = get<uint64_t>();
+        } break;
+        case StateTracker::PhysicalDeviceEnumerationMode::Loader: {
+            stateTrackedObject.handle = (uint64_t)get<VkPhysicalDevice>();
+            stateTrackedObject.dispatchableHandle = (uint64_t)get<VkPhysicalDevice>();
+        } break;
+        default: {
+            assert(false);
+        } break;
+        }
+        pfnCallback(&stateTrackedObject, nullptr, pUserData);
+        get<Instance>().enumerate_dependencies(pfnCallback, pUserData);
+    }
+}
+
+void DisplayKHR::enumerate(PFN_gvkEnumerateStateTrackedObjectsCallback pfnCallback, void* pUserData) const
+{
+    assert(pfnCallback);
+    if (mReference) {
+        GvkStateTrackedObject stateTrackedObject { };
+        stateTrackedObject.type = get<VkObjectType>();
+        stateTrackedObject.handle = (uint64_t)get<VkDisplayKHR>();
+        switch (StateTracker::get_physical_device_enumeration_mode()) {
+        case StateTracker::PhysicalDeviceEnumerationMode::Application: {
+            PhysicalDevice gvkPhysicalDevice(get<VkPhysicalDevice>());
+            assert(gvkPhysicalDevice);
+            stateTrackedObject.dispatchableHandle = gvkPhysicalDevice.get<uint64_t>();
+        } break;
+        case StateTracker::PhysicalDeviceEnumerationMode::Loader: {
+            stateTrackedObject.dispatchableHandle = (uint64_t)get<VkPhysicalDevice>();
+        } break;
+        default: {
+            assert(false);
+        } break;
+        }
+        pfnCallback(&stateTrackedObject, nullptr, pUserData);
+        const auto& controlBlock = mReference.get_obj();
+        controlBlock.mDisplayModeKHRTracker.enumerate(pfnCallback, pUserData);
+    }
+}
+
+void DisplayKHR::enumerate_dependencies(PFN_gvkEnumerateStateTrackedObjectsCallback pfnCallback, void* pUserData) const
+{
+    assert(pfnCallback);
+    if (mReference) {
+        GvkStateTrackedObject stateTrackedObject { };
+        stateTrackedObject.type = get<VkObjectType>();
+        stateTrackedObject.handle = (uint64_t)get<VkDisplayKHR>();
+        switch (StateTracker::get_physical_device_enumeration_mode()) {
+        case StateTracker::PhysicalDeviceEnumerationMode::Application: {
+            PhysicalDevice gvkPhysicalDevice(get<VkPhysicalDevice>());
+            assert(gvkPhysicalDevice);
+            stateTrackedObject.dispatchableHandle = gvkPhysicalDevice.get<uint64_t>();
+        } break;
+        case StateTracker::PhysicalDeviceEnumerationMode::Loader: {
+            stateTrackedObject.dispatchableHandle = (uint64_t)get<VkPhysicalDevice>();
+        } break;
+        default: {
+            assert(false);
+        } break;
+        }
+        pfnCallback(&stateTrackedObject, nullptr, pUserData);
+    }
+}
+
+void DisplayModeKHR::enumerate(PFN_gvkEnumerateStateTrackedObjectsCallback pfnCallback, void* pUserData) const
+{
+    assert(pfnCallback);
+    if (mReference) {
+        GvkStateTrackedObject stateTrackedObject { };
+        stateTrackedObject.type = get<VkObjectType>();
+        stateTrackedObject.handle = (uint64_t)get<VkDisplayModeKHR>();
+        switch (StateTracker::get_physical_device_enumeration_mode()) {
+        case StateTracker::PhysicalDeviceEnumerationMode::Application: {
+            PhysicalDevice gvkPhysicalDevice(get<VkPhysicalDevice>());
+            assert(gvkPhysicalDevice);
+            stateTrackedObject.dispatchableHandle = gvkPhysicalDevice.get<uint64_t>();
+        } break;
+        case StateTracker::PhysicalDeviceEnumerationMode::Loader: {
+            stateTrackedObject.dispatchableHandle = (uint64_t)get<VkPhysicalDevice>();
+        } break;
+        default: {
+            assert(false);
+        } break;
+        }
+        pfnCallback(&stateTrackedObject, nullptr, pUserData);
+    }
+}
 
 void DisplayModeKHR::enumerate_dependencies(PFN_gvkEnumerateStateTrackedObjectsCallback pfnCallback, void* pUserData) const
 {
@@ -36,7 +163,19 @@ void DisplayModeKHR::enumerate_dependencies(PFN_gvkEnumerateStateTrackedObjectsC
         GvkStateTrackedObject stateTrackedObject { };
         stateTrackedObject.type = get<VkObjectType>();
         stateTrackedObject.handle = (uint64_t)get<VkDisplayModeKHR>();
-        stateTrackedObject.dispatchableHandle = (uint64_t)get<VkPhysicalDevice>();
+        switch (StateTracker::get_physical_device_enumeration_mode()) {
+        case StateTracker::PhysicalDeviceEnumerationMode::Application: {
+            PhysicalDevice gvkPhysicalDevice(get<VkPhysicalDevice>());
+            assert(gvkPhysicalDevice);
+            stateTrackedObject.dispatchableHandle = gvkPhysicalDevice.get<uint64_t>();
+        } break;
+        case StateTracker::PhysicalDeviceEnumerationMode::Loader: {
+            stateTrackedObject.dispatchableHandle = (uint64_t)get<VkPhysicalDevice>();
+        } break;
+        default: {
+            assert(false);
+        } break;
+        }
         pfnCallback(&stateTrackedObject, nullptr, pUserData);
         DisplayKHR(DisplayKHR::HandleIdType(mReference.get_obj().mPhysicalDevice, mReference.get_obj().mDisplayKHR)).enumerate_dependencies(pfnCallback, pUserData);
     }

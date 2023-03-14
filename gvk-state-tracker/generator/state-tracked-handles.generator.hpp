@@ -45,6 +45,7 @@ public:
 
         if (handle.name == "VkPhysicalDevice") {
             add_member(MemberInfo("VkInstance", "mVkInstance", "Instance"));
+            add_member(MemberInfo("uint64_t", "mApplicationHandle", "uint64_t"));
         }
         if (handle.name == "VkDevice") {
             add_member(MemberInfo("ObjectTracker<Queue>", "mQueueTracker"));
@@ -67,8 +68,11 @@ public:
             add_member(MemberInfo("ImageLayoutTracker", "mImageLayoutTracker", "const ImageLayoutTracker&"));
         }
         if (handle.name == "VkDeviceMemory") {
+            add_member(MemberInfo("Buffer", "mDedicatedBuffer"));
+            add_member(MemberInfo("Image", "mDedicatedImage"));
             add_member(MemberInfo("std::set<VkBuffer>", "mVkBufferBindings"));
             add_member(MemberInfo("std::set<VkImage>", "mVkImageBindings"));
+            add_member(MemberInfo("MemoryMapInfo", "mMemoryMapInfo"));
         }
         if (handle.name == "VkDescriptorSet") {
             add_member(MemberInfo("std::map<uint32_t, Descriptor>", "mDescriptors"));
@@ -78,7 +82,14 @@ public:
         }
         if (handle.name == "VkCommandBuffer") {
             add_member(MemberInfo("gvk::Auto<VkCommandBufferBeginInfo>", "mCommandbufferBeginInfo"));
+            add_member(MemberInfo("std::pair<VkResult, VkResult>", "mBeginEndCommandBufferResults"));
             add_member(MemberInfo("CmdTracker", "mCmdTracker"));
+        }
+        if (handle.name == "VkQueryPool") {
+            add_member(MemberInfo("std::vector<VkBool32>", "mAvailableQueries"));
+        }
+        if (handle.name == "VkSemaphore") {
+            add_member(MemberInfo("VkBool32", "mSignaled"));
         }
         if (handle.name == "VkSwapchainKHR") {
             add_member(MemberInfo("ObjectTracker<Image>", "mImages"));
@@ -137,6 +148,12 @@ R"(    }
             methodInfo.body = strStrm.str();
             methodInfo.method.parameters.push_back(pfnCallbackParameter);
             methodInfo.method.parameters.push_back(pUserDataParameter);
+            if (handle.name == "VkPhysicalDevice" ||
+                handle.name == "VkDisplayKHR" ||
+                handle.name == "VkDisplayModeKHR"
+            ) {
+                methodInfo.manuallyImplemented = true;
+            }
             add_method(methodInfo);
         }
 
@@ -157,9 +174,9 @@ R"({
 )", replacements);
             for (const auto& memberInfo : get_members()) {
                 if (memberInfo.storageType != get_handle().name) {
-                    if (manifest.handles.count("Vk" + string::remove(string::remove(memberInfo.storageType, "std::vector<"), ">"))) {
+                     if (manifest.handles.count("Vk" + string::remove(string::remove(memberInfo.storageType, "std::vector<"), ">"))) {
                         CompileGuardGenerator compileGuardGenerator(strStrm, memberInfo.compileGuards);
-                        if (string::contains(memberInfo.storageType, "std::vector")) {
+                         if (string::contains(memberInfo.storageType, "std::vector")) {
                             strStrm << "        for (const auto& dependency : mReference.get_obj()." << memberInfo.storageName << ") {" << std::endl;
                             strStrm << "            dependency.enumerate_dependencies(pfnCallback, pUserData);" << std::endl;
                             strStrm << "        }" << std::endl;
@@ -168,6 +185,12 @@ R"({
                         }
                     } else if (manifest.handles.count(memberInfo.storageType)) {
                         strStrm << "        get<" << string::strip_vk(memberInfo.accessorType) << ">().enumerate_dependencies(pfnCallback, pUserData);" << std::endl;
+                    } else if (memberInfo.storageName == "mImmutableSamplers") {
+                        strStrm << "        for (const auto& immutableSamplersItr : mReference.get_obj().mImmutableSamplers) {" << std::endl;
+                        strStrm << "            for (const auto& immutableSampler : immutableSamplersItr.second) {" << std::endl;
+                        strStrm << "                immutableSampler.enumerate_dependencies(pfnCallback, pUserData);" << std::endl;
+                        strStrm << "            }" << std::endl;
+                        strStrm << "        }" << std::endl;
                     }
                 }
             }
@@ -178,7 +201,9 @@ R"(    }
             methodInfo.body = strStrm.str();
             methodInfo.method.parameters.push_back(pfnCallbackParameter);
             methodInfo.method.parameters.push_back(pUserDataParameter);
-            if (handle.name == "VkDisplayModeKHR" ||
+            if (handle.name == "VkPhysicalDevice" ||
+                handle.name == "VkDisplayKHR" ||
+                handle.name == "VkDisplayModeKHR" ||
                 handle.name == "VkSwapchainKHR"
             ) {
                 methodInfo.manuallyImplemented = true;
@@ -236,8 +261,9 @@ private:
         file << "#include \"gvk-state-tracker/generated/forward-declarations.inl\"" << std::endl;
         file << "#include \"gvk-state-tracker/descriptor.hpp\"" << std::endl;
         file << "#include \"gvk-state-tracker/cmd-tracker.hpp\"" << std::endl;
-        file << "#include \"gvk-state-tracker/object-tracker.hpp\"" << std::endl;
         file << "#include \"gvk-state-tracker/image-layout-tracker.hpp\"" << std::endl;
+        file << "#include \"gvk-state-tracker/memory-map-info.hpp\"" << std::endl;
+        file << "#include \"gvk-state-tracker/object-tracker.hpp\"" << std::endl;
         file << "#include \"gvk-reference.hpp\"" << std::endl;
         file << "#include \"gvk-structures.hpp\"" << std::endl;
         file << "#include \"VK_LAYER_INTEL_gvk_state_tracker.h\"" << std::endl;

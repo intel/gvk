@@ -28,6 +28,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-cppgen/basic-structure-member-processor-generator.hpp"
 #include "gvk-cppgen/compile-guard-generator.hpp"
 #include "gvk-cppgen/namespace-generator.hpp"
+#include "gvk-cppgen/utilities.hpp"
 #include "gvk-string.hpp"
 
 namespace gvk {
@@ -178,12 +179,13 @@ void StructureMakeTupleGenerator::generate(
             file << string::replace("inline auto make_tuple(const {structureType}& obj)", "{structureType}", structure.name) << std::endl;
             file << "{" << std::endl;
             file << "    return std::make_tuple(" << std::endl;
-            int memberCount = 0;
-            for (const auto& member : structure.members) {
-                if (memberCount++) {
+            for (size_t i = 0; i < structure.members.size(); ++i) {
+                const auto& member = structure.members[i];
+                CompileGuardGenerator memberCompileGuardGenerator(file, get_inner_scope_compile_guards(structure.compileGuards, member.compileGuards));
+                file << "        " << StructureMemberToTupleElementGenerator().generate(manifest, member);
+                if (i < structure.members.size() - 1) {
                     file << "," << std::endl;
                 }
-                file << "        " << StructureMemberToTupleElementGenerator().generate(manifest, member);
             }
             file << std::endl;
             file << "    );" << std::endl;

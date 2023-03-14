@@ -212,6 +212,42 @@ const VkImageCreateInfo& get_default<VkImageCreateInfo>()
 }
 
 template <>
+const VkBufferMemoryBarrier& get_default<VkBufferMemoryBarrier>()
+{
+    static const VkBufferMemoryBarrier DefaultBufferMemoryBarrier {
+        /* .sType               */ get_stype<VkBufferMemoryBarrier>(),
+        /* .pNext               */ nullptr,
+        /* .srcAccessMask       */ 0,
+        /* .dstAccessMask       */ 0,
+        /* .srcQueueFamilyIndex */ VK_QUEUE_FAMILY_IGNORED,
+        /* .dstQueueFamilyIndex */ VK_QUEUE_FAMILY_IGNORED,
+        /* .buffer              */ VK_NULL_HANDLE,
+        /* .offset              */ 0,
+        /* .size                */ VK_WHOLE_SIZE,
+    };
+    return DefaultBufferMemoryBarrier;
+}
+
+template <>
+const VkBufferMemoryBarrier2& get_default<VkBufferMemoryBarrier2>()
+{
+    static const VkBufferMemoryBarrier2 DefaultBufferMemoryBarrier {
+        /* .sType               */ get_stype<VkBufferMemoryBarrier2>(),
+        /* .pNext               */ nullptr,
+        /* .srcStageMask        */ 0,
+        /* .srcAccessMask       */ 0,
+        /* .dstStageMask        */ 0,
+        /* .dstAccessMask       */ 0,
+        /* .srcQueueFamilyIndex */ VK_QUEUE_FAMILY_IGNORED,
+        /* .dstQueueFamilyIndex */ VK_QUEUE_FAMILY_IGNORED,
+        /* .buffer              */ VK_NULL_HANDLE,
+        /* .offset              */ 0,
+        /* .size                */ VK_WHOLE_SIZE,
+    };
+    return DefaultBufferMemoryBarrier;
+}
+
+template <>
 const VkImageMemoryBarrier& get_default<VkImageMemoryBarrier>()
 {
     static const VkImageMemoryBarrier DefaultImageMemoryBarrier {
