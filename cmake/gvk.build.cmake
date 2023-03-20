@@ -27,8 +27,8 @@ macro(gvk_set_target_option target option)
 endmacro()
 
 function(gvk_setup_target)
-    cmake_parse_arguments(args "" "target;folder;install" "linkLibraries;includeDirectories;includeFiles;sourceFiles;compileDefinitions" ${ARGN})
-    target_include_directories(${args_target} PUBLIC "$<BUILD_INTERFACE:${args_includeDirectories}>" "$<INSTALL_INTERFACE:include>")
+    cmake_parse_arguments(args "" "target;folder" "linkLibraries;includeDirectories;includeFiles;sourceFiles;compileDefinitions" ${ARGN})
+    target_include_directories(${args_target} PUBLIC "$<BUILD_INTERFACE:${args_includeDirectories}>" INTERFACE $<INSTALL_INTERFACE:include>)
     target_compile_definitions(${args_target} PUBLIC "${args_compileDefinitions}")
     target_link_libraries(${args_target} PUBLIC "${args_linkLibraries}")
     set_target_properties(${args_target} PROPERTIES LINKER_LANGUAGE CXX)
@@ -39,39 +39,10 @@ function(gvk_setup_target)
         target_compile_definitions(${args_target} PUBLIC VK_NO_PROTOTYPES)
     endif()
     set_target_properties(${args_target} PROPERTIES FOLDER "${GVK_IDE_FOLDER}/${args_folder}")
-    if(${args_install})
-        foreach(includeDirectory ${args_includeDirectories})
-            install(
-                DIRECTORY "${includeDirectory}"
-                DESTINATION include/
-            )
-        endforeach()
-        install(
-            TARGETS ${args_target}
-            EXPORT ${args_target}Targets
-            LIBRARY DESTINATION lib/$<CONFIG>/
-            ARCHIVE DESTINATION lib/$<CONFIG>/
-            RUNTIME DESTINATION bin/$<CONFIG>/
-        )
-        install(
-            EXPORT ${args_target}Targets
-            FILE ${args_target}Targets.cmake
-            DESTINATION cmake/
-        )
-        configure_package_config_file(
-            "${GVK_BUILD_MODULE_DIRECTORY}/gvk-target.config.cmake.in"
-            "${CMAKE_CURRENT_BINARY_DIR}/${args_target}Config.cmake"
-            INSTALL_DESTINATION cmake/
-        )
-        install(
-            FILES "${CMAKE_CURRENT_BINARY_DIR}/${args_target}Config.cmake"
-            DESTINATION cmake/
-        )
-    endif()
 endfunction()
 
 function(gvk_add_static_library)
-    cmake_parse_arguments(args "" "target;folder;install" "linkLibraries;includeDirectories;includeFiles;sourceFiles;compileDefinitions" ${ARGN})
+    cmake_parse_arguments(args "" "target;folder" "linkLibraries;includeDirectories;includeFiles;sourceFiles;compileDefinitions" ${ARGN})
     add_library(${args_target} STATIC "${args_includeFiles}" "${args_sourceFiles}")
     gvk_setup_target(
         target              ${args_target}
@@ -81,12 +52,11 @@ function(gvk_add_static_library)
         includeFiles       "${args_includeFiles}"
         sourceFiles        "${args_sourceFiles}"
         compileDefinitions  ${args_compileDefinitions}
-        install             ${args_install}
     )
 endfunction()
 
 function(gvk_add_executable)
-    cmake_parse_arguments(args "" "target;folder;install" "linkLibraries;includeDirectories;includeFiles;sourceFiles;compileDefinitions" ${ARGN})
+    cmake_parse_arguments(args "" "target;folder" "linkLibraries;includeDirectories;includeFiles;sourceFiles;compileDefinitions" ${ARGN})
     add_executable(${args_target} "${args_includeFiles}" "${args_sourceFiles}")
     gvk_setup_target(
         target              ${args_target}
@@ -96,12 +66,11 @@ function(gvk_add_executable)
         includeFiles       "${args_includeFiles}"
         sourceFiles        "${args_sourceFiles}"
         compileDefinitions  ${args_compileDefinitions}
-        install             ${args_install}
     )
 endfunction()
 
 function(gvk_add_code_generator)
-    cmake_parse_arguments(args "" "target;folder;install" "linkLibraries;includeDirectories;includeFiles;sourceFiles;inputFiles;outputFiles;compileDefinitions" ${ARGN})
+    cmake_parse_arguments(args "" "target;folder" "linkLibraries;includeDirectories;includeFiles;sourceFiles;inputFiles;outputFiles;compileDefinitions" ${ARGN})
     gvk_add_executable(
         target              ${args_target}
         folder             "${args_folder}"
@@ -110,7 +79,6 @@ function(gvk_add_code_generator)
         includeFiles       "${args_includeFiles}"
         sourceFiles        "${args_sourceFiles}"
         compileDefinitions  ${args_compileDefinitions}
-        install             ${args_install}
     )
     add_custom_command(
         OUTPUT ${args_outputFiles}
@@ -120,7 +88,7 @@ function(gvk_add_code_generator)
 endfunction()
 
 function(gvk_add_layer)
-    cmake_parse_arguments(args "" "target;folder;install" "linkLibraries;interfaceFiles;includeDirectories;includeFiles;sourceFiles;compileDefinitions;description;version;company;copyright;entryPoints" ${ARGN})
+    cmake_parse_arguments(args "" "target;folder" "linkLibraries;interfaceFiles;includeDirectories;includeFiles;sourceFiles;compileDefinitions;description;version;company;copyright;entryPoints" ${ARGN})
     if(NOT args_version)
         set(args_version 1)
     endif()
@@ -141,7 +109,7 @@ function(gvk_add_layer)
     endif()
     add_library(${args_target}-interface INTERFACE "${args_interfaceFiles}")
     target_link_libraries(${args_target}-interface INTERFACE Vulkan::Vulkan)
-    target_include_directories(${args_target}-interface  INTERFACE "$<BUILD_INTERFACE:${args_includeDirectories}>" "$<INSTALL_INTERFACE:include>")
+    target_include_directories(${args_target}-interface INTERFACE "$<BUILD_INTERFACE:${args_includeDirectories}>" INTERFACE $<INSTALL_INTERFACE:include>)
     gvk_create_file_group("${args_interfaceFiles}")
     set_target_properties(${args_target}-interface PROPERTIES FOLDER "${GVK_IDE_FOLDER}/${args_folder}")
     add_library(${args_target} SHARED "${args_includeFiles}" "${args_sourceFiles}")
@@ -154,7 +122,6 @@ function(gvk_add_layer)
         includeFiles       "${args_includeFiles}"
         sourceFiles        "${args_sourceFiles}"
         compileDefinitions  ${args_compileDefinitions}
-        install             False
     )
     if(MSVC)
         target_compile_options(${args_target} PRIVATE /guard:cf)
@@ -169,41 +136,10 @@ function(gvk_add_layer)
         TARGET ${args_target} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_BINARY_DIR}/${args_target}.json" "$<TARGET_FILE_DIR:${args_target}>"
     )
-    if(${args_install})
-        install(
-            TARGETS ${args_target}-interface
-            EXPORT ${args_target}Targets
-            RUNTIME DESTINATION bin/$<CONFIG>/
-        )
-        install(
-            FILES
-                "$<TARGET_FILE_DIR:${args_target}>/${args_target}.dll"
-                "${CMAKE_CURRENT_BINARY_DIR}/${args_target}.json"
-            DESTINATION bin/$<CONFIG>/
-        )
-        install(
-            FILES ${args_interfaceFiles}
-            DESTINATION include/
-        )
-        install(
-            EXPORT ${args_target}Targets
-            FILE ${args_target}Targets.cmake
-            DESTINATION cmake/
-        )
-        configure_package_config_file(
-            "${GVK_BUILD_MODULE_DIRECTORY}/gvk-target.config.cmake.in"
-            "${CMAKE_CURRENT_BINARY_DIR}/${args_target}Config.cmake"
-            INSTALL_DESTINATION cmake/
-        )
-        install(
-            FILES "${CMAKE_CURRENT_BINARY_DIR}/${args_target}Config.cmake"
-            DESTINATION cmake/
-        )
-    endif()
 endfunction()
 
 macro(gvk_add_target_test)
-    cmake_parse_arguments(args "" "target;folder;install" "linkLibraries;includeDirectories;includeFiles;sourceFiles;compileDefinitions" ${ARGN})
+    cmake_parse_arguments(args "" "target;folder" "linkLibraries;includeDirectories;includeFiles;sourceFiles;compileDefinitions" ${ARGN})
     if(GVK_BUILD_TESTS)
         list(APPEND args_linkLibraries gtest_main)
         get_target_property(type ${args_target} TYPE)
@@ -222,7 +158,6 @@ macro(gvk_add_target_test)
             includeFiles       "${args_includeFiles}"
             sourceFiles        "${args_sourceFiles}"
             compileDefinitions  ${args_compileDefinitions}
-            install             ${args_install}
         )
         if(type STREQUAL SHARED_LIBRARY)
             add_dependencies(${args_target}.tests ${args_target})

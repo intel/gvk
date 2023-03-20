@@ -31,72 +31,72 @@ namespace gvk {
 namespace detail {
 
 template <>
-void enumerate_structure_handles<GvkCommandStructureAllocateCommandBuffers>(GvkCommandStructureAllocateCommandBuffers& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<GvkCommandStructureAllocateCommandBuffers>(const GvkCommandStructureAllocateCommandBuffers& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
 }
 
 template <>
-void enumerate_structure_handles<GvkCommandStructureAllocateDescriptorSets>(GvkCommandStructureAllocateDescriptorSets& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<GvkCommandStructureAllocateDescriptorSets>(const GvkCommandStructureAllocateDescriptorSets& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
 }
 
 template <>
-void enumerate_structure_handles<GvkCommandStructureBuildAccelerationStructuresKHR>(GvkCommandStructureBuildAccelerationStructuresKHR& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<GvkCommandStructureBuildAccelerationStructuresKHR>(const GvkCommandStructureBuildAccelerationStructuresKHR& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
 }
 
 template <>
-void enumerate_structure_handles<GvkCommandStructureCmdBuildAccelerationStructuresIndirectKHR>(GvkCommandStructureCmdBuildAccelerationStructuresIndirectKHR& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<GvkCommandStructureCmdBuildAccelerationStructuresIndirectKHR>(const GvkCommandStructureCmdBuildAccelerationStructuresIndirectKHR& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
 }
 
 template <>
-void enumerate_structure_handles<GvkCommandStructureCmdBuildAccelerationStructuresKHR>(GvkCommandStructureCmdBuildAccelerationStructuresKHR& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<GvkCommandStructureCmdBuildAccelerationStructuresKHR>(const GvkCommandStructureCmdBuildAccelerationStructuresKHR& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
 }
 
 template <>
-void enumerate_structure_handles<GvkCommandStructureCmdPushConstants>(GvkCommandStructureCmdPushConstants& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<GvkCommandStructureCmdPushConstants>(const GvkCommandStructureCmdPushConstants& obj, EnumerateHandlesCallback callback)
 {
     enumerate_handle(obj.commandBuffer, callback);
     enumerate_handle(obj.layout, callback);
 }
 
-template <> void enumerate_structure_handles<GvkCommandStructureCmdSetBlendConstants>(GvkCommandStructureCmdSetBlendConstants& obj, EnumerateHandlesCallback callback)
+template <> void enumerate_structure_handles<GvkCommandStructureCmdSetBlendConstants>(const GvkCommandStructureCmdSetBlendConstants& obj, EnumerateHandlesCallback callback)
 {
     enumerate_handle(obj.commandBuffer, callback);
 }
 
 template <>
-void enumerate_structure_handles<GvkCommandStructureCmdSetSampleMaskEXT>(GvkCommandStructureCmdSetSampleMaskEXT& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<GvkCommandStructureCmdSetSampleMaskEXT>(const GvkCommandStructureCmdSetSampleMaskEXT& obj, EnumerateHandlesCallback callback)
 {
     enumerate_handle(obj.commandBuffer, callback);
 }
 
-template <> void enumerate_structure_handles<GvkCommandStructureCmdSetFragmentShadingRateEnumNV>(GvkCommandStructureCmdSetFragmentShadingRateEnumNV& obj, EnumerateHandlesCallback callback)
+template <> void enumerate_structure_handles<GvkCommandStructureCmdSetFragmentShadingRateEnumNV>(const GvkCommandStructureCmdSetFragmentShadingRateEnumNV& obj, EnumerateHandlesCallback callback)
 {
     enumerate_handle(obj.commandBuffer, callback);
 }
 
 template <>
-void enumerate_structure_handles<GvkCommandStructureCmdSetFragmentShadingRateKHR>(GvkCommandStructureCmdSetFragmentShadingRateKHR& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<GvkCommandStructureCmdSetFragmentShadingRateKHR>(const GvkCommandStructureCmdSetFragmentShadingRateKHR& obj, EnumerateHandlesCallback callback)
 {
     enumerate_handle(obj.commandBuffer, callback);
 }
 
 #ifdef VK_USE_PLATFORM_XLIB_KHR
 template <>
-void enumerate_structure_handles<GvkCommandStructureCreateXlibSurfaceKHR>(GvkCommandStructureCreateXlibSurfaceKHR& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<GvkCommandStructureCreateXlibSurfaceKHR>(const GvkCommandStructureCreateXlibSurfaceKHR& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
@@ -104,7 +104,7 @@ void enumerate_structure_handles<GvkCommandStructureCreateXlibSurfaceKHR>(GvkCom
 #endif // VK_USE_PLATFORM_XLIB_KHR
 
 template <>
-void enumerate_structure_handles<GvkCommandStructureGetAccelerationStructureBuildSizesKHR>(GvkCommandStructureGetAccelerationStructureBuildSizesKHR& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<GvkCommandStructureGetAccelerationStructureBuildSizesKHR>(const GvkCommandStructureGetAccelerationStructureBuildSizesKHR& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
@@ -112,7 +112,7 @@ void enumerate_structure_handles<GvkCommandStructureGetAccelerationStructureBuil
 
 #ifdef VK_USE_PLATFORM_XLIB_KHR
 template <>
-void enumerate_structure_handles<GvkCommandStructureGetPhysicalDeviceXlibPresentationSupportKHR>(GvkCommandStructureGetPhysicalDeviceXlibPresentationSupportKHR& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<GvkCommandStructureGetPhysicalDeviceXlibPresentationSupportKHR>(const GvkCommandStructureGetPhysicalDeviceXlibPresentationSupportKHR& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;

@@ -34,59 +34,59 @@ namespace detail {
 ////////////////////////////////////////////////////////////////////////////////
 // Linux
 #ifdef VK_USE_PLATFORM_XLIB_KHR
-    GVK_STUB_ENUMERATE_STRUCTURE_HANDLES_DEFINITION(VkXlibSurfaceCreateInfoKHR)
+GVK_STUB_ENUMERATE_STRUCTURE_HANDLES_DEFINITION(VkXlibSurfaceCreateInfoKHR)
 #endif // VK_USE_PLATFORM_XLIB_KHR
 
 ////////////////////////////////////////////////////////////////////////////////
 // Win32
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 template <>
-void enumerate_structure_handles<VkExportFenceWin32HandleInfoKHR>(VkExportFenceWin32HandleInfoKHR& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkExportFenceWin32HandleInfoKHR>(const VkExportFenceWin32HandleInfoKHR& obj, EnumerateHandlesCallback callback)
 {
-    enumerate_pnext_handles((void*)obj.pNext, callback);
+    enumerate_pnext_handles(obj.pNext, callback);
 }
 
 template <>
-void enumerate_structure_handles<VkExportMemoryWin32HandleInfoKHR>(VkExportMemoryWin32HandleInfoKHR& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkExportMemoryWin32HandleInfoKHR>(const VkExportMemoryWin32HandleInfoKHR& obj, EnumerateHandlesCallback callback)
 {
-    enumerate_pnext_handles((void*)obj.pNext, callback);
+    enumerate_pnext_handles(obj.pNext, callback);
 }
 
 template <>
-void enumerate_structure_handles<VkExportMemoryWin32HandleInfoNV>(VkExportMemoryWin32HandleInfoNV& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkExportMemoryWin32HandleInfoNV>(const VkExportMemoryWin32HandleInfoNV& obj, EnumerateHandlesCallback callback)
 {
-    enumerate_pnext_handles((void*)obj.pNext, callback);
+    enumerate_pnext_handles(obj.pNext, callback);
 }
 
 template <>
-void enumerate_structure_handles<VkExportSemaphoreWin32HandleInfoKHR>(VkExportSemaphoreWin32HandleInfoKHR& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkExportSemaphoreWin32HandleInfoKHR>(const VkExportSemaphoreWin32HandleInfoKHR& obj, EnumerateHandlesCallback callback)
 {
-    enumerate_pnext_handles((void*)obj.pNext, callback);
+    enumerate_pnext_handles(obj.pNext, callback);
 }
 
 template <>
-void enumerate_structure_handles<VkImportFenceWin32HandleInfoKHR>(VkImportFenceWin32HandleInfoKHR& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkImportFenceWin32HandleInfoKHR>(const VkImportFenceWin32HandleInfoKHR& obj, EnumerateHandlesCallback callback)
 {
-    enumerate_pnext_handles((void*)obj.pNext, callback);
+    enumerate_pnext_handles(obj.pNext, callback);
     enumerate_handle(obj.fence, callback);
 }
 
 template <>
-void enumerate_structure_handles<VkImportMemoryWin32HandleInfoKHR>(VkImportMemoryWin32HandleInfoKHR& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkImportMemoryWin32HandleInfoKHR>(const VkImportMemoryWin32HandleInfoKHR& obj, EnumerateHandlesCallback callback)
 {
-    enumerate_pnext_handles((void*)obj.pNext, callback);
+    enumerate_pnext_handles(obj.pNext, callback);
 }
 
 template <>
-void enumerate_structure_handles<VkImportMemoryWin32HandleInfoNV>(VkImportMemoryWin32HandleInfoNV& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkImportMemoryWin32HandleInfoNV>(const VkImportMemoryWin32HandleInfoNV& obj, EnumerateHandlesCallback callback)
 {
-    enumerate_pnext_handles((void*)obj.pNext, callback);
+    enumerate_pnext_handles(obj.pNext, callback);
 }
 
 template <>
-void enumerate_structure_handles<VkImportSemaphoreWin32HandleInfoKHR>(VkImportSemaphoreWin32HandleInfoKHR& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkImportSemaphoreWin32HandleInfoKHR>(const VkImportSemaphoreWin32HandleInfoKHR& obj, EnumerateHandlesCallback callback)
 {
-    enumerate_pnext_handles((void*)obj.pNext, callback);
+    enumerate_pnext_handles(obj.pNext, callback);
     enumerate_handle(obj.semaphore, callback);
 }
 #endif // VK_USE_PLATFORM_WIN32_KHR
@@ -156,67 +156,67 @@ GVK_STUB_ENUMERATE_STRUCTURE_HANDLES_DEFINITION(VkVideoSessionParametersUpdateIn
 ////////////////////////////////////////////////////////////////////////////////
 // Special case members
 template <>
-void enumerate_structure_handles<VkAccelerationStructureBuildGeometryInfoKHR>(VkAccelerationStructureBuildGeometryInfoKHR& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkAccelerationStructureBuildGeometryInfoKHR>(const VkAccelerationStructureBuildGeometryInfoKHR& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
 }
 
 template <>
-void enumerate_structure_handles<VkAccelerationStructureTrianglesOpacityMicromapEXT>(VkAccelerationStructureTrianglesOpacityMicromapEXT& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkAccelerationStructureTrianglesOpacityMicromapEXT>(const VkAccelerationStructureTrianglesOpacityMicromapEXT& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
 }
 
 template <>
-void enumerate_structure_handles<VkAccelerationStructureVersionInfoKHR>(VkAccelerationStructureVersionInfoKHR& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkAccelerationStructureVersionInfoKHR>(const VkAccelerationStructureVersionInfoKHR& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
 }
 
 template <>
-void enumerate_structure_handles<VkMicromapBuildInfoEXT>(VkMicromapBuildInfoEXT& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkMicromapBuildInfoEXT>(const VkMicromapBuildInfoEXT& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
 }
 
 template <>
-void enumerate_structure_handles<VkMicromapVersionInfoEXT>(VkMicromapVersionInfoEXT& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkMicromapVersionInfoEXT>(const VkMicromapVersionInfoEXT& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
 }
 
-template <> void enumerate_structure_handles<VkPipelineCacheCreateInfo>(VkPipelineCacheCreateInfo& obj, EnumerateHandlesCallback callback)
+template <> void enumerate_structure_handles<VkPipelineCacheCreateInfo>(const VkPipelineCacheCreateInfo& obj, EnumerateHandlesCallback callback)
 {
-    enumerate_pnext_handles((void*)obj.pNext, callback);
+    enumerate_pnext_handles(obj.pNext, callback);
 }
 
 template <>
-void enumerate_structure_handles<VkPipelineMultisampleStateCreateInfo>(VkPipelineMultisampleStateCreateInfo& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkPipelineMultisampleStateCreateInfo>(const VkPipelineMultisampleStateCreateInfo& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
 }
 
-template <> void enumerate_structure_handles<VkSpecializationInfo>(VkSpecializationInfo& obj, EnumerateHandlesCallback callback)
-{
-    (void)obj;
-    (void)callback;
-}
-
-template <>
-void enumerate_structure_handles<VkShaderModuleCreateInfo>(VkShaderModuleCreateInfo& obj, EnumerateHandlesCallback callback)
+template <> void enumerate_structure_handles<VkSpecializationInfo>(const VkSpecializationInfo& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
 }
 
 template <>
-void enumerate_structure_handles<VkTransformMatrixKHR>(VkTransformMatrixKHR& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkShaderModuleCreateInfo>(const VkShaderModuleCreateInfo& obj, EnumerateHandlesCallback callback)
+{
+    (void)obj;
+    (void)callback;
+}
+
+template <>
+void enumerate_structure_handles<VkTransformMatrixKHR>(const VkTransformMatrixKHR& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
@@ -225,63 +225,63 @@ void enumerate_structure_handles<VkTransformMatrixKHR>(VkTransformMatrixKHR& obj
 ////////////////////////////////////////////////////////////////////////////////
 // Unions
 template <>
-void enumerate_structure_handles<VkAccelerationStructureGeometryDataKHR>(VkAccelerationStructureGeometryDataKHR& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkAccelerationStructureGeometryDataKHR>(const VkAccelerationStructureGeometryDataKHR& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
 }
 
 template <>
-void enumerate_structure_handles<VkAccelerationStructureMotionInstanceDataNV>(VkAccelerationStructureMotionInstanceDataNV& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkAccelerationStructureMotionInstanceDataNV>(const VkAccelerationStructureMotionInstanceDataNV& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
 }
 
 template <>
-void enumerate_structure_handles<VkClearColorValue>(VkClearColorValue& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkClearColorValue>(const VkClearColorValue& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
 }
 
 template <>
-void enumerate_structure_handles<VkClearValue>(VkClearValue& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkClearValue>(const VkClearValue& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
 }
 
 template <>
-void enumerate_structure_handles<VkDeviceOrHostAddressConstKHR>(VkDeviceOrHostAddressConstKHR& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkDeviceOrHostAddressConstKHR>(const VkDeviceOrHostAddressConstKHR& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
 }
 
 template <>
-void enumerate_structure_handles<VkDeviceOrHostAddressKHR>(VkDeviceOrHostAddressKHR& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkDeviceOrHostAddressKHR>(const VkDeviceOrHostAddressKHR& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
 }
 
 template <>
-void enumerate_structure_handles<VkPerformanceCounterResultKHR>(VkPerformanceCounterResultKHR& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkPerformanceCounterResultKHR>(const VkPerformanceCounterResultKHR& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
 }
 
 template <>
-void enumerate_structure_handles<VkPerformanceValueDataINTEL>(VkPerformanceValueDataINTEL& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkPerformanceValueDataINTEL>(const VkPerformanceValueDataINTEL& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
 }
 
 template <>
-void enumerate_structure_handles<VkPipelineExecutableStatisticValueKHR>(VkPipelineExecutableStatisticValueKHR& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<VkPipelineExecutableStatisticValueKHR>(const VkPipelineExecutableStatisticValueKHR& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;

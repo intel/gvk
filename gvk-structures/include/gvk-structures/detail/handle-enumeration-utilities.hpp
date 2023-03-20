@@ -32,31 +32,31 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <functional>
 
 #define GVK_STUB_ENUMERATE_STRUCTURE_HANDLES_DEFINITION(VK_STRUCTURE_TYPE) \
-template <> void enumerate_structure_handles<VK_STRUCTURE_TYPE>(VK_STRUCTURE_TYPE&, EnumerateHandlesCallback) { }
+template <> void enumerate_structure_handles<VK_STRUCTURE_TYPE>(const VK_STRUCTURE_TYPE&, EnumerateHandlesCallback) { }
 
 namespace gvk {
 namespace detail {
 
-using EnumerateHandlesCallback = std::function<void(VkObjectType, uint64_t&)>;
+using EnumerateHandlesCallback = std::function<void(VkObjectType, const uint64_t&)>;
 
 template <typename StructureType>
-inline void enumerate_structure_handles(StructureType& handle, EnumerateHandlesCallback callback)
+inline void enumerate_structure_handles(const StructureType& structure, EnumerateHandlesCallback callback)
 {
-    (void)handle;
+    (void)structure;
     (void)callback;
 }
 
-void enumerate_pnext_handles(void* pNext, EnumerateHandlesCallback callback);
+void enumerate_pnext_handles(const void* pNext, EnumerateHandlesCallback callback);
 
 template <typename VkHandleType>
-inline void enumerate_handle(VkHandleType& handle, EnumerateHandlesCallback callback)
+inline void enumerate_handle(const VkHandleType& handle, EnumerateHandlesCallback callback)
 {
-    uint64_t* pTypelessHandle = (uint64_t*)&handle;
-    callback(get_object_type<VkHandleType>(), *pTypelessHandle);
+    auto& typelessHandle = (const uint64_t&)handle;
+    callback(get_object_type<VkHandleType>(), typelessHandle);
 }
 
 template <typename CountType, typename VkHandleType>
-inline void enumerate_dynamic_handle_array(CountType handleCount, VkHandleType* pHandles, EnumerateHandlesCallback callback)
+inline void enumerate_dynamic_handle_array(CountType handleCount, const VkHandleType* pHandles, EnumerateHandlesCallback callback)
 {
     if (handleCount && pHandles) {
         for (CountType i = 0; i < handleCount; ++i) {
@@ -66,7 +66,7 @@ inline void enumerate_dynamic_handle_array(CountType handleCount, VkHandleType* 
 }
 
 template <size_t Count, typename VkHandleType>
-inline void enumerate_static_handle_array(VkHandleType* pHandles, EnumerateHandlesCallback callback)
+inline void enumerate_static_handle_array(const VkHandleType* pHandles, EnumerateHandlesCallback callback)
 {
     if (pHandles) {
         for (size_t i = 0; i < Count; ++i) {
@@ -86,7 +86,7 @@ inline void enumerate_dynamic_structure_array_handles(CountType objCount, const 
 }
 
 template <size_t Count, typename ObjectType>
-inline void enumerate_static_structure_array_handles(ObjectType* pObjs, EnumerateHandlesCallback callback)
+inline void enumerate_static_structure_array_handles(const ObjectType* pObjs, EnumerateHandlesCallback callback)
 {
     if (pObjs) {
         for (size_t i = 0; i < Count; ++i) {

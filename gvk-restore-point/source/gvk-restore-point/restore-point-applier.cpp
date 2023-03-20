@@ -309,23 +309,22 @@ VkResult detail::RestorePointApplierBase::restore_descriptor_bindings(const GvkS
     std::vector<VkWriteDescriptorSet> descriptorWrites;
     descriptorWrites.reserve(restoreInfo->descriptorWriteCount);
     for (uint32_t i = 0; i < restoreInfo->descriptorWriteCount; ++i) {
-        auto& descriptorWrite = *const_cast<VkWriteDescriptorSet*>(&restoreInfo->pDescriptorWrites[i]);
         bool activeDescriptor = false;
         detail::enumerate_structure_handles(
-            descriptorWrite,
-            [&](VkObjectType, uint64_t& capturedHandle)
+            restoreInfo->pDescriptorWrites[i],
+            [&](VkObjectType, const uint64_t& capturedHandle)
             {
                 if (capturedHandle) {
                     auto restoredHandleItr = mRestoredHandles.find(capturedHandle);
                     if (restoredHandleItr != mRestoredHandles.end()) {
                         activeDescriptor |= capturedHandle != stateTrackedObject.handle;
-                        capturedHandle = restoredHandleItr->second;
+                        const_cast<uint64_t&>(capturedHandle) = restoredHandleItr->second;
                     }
                 }
             }
         );
         if (activeDescriptor) {
-            descriptorWrites.push_back(descriptorWrite);
+            descriptorWrites.push_back(restoreInfo->pDescriptorWrites[i]);
         }
     }
     if (!descriptorWrites.empty()) {

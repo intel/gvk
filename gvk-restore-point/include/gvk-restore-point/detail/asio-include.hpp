@@ -26,38 +26,30 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-cppgen.hpp"
+#include "gvk-defines.hpp"
 
-namespace gvk {
-namespace cppgen {
+#ifdef GVK_COMPILER_MSVC
+#pragma warning(push, 0)
+#endif // GVK_COMPILER_MSVC
+#ifdef GVK_COMPILER_GCC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#endif // GVK_COMPILER_GCC
+#ifdef GVK_COMPILER_CLANG
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wconversion"
+#pragma clang diagnostic ignored "-Wsign-conversion"
+#endif // GVK_COMPILER_CLANG
 
-class EnumeratePNextHandlesGenerator final
-{
-public:
-    static void generate(const xml::Manifest& manifest)
-    {
-        FileGenerator file(GVK_STRUCTURES_GENERATED_SOURCE_PATH "/enumerate-pnext-handles.cpp");
-        file << std::endl;
-        file << "#include \"gvk-structures/generated/core-structure-enumerate-handles.hpp\"" << std::endl;
-        file << "#include \"gvk-defines.hpp\"" << std::endl;
-        file << std::endl;
-        NamespaceGenerator namespaceGenerator(file, "gvk::detail");
-        file << std::endl;
-        file << "void enumerate_pnext_handles(const void* pNext, EnumerateHandlesCallback callback)" << std::endl;
-        file << "{" << std::endl;
-        file << "    if (pNext) {" << std::endl;
-        generate_pnext_switch(
-            file,
-            manifest,
-            "        ",
-            "((const VkBaseInStructure*)pNext)->sType",
-            "enumerate_structure_handles(*(const {structureType}*)pNext, callback);"
-        );
-        file << "    }" << std::endl;
-        file << "}" << std::endl;
-        file << std::endl;
-    }
-};
+#include "asio.hpp"
 
-} // namespace cppgen
-} // namespace gvk
+#ifdef GVK_COMPILER_CLANG
+#pragma clang diagnostic pop
+#endif // GVK_COMPILER_CLANG
+#ifdef GVK_COMPILER_GCC
+#pragma GCC diagnostic pop
+#endif // GVK_COMPILER_GCC
+#ifdef GVK_COMPILER_MSVC
+#pragma warning(pop)
+#endif // GVK_COMPILER_MSVC

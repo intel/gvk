@@ -83,6 +83,7 @@ gvk_add_static_library(
         "${asioSourceDirectory}/asio/include/"
     includeFiles
         "${generatedIncludeFiles}"
+        "${includePath}/detail/asio-include.hpp"
         "${includePath}/detail/copy-engine.hpp"
         "${includePath}/detail/restore-point-applier-base.hpp"
         "${includePath}/restore-point-applier.hpp"
@@ -95,6 +96,4 @@ gvk_add_static_library(
         "${sourcePath}/detail/restore-info-to-string-manual.cpp"
         "${sourcePath}/restore-point-applier.cpp"
         "${sourcePath}/restore-point-creator.cpp"
-    install
-        TRUE
 )

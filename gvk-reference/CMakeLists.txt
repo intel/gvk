@@ -17,8 +17,6 @@ gvk_add_static_library(
         "${includeDirectory}/gvk-reference.hpp"
     sourceFiles
         "${sourcePath}/reference.cpp"
-    install
-        TRUE
 )
 
 ################################################################################

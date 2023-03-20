@@ -61,6 +61,4 @@ gvk_add_static_library(
         "${sourceDirectory}/gvk-defines.cpp"
         "${sourceDirectory}/gvk-environment.cpp"
         "${sourceDirectory}/gvk-runtime.cpp"
-    install
-        TRUE
 )

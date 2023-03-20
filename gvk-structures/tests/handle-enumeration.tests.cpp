@@ -40,11 +40,11 @@ TEST(enumerate_structure_handles, Basic)
     commandBufferAllocateInfo.commandPool = (VkCommandPool)64;
     gvk::detail::enumerate_structure_handles(
         commandBufferAllocateInfo,
-        [](VkObjectType objectType, uint64_t& handle)
+        [](VkObjectType objectType, const uint64_t& handle)
         {
             EXPECT_EQ(objectType, VK_OBJECT_TYPE_COMMAND_POOL);
             EXPECT_EQ(handle, 64);
-            handle = 128;
+            const_cast<uint64_t&>(handle) = 128;
         }
     );
     EXPECT_EQ(commandBufferAllocateInfo.commandPool, (VkCommandPool)128);

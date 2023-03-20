@@ -79,8 +79,6 @@ gvk_add_static_library(
         "${sourcePath}/detail/copy-manual.cpp"
         "${sourcePath}/detail/handle-enumeration-manual.cpp"
         "${sourcePath}/detail/to-string-manual.cpp"
-    install
-        TRUE
 )
 if(MSVC)
     set_source_files_properties("${generatedSourcePath}/command-structure-comparison-operators.cpp" PROPERTIES COMPILE_FLAGS "/bigobj")

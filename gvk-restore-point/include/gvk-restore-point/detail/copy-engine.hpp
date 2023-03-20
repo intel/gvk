@@ -27,8 +27,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 #include "gvk-handles.hpp"
-
-#include "asio.hpp"
+#include "gvk-restore-point/detail/asio-include.hpp"
 
 #include <filesystem>
 #include <functional>

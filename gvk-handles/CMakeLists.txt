@@ -77,8 +77,6 @@ gvk_add_static_library(
         "${sourcePath}/render-target.cpp"
         "${sourcePath}/utilities.cpp"
         "${sourcePath}/wsi-manager.cpp"
-    install
-        TRUE
 )
 
 ################################################################################

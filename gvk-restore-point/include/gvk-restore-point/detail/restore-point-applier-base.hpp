@@ -32,6 +32,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-handles.hpp"
 #include "gvk-runtime.hpp"
 #include "gvk-structures.hpp"
+#include "gvk-restore-point/detail/asio-include.hpp"
 #include "gvk-restore-point/detail/copy-engine.hpp"
 #include "gvk-restore-point/restore-point-info.hpp"
 
@@ -47,8 +48,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-restore-point/generated/restore-info-structure-to-string.hpp"
 #include "gvk-structures/generated/core-structure-enumerate-handles.hpp"
 #include "VK_LAYER_INTEL_gvk_state_tracker.hpp"
-
-#include "asio.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -75,10 +74,10 @@ protected:
     {
         assert(pStructure);
         detail::enumerate_structure_handles(
-            *const_cast<StructureType*>(pStructure),
-            [&](VkObjectType, uint64_t& capturedHandle)
+            *pStructure,
+            [&](VkObjectType, const uint64_t& capturedHandle)
             {
-                capturedHandle = get_restored_handle(capturedHandle);
+                const_cast<uint64_t&>(capturedHandle) = get_restored_handle(capturedHandle);
             }
         );
     }
@@ -90,16 +89,16 @@ protected:
         switch (pStructure->sType) {
         case GVK_COMMAND_STRUCTURE_TYPE_BEGIN_COMMAND_BUFFER: {
             detail::enumerate_structure_handles(
-                *const_cast<StructureType*>(pStructure),
-                [&](VkObjectType objectType, uint64_t& capturedHandle)
+                *pStructure,
+                [&](VkObjectType objectType, const uint64_t& capturedHandle)
                 {
                     switch (objectType) {
                     case VK_OBJECT_TYPE_FRAMEBUFFER: {
                         auto restoredHandleItr = mRestoredHandles.find(capturedHandle);
-                        capturedHandle = restoredHandleItr != mRestoredHandles.end() ? restoredHandleItr->second : 0;
+                        const_cast<uint64_t&>(capturedHandle) = restoredHandleItr != mRestoredHandles.end() ? restoredHandleItr->second : 0;
                     } break;
                     default: {
-                        capturedHandle = get_restored_handle(capturedHandle);
+                        const_cast<uint64_t&>(capturedHandle) = get_restored_handle(capturedHandle);
                     } break;
                     }
                 }
@@ -107,10 +106,10 @@ protected:
         } break;
         default: {
             detail::enumerate_structure_handles(
-                *const_cast<StructureType*>(pStructure),
-                [&](VkObjectType, uint64_t& capturedHandle)
+                *pStructure,
+                [&](VkObjectType, const uint64_t& capturedHandle)
                 {
-                    capturedHandle = get_restored_handle(capturedHandle);
+                    const_cast<uint64_t&>(capturedHandle) = get_restored_handle(capturedHandle);
                 }
             );
         } break;

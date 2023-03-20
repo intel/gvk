@@ -102,11 +102,11 @@ gvk_add_static_library(
         "${includePath}/detail/copy-utilities.hpp"
         "${includePath}/detail/to-string-utilities.hpp"
         "${includePath}/auto.hpp"
-        "${includePath}/command-structures.hpp"
         "${includePath}/comparison-operators.hpp"
         "${includePath}/convert.hpp"
         "${includePath}/copy.hpp"
         "${includePath}/defaults.hpp"
+        "${includePath}/enumerate-handles.hpp"
         "${includePath}/get-object-type.hpp"
         "${includePath}/get-stype.hpp"
         "${includePath}/serialization.hpp"
@@ -120,8 +120,6 @@ gvk_add_static_library(
         "${sourcePath}/detail/make-tuple-utilities.cpp"
         "${sourcePath}/detail/to-string-manual.cpp"
         "${sourcePath}/defaults.cpp"
-    install
-        TRUE
 )
 
 ################################################################################

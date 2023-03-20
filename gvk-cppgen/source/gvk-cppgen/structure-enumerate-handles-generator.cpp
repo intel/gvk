@@ -41,7 +41,7 @@ class StructureMemberEnumerateHandlesGenerator final
 protected:
     inline std::string generate_pnext_processor() const override final
     {
-        return "enumerate_pnext_handles((void*)obj.{memberName}, callback);";
+        return "enumerate_pnext_handles(obj.{memberName}, callback);";
     }
 
     inline std::string generate_dynamic_handle_array_processor() const override final
@@ -109,7 +109,7 @@ void StructureEnumerateHandlesGenerator::generate_header(FileGenerator& file, co
     file << std::endl;
     for (const auto& structure : apiElements.structures) {
         CompileGuardGenerator compileGuardGenerator(file, structure.compileGuards);
-        file << string::replace("template <> void enumerate_structure_handles<{structureType}>({structureType}& obj, EnumerateHandlesCallback callback);", "{structureType}", structure.name) << std::endl;
+        file << string::replace("template <> void enumerate_structure_handles<{structureType}>(const {structureType}& obj, EnumerateHandlesCallback callback);", "{structureType}", structure.name) << std::endl;
     }
     file << std::endl;
 }
@@ -129,7 +129,7 @@ void StructureEnumerateHandlesGenerator::generate_source(FileGenerator& file, co
         if (!apiElements.manuallyImplemented.count(structure.name)) {
             file << std::endl;
             CompileGuardGenerator compileGuardGenerator(file, structure.compileGuards);
-            file << string::replace("template <> void enumerate_structure_handles<{structureType}>({structureType}& obj, EnumerateHandlesCallback callback)", "{structureType}", structure.name) << std::endl;
+            file << string::replace("template <> void enumerate_structure_handles<{structureType}>(const {structureType}& obj, EnumerateHandlesCallback callback)", "{structureType}", structure.name) << std::endl;
             file << "{" << std::endl;
             file << "    (void)obj;" << std::endl;
             file << "    (void)callback;" << std::endl;

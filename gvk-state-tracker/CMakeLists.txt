@@ -109,8 +109,6 @@ gvk_add_layer(
         gvkGetStateTrackedMappedMemory
         gvkDisableStateTracker
         gvkEnableStateTracker
-    install
-        TRUE
 )
 if(MSVC)
     set_source_files_properties("${generatedSourcePath}/basic-state-tracker.cpp" PROPERTIES COMPILE_FLAGS "/bigobj")
