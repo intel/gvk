@@ -39,6 +39,9 @@ class Enumerator final
     : public ApiElement
 {
 public:
+    static constexpr int64_t ExtensionBaseValue { 1000000000 };
+    static constexpr int64_t ExtensionRangeSize { 1000 };
+
     Enumerator() = default;
     Enumerator(const tinyxml2::XMLElement& xmlElement);
 

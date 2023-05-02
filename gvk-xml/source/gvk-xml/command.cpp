@@ -32,6 +32,7 @@ namespace xml {
 
 Command::Command(const tinyxml2::XMLElement& xmlElement)
 {
+    apis = get_apis(get_xml_attribute(xmlElement, "api"));
     name = get_xml_attribute(xmlElement, "name");
     alias = get_xml_attribute(xmlElement, "alias");
     successCodes = string::split(get_xml_attribute(xmlElement, "successcodes"), ",");
@@ -43,7 +44,15 @@ Command::Command(const tinyxml2::XMLElement& xmlElement)
             name = get_xml_text(pProtoXml->FirstChildElement("name"));
         }
     }
-    process_xml_elements(xmlElement, "param", [&](const auto& paramXmlElement) { parameters.emplace_back(paramXmlElement); });
+    process_xml_elements(xmlElement, "param",
+        [&](const auto& paramXmlElement)
+        {
+            Parameter parameter(paramXmlElement);
+            if (apis_compatible(apis, parameter.apis)) {
+                parameters.push_back(parameter);
+            }
+        }
+    );
     if (string::starts_with(name, "vkCmd")) {
         type = Type::Cmd;
         target = "VkCommandBuffer";

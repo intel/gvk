@@ -27,7 +27,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 #include "gvk-string/utilities.hpp"
+#include "gvk-xml/api-element.hpp"
 #include "gvk-xml/defines.hpp"
+#include "gvk-xml/feature.hpp"
 
 #include <string>
 
@@ -77,47 +79,51 @@ inline void process_xml_elements(
     }
 }
 
-template <typename ExtensionType>
-inline void process_requirements(const tinyxml2::XMLElement& xmlElement, ExtensionType& extension)
+inline void process_requirements(const std::string& api, const tinyxml2::XMLElement& xmlElement, Feature& feature)
 {
-    for (const auto& requirement : string::split(get_xml_attribute(xmlElement, "requires"), ",")) {
-        extension.requirements.insert(requirement);
-    }
     process_xml_elements(xmlElement, "require",
         [&](const auto& requireXmlElement)
         {
-            process_xml_elements(requireXmlElement, "type",
-                [&](const auto& typeXmlElement)
-                {
-                    auto name = get_xml_attribute(typeXmlElement, "name");
-                    if (!name.empty()) {
-                        extension.types.insert(name);
-                    }
-                }
-            );
-            process_xml_elements(requireXmlElement, "enum",
-                [&](const auto& enumXmlElement)
-                {
-                    auto extends = get_xml_attribute(enumXmlElement, "extends");
-                    if (!extends.empty()) {
-                        auto enumerationItr = extension.enumerations.find(extends);
-                        if (enumerationItr == extension.enumerations.end()) {
-                            enumerationItr = extension.enumerations.insert({ extends, { } }).first;
-                            enumerationItr->second.name = extends;
+            if (api_enabled(api, get_apis(get_xml_attribute(requireXmlElement, "api")))) {
+                process_xml_elements(requireXmlElement, "type",
+                    [&](const auto& typeXmlElement)
+                    {
+                        if (api_enabled(api, get_apis(get_xml_attribute(typeXmlElement, "api")))) {
+                            auto name = get_xml_attribute(typeXmlElement, "name");
+                            if (!name.empty()) {
+                                feature.types.insert(name);
+                            }
                         }
-                        enumerationItr->second.enumerators.insert(enumXmlElement);
                     }
-                }
-            );
-            process_xml_elements(requireXmlElement, "command",
-                [&](const auto& commandXmlElement)
-                {
-                    auto name = get_xml_attribute(commandXmlElement, "name");
-                    if (!name.empty()) {
-                        extension.commands.insert(name);
+                );
+                process_xml_elements(requireXmlElement, "enum",
+                    [&](const auto& enumXmlElement)
+                    {
+                        if (api_enabled(api, get_apis(get_xml_attribute(enumXmlElement, "api")))) {
+                            auto extends = get_xml_attribute(enumXmlElement, "extends");
+                            if (!extends.empty()) {
+                                auto enumerationItr = feature.enumerations.find(extends);
+                                if (enumerationItr == feature.enumerations.end()) {
+                                    enumerationItr = feature.enumerations.insert({ extends, { } }).first;
+                                    enumerationItr->second.name = extends;
+                                }
+                                enumerationItr->second.enumerators.insert(enumXmlElement);
+                            }
+                        }
                     }
-                }
-            );
+                );
+                process_xml_elements(requireXmlElement, "command",
+                    [&](const auto& commandXmlElement)
+                    {
+                        if (api_enabled(api, get_apis(get_xml_attribute(commandXmlElement, "api")))) {
+                            auto name = get_xml_attribute(commandXmlElement, "name");
+                            if (!name.empty()) {
+                                feature.commands.insert(name);
+                            }
+                        }
+                    }
+                );
+            }
         }
     );
 }

@@ -24,42 +24,48 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#pragma once
-
 #include "gvk-xml/api-element.hpp"
-#include "gvk-xml/defines.hpp"
-#include "gvk-xml/parameter.hpp"
+#include "gvk-string/utilities.hpp"
 
-#include <string>
-#include <vector>
+#include <cassert>
 
 namespace gvk {
 namespace xml {
 
-class Command final
-    : public ApiElement
+ApiElement::~ApiElement()
 {
-public:
-    enum class Type
-    {
-        Common,
-        Cmd,
-        Create,
-        Destroy,
-    };
+}
 
-    Command() = default;
-    Command(const tinyxml2::XMLElement& xmlElement);
+std::set<std::string> get_apis(const std::string& apisStr)
+{
+    std::set<std::string> apis;
+    for (const auto& api : string::split(apisStr, ",")) {
+        apis.insert(api);
+    }
+    if (apis.empty()) {
+        apis.insert("vulkan");
+    }
+    return apis;
+}
 
-    Parameter get_target_parameter() const;
+bool apis_compatible(const std::set<std::string>& lhsApis, const std::set<std::string>& rhsApis)
+{
+    assert(!lhsApis.empty());
+    assert(!rhsApis.empty());
+    for (const auto& api : lhsApis) {
+        if (rhsApis.count(api)) {
+            return true;
+        }
+    }
+    return false;
+}
 
-    Type type { Type::Common };
-    std::string target;
-    std::string returnType { "void" };
-    std::vector<std::string> successCodes;
-    std::vector<std::string> errorCodes;
-    std::vector<Parameter> parameters;
-};
+bool api_enabled(const std::string& api, const std::set<std::string>& apis)
+{
+    assert(!api.empty());
+    assert(!apis.empty());
+    return apis.count(api) && !apis.count("disabled");
+}
 
 } // namespace xml
 } // namespace gvk

@@ -35,16 +35,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace xml {
 
-class Feature final
+class Feature
     : public ApiElement
 {
 public:
     Feature() = default;
-    Feature(const tinyxml2::XMLElement& xmlElement);
+    Feature(const std::string& api, const tinyxml2::XMLElement& xmlElement);
 
-    std::string api;
     std::string number;
-    std::set<std::string> requirements;
     std::set<std::string> types;
     std::map<std::string, Enumeration> enumerations;
     std::set<std::string> commands;

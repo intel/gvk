@@ -36,6 +36,7 @@ namespace xml {
 
 Handle::Handle(const tinyxml2::XMLElement& xmlElement)
 {
+    apis = get_apis(get_xml_attribute(xmlElement, "api"));
     name = get_xml_text(xmlElement.FirstChildElement("name"));
     if (!name.empty()) {
         isDispatchable = get_xml_text(xmlElement.FirstChildElement("type")) == "VK_DEFINE_HANDLE";

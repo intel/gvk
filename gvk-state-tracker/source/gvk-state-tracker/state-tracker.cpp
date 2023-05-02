@@ -309,71 +309,71 @@ void on_load(Registry& registry)
 extern "C" {
 #endif
 
-VK_LAYER_EXPORT void VKAPI_CALL gvkSetStateTrackerPhysicalDevices(VkInstance instance, uint32_t physicalDeviceCount, const VkPhysicalDevice* pPhysicalDevices, const VkPhysicalDeviceProperties* pPhysicalDeviceProperties)
+void VKAPI_CALL gvkSetStateTrackerPhysicalDevices(VkInstance instance, uint32_t physicalDeviceCount, const VkPhysicalDevice* pPhysicalDevices, const VkPhysicalDeviceProperties* pPhysicalDeviceProperties)
 {
     gvk::state_tracker::StateTracker::set_state_tracker_physical_devices(instance, physicalDeviceCount, pPhysicalDevices, pPhysicalDeviceProperties);
 }
 
-VK_LAYER_EXPORT void VKAPI_CALL gvkEnumerateStateTrackedObjects(const GvkStateTrackedObject* pStateTrackedObject, const GvkStateTrackedObjectEnumerateInfo* pEnumerateInfo)
+void VKAPI_CALL gvkEnumerateStateTrackedObjects(const GvkStateTrackedObject* pStateTrackedObject, const GvkStateTrackedObjectEnumerateInfo* pEnumerateInfo)
 {
     gvk::state_tracker::StateTracker::enumerate_state_tracked_objects(pStateTrackedObject, pEnumerateInfo);
 }
 
-VK_LAYER_EXPORT void VKAPI_CALL gvkEnumerateStateTrackedObjectDependencies(const GvkStateTrackedObject* pStateTrackedObject, const GvkStateTrackedObjectEnumerateInfo* pEnumerateInfo)
+void VKAPI_CALL gvkEnumerateStateTrackedObjectDependencies(const GvkStateTrackedObject* pStateTrackedObject, const GvkStateTrackedObjectEnumerateInfo* pEnumerateInfo)
 {
     gvk::state_tracker::StateTracker::enumerate_state_tracked_object_dependencies(pStateTrackedObject, pEnumerateInfo);
 }
 
-VK_LAYER_EXPORT void VKAPI_CALL gvkEnumerateStateTrackedObjectBindings(const GvkStateTrackedObject* pStateTrackedObject, const GvkStateTrackedObjectEnumerateInfo* pEnumerateInfo)
+void VKAPI_CALL gvkEnumerateStateTrackedObjectBindings(const GvkStateTrackedObject* pStateTrackedObject, const GvkStateTrackedObjectEnumerateInfo* pEnumerateInfo)
 {
     gvk::state_tracker::StateTracker::enumerate_state_tracked_object_bindings(pStateTrackedObject, pEnumerateInfo);
 }
 
-VK_LAYER_EXPORT void VKAPI_CALL gvkEnumerateStateTrackedCommandBufferCmds(const GvkStateTrackedObject* pStateTrackedObject, const GvkStateTrackedObjectEnumerateInfo* pEnumerateInfo)
+void VKAPI_CALL gvkEnumerateStateTrackedCommandBufferCmds(const GvkStateTrackedObject* pStateTrackedObject, const GvkStateTrackedObjectEnumerateInfo* pEnumerateInfo)
 {
     gvk::state_tracker::StateTracker::enumerate_state_tracked_command_buffer_cmds(pStateTrackedObject, pEnumerateInfo);
 }
 
-VK_LAYER_EXPORT void VKAPI_CALL gvkGetStateTrackedObjectInfo(const GvkStateTrackedObject* pStateTrackedObject, GvkStateTrackedObjectInfo* pStateTrackedObjectInfo)
+void VKAPI_CALL gvkGetStateTrackedObjectInfo(const GvkStateTrackedObject* pStateTrackedObject, GvkStateTrackedObjectInfo* pStateTrackedObjectInfo)
 {
     gvk::state_tracker::StateTracker::get_state_tracked_object_info(pStateTrackedObject, pStateTrackedObjectInfo);
 }
 
-VK_LAYER_EXPORT void VKAPI_CALL gvkGetStateTrackedObjectCreateInfo(const GvkStateTrackedObject* pStateTrackedObject, VkStructureType* pCreateInfoType, VkBaseOutStructure* pCreateInfo)
+void VKAPI_CALL gvkGetStateTrackedObjectCreateInfo(const GvkStateTrackedObject* pStateTrackedObject, VkStructureType* pCreateInfoType, VkBaseOutStructure* pCreateInfo)
 {
     gvk::state_tracker::StateTracker::get_state_tracked_object_create_info(pStateTrackedObject, pCreateInfoType, pCreateInfo);
 }
 
-VK_LAYER_EXPORT void VKAPI_CALL gvkGetStateTrackedObjectAllocateInfo(const GvkStateTrackedObject* pStateTrackedObject, VkStructureType* pAllocateInfoType, VkBaseOutStructure* pAllocateInfo)
+void VKAPI_CALL gvkGetStateTrackedObjectAllocateInfo(const GvkStateTrackedObject* pStateTrackedObject, VkStructureType* pAllocateInfoType, VkBaseOutStructure* pAllocateInfo)
 {
     gvk::state_tracker::StateTracker::get_state_tracked_object_allocate_info(pStateTrackedObject, pAllocateInfoType, pAllocateInfo);
 }
 
-VK_LAYER_EXPORT void VKAPI_CALL gvkGetStateTrackedImageLayouts(const GvkStateTrackedObject* pStateTrackedImage, const VkImageSubresourceRange* pImageSubresourceRange, VkImageLayout* pImageLayouts)
+void VKAPI_CALL gvkGetStateTrackedImageLayouts(const GvkStateTrackedObject* pStateTrackedImage, const VkImageSubresourceRange* pImageSubresourceRange, VkImageLayout* pImageLayouts)
 {
     gvk::state_tracker::StateTracker::get_state_tracked_image_layouts(pStateTrackedImage, pImageSubresourceRange, pImageLayouts);
 }
 
-VK_LAYER_EXPORT void VKAPI_CALL gvkGetStateTrackedMappedMemory(const GvkStateTrackedObject* pStateTrackedDeviceMemory, VkDeviceSize* pOffset, VkDeviceSize* pSize, VkMemoryMapFlags* pFlags, void** ppData)
+void VKAPI_CALL gvkGetStateTrackedMappedMemory(const GvkStateTrackedObject* pStateTrackedDeviceMemory, VkDeviceSize* pOffset, VkDeviceSize* pSize, VkMemoryMapFlags* pFlags, void** ppData)
 {
     gvk::state_tracker::StateTracker::get_state_tracked_mapped_memory(pStateTrackedDeviceMemory, pOffset, pSize, pFlags, ppData);
 }
 
-VK_LAYER_EXPORT void VKAPI_CALL gvkDisableStateTracker()
+void VKAPI_CALL gvkDisableStateTracker()
 {
     for (auto& layer : gvk::layer::Registry::get().layers) {
         layer->enabled = false;
     }
 }
 
-VK_LAYER_EXPORT void VKAPI_CALL gvkEnableStateTracker()
+void VKAPI_CALL gvkEnableStateTracker()
 {
     for (auto& layer : gvk::layer::Registry::get().layers) {
         layer->enabled = true;
     }
 }
 
-VK_LAYER_EXPORT VkResult VKAPI_CALL vkNegotiateLoaderLayerInterfaceVersion(VkNegotiateLayerInterface* pNegotiateLayerInterface)
+VkResult VKAPI_CALL vkNegotiateLoaderLayerInterfaceVersion(VkNegotiateLayerInterface* pNegotiateLayerInterface)
 {
     assert(pNegotiateLayerInterface);
     pNegotiateLayerInterface->pfnGetInstanceProcAddr = gvk::layer::get_instance_proc_addr;

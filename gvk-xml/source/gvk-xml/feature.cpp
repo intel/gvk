@@ -30,12 +30,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace xml {
 
-Feature::Feature(const tinyxml2::XMLElement& xmlElement)
+Feature::Feature(const std::string& api, const tinyxml2::XMLElement& xmlElement)
 {
-    api = get_xml_attribute(xmlElement, "api");
+    apis = get_apis(get_xml_attribute(xmlElement, "api"));
     name = get_xml_attribute(xmlElement, "name");
     number = get_xml_attribute(xmlElement, "number");
-    process_requirements(xmlElement, *this);
+    process_requirements(api, xmlElement, *this);
 }
 
 } // namespace xml

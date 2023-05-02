@@ -30,19 +30,17 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace xml {
 
-Extension::Extension(const tinyxml2::XMLElement& xmlElement)
+Extension::Extension(const std::string& api, const tinyxml2::XMLElement& xmlElement)
+    : Feature(api, xmlElement)
 {
-    name = get_xml_attribute(xmlElement, "name");
+    apis = get_apis(get_xml_attribute(xmlElement, "supported"));
     extension = name;
     vendor = get_xml_attribute(xmlElement, "author");
-    number = get_xml_attribute(xmlElement, "number");
     type = get_xml_attribute(xmlElement, "type") == "instance" ? Type::Instance : Type::Device;
     platform = get_xml_attribute(xmlElement, "platform");
-    supported = get_xml_attribute(xmlElement, "supported");
     deprecatedBy = get_xml_attribute(xmlElement, "deprecatedby");
     obsoletedBy = get_xml_attribute(xmlElement, "obsoletedby");
     promotedTo = get_xml_attribute(xmlElement, "promotedto");
-    process_requirements(xmlElement, *this);
 
     for (auto& enumerationItr : enumerations) {
         std::set<Enumerator> enumerators;

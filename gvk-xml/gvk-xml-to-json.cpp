@@ -275,8 +275,8 @@ void gvk::print<gvk::xml::Extension>(gvk::Printer& printer, const gvk::xml::Exte
             if (!obj.platform.empty()) {
                 printer.print_field("platform", obj.platform);
             }
-            if (!obj.supported.empty()) {
-                printer.print_field("supported", obj.supported);
+            if (!obj.apis.empty()) {
+                printer.print_collection("supported", obj.apis);
             }
             if (!obj.deprecatedBy.empty()) {
                 printer.print_field("deprecatedBy", obj.deprecatedBy);
@@ -286,9 +286,6 @@ void gvk::print<gvk::xml::Extension>(gvk::Printer& printer, const gvk::xml::Exte
             }
             if (!obj.promotedTo.empty()) {
                 printer.print_field("promotedTo", obj.promotedTo);
-            }
-            if (!obj.requirements.empty()) {
-                printer.print_collection("requirements", obj.requirements);
             }
             if (!obj.types.empty()) {
                 printer.print_collection("types", obj.types);
@@ -310,11 +307,7 @@ void gvk::print<gvk::xml::Feature>(gvk::Printer& printer, const gvk::xml::Featur
         [&]()
         {
             print_api_element_fields(printer, obj);
-            printer.print_field("api", obj.api);
             printer.print_field("number", obj.number);
-            if (!obj.requirements.empty()) {
-                printer.print_collection("requirements", obj.requirements);
-            }
             if (!obj.types.empty()) {
                 printer.print_collection("types", obj.types);
             }
@@ -402,7 +395,7 @@ void gvk::print<gvk::xml::Manifest>(gvk::Printer& printer, const gvk::xml::Manif
             auto processItr = [](auto itr) { return itr.second; };
             printer.print_collection("platforms", obj.platforms, processItr);
             printer.print_collection("vendors", obj.vendors);
-            printer.print_field("apiConstants", obj.apiConstants);
+            printer.print_field("constants", obj.constants);
             printer.print_collection("handles", obj.handles, processItr);
             printer.print_collection("enumerations", obj.enumerations, processItr);
             printer.print_collection("structures", obj.structures, processItr);
