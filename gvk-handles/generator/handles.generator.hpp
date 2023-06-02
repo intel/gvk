@@ -44,15 +44,20 @@ public:
         : BasicHandleGenerator(manifest, handle)
     {
         if (handle.name == "VkInstance") {
+            add_manually_implemented_ctor("VkResult create_unmanaged(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, const DispatchTable* pDispatchTable, VkInstance vkInstance, Instance* pGvkInstance)");
             add_member(MemberInfo("std::vector<PhysicalDevice>", "mPhysicalDevices", "const std::vector<PhysicalDevice>&"));
+            add_member(MemberInfo("bool", "mUnmanaged"));
+            add_manually_implemented_dtor();
         }
         if (handle.name == "VkPhysicalDevice") {
             add_member(MemberInfo("VkInstance", "mVkInstance", "Instance"));
         }
         if (handle.name == "VkDevice") {
+            add_manually_implemented_ctor("VkResult create_unmanaged(const PhysicalDevice& physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, const DispatchTable* pDispatchTable, VkDevice vkDevice, Device *pGvkDevice)");
             add_member(MemberInfo("Instance", "mInstance", "Instance"));
             add_member(MemberInfo("std::vector<QueueFamily>", "mQueueFamilies", "const std::vector<QueueFamily>&"));
             add_member(MemberInfo("VmaAllocator", "mVmaAllocator", "VmaAllocator"));
+            add_member(MemberInfo("bool", "mUnmanaged"));
             add_manually_implemented_dtor();
         }
         if (handle.name == "VkQueue") {

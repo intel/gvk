@@ -11,4 +11,5 @@ FetchContent_Declare(
     GIT_PROGRESS TRUE
 )
 FetchContent_MakeAvailable(VulkanMemoryAllocator)
+FetchContent_GetProperties(VulkanMemoryAllocator SOURCE_DIR VulkanMemoryAllocatorSourceDirectory)
 set_target_properties(VulkanMemoryAllocator PROPERTIES FOLDER "${GVK_IDE_FOLDER}/external/")

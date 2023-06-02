@@ -34,6 +34,7 @@ namespace xml {
 
 Enumerator::Enumerator(const tinyxml2::XMLElement& xmlElement)
 {
+    apis = get_apis(get_xml_attribute(xmlElement, "api"));
     name = get_xml_attribute(xmlElement, "name");
     alias = get_xml_attribute(xmlElement, "alias");
     value = get_xml_attribute(xmlElement, "value");
@@ -49,6 +50,10 @@ Enumerator::Enumerator(const tinyxml2::XMLElement& xmlElement)
     if (value.empty()) {
         value = get_offset_value(extensionNumber, offset, direction);
     }
+    auto compileGuard = get_xml_attribute(xmlElement, "protect");
+    if (!compileGuard.empty()) {
+        compileGuards.insert(compileGuard);
+    }
 }
 
 std::string Enumerator::get_offset_value(
@@ -58,11 +63,9 @@ std::string Enumerator::get_offset_value(
 )
 {
     if (!extensionNumber.empty() && !offset.empty()) {
-        static const int64_t BaseValue = 1000000000;
-        static const int64_t RangeSize = 1000;
         auto extensionNumberValue = string::to_number<int64_t>(extensionNumber);
         auto offsetValue = string::to_number<int64_t>(offset);
-        auto value = BaseValue + (extensionNumberValue - 1) * RangeSize + offsetValue;
+        auto value = ExtensionBaseValue + (extensionNumberValue - 1) * ExtensionRangeSize + offsetValue;
         return std::to_string(value * (direction == "-" ? -1 : 1));
     }
     return { };
@@ -109,10 +112,19 @@ bool operator>=(const Enumerator& lhs, const Enumerator& rhs)
 
 Enumeration::Enumeration(const tinyxml2::XMLElement& xmlElement)
 {
+    apis = get_apis(get_xml_attribute(xmlElement, "api"));
     name = get_xml_attribute(xmlElement, "name");
     alias = get_xml_attribute(xmlElement, "alias");
     isBitmask = get_xml_attribute(xmlElement, "type") == "bitmask";
-    process_xml_elements(xmlElement, "enum", [&](const auto& enumXmlElement) { enumerators.insert(enumXmlElement); });
+    process_xml_elements(xmlElement, "enum",
+        [&](const auto& enumXmlElement)
+        {
+            Enumerator enumerator(enumXmlElement);
+            if (apis_compatible(apis, enumerator.apis)) {
+                enumerators.insert(enumerator);
+            }
+        }
+    );
 }
 
 } // namespace xml

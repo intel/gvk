@@ -71,7 +71,7 @@ void append_value_to_env_var(const std::string& key, const std::string& value)
     auto currentValue = get_env_var(key);
     auto currentValues = string::split(currentValue, delimiter);
     if (std::find(currentValues.begin(), currentValues.end(), value) == currentValues.end()) {
-        set_env_var(key, currentValue + delimiter + value);
+        set_env_var(key, !currentValue.empty() ? currentValue + delimiter + value : value);
     }
 }
 

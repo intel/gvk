@@ -61,6 +61,36 @@ bool operator>=(const StringTupleElementWrapper& lhs, const StringTupleElementWr
     return !(lhs < rhs);
 }
 
+bool operator==(const WStringTupleElementWrapper& lhs, const WStringTupleElementWrapper& rhs)
+{
+    return lhs.pwStr && rhs.pwStr ? std::wstring_view(lhs.pwStr) == std::wstring_view(rhs.pwStr) : !lhs.pwStr && !rhs.pwStr;
+}
+
+bool operator!=(const WStringTupleElementWrapper& lhs, const WStringTupleElementWrapper& rhs)
+{
+    return !(lhs == rhs);
+}
+
+bool operator<(const WStringTupleElementWrapper& lhs, const WStringTupleElementWrapper& rhs)
+{
+    return lhs.pwStr && rhs.pwStr ? std::wstring_view(lhs.pwStr) < std::wstring_view(rhs.pwStr) : !lhs.pwStr && rhs.pwStr;
+}
+
+bool operator>(const WStringTupleElementWrapper& lhs, const WStringTupleElementWrapper& rhs)
+{
+    return rhs < lhs;
+}
+
+bool operator<=(const WStringTupleElementWrapper& lhs, const WStringTupleElementWrapper& rhs)
+{
+    return !(rhs < lhs);
+}
+
+bool operator>=(const WStringTupleElementWrapper& lhs, const WStringTupleElementWrapper& rhs)
+{
+    return !(lhs < rhs);
+}
+
 bool operator==(const StringArrayTupleElementWrapper& lhs, const StringArrayTupleElementWrapper& rhs)
 {
     static_assert(sizeof(StringTupleElementWrapper) == sizeof(const char*));

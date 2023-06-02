@@ -34,6 +34,7 @@ namespace xml {
 
 Parameter::Parameter(const tinyxml2::XMLElement& xmlElement)
 {
+    apis = get_apis(get_xml_attribute(xmlElement, "api"));
     type = get_xml_text(xmlElement.FirstChildElement("type"));
     unqualifiedType = string::remove(string::remove(string::remove(type, "const"),  "*"), " ");
     name = get_xml_text(xmlElement.FirstChildElement("name"));

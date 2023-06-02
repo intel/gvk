@@ -212,18 +212,20 @@ private:
         strStrm << "{returnType} BasicStateTracker::post_{commandName}({layerHookParameters})" << std::endl;
         strStrm << "{" << std::endl;
         strStrm << "    (void)pAllocator;" << std::endl;
-        strStrm << "    auto handle = {handleLookupExpression};" << std::endl;
-        strStrm << "    assert(handle);" << std::endl;
-        strStrm << "    auto& controlBlock = handle.mReference.get_obj();" << std::endl;
-        strStrm << "    controlBlock.mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKED_OBJECT_STATUS_ACTIVE_BIT;" << std::endl;
-        strStrm << "    controlBlock.mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKED_OBJECT_STATUS_DESTROYED_BIT;" << std::endl;
+        strStrm << "    if ({vkHandleArgument}) {" << std::endl;
+        strStrm << "        auto handle = {handleLookupExpression};" << std::endl;
+        strStrm << "        assert(handle);" << std::endl;
+        strStrm << "        auto& controlBlock = handle.mReference.get_obj();" << std::endl;
+        strStrm << "        controlBlock.mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKED_OBJECT_STATUS_ACTIVE_BIT;" << std::endl;
+        strStrm << "        controlBlock.mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKED_OBJECT_STATUS_DESTROYED_BIT;" << std::endl;
         for (const auto& memberInfo : handleGenerator.get_members()) {
             if (string::contains(memberInfo.storageType, "ObjectTracker")) {
                 CompileGuardGenerator memberInfoCompileGuardGenerator(strStrm, get_inner_scope_compile_guards(command.compileGuards, memberInfo.compileGuards));
-                strStrm << "    controlBlock." << memberInfo.storageName << ".clear();" << std::endl;
+                strStrm << "        controlBlock." << memberInfo.storageName << ".clear();" << std::endl;
             }
         }
-        strStrm << "    {objectTrackerExpression}.erase(handle);" << std::endl;
+        strStrm << "        {objectTrackerExpression}.erase(handle);" << std::endl;
+        strStrm << "    }" << std::endl;
         strStrm << "}" << std::endl;
         file << string::replace(strStrm.str(), replacements);
     }

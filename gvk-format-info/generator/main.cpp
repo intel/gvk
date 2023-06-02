@@ -268,7 +268,7 @@ int main(int, const char*[])
         gvk::cppgen::StructureGetSTypeGenerator::generate(apiElements);
         gvk::cppgen::StructureMakeTupleGenerator::generate(manifest, apiElements);
         gvk::cppgen::StructureSerializationGenerator::generate(apiElements);
-        gvk::cppgen::StructureToStringGeneratorEx::generate(manifest, apiElements);
+        gvk::cppgen::StructureToStringGenerator::generate(manifest, apiElements);
         gvk::cppgen::EnumerateFormatsGenerator::generate(manifest);
         gvk::cppgen::GetFormatInfoGenerator::generate(manifest);
     }

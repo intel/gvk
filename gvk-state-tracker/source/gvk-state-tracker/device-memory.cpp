@@ -33,6 +33,76 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace state_tracker {
 
+VkResult StateTracker::post_vkAllocateMemory(VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory, VkResult gvkResult)
+{
+    gvkResult = BasicStateTracker::post_vkAllocateMemory(device, pAllocateInfo, pAllocator, pMemory, gvkResult);
+    if (gvkResult == VK_SUCCESS) {
+        auto pNext = (const VkBaseInStructure*)pAllocateInfo->pNext;
+        while (pNext) {
+            switch (pNext->sType) {
+            case VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO: {
+                const auto& memoryDedicatedAllocateInfo = (const VkMemoryDedicatedAllocateInfo*)pNext;
+                DeviceMemory gvkDeviceMemory({ device, *pMemory });
+                assert(gvkDeviceMemory);
+                auto& deviceMemoryControlBlock = gvkDeviceMemory.mReference.get_obj();
+                if (memoryDedicatedAllocateInfo->buffer) {
+                    deviceMemoryControlBlock.mDedicatedBuffer = Buffer({ device, memoryDedicatedAllocateInfo->buffer });
+                } else if (memoryDedicatedAllocateInfo->image) {
+                    deviceMemoryControlBlock.mDedicatedImage = Image({ device, memoryDedicatedAllocateInfo->image });
+                }
+            } break;
+            default: {
+            } break;
+            }
+            pNext = pNext->pNext;
+        }
+    }
+    return gvkResult;
+}
+
+void StateTracker::post_vkFreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator)
+{
+    DeviceMemory gvkDeviceMemory({ device, memory });
+    assert(gvkDeviceMemory);
+    auto& deviceMemoryControlBlock = gvkDeviceMemory.mReference.get_obj();
+    for (auto vkBuffer : deviceMemoryControlBlock.mVkBufferBindings) {
+        Buffer gvkBuffer({ device, vkBuffer });
+        assert(gvkBuffer);
+        gvkBuffer.mReference.get_obj().mVkDeviceMemoryBindings.erase(memory);
+    }
+    for (auto vkImage : deviceMemoryControlBlock.mVkImageBindings) {
+        Image gvkImage({ device, vkImage });
+        assert(gvkImage);
+        gvkImage.mReference.get_obj().mVkDeviceMemoryBindings.erase(memory);
+    }
+    deviceMemoryControlBlock.mVkBufferBindings.clear();
+    deviceMemoryControlBlock.mVkImageBindings.clear();
+    deviceMemoryControlBlock.mDedicatedBuffer.reset();
+    deviceMemoryControlBlock.mDedicatedImage.reset();
+    BasicStateTracker::post_vkFreeMemory(device, memory, pAllocator);
+}
+
+VkResult StateTracker::post_vkMapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData, VkResult gvkResult)
+{
+    if (gvkResult == VK_SUCCESS) {
+        DeviceMemory gvkDeviceMemory({ device, memory });
+        assert(gvkDeviceMemory);
+        auto& deviceMemoryControlBlock = gvkDeviceMemory.mReference.get_obj();
+        deviceMemoryControlBlock.mMemoryMapInfo.offset = offset;
+        deviceMemoryControlBlock.mMemoryMapInfo.size = size;
+        deviceMemoryControlBlock.mMemoryMapInfo.flags = flags;
+        deviceMemoryControlBlock.mMemoryMapInfo.pData = ppData ? *ppData : nullptr;
+    }
+    return gvkResult;
+}
+
+void StateTracker::post_vkUnmapMemory(VkDevice device, VkDeviceMemory memory)
+{
+    DeviceMemory gvkDeviceMemory({ device, memory });
+    assert(gvkDeviceMemory);
+    gvkDeviceMemory.mReference.get_obj().mMemoryMapInfo = { };
+}
+
 VkResult StateTracker::post_vkBindAccelerationStructureMemoryNV(VkDevice device, uint32_t bindInfoCount, const VkBindAccelerationStructureMemoryInfoNV* pBindInfos, VkResult gvkResult)
 {
     assert(false && "Unsupported entry point; gvk maintenance required");
@@ -115,26 +185,6 @@ VkResult StateTracker::post_vkBindVideoSessionMemoryKHR(VkDevice device, VkVideo
     return VK_ERROR_FEATURE_NOT_PRESENT;
 }
 #endif // VK_ENABLE_BETA_EXTENSIONS
-
-void StateTracker::post_vkFreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator)
-{
-    DeviceMemory gvkDeviceMemory({ device, memory });
-    assert(gvkDeviceMemory);
-    auto& gvkDeviceMemoryControlBlock = gvkDeviceMemory.mReference.get_obj();
-    for (auto vkBuffer : gvkDeviceMemoryControlBlock.mVkBufferBindings) {
-        Buffer gvkBuffer({ device, vkBuffer });
-        assert(gvkBuffer);
-        gvkBuffer.mReference.get_obj().mVkDeviceMemoryBindings.erase(memory);
-    }
-    for (auto vkImage : gvkDeviceMemoryControlBlock.mVkImageBindings) {
-        Image gvkImage({ device, vkImage });
-        assert(gvkImage);
-        gvkImage.mReference.get_obj().mVkDeviceMemoryBindings.erase(memory);
-    }
-    gvkDeviceMemoryControlBlock.mVkBufferBindings.clear();
-    gvkDeviceMemoryControlBlock.mVkImageBindings.clear();
-    BasicStateTracker::post_vkFreeMemory(device, memory, pAllocator);
-}
 
 } // namespace state_tracker
 } // namespace gvk

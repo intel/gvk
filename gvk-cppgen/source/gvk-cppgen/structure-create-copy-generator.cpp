@@ -29,6 +29,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-cppgen/compile-guard-generator.hpp"
 #include "gvk-cppgen/module-generator.hpp"
 #include "gvk-cppgen/namespace-generator.hpp"
+#include "gvk-cppgen/utilities.hpp"
 #include "gvk-string.hpp"
 
 namespace gvk {
@@ -199,9 +200,10 @@ void StructureCreateCopyGenerator::generate_source(FileGenerator& file, const xm
             file << "{" << std::endl;
             file << "    (void)pAllocator;" << std::endl;
             file << "    auto result = obj;" << std::endl;
-            for (const auto& member : structure.members) {
-                StructureMemberCreateCopyGenerator structureMemberGenerator;
-                auto source = structureMemberGenerator.generate(manifest, member);
+            for (size_t i = 0; i < structure.members.size(); ++i) {
+                const auto& member = structure.members[i];
+                CompileGuardGenerator memberCompileGuardGenerator(file, get_inner_scope_compile_guards(structure.compileGuards, member.compileGuards));
+                auto source = StructureMemberCreateCopyGenerator().generate(manifest, member);
                 if (!source.empty()) {
                     file << "    " << source << std::endl;
                 }

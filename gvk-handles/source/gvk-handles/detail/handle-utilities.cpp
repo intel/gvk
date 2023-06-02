@@ -30,6 +30,43 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-handles/handles.hpp"
 #include "gvk-structures/defaults.hpp"
 
+#ifdef GVK_COMPILER_MSVC
+#pragma warning(push, 0)
+#endif // GVK_COMPILER_MSVC
+#ifdef GVK_COMPILER_GCC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#pragma GCC diagnostic ignored "-Wparentheses"
+#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#endif // GVK_COMPILER_GCC
+#ifdef GVK_COMPILER_CLANG
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+#pragma clang diagnostic ignored "-Wmissing-field-initializers"
+#pragma clang diagnostic ignored "-Wnullability-completeness"
+#pragma clang diagnostic ignored "-Wnullability-extension"
+#pragma clang diagnostic ignored "-Wtautological-compare"
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#pragma clang diagnostic ignored "-Wunused-private-field"
+#pragma clang diagnostic ignored "-Wunused-variable"
+#endif // GVK_COMPILER_CLANG
+
+#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h"
+
+#ifdef GVK_COMPILER_CLANG
+#pragma clang diagnostic pop
+#endif // GVK_COMPILER_CLANG
+#ifdef GVK_COMPILER_GCC
+#pragma GCC diagnostic pop
+#endif // GVK_COMPILER_GCC
+#ifdef GVK_COMPILER_MSVC
+#pragma warning(pop)
+#endif // GVK_COMPILER_MSVC
+
 #include <cassert>
 
 namespace gvk {
@@ -43,6 +80,55 @@ const QueueFamily& get_queue_family(const Device& device, uint32_t queueFamilyIn
     }
     static const QueueFamily sEmptyQueueFamily;
     return sEmptyQueueFamily;
+}
+
+VkResult Instance::create_unmanaged(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, const DispatchTable* pDispatchTable, VkInstance vkInstance, Instance* pGvkInstance)
+{
+    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+        assert(pCreateInfo);
+        assert(pDispatchTable);
+        assert(vkInstance);
+        assert(pGvkInstance);
+        *pGvkInstance = vkInstance;
+        if (!*pGvkInstance) {
+            pGvkInstance->mReference.reset(gvk::newref, vkInstance);
+            auto& controlBlock = pGvkInstance->mReference.get_obj();
+            controlBlock.mVkInstance = vkInstance;
+            controlBlock.mAllocationCallbacks = pAllocator ? *pAllocator : VkAllocationCallbacks { };
+            controlBlock.mInstanceCreateInfo = *pCreateInfo;
+            controlBlock.mUnmanaged = true;
+            controlBlock.mDispatchTable = *pDispatchTable;
+            gvk_result(gvk::detail::initialize_control_block(*pGvkInstance));
+        } else {
+            gvkResult = VK_SUCCESS;
+        }
+    } gvk_result_scope_end;
+    return gvkResult;
+}
+
+VkResult Device::create_unmanaged(const PhysicalDevice& physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, const DispatchTable* pDispatchTable, VkDevice vkDevice, Device* pGvkDevice)
+{
+    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+        assert(pCreateInfo);
+        assert(pDispatchTable);
+        assert(vkDevice);
+        assert(pGvkDevice);
+        *pGvkDevice = vkDevice;
+        if (!*pGvkDevice) {
+            pGvkDevice->mReference.reset(gvk::newref, vkDevice);
+            auto& controlBlock = pGvkDevice->mReference.get_obj();
+            controlBlock.mVkDevice = vkDevice;
+            controlBlock.mPhysicalDevice = physicalDevice;
+            controlBlock.mAllocationCallbacks = pAllocator ? *pAllocator : VkAllocationCallbacks { };
+            controlBlock.mDeviceCreateInfo = *pCreateInfo;
+            controlBlock.mUnmanaged = true;
+            controlBlock.mDispatchTable = *pDispatchTable;
+            gvk_result(gvk::detail::initialize_control_block(*pGvkDevice));
+        } else {
+            gvkResult = VK_SUCCESS;
+        }
+    } gvk_result_scope_end;
+    return gvkResult;
 }
 
 VkResult Buffer::create(const Device& device, const VkBufferCreateInfo* pBufferCreateInfo, const VmaAllocationCreateInfo* pAllocationCreateInfo, Buffer* pBuffer)
@@ -119,8 +205,10 @@ VkResult initialize_control_block<Instance>(Instance& instance)
 {
     auto& instanceControlBlock = instance.mReference.get_obj();
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
-        DispatchTable::load_global_entry_points(&instanceControlBlock.mDispatchTable);
-        DispatchTable::load_instance_entry_points(instanceControlBlock.mVkInstance, &instanceControlBlock.mDispatchTable);
+        if (!instanceControlBlock.mUnmanaged) {
+            DispatchTable::load_global_entry_points(&instanceControlBlock.mDispatchTable);
+            DispatchTable::load_instance_entry_points(instanceControlBlock.mVkInstance, &instanceControlBlock.mDispatchTable);
+        }
         uint32_t physicalDeviceCount = 0;
         assert(instanceControlBlock.mDispatchTable.gvkEnumeratePhysicalDevices);
         gvk_result(instanceControlBlock.mDispatchTable.gvkEnumeratePhysicalDevices(instanceControlBlock.mVkInstance, &physicalDeviceCount, nullptr));
@@ -148,7 +236,9 @@ VkResult initialize_control_block<Device>(Device& device)
         deviceControlBlock.mInstance = deviceControlBlock.mPhysicalDevice.get<Instance>();
         const auto& physicalDeviceDispatchTable = deviceControlBlock.mPhysicalDevice.get<DispatchTable>();
         deviceControlBlock.mDispatchTable.gvkGetDeviceProcAddr = physicalDeviceDispatchTable.gvkGetDeviceProcAddr;
-        DispatchTable::load_device_entry_points(deviceControlBlock.mVkDevice, &deviceControlBlock.mDispatchTable);
+        if (!deviceControlBlock.mUnmanaged) {
+            DispatchTable::load_device_entry_points(deviceControlBlock.mVkDevice, &deviceControlBlock.mDispatchTable);
+        }
         const auto& deviceCreateInfo = *deviceControlBlock.mDeviceCreateInfo;
         for (uint32_t queueCreateInfo_i = 0; queueCreateInfo_i < deviceCreateInfo.queueCreateInfoCount; ++queueCreateInfo_i) {
             const auto& deviceQueueCreateInfo = deviceCreateInfo.pQueueCreateInfos[queueCreateInfo_i];
@@ -222,6 +312,23 @@ VkResult initialize_control_block<Device>(Device& device)
         gvk_result(vmaCreateAllocator(&allocatorCreateInfo, &deviceControlBlock.mVmaAllocator));
     } gvk_result_scope_end;
     return gvkResult;
+}
+
+template <>
+VkResult initialize_control_block<CommandBuffer>(CommandBuffer& commandBuffer)
+{
+    auto& commandBufferControlBlock = commandBuffer.mReference.get_obj();
+    // NOTE : This initializes the command buffer's dispatch table.  This is only
+    //  actually necessary for command buffers that are created within a layer, but
+    //  it shouldn't hurt to do unconditionally since the command buffer dispatch
+    //  table should should already be set to the device's anyway...if this
+    //  assumption causes a problem there'll need to be a check for whether or not
+    //  this code is executing from within a layer.
+    // NOTE : See the following for more info regarding dispatchable handles...
+    //  https://vulkan.lunarg.com/doc/view/latest/linux/vkspec.html#fundamentals-objectmodel-overview
+    //  https://renderdoc.org/vulkan-layer-guide.html
+    *(void**)commandBufferControlBlock.mVkCommandBuffer = *(void**)commandBufferControlBlock.mDevice.get<VkDevice>();
+    return VK_SUCCESS;
 }
 
 template <>
@@ -309,6 +416,29 @@ VkResult initialize_control_block<SwapchainKHR>(SwapchainKHR& swapchain)
 
 } // namespace detail
 
+Instance::ControlBlock::~ControlBlock()
+{
+    if (!mUnmanaged) {
+        DispatchTable dispatchTable { };
+        dispatchTable = mDispatchTable;
+        assert(dispatchTable.gvkDestroyInstance);
+        dispatchTable.gvkDestroyInstance(mVkInstance, (mAllocationCallbacks.pfnFree ? &mAllocationCallbacks : nullptr));
+    }
+}
+
+Device::ControlBlock::~ControlBlock()
+{
+    if (mVmaAllocator) {
+        vmaDestroyAllocator(mVmaAllocator);
+    }
+    if (!mUnmanaged) {
+        assert(mDispatchTable.gvkDeviceWaitIdle);
+        mDispatchTable.gvkDeviceWaitIdle(mVkDevice);
+        assert(mDispatchTable.gvkDestroyDevice);
+        mDispatchTable.gvkDestroyDevice(mVkDevice, (mAllocationCallbacks.pfnFree ? &mAllocationCallbacks : nullptr));
+    }
+}
+
 Buffer::ControlBlock::~ControlBlock()
 {
     assert(mDevice);
@@ -319,17 +449,6 @@ Buffer::ControlBlock::~ControlBlock()
         assert(dispatchTable.gvkDestroyBuffer);
         dispatchTable.gvkDestroyBuffer(mDevice, mVkBuffer, (mAllocationCallbacks.pfnFree ? &mAllocationCallbacks : nullptr));
     }
-}
-
-Device::ControlBlock::~ControlBlock()
-{
-    if (mVmaAllocator) {
-        vmaDestroyAllocator(mVmaAllocator);
-    }
-    assert(mDispatchTable.gvkDeviceWaitIdle);
-    mDispatchTable.gvkDeviceWaitIdle(mVkDevice);
-    assert(mDispatchTable.gvkDestroyDevice);
-    mDispatchTable.gvkDestroyDevice(mVkDevice, (mAllocationCallbacks.pfnFree ? &mAllocationCallbacks : nullptr));
 }
 
 Image::ControlBlock::~ControlBlock()

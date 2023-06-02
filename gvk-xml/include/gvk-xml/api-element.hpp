@@ -41,6 +41,7 @@ public:
     ApiElement() = default;
     virtual ~ApiElement() = 0;
 
+    std::set<std::string> apis;
     std::string name;
     std::string vendor;
     std::string alias;
@@ -49,9 +50,9 @@ public:
     std::map<std::string, std::string> userData;
 };
 
-inline ApiElement::~ApiElement()
-{
-}
+std::set<std::string> get_apis(const std::string& apisStr);
+bool apis_compatible(const std::set<std::string>& lhsApis, const std::set<std::string>& rhsApis);
+bool api_enabled(const std::string& api, const std::set<std::string>& apis);
 
 } // namespace xml
 } // namespace gvk

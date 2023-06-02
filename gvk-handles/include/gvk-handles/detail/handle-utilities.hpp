@@ -63,6 +63,7 @@ inline VkResult initialize_control_block(HandleType&)
 
 template <> VkResult initialize_control_block<Instance>(Instance& instance);
 template <> VkResult initialize_control_block<Device>(Device& device);
+template <> VkResult initialize_control_block<CommandBuffer>(CommandBuffer& commandBuffer);
 template <> VkResult initialize_control_block<Framebuffer>(Framebuffer& framebuffer);
 template <> VkResult initialize_control_block<PipelineLayout>(PipelineLayout& pipelineLayout);
 template <> VkResult initialize_control_block<SurfaceKHR>(SurfaceKHR& surfaceKHR);

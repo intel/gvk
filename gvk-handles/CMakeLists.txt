@@ -54,10 +54,10 @@ gvk_add_static_library(
         gvk-runtime
         gvk-string
         gvk-structures
-        VulkanMemoryAllocator
     includeDirectories
         "${generatedIncludeDirectory}"
         "${includeDirectory}"
+        "${VulkanMemoryAllocatorSourceDirectory}/include/"
     includeFiles
         "${generatedIncludeFiles}"
         "${includePath}/detail/handle-utilities.hpp"

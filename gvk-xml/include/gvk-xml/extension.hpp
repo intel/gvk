@@ -28,7 +28,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-xml/api-element.hpp"
 #include "gvk-xml/defines.hpp"
-#include "gvk-xml/enumeration.hpp"
+#include "gvk-xml/feature.hpp"
 
 #include <map>
 #include <set>
@@ -38,7 +38,7 @@ namespace gvk {
 namespace xml {
 
 class Extension final
-    : public ApiElement
+    : public Feature
 {
 public:
     enum class Type
@@ -48,19 +48,13 @@ public:
     };
 
     Extension() = default;
-    Extension(const tinyxml2::XMLElement& xmlElement);
+    Extension(const std::string& api, const tinyxml2::XMLElement& xmlElement);
 
-    std::string number;
     Type type { Type::Instance };
     std::string platform;
-    std::string supported;
     std::string deprecatedBy;
     std::string obsoletedBy;
     std::string promotedTo;
-    std::set<std::string> requirements;
-    std::set<std::string> types;
-    std::map<std::string, Enumeration> enumerations;
-    std::set<std::string> commands;
 };
 
 } // namespace xml

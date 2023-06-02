@@ -248,7 +248,7 @@ public:
     Gets a value indicating whether or not this Reference<> references a valid object
     @return A value indicating whether or not this Reference<> references a valid object
     */
-    operator bool() const
+    inline operator bool() const
     {
         return mspLifetimeMonitor != nullptr;
     }

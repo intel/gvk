@@ -49,18 +49,18 @@ class Manifest final
 {
 public:
     Manifest() = default;
-    Manifest(const tinyxml2::XMLDocument& xmlDocument);
+    Manifest(const tinyxml2::XMLDocument& xmlDocument, const std::string& api = "vulkan");
 
-    Enumeration apiConstants;
+    Enumeration constants;
     std::map<std::string, Platform> platforms;
     std::set<std::string> vendors;
     std::map<std::string, Handle> handles;
     std::map<std::string, Enumeration> enumerations;
     std::map<std::string, Structure> structures;
     std::map<std::string, Command> commands;
-    std::map<std::string, Extension> extensions;
-    std::map<std::string, Feature> features;
     std::map<std::string, Format> formats;
+    std::map<std::string, Feature> features;
+    std::map<std::string, Extension> extensions;
     std::map<std::string, std::string> vkObjectTypes;
     std::map<std::string, std::string> vkStructureTypes;
 };

@@ -6,7 +6,7 @@ include(FetchContent)
 FetchContent_Declare(
     asio
     GIT_REPOSITORY "https://github.com/chriskohlhoff/asio.git"
-    GIT_TAG 147f7225a96d45a2807a64e443177f621844e51c # 1.24.0
+    GIT_TAG c465349fa5cd91a64bb369f5131ceacab2c0c1c3 # 1.28.0
     GIT_PROGRESS TRUE
 )
 FetchContent_MakeAvailable(asio)

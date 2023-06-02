@@ -28,6 +28,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-defines.hpp"
 #include "gvk-structures/detail/cerealization-utilities.hpp"
+#include "gvk-structures/detail/get-count.hpp"
 
 #define GVK_STUB_CEREALIZATION_FUNCTIONS(VK_STRUCTURE_TYPE) \
 template <typename ArchiveType> inline void save(ArchiveType&, const VK_STRUCTURE_TYPE&) { } \
@@ -44,15 +45,185 @@ GVK_STUB_CEREALIZATION_FUNCTIONS(VkXlibSurfaceCreateInfoKHR)
 ////////////////////////////////////////////////////////////////////////////////
 // Win32
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-GVK_STUB_CEREALIZATION_FUNCTIONS(SECURITY_ATTRIBUTES)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkExportFenceWin32HandleInfoKHR)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkExportMemoryWin32HandleInfoKHR)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkExportMemoryWin32HandleInfoNV)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkExportSemaphoreWin32HandleInfoKHR)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkImportFenceWin32HandleInfoKHR)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkImportMemoryWin32HandleInfoKHR)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkImportMemoryWin32HandleInfoNV)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkImportSemaphoreWin32HandleInfoKHR)
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const SECURITY_ATTRIBUTES& obj)
+{
+    archive(obj.nLength);
+    gvk::detail::cerealize_handle(archive, obj.lpSecurityDescriptor);
+    archive(obj.bInheritHandle);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, SECURITY_ATTRIBUTES& obj)
+{
+    archive(obj.nLength);
+    obj.lpSecurityDescriptor = gvk::detail::decerealize_handle<LPVOID>(archive);
+    archive(obj.bInheritHandle);
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkExportFenceWin32HandleInfoKHR& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+    gvk::detail::cerealize_dynamic_array(archive, 1, obj.pAttributes);
+    archive(obj.dwAccess);
+    gvk::detail::cerealize_dynamic_string(archive, obj.name);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkExportFenceWin32HandleInfoKHR& obj)
+{
+    archive(obj.sType);
+    obj.pNext = gvk::detail::decerealize_pnext(archive);
+    obj.pAttributes = gvk::detail::decerealize_dynamic_array<SECURITY_ATTRIBUTES>(archive);
+    archive(obj.dwAccess);
+    obj.name = gvk::detail::decerealize_dynamic_string<ArchiveType, WCHAR>(archive);
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkExportMemoryWin32HandleInfoKHR& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+    gvk::detail::cerealize_dynamic_array(archive, 1, obj.pAttributes);
+    archive(obj.dwAccess);
+    gvk::detail::cerealize_dynamic_string(archive, obj.name);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkExportMemoryWin32HandleInfoKHR& obj)
+{
+    archive(obj.sType);
+    obj.pNext = gvk::detail::decerealize_pnext(archive);
+    obj.pAttributes = gvk::detail::decerealize_dynamic_array<SECURITY_ATTRIBUTES>(archive);
+    archive(obj.dwAccess);
+    obj.name = gvk::detail::decerealize_dynamic_string<ArchiveType, WCHAR>(archive);
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkExportMemoryWin32HandleInfoNV& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+    gvk::detail::cerealize_dynamic_array(archive, 1, obj.pAttributes);
+    archive(obj.dwAccess);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkExportMemoryWin32HandleInfoNV& obj)
+{
+    archive(obj.sType);
+    obj.pNext = gvk::detail::decerealize_pnext(archive);
+    obj.pAttributes = gvk::detail::decerealize_dynamic_array<SECURITY_ATTRIBUTES>(archive);
+    archive(obj.dwAccess);
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkExportSemaphoreWin32HandleInfoKHR& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+    gvk::detail::cerealize_dynamic_array(archive, 1, obj.pAttributes);
+    archive(obj.dwAccess);
+    gvk::detail::cerealize_dynamic_string(archive, obj.name);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkExportSemaphoreWin32HandleInfoKHR& obj)
+{
+    archive(obj.sType);
+    obj.pNext = gvk::detail::decerealize_pnext(archive);
+    obj.pAttributes = gvk::detail::decerealize_dynamic_array<SECURITY_ATTRIBUTES>(archive);
+    archive(obj.dwAccess);
+    obj.name = gvk::detail::decerealize_dynamic_string<ArchiveType, WCHAR>(archive);
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkImportFenceWin32HandleInfoKHR& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+    gvk::detail::cerealize_handle(archive, obj.fence);
+    archive(obj.flags);
+    archive(obj.handleType);
+    gvk::detail::cerealize_handle(archive, obj.handle);
+    gvk::detail::cerealize_dynamic_string(archive, obj.name);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkImportFenceWin32HandleInfoKHR& obj)
+{
+    archive(obj.sType);
+    obj.pNext = gvk::detail::decerealize_pnext(archive);
+    obj.fence = gvk::detail::decerealize_handle<VkFence>(archive);
+    archive(obj.flags);
+    archive(obj.handleType);
+    obj.handle = gvk::detail::decerealize_handle<HANDLE>(archive);
+    obj.name = gvk::detail::decerealize_dynamic_string<ArchiveType, WCHAR>(archive);
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkImportMemoryWin32HandleInfoKHR& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+    archive(obj.handleType);
+    gvk::detail::cerealize_handle(archive, obj.handle);
+    gvk::detail::cerealize_dynamic_string(archive, obj.name);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkImportMemoryWin32HandleInfoKHR& obj)
+{
+    archive(obj.sType);
+    obj.pNext = gvk::detail::decerealize_pnext(archive);
+    archive(obj.handleType);
+    obj.handle = gvk::detail::decerealize_handle<HANDLE>(archive);
+    obj.name = gvk::detail::decerealize_dynamic_string<ArchiveType, WCHAR>(archive);
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkImportMemoryWin32HandleInfoNV& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+    archive(obj.handleType);
+    gvk::detail::cerealize_handle(archive, obj.handle);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkImportMemoryWin32HandleInfoNV& obj)
+{
+    archive(obj.sType);
+    obj.pNext = gvk::detail::decerealize_pnext(archive);
+    archive(obj.handleType);
+    obj.handle = gvk::detail::decerealize_handle<HANDLE>(archive);
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkImportSemaphoreWin32HandleInfoKHR& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+    gvk::detail::cerealize_handle(archive, obj.semaphore);
+    archive(obj.flags);
+    archive(obj.handleType);
+    gvk::detail::cerealize_handle(archive, obj.handle);
+    gvk::detail::cerealize_dynamic_string(archive, obj.name);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkImportSemaphoreWin32HandleInfoKHR& obj)
+{
+    archive(obj.sType);
+    obj.pNext = gvk::detail::decerealize_pnext(archive);
+    obj.semaphore = gvk::detail::decerealize_handle<VkSemaphore>(archive);
+    archive(obj.flags);
+    archive(obj.handleType);
+    obj.handle = gvk::detail::decerealize_handle<HANDLE>(archive);
+    obj.name = gvk::detail::decerealize_dynamic_string<ArchiveType, WCHAR>(archive);
+}
 
 template <typename ArchiveType>
 inline void save(ArchiveType& archive, const VkSurfaceFullScreenExclusiveWin32InfoEXT& obj)
@@ -114,27 +285,23 @@ GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoDecodeUsageInfoKHR)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeCapabilitiesKHR)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264CapabilitiesEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264DpbSlotInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264EmitPictureParametersInfoEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264FrameSizeEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264NaluSliceInfoEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264ProfileInfoEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264QpEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264RateControlInfoEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264RateControlLayerInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264ReferenceListsInfoEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264SessionParametersAddInfoEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264SessionParametersCreateInfoEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264VclFrameInfoEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265CapabilitiesEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265DpbSlotInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265EmitPictureParametersInfoEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265FrameSizeEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265NaluSliceSegmentInfoEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265ProfileInfoEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265QpEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265RateControlInfoEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265RateControlLayerInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265ReferenceListsInfoEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265SessionParametersAddInfoEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265SessionParametersCreateInfoEXT)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265VclFrameInfoEXT)
@@ -303,6 +470,26 @@ inline void save(ArchiveType& archive, const VkPipelineMultisampleStateCreateInf
 }
 
 template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkPipelineCacheCreateInfo& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+    archive(obj.flags);
+    archive(obj.initialDataSize);
+    gvk::detail::cerealize_dynamic_array(archive, obj.initialDataSize, (const uint8_t*)obj.pInitialData);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkPipelineCacheCreateInfo& obj)
+{
+    archive(obj.sType);
+    obj.pNext = (const void*)gvk::detail::decerealize_pnext(archive);
+    archive(obj.flags);
+    archive(obj.initialDataSize);
+    obj.pInitialData = (const void*)gvk::detail::decerealize_dynamic_array<uint8_t>(archive);
+}
+
+template <typename ArchiveType>
 inline void load(ArchiveType& archive, VkPipelineMultisampleStateCreateInfo& obj)
 {
     archive(obj.sType);
@@ -334,6 +521,24 @@ inline void load(ArchiveType& archive, VkShaderModuleCreateInfo& obj)
     archive(obj.flags);
     archive(obj.codeSize);
     obj.pCode = gvk::detail::decerealize_dynamic_array<uint32_t>(archive);
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkSpecializationInfo& obj)
+{
+    archive(obj.mapEntryCount);
+    gvk::detail::cerealize_dynamic_array(archive, gvk::detail::get_count(obj.mapEntryCount), obj.pMapEntries);
+    archive(obj.dataSize);
+    gvk::detail::cerealize_dynamic_array(archive, obj.dataSize, (const uint8_t*)obj.pData);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkSpecializationInfo& obj)
+{
+    archive(obj.mapEntryCount);
+    obj.pMapEntries = gvk::detail::decerealize_dynamic_array<VkSpecializationMapEntry>(archive);
+    archive(obj.dataSize);
+    obj.pData = (const void*)gvk::detail::decerealize_dynamic_array<uint8_t>(archive);
 }
 
 template <typename ArchiveType>

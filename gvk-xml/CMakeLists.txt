@@ -29,6 +29,7 @@ gvk_add_static_library(
         "${includePath}/structure.hpp"
         "${includeDirectory}/gvk-xml.hpp"
     sourceFiles
+        "${sourcePath}/api-element.cpp"
         "${sourcePath}/command.cpp"
         "${sourcePath}/enumeration.cpp"
         "${sourcePath}/extension.cpp"

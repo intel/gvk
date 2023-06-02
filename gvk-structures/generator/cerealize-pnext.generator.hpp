@@ -45,15 +45,18 @@ public:
         NamespaceGenerator namespaceGenerator(file, "gvk::detail");
         file << std::endl;
         file << "template <typename ArchiveType>" << std::endl;
-        file << "void cerealize_pnext(ArchiveType& archive, const void* const& pNext)" << std::endl;
+        file << "inline void cerealize_pnext(ArchiveType& archive, const void* const& pNext)" << std::endl;
         file << "{" << std::endl;
         file << "    if (pNext) {" << std::endl;
+        file << "        archive(true);" << std::endl;
+        file << "        auto sType = ((const VkBaseInStructure*)pNext)->sType;" << std::endl;
+        file << "        archive(sType);" << std::endl;
         generate_pnext_switch(
             file,
             manifest,
             "        ",
-            "((const VkBaseInStructure*)pNext)->sType",
-            "archive(true, {sType}, *(const {structureType}*)pNext);",
+            "sType",
+            "archive(*(const {structureType}*)pNext);",
             "assert(false && \"Unrecognized VkStructureType\");"
         );
         file << "        } else {" << std::endl;

@@ -32,6 +32,7 @@ namespace xml {
 
 Platform::Platform(const tinyxml2::XMLElement& xmlElement)
 {
+    apis = get_apis(get_xml_attribute(xmlElement, "api"));
     name = get_xml_attribute(xmlElement, "name");
     auto compileGuard = get_xml_attribute(xmlElement, "protect");
     if (!compileGuard.empty()) {

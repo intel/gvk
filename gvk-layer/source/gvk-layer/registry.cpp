@@ -119,6 +119,7 @@ void destroy_instance(VkInstance instance, const VkAllocationCallbacks* pAllocat
         assert(*layerItr && "gvk::layer::Registry contains a null layer; are layers configured correctly and intialized via gvk::layer::on_load()?");
         (*layerItr)->post_vkDestroyInstance(instance, pAllocator);
     }
+    layers.clear();
 }
 
 VkResult create_device(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice)

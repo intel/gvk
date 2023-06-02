@@ -40,6 +40,7 @@ class CmdTracker final
     : public BasicCmdTracker
 {
 public:
+    const std::vector<const GvkCommandBaseStructure*>& get_cmds() const;
     const std::unordered_map<VkImage, ImageLayoutTracker>& get_image_layout_trackers() const;
 
     ////////////////////////////////////////////////////////////////////////////////

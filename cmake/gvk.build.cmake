@@ -1,6 +1,7 @@
 
 include_guard()
 
+include(CMakePackageConfigHelpers)
 include(CMakeParseArguments)
 include(CTest)
 
@@ -27,7 +28,7 @@ endmacro()
 
 function(gvk_setup_target)
     cmake_parse_arguments(args "" "target;folder" "linkLibraries;includeDirectories;includeFiles;sourceFiles;compileDefinitions" ${ARGN})
-    target_include_directories(${args_target} PUBLIC "${args_includeDirectories}")
+    target_include_directories(${args_target} PUBLIC "$<BUILD_INTERFACE:${args_includeDirectories}>" INTERFACE $<INSTALL_INTERFACE:include>)
     target_compile_definitions(${args_target} PUBLIC "${args_compileDefinitions}")
     target_link_libraries(${args_target} PUBLIC "${args_linkLibraries}")
     set_target_properties(${args_target} PROPERTIES LINKER_LANGUAGE CXX)
@@ -87,7 +88,7 @@ function(gvk_add_code_generator)
 endfunction()
 
 function(gvk_add_layer)
-    cmake_parse_arguments(args "" "target;folder" "linkLibraries;includeDirectories;includeFiles;sourceFiles;compileDefinitions;description;version;company;copyright;entryPoints" ${ARGN})
+    cmake_parse_arguments(args "" "target;folder" "linkLibraries;interfaceFiles;includeDirectories;includeFiles;sourceFiles;compileDefinitions;description;version;company;copyright;entryPoints" ${ARGN})
     if(NOT args_version)
         set(args_version 1)
     endif()
@@ -106,8 +107,13 @@ function(gvk_add_layer)
             "${CMAKE_CURRENT_BINARY_DIR}/${args_target}.rc"
         )
     endif()
+    add_library(${args_target}-interface INTERFACE "${args_interfaceFiles}")
+    target_link_libraries(${args_target}-interface INTERFACE Vulkan::Vulkan)
+    target_include_directories(${args_target}-interface INTERFACE "$<BUILD_INTERFACE:${args_includeDirectories}>" INTERFACE $<INSTALL_INTERFACE:include>)
+    gvk_create_file_group("${args_interfaceFiles}")
+    set_target_properties(${args_target}-interface PROPERTIES FOLDER "${GVK_IDE_FOLDER}/${args_folder}")
     add_library(${args_target} SHARED "${args_includeFiles}" "${args_sourceFiles}")
-    list(APPEND args_linkLibraries gvk-layer)
+    list(APPEND args_linkLibraries gvk-layer ${args_target}-interface)
     gvk_setup_target(
         target              ${args_target}
         folder             "${args_folder}"
@@ -139,15 +145,19 @@ macro(gvk_add_target_test)
         get_target_property(type ${args_target} TYPE)
         if(type STREQUAL STATIC_LIBRARY)
             list(APPEND args_linkLibraries ${args_target})
+        else()
+            if(EXISTS ${args_target}-interface)
+                list(APPEND args_linkLibraries ${args_target}-interface)
+            endif()
         endif()
         gvk_add_executable(
-            target ${args_target}.tests
-            folder ${args_folder}
-            linkLibraries ${args_linkLibraries}
+            target              ${args_target}.tests
+            folder              ${args_folder}
+            linkLibraries       ${args_linkLibraries}
             includeDirectories "${args_includeDirectories}"
-            includeFiles "${args_includeFiles}"
-            sourceFiles "${args_sourceFiles}"
-            compileDefinitions ${args_compileDefinitions}
+            includeFiles       "${args_includeFiles}"
+            sourceFiles        "${args_sourceFiles}"
+            compileDefinitions  ${args_compileDefinitions}
         )
         if(type STREQUAL SHARED_LIBRARY)
             add_dependencies(${args_target}.tests ${args_target})

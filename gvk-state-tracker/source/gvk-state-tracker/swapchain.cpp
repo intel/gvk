@@ -86,10 +86,35 @@ VkResult StateTracker::post_vkCreateSwapchainKHR(VkDevice device, const VkSwapch
             imageCreateInfo.queueFamilyIndexCount = pCreateInfo->queueFamilyIndexCount;
             imageCreateInfo.pQueueFamilyIndices = pCreateInfo->pQueueFamilyIndices;
             imageControlBlock.mImageCreateInfo = imageCreateInfo;
+            imageControlBlock.mImageLayoutTracker = ImageLayoutTracker(1, pCreateInfo->imageArrayLayers, VK_IMAGE_LAYOUT_UNDEFINED);
             swapchainControlBlock.mImages.insert(gvkImage);
         }
         gvkDevice.mReference.get_obj().mSwapchainKHRTracker.insert(gvkSwapchain);
     }
+    return gvkResult;
+}
+
+VkResult StateTracker::post_vkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex, VkResult gvkResult)
+{
+    (void)swapchain;
+    (void)timeout;
+    (void)fence;
+    (void)pImageIndex;
+    Semaphore gvkSemphore({ device, semaphore });
+    assert(gvkSemphore);
+    gvkSemphore.mReference.get_obj().mSignaled = VK_TRUE;
+    gvkSemphore.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKER_OBJECT_STATUS_SIGNALED_BIT;
+    return gvkResult;
+}
+
+VkResult StateTracker::post_vkAcquireNextImage2KHR(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex, VkResult gvkResult)
+{
+    (void)pImageIndex;
+    assert(pAcquireInfo);
+    Semaphore gvkSemphore({ device, pAcquireInfo->semaphore });
+    assert(gvkSemphore);
+    gvkSemphore.mReference.get_obj().mSignaled = VK_TRUE;
+    gvkSemphore.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKER_OBJECT_STATUS_SIGNALED_BIT;
     return gvkResult;
 }
 

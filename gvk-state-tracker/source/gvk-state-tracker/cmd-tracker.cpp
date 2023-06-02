@@ -31,6 +31,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace state_tracker {
 
+const std::vector<const GvkCommandBaseStructure*>& CmdTracker::get_cmds() const
+{
+    return mCmds;
+}
+
 const std::unordered_map<VkImage, ImageLayoutTracker>& CmdTracker::get_image_layout_trackers() const
 {
     return mImageLayoutTrackers;

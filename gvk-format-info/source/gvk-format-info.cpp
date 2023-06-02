@@ -65,4 +65,9 @@ uint32_t get_bits_per_texel(VkFormat format)
     return bitPerTexel;
 }
 
+uint32_t get_bytes_per_texel(VkFormat format)
+{
+    return get_bits_per_texel(format) / 8;
+}
+
 } // namespace gvk

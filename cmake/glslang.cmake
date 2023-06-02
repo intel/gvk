@@ -12,7 +12,7 @@ set(SKIP_GLSLANG_INSTALL    ON  CACHE BOOL "" FORCE)
 FetchContent_Declare(
     glslang
     GIT_REPOSITORY "https://github.com/KhronosGroup/glslang.git"
-    GIT_TAG ca8d07d0bc1c6390b83915700439fa7719de6a2a # sdk-1.3.239.0
+    GIT_TAG 14e5a04e70057972eef8a40df422e30a3b70e4b5 # sdk-1.3.243.0
     GIT_PROGRESS TRUE
 )
 FetchContent_MakeAvailable(glslang)

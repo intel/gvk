@@ -56,7 +56,9 @@ public:
             if (handle.alias.empty()) {
                 CompileGuardGenerator compileGuard(file, handle.compileGuards);
                 file << "    case " << handle.vkObjectType << ": {" << std::endl;
-                if (handle.isDispatchable) {
+                if (handle.name == "VkPhysicalDevice") {
+                    file << "        *pStateTrackedObjectInfo = " << string::strip_vk(handle.name) << "(get_loader_physical_device_handle((" << handle.name << ")pStateTrackedObject->handle)).get<GvkStateTrackedObjectInfo>();" << std::endl;
+                } else if (handle.isDispatchable) {
                     file << "        *pStateTrackedObjectInfo = " << string::strip_vk(handle.name) << "((" << handle.name << ")pStateTrackedObject->handle).get<GvkStateTrackedObjectInfo>();" << std::endl;
                 } else {
                     file << "        auto handle = pStateTrackedObject->handle;" << std::endl;

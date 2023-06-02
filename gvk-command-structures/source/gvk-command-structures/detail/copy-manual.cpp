@@ -46,5 +46,20 @@ GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureCreateXlibSurfaceKHR)
 GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureGetPhysicalDeviceXlibPresentationSupportKHR)
 #endif // VK_USE_PLATFORM_XLIB_KHR
 
+template <>
+GvkCommandStructureCmdPushConstants create_structure_copy<GvkCommandStructureCmdPushConstants>(const GvkCommandStructureCmdPushConstants& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)pAllocator;
+    auto result = obj;
+    result.pValues = create_dynamic_array_copy(obj.size, (const uint8_t*)obj.pValues, pAllocator);
+    return result;
+}
+
+template <>
+void destroy_structure_copy<GvkCommandStructureCmdPushConstants>(const GvkCommandStructureCmdPushConstants& obj, const VkAllocationCallbacks* pAllocator)
+{
+    destroy_dynamic_array_copy(obj.size, (const uint8_t*)obj.pValues, pAllocator);
+}
+
 } // namespace detail
 } // namespace gvk

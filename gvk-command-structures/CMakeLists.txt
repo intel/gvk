@@ -13,10 +13,12 @@ set(generatedIncludeFiles
     "${generatedIncludePath}/command-structure-decerealization.hpp"
     "${generatedIncludePath}/command-structure-deserialization.hpp"
     "${generatedIncludePath}/command-structure-destroy-copy.hpp"
+    "${generatedIncludePath}/command-structure-enumerate-handles.hpp"
     "${generatedIncludePath}/command-structure-get-stype.hpp"
     "${generatedIncludePath}/command-structure-make-tuple.hpp"
     "${generatedIncludePath}/command-structure-serialization.hpp"
     "${generatedIncludePath}/command-structure-to-string.hpp"
+    "${generatedIncludePath}/execute-command-structure.hpp"
 )
 set(generatedSourceFiles
     "${generatedSourcePath}/command-enumerations-to-string.cpp"
@@ -24,8 +26,10 @@ set(generatedSourceFiles
     "${generatedSourcePath}/command-structure-create-copy.cpp"
     "${generatedSourcePath}/command-structure-deserialization.cpp"
     "${generatedSourcePath}/command-structure-destroy-copy.cpp"
+    "${generatedSourcePath}/command-structure-enumerate-handles.cpp"
     "${generatedSourcePath}/command-structure-serialization.cpp"
     "${generatedSourcePath}/command-structure-to-string.cpp"
+    "${generatedSourcePath}/execute-command-structure.cpp"
 )
 set(generatorSourcePath "${CMAKE_CURRENT_LIST_DIR}/generator/")
 gvk_add_code_generator(
@@ -35,6 +39,8 @@ gvk_add_code_generator(
         "gvk-command-structures/"
     linkLibraries
         gvk-cppgen
+    includeFiles
+        "${generatorSourcePath}/execute-command-structure.generator.hpp"
     sourceFiles
         "${generatorSourcePath}/main.cpp"
     outputFiles
@@ -71,6 +77,7 @@ gvk_add_static_library(
     sourceFiles
         "${generatedSourceFiles}"
         "${sourcePath}/detail/copy-manual.cpp"
+        "${sourcePath}/detail/handle-enumeration-manual.cpp"
         "${sourcePath}/detail/to-string-manual.cpp"
 )
 if(MSVC)

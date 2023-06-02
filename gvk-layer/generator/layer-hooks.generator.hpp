@@ -93,7 +93,9 @@ private:
 R"(    auto& layers = Registry::get().layers;
     for (auto layerItr = layers.begin(); layerItr != layers.end(); ++layerItr) {
         assert(*layerItr && "gvk::layer::Registry contains a null layer; are layers configured correctly and intialized via gvk::layer::on_load()?");
-        {resultAssignment}(*layerItr)->pre_{commandName}({gvkCommandArgs});
+        if ((*layerItr)->enabled) {
+            {resultAssignment}(*layerItr)->pre_{commandName}({gvkCommandArgs});
+        }
     }
     const auto& dispatchTableItr = Registry::get().{dispatchableHandleType}DispatchTables.find(get_dispatch_key({dispatchableHandle}));
     assert(dispatchTableItr != Registry::get().{dispatchableHandleType}DispatchTables.end());
@@ -102,7 +104,9 @@ R"(    auto& layers = Registry::get().layers;
     }
     for (auto layerItr = layers.rbegin(); layerItr != layers.rend(); ++layerItr) {
         assert(*layerItr && "gvk::layer::Registry contains a null layer; are layers configured correctly and intialized via gvk::layer::on_load()?");
-        {resultAssignment}(*layerItr)->post_{commandName}({gvkCommandArgs});
+        if ((*layerItr)->enabled) {
+            {resultAssignment}(*layerItr)->post_{commandName}({gvkCommandArgs});
+        }
     }
 )", replacements);
             file << (command.returnType == "void" ? std::string() : "    return gvkResult;\n");

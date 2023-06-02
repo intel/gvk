@@ -61,24 +61,28 @@ gvk_add_layer(
         gvk-command-structures
         gvk-reference
         gvk-runtime
+    interfaceFiles
+        "${includeDirectory}/VK_LAYER_INTEL_gvk_state_tracker.h"
+        "${includeDirectory}/VK_LAYER_INTEL_gvk_state_tracker.hpp"
     includeDirectories
         "${generatedIncludeDirectory}"
         "${includeDirectory}"
     includeFiles
         "${generatedIncludeFiles}"
         "${includePath}/cmd-tracker.hpp"
+        "${includePath}/dependency-enumerator.hpp"
         "${includePath}/descriptor.hpp"
         "${includePath}/image-layout-tracker.hpp"
+        "${includePath}/memory-map-info.hpp"
         "${includePath}/object-tracker.hpp"
         "${includePath}/state-tracker.hpp"
         "${includePath}/thread-safe-unordered-map.hpp"
-        "${includeDirectory}/VK_LAYER_INTEL_gvk_state_tracker.h"
-        "${includeDirectory}/VK_LAYER_INTEL_gvk_state_tracker.hpp"
     sourceFiles
         "${generatedSourceFiles}"
         "${sourcePath}/buffer.cpp"
         "${sourcePath}/cmd-tracker.cpp"
         "${sourcePath}/command-buffer.cpp"
+        "${sourcePath}/dependency-enumerator.cpp"
         "${sourcePath}/descriptor-set.cpp"
         "${sourcePath}/device-memory.cpp"
         "${sourcePath}/device.cpp"
@@ -86,7 +90,6 @@ gvk_add_layer(
         "${sourcePath}/image-layout-tracker.cpp"
         "${sourcePath}/image.cpp"
         "${sourcePath}/instance.cpp"
-        "${sourcePath}/pipeline-layout.cpp"
         "${sourcePath}/pipeline.cpp"
         "${sourcePath}/state-tracked-handle-utilities.cpp"
         "${sourcePath}/state-tracker.cpp"
@@ -94,13 +97,18 @@ gvk_add_layer(
     description
         "Intel(R) GPA Utilities for Vulkan* state tracker"
     entryPoints
+        gvkSetStateTrackerPhysicalDevices
         gvkEnumerateStateTrackedObjects
         gvkEnumerateStateTrackedObjectDependencies
         gvkEnumerateStateTrackedObjectBindings
+        gvkEnumerateStateTrackedCommandBufferCmds
         gvkGetStateTrackedObjectInfo
         gvkGetStateTrackedObjectCreateInfo
         gvkGetStateTrackedObjectAllocateInfo
         gvkGetStateTrackedImageLayouts
+        gvkGetStateTrackedMappedMemory
+        gvkDisableStateTracker
+        gvkEnableStateTracker
 )
 if(MSVC)
     set_source_files_properties("${generatedSourcePath}/basic-state-tracker.cpp" PROPERTIES COMPILE_FLAGS "/bigobj")
@@ -123,8 +131,6 @@ gvk_add_target_test(
     includeDirectories
         "${includeDirectory}"
     includeFiles
-        "${includeDirectory}/VK_LAYER_INTEL_gvk_state_tracker.h"
-        "${includeDirectory}/VK_LAYER_INTEL_gvk_state_tracker.hpp"
         "${testsPath}/state-tracker-test-utilities.hpp"
     sourceFiles
         "${testsPath}/command-buffer.tests.cpp"

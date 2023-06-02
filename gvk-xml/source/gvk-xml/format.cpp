@@ -50,6 +50,7 @@ Component::Component(const tinyxml2::XMLElement& xmlElement)
 
 Format::Format(const tinyxml2::XMLElement& xmlElement)
 {
+    apis = get_apis(get_xml_attribute(xmlElement, "api"));
     name = get_xml_attribute(xmlElement, "name");
     classes = string::split(get_xml_attribute(xmlElement, "class"), " ");
     blockSize = string::to_number<uint32_t>(get_xml_attribute(xmlElement, "blockSize"));

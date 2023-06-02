@@ -28,6 +28,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-defines.hpp"
 #include "gvk-structures/detail/copy-utilities.hpp"
+#include "gvk-structures/detail/get-count.hpp"
 
 #include "cereal/archives/binary.hpp"
 #include "cereal/types/common.hpp"
@@ -91,11 +92,15 @@ inline void cerealize_dynamic_handle_array(ArchiveType& archive, size_t count, c
     }
 }
 
-template <typename ArchiveType>
-inline void cerealize_dynamic_string(ArchiveType& archive, const char* pStr)
+template <typename ArchiveType, typename CharType>
+inline void cerealize_dynamic_string(ArchiveType& archive, const CharType* pStr)
 {
     if (pStr) {
-        size_t strLen = strlen(pStr);
+        auto pEnd = pStr;
+        while (*pEnd) {
+            ++pEnd;
+        }
+        auto strLen = pEnd - pStr + 1;
         archive(strLen);
         archive(cereal::binary_data(pStr, strLen));
     } else {
@@ -103,8 +108,8 @@ inline void cerealize_dynamic_string(ArchiveType& archive, const char* pStr)
     }
 }
 
-template <typename ArchiveType>
-inline void cerealize_dynamic_string_array(ArchiveType& archive, size_t count, const char* const* ppStrs)
+template <typename ArchiveType, typename CharType>
+inline void cerealize_dynamic_string_array(ArchiveType& archive, size_t count, const CharType* const* ppStrs)
 {
     if (count && ppStrs) {
         archive(count);
@@ -192,32 +197,32 @@ inline HandleType* decerealize_dynamic_handle_array(ArchiveType& archive)
     return pHandles;
 }
 
-template <typename ArchiveType>
-inline char* decerealize_dynamic_string(ArchiveType& archive)
+template <typename ArchiveType, typename CharType = char>
+inline CharType* decerealize_dynamic_string(ArchiveType& archive)
 {
-    char* pStr = nullptr;
+    CharType* pStr = nullptr;
     size_t strLen = 0;
     archive(strLen);
     if (strLen) {
         assert(tlpDecerealizationAllocator);
         auto pAllocator = tlpDecerealizationAllocator;
-        pStr = (char*)pAllocator->pfnAllocation(pAllocator->pUserData, strLen + 1, 0, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+        pStr = (CharType*)pAllocator->pfnAllocation(pAllocator->pUserData, strLen + 1, 0, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
         archive(cereal::binary_data(pStr, strLen));
         pStr[strLen] = '\0';
     }
     return pStr;
 }
 
-template <typename ArchiveType>
-inline char** decerealize_dynamic_string_array(ArchiveType& archive)
+template <typename ArchiveType, typename CharType = char>
+inline CharType** decerealize_dynamic_string_array(ArchiveType& archive)
 {
-    char** ppStrs = nullptr;
+    CharType** ppStrs = nullptr;
     size_t count = 0;
     archive(count);
     if (count) {
         assert(tlpDecerealizationAllocator);
         auto pAllocator = tlpDecerealizationAllocator;
-        ppStrs = (char**)pAllocator->pfnAllocation(pAllocator->pUserData, count * sizeof(char*), 0, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+        ppStrs = (CharType**)pAllocator->pfnAllocation(pAllocator->pUserData, count * sizeof(CharType*), 0, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
         for (size_t i = 0; i < count; ++i) {
             ppStrs[i] = decerealize_dynamic_string(archive);
         }

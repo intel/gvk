@@ -217,7 +217,7 @@ TEST(DescriptorSet, BasicDescriptorBinding)
     ASSERT_TRUE(create_state_tracked_object_record(descriptorPool, descriptorPool.get<VkDescriptorPoolCreateInfo>(), expectedDescriptorSetDependencies));
     ASSERT_TRUE(create_state_tracked_object_record(descriptorSetLayouts[0], descriptorSetLayouts[0].get<VkDescriptorSetLayoutCreateInfo>(), expectedDescriptorSetDependencies));
     ASSERT_TRUE(create_state_tracked_object_record(context.get_devices()[0], context.get_devices()[0].get<VkDeviceCreateInfo>(), expectedDescriptorSetDependencies));
-    ASSERT_TRUE(create_state_tracked_object_record(context.get_physical_devices()[0], context.get_instance().get<VkInstanceCreateInfo>(), expectedDescriptorSetDependencies));
+    ASSERT_TRUE(create_state_tracked_object_record(context.get_physical_devices()[0], VkApplicationInfo { }, expectedDescriptorSetDependencies));
     ASSERT_TRUE(create_state_tracked_object_record(context.get_instance(), context.get_instance().get<VkInstanceCreateInfo>(), expectedDescriptorSetDependencies));
 
     std::map<GvkStateTrackedObject, ObjectRecord> expectedDescriptorSetBindings;

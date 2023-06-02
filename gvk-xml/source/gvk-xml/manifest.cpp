@@ -34,16 +34,111 @@ namespace gvk {
 namespace xml {
 
 template <typename ApiElementType>
-static void create_api_element(const tinyxml2::XMLElement& xmlElement, std::map<std::string, ApiElementType>& apiElements)
+static void create_api_element(const std::string& api, const tinyxml2::XMLElement& xmlElement, std::map<std::string, ApiElementType>& apiElements)
 {
     ApiElementType apiElement(xmlElement);
+    assert(!apiElement.apis.empty());
     assert(!apiElement.name.empty());
-    apiElements.insert({ apiElement.name, apiElement });
+    if (apiElement.apis.count(api)) {
+        apiElements[apiElement.name] = apiElement;
+    }
+}
+
+template <typename FeatureType>
+static void create_feature(const std::string& api, const tinyxml2::XMLElement& xmlElement, std::map<std::string, FeatureType>& features)
+{
+    FeatureType feature(api, xmlElement);
+    assert(!feature.apis.empty());
+    assert(!feature.name.empty());
+    if (feature.apis.count(api)) {
+        features[feature.name] = feature;
+    }
+}
+
+static void add_requirements_to_manifest(const std::string& api, const Manifest& all, const Feature& feature, Manifest& manifest)
+{
+    if (api_enabled(api, feature.apis)) {
+        // Copy required types from Manifest `all` to `manifest`
+        for (const auto& type : feature.types) {
+            const auto& handleItr = all.handles.find(type);
+            if (handleItr != all.handles.end() && api_enabled(api, handleItr->second.apis)) {
+                auto handle = handleItr->second;
+                handle.compileGuards.insert(feature.compileGuards.begin(), feature.compileGuards.end());
+                manifest.handles[handle.name] = handle;
+            } else {
+                const auto& structureItr = all.structures.find(type);
+                if (structureItr != all.structures.end() && api_enabled(api, structureItr->second.apis)) {
+                    auto structure = structureItr->second;
+                    structure.compileGuards.insert(feature.compileGuards.begin(), feature.compileGuards.end());
+                    manifest.structures[structure.name] = structure;
+                } else {
+                    const auto& allEnumerationItr = all.enumerations.find(type);
+                    if (allEnumerationItr != all.enumerations.end() && api_enabled(api, allEnumerationItr->second.apis)) {
+                        const auto& manifestEnumerationItr = manifest.enumerations.find(type);
+                        auto enumeration = manifestEnumerationItr != manifest.enumerations.end() ? manifestEnumerationItr->second : allEnumerationItr->second;
+                        const auto& enumerators = allEnumerationItr->second.enumerators;
+                        enumeration.enumerators.insert(enumerators.begin(), enumerators.end());
+                        enumeration.compileGuards.insert(feature.compileGuards.begin(), feature.compileGuards.end());
+                        manifest.enumerations[enumeration.name] = enumeration;
+                    }
+                }
+            }
+        }
+        // Copy required Enumerators from Manifest `all` to `manifest`
+        for (const auto& featureEnumerationItr : feature.enumerations) {
+            const auto& featureEnumeration = featureEnumerationItr.second;
+            const auto& manifestEnumerationItr = manifest.enumerations.find(featureEnumeration.name);
+            const auto& allEnumerationItr = all.enumerations.find(featureEnumeration.name);
+            assert(allEnumerationItr != all.enumerations.end());
+            auto enumeration = manifestEnumerationItr != manifest.enumerations.end() ? manifestEnumerationItr->second : allEnumerationItr->second;
+            for (auto enumerator : featureEnumeration.enumerators) {
+                enumerator.compileGuards.insert(feature.compileGuards.begin(), feature.compileGuards.end());
+                enumeration.enumerators.insert(enumerator);
+            }
+            manifest.enumerations[enumeration.name] = enumeration;
+        }
+        // Copy required Commands from Manifest `all` to `manifest`
+        for (const auto& commandName : feature.commands) {
+            const auto& commandItr = all.commands.find(commandName);
+            assert(commandItr != all.commands.end());
+            auto command = commandItr->second;
+            command.compileGuards.insert(feature.compileGuards.begin(), feature.compileGuards.end());
+            manifest.commands[command.name] = command;
+        }
+    }
+}
+
+static void add_features_to_manifest(const std::string& api, const Manifest& all, Manifest& manifest)
+{
+    for (const auto& featureItr : all.features) {
+        const auto& feature = featureItr.second;
+        if (api_enabled(api, feature.apis)) {
+            manifest.features[feature.name] = feature;
+            add_requirements_to_manifest(api, all, feature, manifest);
+        }
+    }
+}
+
+static void add_extensions_to_manifest(const std::string& api, const Manifest& all, Manifest& manifest)
+{
+    for (const auto& extensionItr : all.extensions) {
+        auto extension = extensionItr.second;
+        if (api_enabled(api, extension.apis)) {
+            auto platformItr = manifest.platforms.find(extension.platform);
+            if (platformItr != manifest.platforms.end()) {
+                const auto& platform = platformItr->second;
+                extension.compileGuards.insert(platform.compileGuards.begin(), platform.compileGuards.end());
+            }
+            manifest.extensions[extension.name] = extension;
+            add_requirements_to_manifest(api, all, extension, manifest);
+        }
+    }
 }
 
 template <typename ApiElementCollectionType>
 static void post_process_vendors(const std::set<std::string>& vendors, ApiElementCollectionType& apiElements)
 {
+    // Populate ApiElement `vendor`
     for (auto& apiElementItr : apiElements) {
         auto& apiElement = apiElementItr.second;
         if (apiElement.vendor.empty()) {
@@ -55,129 +150,17 @@ static void post_process_vendors(const std::set<std::string>& vendors, ApiElemen
     }
 }
 
-static void post_process_api_constants(Manifest& manifest)
+static void post_process_api_constants(const Manifest& all, Manifest& manifest)
 {
-    auto apiConstantsItr = manifest.enumerations.find("API Constants");
-    if (apiConstantsItr != manifest.enumerations.end()) {
-        manifest.apiConstants = apiConstantsItr->second;
-        manifest.enumerations.erase(apiConstantsItr);
-    }
-}
-
-template <typename ApiElementCollectionType>
-static void post_process_extension(const Extension& extension, const std::string& apiElementName, ApiElementCollectionType& apiElements)
-{
-    auto apiElementItr = apiElements.find(apiElementName);
-    if (apiElementItr != apiElements.end()) {
-        if (extension.supported == "disabled") {
-            apiElements.erase(apiElementItr);
-        } else {
-            auto& apiElement = apiElementItr->second;
-            apiElement.extension = extension.name;
-            apiElement.compileGuards.insert(extension.compileGuards.begin(), extension.compileGuards.end());
-        }
-    }
-}
-
-static void post_process_extensions(Manifest& manifest)
-{
-    for (auto extensionItr : manifest.extensions) {
-        auto& extension = extensionItr.second;
-        auto platformItr = manifest.platforms.find(extension.platform);
-        if (platformItr != manifest.platforms.end()) {
-            const auto& platform = platformItr->second;
-            extension.compileGuards.insert(platform.compileGuards.begin(), platform.compileGuards.end());
-        }
-        for (auto extensionEnumerationItr : extension.enumerations) {
-            const auto& extensionEnumeration = extensionEnumerationItr.second;
-            auto coreEnumerationItr = manifest.enumerations.find(extensionEnumerationItr.first);
-            assert(coreEnumerationItr != manifest.enumerations.end());
-            if (coreEnumerationItr != manifest.enumerations.end()) {
-                auto& coreEnumeration = coreEnumerationItr->second;
-                if (extension.supported != "disabled") {
-                    for (auto extensionEnumerator : extensionEnumeration.enumerators) {
-                        extensionEnumerator.compileGuards.insert(extension.compileGuards.begin(), extension.compileGuards.end());
-                        coreEnumeration.enumerators.insert(extensionEnumerator);
-                    }
-                }
-            }
-        }
-        for (const auto& type : extension.types) {
-            post_process_extension(extension, type, manifest.handles);
-            post_process_extension(extension, type, manifest.enumerations);
-            post_process_extension(extension, type, manifest.structures);
-        }
-        for (const auto& command : extension.commands) {
-            post_process_extension(extension, command, manifest.commands);
-        }
-    }
-    for (auto extensionItr = manifest.extensions.begin(); extensionItr != manifest.extensions.end();) {
-        if (extensionItr->second.supported == "disabled") {
-            manifest.extensions.erase(extensionItr++);
-        } else {
-            ++extensionItr;
-        }
-    }
-}
-
-static void post_process_handles(Manifest& manifest)
-{
-    // Create create/destroy commands
-    for (const auto& commandItr : manifest.commands) {
-        const auto& command = commandItr.second;
-        if (1 < command.parameters.size()) {
-            auto handleItr = manifest.handles.find(command.target);
-            if (handleItr != manifest.handles.end()) {
-                auto& handle = handleItr->second;
-                switch (command.type) {
-                case Command::Type::Create: {
-                    handle.createCommands.insert(command.name);
-                    for (const auto& parameter : command.parameters) {
-                        if (string::contains(parameter.type, "Info")) {
-                            handle.createInfos.insert(parameter.unqualifiedType);
-                        }
-                    }
-                } break;
-                case Command::Type::Destroy: {
-                    handle.destroyCommands.insert(command.name);
-                } break;
-                default: break;
-                }
-            }
-        }
-    }
-
-    // Set parent/child handles
-    for (const auto& handleItr : manifest.handles) {
-        for (const auto& parent : handleItr.second.parents) {
-            auto parentHandleItr = manifest.handles.find(parent);
-            assert(parentHandleItr != manifest.handles.end());
-            parentHandleItr->second.children.insert(handleItr.second.name);
-        }
-    }
-}
-
-static void post_process_commands(Manifest& manifest)
-{
-    for (auto& commandItr : manifest.commands) {
-        auto& command = commandItr.second;
-        assert(!command.returnType.empty());
-        if (!command.alias.empty()) {
-            const auto& aliasItr = manifest.commands.find(command.alias);
-            assert(aliasItr != manifest.commands.end());
-            auto name = command.name;
-            auto alias = command.alias;
-            auto extension = command.extension;
-            command = aliasItr->second;
-            command.name = name;
-            command.alias = alias;
-            command.extension = extension;
-        }
-    }
+    // Populate `constants`
+    auto apiConstantsItr = all.enumerations.find("API Constants");
+    assert(apiConstantsItr != all.enumerations.end());
+    manifest.constants = apiConstantsItr->second;
 }
 
 static void post_process_enumerations(Manifest& manifest)
 {
+    // Populate aliased Enumerator values from the "real" Enumerator values
     for (auto& enumerationItr : manifest.enumerations) {
         auto& enumeration = enumerationItr.second;
         std::map<std::string, Enumerator> enumerators;
@@ -198,32 +181,73 @@ static void post_process_enumerations(Manifest& manifest)
     }
 }
 
-static Enumeration concatenate_enumerations(const Enumeration& lhs, const Enumeration& rhs)
+static void post_process_formats(Manifest& manifest)
 {
-    auto result = lhs;
-    if (lhs.name == rhs.name) {
-        for (const auto& enumerator : rhs.enumerators) {
-            result.enumerators.insert(enumerator);
-        }
-    }
-    return result;
+    // There's no entry for VK_FORMAT_UNDEFINED in the <formats><formats/> xml
+    //  element...Format `undefined` is added so that `formats` has an entry for
+    //  every VkFormat Enumerator.
+    Format undefined;
+    undefined.name = "VK_FORMAT_UNDEFINED";
+    manifest.formats[undefined.name] = undefined;
 }
 
-static void post_process_features(Manifest& manifest)
+static void post_process_handles(Manifest& manifest)
 {
-    for (const auto& featureItr : manifest.features) {
-        const auto& feature = featureItr.second;
-        for (const auto& featureEnumerationItr : feature.enumerations) {
-            const auto& featureEnumeration = featureEnumerationItr.second;
-            auto enumerationItr = manifest.enumerations.find(featureEnumeration.name);
-            assert(enumerationItr != manifest.enumerations.end());
-            enumerationItr->second = concatenate_enumerations(enumerationItr->second, featureEnumeration);
+    // Set create/destroy Commands
+    for (const auto& commandItr : manifest.commands) {
+        const auto& command = commandItr.second;
+        auto handleItr = manifest.handles.find(command.target);
+        if (handleItr != manifest.handles.end()) {
+            auto& handle = handleItr->second;
+            switch (command.type) {
+            case Command::Type::Create: {
+                handle.createCommands.insert(command.name);
+                for (const auto& parameter : command.parameters) {
+                    if (string::contains(parameter.type, "Info")) {
+                        handle.createInfos.insert(parameter.unqualifiedType);
+                    }
+                }
+            } break;
+            case Command::Type::Destroy: {
+                handle.destroyCommands.insert(command.name);
+            } break;
+            default: {
+            } break;
+            }
+        }
+    }
+    // Set parent/child Handles
+    for (const auto& handleItr : manifest.handles) {
+        for (const auto& parent : handleItr.second.parents) {
+            auto parentHandleItr = manifest.handles.find(parent);
+            assert(parentHandleItr != manifest.handles.end());
+            parentHandleItr->second.children.insert(handleItr.second.name);
+        }
+    }
+}
+
+static void post_process_commands(Manifest& manifest)
+{
+    // Populate aliased Command info from the "real" Command
+    for (auto& commandItr : manifest.commands) {
+        auto& command = commandItr.second;
+        if (!command.alias.empty()) {
+            const auto& aliasItr = manifest.commands.find(command.alias);
+            assert(aliasItr != manifest.commands.end());
+            auto name = command.name;
+            auto alias = command.alias;
+            auto extension = command.extension;
+            command = aliasItr->second;
+            command.name = name;
+            command.alias = alias;
+            command.extension = extension;
         }
     }
 }
 
 static void post_process_object_types(Manifest& manifest)
 {
+    // Populate `vkObjectTypes`
     for (auto handleItr : manifest.handles) {
         const auto& handle = handleItr.second;
         if (!handle.vkObjectType.empty()) {
@@ -235,6 +259,7 @@ static void post_process_object_types(Manifest& manifest)
 
 static void post_process_structure_types(Manifest& manifest)
 {
+    // Populate `vkStructureTypes`
     for (auto structureItr : manifest.structures) {
         const auto& structure = structureItr.second;
         if (!structure.vkStructureType.empty()) {
@@ -244,58 +269,73 @@ static void post_process_structure_types(Manifest& manifest)
     }
 }
 
-Manifest::Manifest(const tinyxml2::XMLDocument& xmlDocument)
+Manifest::Manifest(const tinyxml2::XMLDocument& xmlDocument, const std::string& api)
 {
     auto pRegistryXml = xmlDocument.FirstChildElement("registry");
     if (pRegistryXml) {
-        process_xml_elements(*pRegistryXml, "platforms", "platform", [&](const auto& xmlElement) { create_api_element(xmlElement, platforms); });
-        process_xml_elements(*pRegistryXml, "tags", "tag", [&](const auto& xmlElement) { vendors.insert(get_xml_attribute(xmlElement, "name")); });
-        process_xml_elements(*pRegistryXml, "enums", [&](const auto& xmlElement) { create_api_element(xmlElement, enumerations); });
-        process_xml_elements(*pRegistryXml, "commands", "command", [&](const auto& xmlElement) { create_api_element(xmlElement, commands); });
-        process_xml_elements(*pRegistryXml, "extensions", "extension", [&](const auto& xmlElement) { create_api_element(xmlElement, extensions); });
-        process_xml_elements(*pRegistryXml, "feature", [&](const auto& xmlElement) { create_api_element(xmlElement, features); });
-        process_xml_elements(*pRegistryXml, "formats", "format", [&](const auto& xmlElement) { create_api_element(xmlElement, formats); });
-
-        Format undefined;
-        undefined.name = "VK_FORMAT_UNDEFINED";
-        formats.insert({ undefined.name, undefined });
-
+        // Parse the xml and add everything to Manifest `all`.  Manifest 'all' contains
+        //  all Features and Extensions regardless of their API or support status.  It
+        //  will be used to lookup and copy ApiElements from enabled Features and
+        //  Extensions.
+        Manifest all;
+        process_xml_elements(*pRegistryXml, "platforms", "platform", [&](const auto& xmlElement) { create_api_element(api, xmlElement, all.platforms); });
+        process_xml_elements(*pRegistryXml, "tags", "tag", [&](const auto& xmlElement) { all.vendors.insert(get_xml_attribute(xmlElement, "name")); });
+        process_xml_elements(*pRegistryXml, "enums", [&](const auto& xmlElement) { create_api_element(api, xmlElement, all.enumerations); });
+        process_xml_elements(*pRegistryXml, "formats", "format", [&](const auto& xmlElement) { create_api_element(api, xmlElement, all.formats); });
+        process_xml_elements(*pRegistryXml, "commands", "command", [&](const auto& xmlElement) { create_api_element(api, xmlElement, all.commands); });
+        process_xml_elements(*pRegistryXml, "feature", [&](const auto& xmlElement) { create_feature(api, xmlElement, all.features); });
+        process_xml_elements(*pRegistryXml, "extensions", "extension", [&](const auto& xmlElement) { create_feature(api, xmlElement, all.extensions); });
         process_xml_elements(*pRegistryXml, "types", "type",
             [&](const auto& typeXmlElement)
             {
                 auto category = get_xml_attribute(typeXmlElement, "category");
                 if (category == "handle") {
-                    create_api_element(typeXmlElement, handles);
+                    create_api_element(api, typeXmlElement, all.handles);
                 } else if (category == "struct" || category == "union") {
-                    create_api_element(typeXmlElement, structures);
+                    create_api_element(api, typeXmlElement, all.structures);
                 } else if (category == "enum") {
                     Enumeration enumeration(typeXmlElement);
                     assert(!enumeration.name.empty());
                     if (!enumeration.alias.empty()) {
-                        enumerations.insert({ enumeration.name, enumeration });
+                        all.enumerations.insert({ enumeration.name, enumeration });
                     }
                 }
             }
         );
 
+        // Copy `platforms`, `vendors`, amd `formats from Manifest `all` to `this`
+        platforms = all.platforms;
+        vendors = all.vendors;
+        formats = all.formats;
+
+        // Copy enabled Features and Extensions from Manifest `all` to `this`.  As
+        //  Features and Extensions are added, all of the ApiElements required for
+        //  each is added...this ensures that every ApiElement required to support the
+        //  desired feature/extension set is present, and that ApiElements that aren't
+        //  required aren't added.
+        add_features_to_manifest(api, all, *this);
+        add_extensions_to_manifest(api, all, *this);
+
+        // After the Manifest is populated, post process ApiElements.  This includes
+        //  setting create/destroy Commands for Handles, setting aliased ApiElements,
+        //  etc.
         post_process_vendors(vendors, handles);
         post_process_vendors(vendors, enumerations);
         post_process_vendors(vendors, structures);
         post_process_vendors(vendors, commands);
         post_process_vendors(vendors, extensions);
-        post_process_extensions(*this);
+        post_process_api_constants(all, *this);
+        post_process_formats(*this);
         post_process_handles(*this);
         post_process_commands(*this);
-        post_process_features(*this);
         post_process_object_types(*this);
         post_process_structure_types(*this);
-        post_process_api_constants(*this);
 
         // NOTE : post_process_enumerations() is called twice...this is because aliased
-        //  entries may be processed before the "real" entry gets processed.  If this
-        //  ever becomes a problem, a collection of all enumerations/enumerators should
-        //  be created from this->enumerations, extensions[...]enumerations, and
-        //  features[...]enumerations, process those together, then repopulate each.
+        //  entries can be processed before the "real" entry gets processed.  If this
+        //  ever becomes a problem, a collection of all Enumerations/Enumerators should
+        //  be created from this->enumerations, this->extensions[...]enumerations, and
+        //  this->features[...]enumerations...process, then repopulate.
         post_process_enumerations(*this);
         post_process_enumerations(*this);
     }

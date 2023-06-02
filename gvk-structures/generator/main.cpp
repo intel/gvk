@@ -30,6 +30,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "create-pnext-copy.generator.hpp"
 #include "decerealize-pnext.generator.hpp"
 #include "destroy-pnext-copy.generator.hpp"
+#include "enumerate-pnext-handles.generator.hpp"
+#include "get-object-type.generator.hpp"
 #include "handle-to-string.generator.hpp"
 #include "pnext-to-string.generator.hpp"
 #include "pnext-tuple-element-wrapper.generator.hpp"
@@ -45,6 +47,8 @@ int main(int, const char*[])
         gvk::cppgen::CreatePNextCopyGenerator::generate(manifest);
         gvk::cppgen::DecerealizePNextGenerator::generate(manifest);
         gvk::cppgen::DestroyPNextCopyGenerator::generate(manifest);
+        gvk::cppgen::EnumeratePNextHandlesGenerator::generate(manifest);
+        gvk::cppgen::GetObjectTypeGenerator::generate(manifest);
         gvk::cppgen::HandleToStringGenerator::generate(manifest);
         gvk::cppgen::PNextToStringGenerator::generate(manifest);
         gvk::cppgen::PNextTupleElementWrapperGenerator::generate(manifest);
@@ -86,8 +90,10 @@ int main(int, const char*[])
         apiElements.manuallyImplemented.insert("VkAccelerationStructureVersionInfoKHR");
         apiElements.manuallyImplemented.insert("VkMicromapBuildInfoEXT");
         apiElements.manuallyImplemented.insert("VkMicromapVersionInfoEXT");
+        apiElements.manuallyImplemented.insert("VkPipelineCacheCreateInfo");
         apiElements.manuallyImplemented.insert("VkPipelineMultisampleStateCreateInfo");
         apiElements.manuallyImplemented.insert("VkShaderModuleCreateInfo");
+        apiElements.manuallyImplemented.insert("VkSpecializationInfo");
         apiElements.manuallyImplemented.insert("VkTransformMatrixKHR");
         // Unions
         apiElements.manuallyImplemented.insert("VkAccelerationStructureGeometryDataKHR");
@@ -104,9 +110,10 @@ int main(int, const char*[])
         gvk::cppgen::StructureComparisonOperatorsGenerator::generate(apiElements);
         gvk::cppgen::StructureCreateCopyGenerator::generate(manifest, apiElements);
         gvk::cppgen::StructureDestroyCopyGenerator::generate(manifest, apiElements);
+        gvk::cppgen::StructureEnumerateHandlesGenerator::generate(manifest, apiElements);
         gvk::cppgen::StructureGetSTypeGenerator::generate(apiElements);
         gvk::cppgen::StructureMakeTupleGenerator::generate(manifest, apiElements);
-        gvk::cppgen::StructureToStringGeneratorEx::generate(manifest, apiElements);
+        gvk::cppgen::StructureToStringGenerator::generate(manifest, apiElements);
 
         // Manually implemented serialization
         apiElements.manuallyImplemented.insert("VkAccelerationStructureInstanceKHR");

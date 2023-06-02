@@ -33,7 +33,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace cppgen {
 
-class StructureToStringGeneratorEx final
+class StructureToStringGenerator final
 {
 public:
     static void generate(const xml::Manifest& manifest, const ApiElementCollectionInfo& apiElements);

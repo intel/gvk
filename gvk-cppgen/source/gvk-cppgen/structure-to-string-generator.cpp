@@ -29,6 +29,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-cppgen/compile-guard-generator.hpp"
 #include "gvk-cppgen/module-generator.hpp"
 #include "gvk-cppgen/namespace-generator.hpp"
+#include "gvk-cppgen/utilities.hpp"
 #include "gvk-string.hpp"
 
 namespace gvk {
@@ -154,7 +155,7 @@ protected:
     }
 };
 
-void StructureToStringGeneratorEx::generate(const xml::Manifest& manifest, const ApiElementCollectionInfo& apiElements)
+void StructureToStringGenerator::generate(const xml::Manifest& manifest, const ApiElementCollectionInfo& apiElements)
 {
     ModuleGenerator module(
         apiElements.includePath,
@@ -166,7 +167,7 @@ void StructureToStringGeneratorEx::generate(const xml::Manifest& manifest, const
     generate_source(module.source, manifest, apiElements);
 }
 
-void StructureToStringGeneratorEx::generate_header(FileGenerator& file, const ApiElementCollectionInfo& apiElements)
+void StructureToStringGenerator::generate_header(FileGenerator& file, const ApiElementCollectionInfo& apiElements)
 {
     file << "#include \"gvk-defines.hpp\"" << std::endl;
     for (const auto& include : apiElements.headerIncludes) {
@@ -183,7 +184,7 @@ void StructureToStringGeneratorEx::generate_header(FileGenerator& file, const Ap
     file << std::endl;
 }
 
-void StructureToStringGeneratorEx::generate_source(FileGenerator& file, const xml::Manifest& manifest, const ApiElementCollectionInfo& apiElements)
+void StructureToStringGenerator::generate_source(FileGenerator& file, const xml::Manifest& manifest, const ApiElementCollectionInfo& apiElements)
 {
     for (const auto& include : apiElements.sourceIncludes) {
         file << "#include \"" << include << "\"" << std::endl;
@@ -202,10 +203,10 @@ void StructureToStringGeneratorEx::generate_source(FileGenerator& file, const xm
             file << "    printer.print_object(" << std::endl;
             file << "        [&]()" << std::endl;
             file << "        {" << std::endl;
-            for (const auto& member : structure.members) {
-                file << "            ";
-                StructureMemberToStringGenerator structureMemberToStringGenerator;
-                file << structureMemberToStringGenerator.generate(manifest, member) << std::endl;
+            for (size_t i = 0; i < structure.members.size(); ++i) {
+                const auto& member = structure.members[i];
+                CompileGuardGenerator memberCompileGuardGenerator(file, get_inner_scope_compile_guards(structure.compileGuards, member.compileGuards));
+                file << "            " << StructureMemberToStringGenerator().generate(manifest, member) << std::endl;
             }
             file << "        }" << std::endl;
             file << "    );" << std::endl;

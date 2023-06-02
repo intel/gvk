@@ -13,11 +13,13 @@ set(generatedIncludeFiles
     "${generatedIncludePath}/core-structure-decerealization.hpp"
     "${generatedIncludePath}/core-structure-deserialization.hpp"
     "${generatedIncludePath}/core-structure-destroy-copy.hpp"
+    "${generatedIncludePath}/core-structure-enumerate-handles.hpp"
     "${generatedIncludePath}/core-structure-get-stype.hpp"
     "${generatedIncludePath}/core-structure-make-tuple.hpp"
     "${generatedIncludePath}/core-structure-serialization.hpp"
     "${generatedIncludePath}/core-structure-to-string.hpp"
     "${generatedIncludePath}/decerealize-pnext.hpp"
+    "${generatedIncludePath}/get-object-type.hpp"
     "${generatedIncludePath}/handle-to-string.hpp"
 )
 set(generatedSourceFiles
@@ -27,9 +29,11 @@ set(generatedSourceFiles
     "${generatedSourcePath}/core-structure-create-copy.cpp"
     "${generatedSourcePath}/core-structure-deserialization.cpp"
     "${generatedSourcePath}/core-structure-destroy-copy.cpp"
+    "${generatedSourcePath}/core-structure-enumerate-handles.cpp"
     "${generatedSourcePath}/core-structure-serialization.cpp"
     "${generatedSourcePath}/core-structure-to-string.cpp"
     "${generatedSourcePath}/destroy-pnext-copy.cpp"
+    "${generatedSourcePath}/enumerate-pnext-handles.cpp"
     "${generatedSourcePath}/handle-to-string.cpp"
     "${generatedSourcePath}/pnext-to-string.cpp"
     "${generatedSourcePath}/pnext-tuple-element-wrapper.cpp"
@@ -49,6 +53,8 @@ gvk_add_code_generator(
         "${generatorSourcePath}/create-pnext-copy.generator.hpp"
         "${generatorSourcePath}/decerealize-pnext.generator.hpp"
         "${generatorSourcePath}/destroy-pnext-copy.generator.hpp"
+        "${generatorSourcePath}/enumerate-pnext-handles.generator.hpp"
+        "${generatorSourcePath}/get-object-type.generator.hpp"
         "${generatorSourcePath}/handle-to-string.generator.hpp"
         "${generatorSourcePath}/pnext-to-string.generator.hpp"
         "${generatorSourcePath}/pnext-tuple-element-wrapper.generator.hpp"
@@ -79,26 +85,29 @@ gvk_add_static_library(
         "gvk-structures/"
     linkLibraries
         gvk-runtime
-        cereal
+        # cereal
     includeDirectories
         "${generatedIncludeDirectory}"
         "${includeDirectory}"
+        "${cerealSourceDirectory}/include/"
     includeFiles
         "${generatedIncludeFiles}"
         "${includePath}/detail/cerealization-manual.hpp"
         "${includePath}/detail/cerealization-utilities.hpp"
         "${includePath}/detail/get-count.hpp"
         "${includePath}/detail/get-stype-utilities.hpp"
+        "${includePath}/detail/handle-enumeration-utilities.hpp"
         "${includePath}/detail/make-tuple-manual.hpp"
         "${includePath}/detail/make-tuple-utilities.hpp"
         "${includePath}/detail/copy-utilities.hpp"
         "${includePath}/detail/to-string-utilities.hpp"
         "${includePath}/auto.hpp"
-        "${includePath}/command-structures.hpp"
         "${includePath}/comparison-operators.hpp"
         "${includePath}/convert.hpp"
         "${includePath}/copy.hpp"
         "${includePath}/defaults.hpp"
+        "${includePath}/enumerate-handles.hpp"
+        "${includePath}/get-object-type.hpp"
         "${includePath}/get-stype.hpp"
         "${includePath}/serialization.hpp"
         "${includePath}/to-string.hpp"
@@ -107,6 +116,7 @@ gvk_add_static_library(
         "${generatedSourceFiles}"
         "${sourcePath}/detail/cerealization-utilities.cpp"
         "${sourcePath}/detail/copy-manual.cpp"
+        "${sourcePath}/detail/handle-enumeration-manual.cpp"
         "${sourcePath}/detail/make-tuple-utilities.cpp"
         "${sourcePath}/detail/to-string-manual.cpp"
         "${sourcePath}/defaults.cpp"
@@ -123,6 +133,7 @@ gvk_add_target_test(
     sourceFiles
         "${testsPath}/comparison-operator.tests.cpp"
         "${testsPath}/copy.tests.cpp"
+        "${testsPath}/handle-enumeration.tests.cpp"
         "${testsPath}/serialization.tests.cpp"
         "${testsPath}/to-string.tests.cpp"
 )

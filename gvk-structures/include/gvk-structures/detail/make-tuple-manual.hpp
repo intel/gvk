@@ -45,15 +45,95 @@ GVK_STUB_MAKE_TUPLE_DEFINITION(VkXlibSurfaceCreateInfoKHR)
 ////////////////////////////////////////////////////////////////////////////////
 // Win32
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-GVK_STUB_MAKE_TUPLE_DEFINITION(SECURITY_ATTRIBUTES)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkExportFenceWin32HandleInfoKHR)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkExportMemoryWin32HandleInfoKHR)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkExportMemoryWin32HandleInfoNV)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkExportSemaphoreWin32HandleInfoKHR)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkImportFenceWin32HandleInfoKHR)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkImportMemoryWin32HandleInfoKHR)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkImportMemoryWin32HandleInfoNV)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkImportSemaphoreWin32HandleInfoKHR)
+inline auto make_tuple(const VkExportFenceWin32HandleInfoKHR& obj)
+{
+    return std::make_tuple(
+        obj.sType,
+        detail::PNextTupleElementWrapper { obj.pNext },
+        obj.pAttributes,
+        obj.dwAccess,
+        detail::WStringTupleElementWrapper { obj.name }
+    );
+}
+
+inline auto make_tuple(const VkExportMemoryWin32HandleInfoKHR& obj)
+{
+    return std::make_tuple(
+        obj.sType,
+        detail::PNextTupleElementWrapper { obj.pNext },
+        obj.pAttributes,
+        obj.dwAccess,
+        detail::WStringTupleElementWrapper { obj.name }
+    );
+}
+
+inline auto make_tuple(const VkExportMemoryWin32HandleInfoNV& obj)
+{
+    return std::make_tuple(
+        obj.sType,
+        detail::PNextTupleElementWrapper { obj.pNext },
+        obj.pAttributes,
+        obj.dwAccess
+    );
+}
+
+inline auto make_tuple(const VkExportSemaphoreWin32HandleInfoKHR& obj)
+{
+    return std::make_tuple(
+        obj.sType,
+        detail::PNextTupleElementWrapper { obj.pNext },
+        obj.pAttributes,
+        obj.dwAccess,
+        detail::WStringTupleElementWrapper { obj.name }
+    );
+}
+
+inline auto make_tuple(const VkImportFenceWin32HandleInfoKHR& obj)
+{
+    return std::make_tuple(
+        obj.sType,
+        detail::PNextTupleElementWrapper { obj.pNext },
+        obj.fence,
+        obj.flags,
+        obj.handleType,
+        obj.handle,
+        detail::WStringTupleElementWrapper { obj.name }
+    );
+}
+
+inline auto make_tuple(const VkImportMemoryWin32HandleInfoKHR& obj)
+{
+    return std::make_tuple(
+        obj.sType,
+        detail::PNextTupleElementWrapper { obj.pNext },
+        obj.handleType,
+        obj.handle,
+        detail::WStringTupleElementWrapper { obj.name }
+    );
+}
+
+inline auto make_tuple(const VkImportMemoryWin32HandleInfoNV& obj)
+{
+    return std::make_tuple(
+        obj.sType,
+        detail::PNextTupleElementWrapper { obj.pNext },
+        obj.handleType,
+        obj.handle
+    );
+}
+
+inline auto make_tuple(const VkImportSemaphoreWin32HandleInfoKHR& obj)
+{
+    return std::make_tuple(
+        obj.sType,
+        detail::PNextTupleElementWrapper { obj.pNext },
+        obj.semaphore,
+        obj.flags,
+        obj.handleType,
+        obj.handle,
+        detail::WStringTupleElementWrapper { obj.name }
+    );
+}
 #endif // VK_USE_PLATFORM_WIN32_KHR
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -79,27 +159,23 @@ GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoDecodeUsageInfoKHR)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeCapabilitiesKHR)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264CapabilitiesEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264DpbSlotInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264EmitPictureParametersInfoEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264FrameSizeEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264NaluSliceInfoEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264ProfileInfoEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264QpEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264RateControlInfoEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264RateControlLayerInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264ReferenceListsInfoEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264SessionParametersAddInfoEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264SessionParametersCreateInfoEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264VclFrameInfoEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265CapabilitiesEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265DpbSlotInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265EmitPictureParametersInfoEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265FrameSizeEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265NaluSliceSegmentInfoEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265ProfileInfoEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265QpEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265RateControlInfoEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265RateControlLayerInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265ReferenceListsInfoEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265SessionParametersAddInfoEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265SessionParametersCreateInfoEXT)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265VclFrameInfoEXT)
@@ -198,6 +274,17 @@ inline auto make_tuple(const VkMicromapVersionInfoEXT& obj)
     );
 }
 
+inline auto make_tuple(const VkPipelineCacheCreateInfo& obj)
+{
+    return std::make_tuple(
+        obj.sType,
+        detail::PNextTupleElementWrapper { obj.pNext },
+        obj.flags,
+        obj.initialDataSize,
+        detail::ArrayTupleElementWrapper<uint8_t> { obj.initialDataSize, (const uint8_t*)obj.pInitialData }
+    );
+}
+
 inline auto make_tuple(const VkPipelineMultisampleStateCreateInfo& obj)
 {
     return std::make_tuple(
@@ -221,6 +308,16 @@ inline auto make_tuple(const VkShaderModuleCreateInfo& obj)
         obj.flags,
         obj.codeSize,
         detail::ArrayTupleElementWrapper<uint32_t>{ obj.codeSize / sizeof(uint32_t), obj.pCode }
+    );
+}
+
+inline auto make_tuple(const VkSpecializationInfo& obj)
+{
+    return std::make_tuple(
+        obj.mapEntryCount,
+        detail::ArrayTupleElementWrapper<VkSpecializationMapEntry> { obj.mapEntryCount, obj.pMapEntries },
+        obj.dataSize,
+        detail::ArrayTupleElementWrapper<uint8_t> { obj.dataSize, (const uint8_t*)obj.pData }
     );
 }
 

@@ -42,6 +42,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-cppgen/structure-decerealization-generator.hpp"
 #include "gvk-cppgen/structure-deserialization-generator.hpp"
 #include "gvk-cppgen/structure-destroy-copy-generator.hpp"
+#include "gvk-cppgen/structure-enumerate-handles-generator.hpp"
 #include "gvk-cppgen/structure-get-stype-generator.hpp"
 #include "gvk-cppgen/structure-make-tuple-generator.hpp"
 #include "gvk-cppgen/structure-serialization-generator.hpp"

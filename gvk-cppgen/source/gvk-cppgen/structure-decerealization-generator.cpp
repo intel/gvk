@@ -28,6 +28,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-cppgen/basic-structure-member-processor-generator.hpp"
 #include "gvk-cppgen/compile-guard-generator.hpp"
 #include "gvk-cppgen/namespace-generator.hpp"
+#include "gvk-cppgen/utilities.hpp"
 #include "gvk-string.hpp"
 
 namespace gvk {
@@ -177,9 +178,10 @@ void StructureDecerealizationGenerator::generate(
             file << "{" << std::endl;
             file << "    (void)archive;" << std::endl;
             file << "    (void)obj;" << std::endl;
-            for (const auto& member : structure.members) {
-                DecerealizeStructureMemberGenerator structureMemberGenerator;
-                auto source = structureMemberGenerator.generate(manifest, member);
+            for (size_t i = 0; i < structure.members.size(); ++i) {
+                const auto& member = structure.members[i];
+                CompileGuardGenerator memberCompileGuardGenerator(file, get_inner_scope_compile_guards(structure.compileGuards, member.compileGuards));
+                auto source = DecerealizeStructureMemberGenerator().generate(manifest, member);
                 if (!source.empty()) {
                     file << "    " << source << std::endl;
                 }

@@ -45,9 +45,19 @@ public:
         auto itr = manifest.enumerations.find("VkFormat");
         assert(itr != manifest.enumerations.end());
         for (const auto& enumerator : itr->second.enumerators) {
-            file << "    if (!processFormat(" << enumerator.name << ")) {" << std::endl;
-            file << "        return;" << std::endl;
-            file << "    }" << std::endl;
+            // NOTE : I'd prefer that enumerate_formats() enumerates all VkFormats, but the
+            //  validation layer has started complaining...
+            //      vkGetPhysicalDeviceFormatProperties2: value of format (...) does not
+            //      fall within the begin..end range of the core VkFormat enumeration
+            //      tokens and is not an extension added token
+            //  ...the check here blocks non-core VkFormats from being enumerated.
+            // TODO : Find a way for enumerate_formats() to know what VkFormats are enabled
+            //  so that all available VkFormats can be enumerated.
+            if (string::to_number<int64_t>(enumerator.value) < xml::Enumerator::ExtensionBaseValue) {
+                file << "    if (!processFormat(" << enumerator.name << ")) {" << std::endl;
+                file << "        return;" << std::endl;
+                file << "    }" << std::endl;
+            }
         }
         file << "}" << std::endl;
         file << std::endl;

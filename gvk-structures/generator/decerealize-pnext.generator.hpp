@@ -45,7 +45,7 @@ public:
         NamespaceGenerator namespaceGenerator(file, "gvk::detail");
         file << std::endl;
         file << "template <typename ArchiveType>" << std::endl;
-        file << "void* decerealize_pnext(ArchiveType& archive)" << std::endl;
+        file << "inline void* decerealize_pnext(ArchiveType& archive)" << std::endl;
         file << "{" << std::endl;
         file << "    void* pNext = nullptr;" << std::endl;
         file << "    bool serialized = false;" << std::endl;
@@ -53,12 +53,17 @@ public:
         file << "    if (serialized) {" << std::endl;
         file << "        VkStructureType sType { };" << std::endl;
         file << "        archive(sType);" << std::endl;
+        file << "        assert(tlpDecerealizationAllocator);" << std::endl;
+        file << "        auto pAllocator = tlpDecerealizationAllocator;" << std::endl;
         generate_pnext_switch(
             file,
             manifest,
             "        ",
             "sType",
-            "pNext = malloc(sizeof({structureType})); archive(*({structureType}*)pNext);",
+            std::vector<std::string> {
+                "pNext = pAllocator->pfnAllocation(pAllocator->pUserData, sizeof({structureType}), 0, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);",
+                "archive(*({structureType}*)pNext);",
+            },
             "assert(false && \"Unrecognized VkStructureType\");"
         );
         file << "    }" << std::endl;

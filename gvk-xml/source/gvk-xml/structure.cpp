@@ -32,15 +32,19 @@ namespace xml {
 
 Structure::Structure(const tinyxml2::XMLElement& xmlElement)
 {
+    apis = get_apis(get_xml_attribute(xmlElement, "api"));
     name = get_xml_attribute(xmlElement, "name");
     alias = get_xml_attribute(xmlElement, "alias");
     isUnion = get_xml_attribute(xmlElement, "category") == "union";
     process_xml_elements(xmlElement, "member",
         [&](const auto& memberXmlElement)
         {
-            members.emplace_back(memberXmlElement);
-            if (members.back().name == "sType") {
-                vkStructureType = get_xml_attribute(memberXmlElement, "values");
+            Parameter member(memberXmlElement);
+            if (apis_compatible(apis, member.apis)) {
+                members.push_back(member);
+                if (members.back().name == "sType") {
+                    vkStructureType = get_xml_attribute(memberXmlElement, "values");
+                }
             }
         }
     );

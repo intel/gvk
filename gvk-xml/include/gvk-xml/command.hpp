@@ -55,7 +55,7 @@ public:
 
     Type type { Type::Common };
     std::string target;
-    std::string returnType{ "void" };
+    std::string returnType { "void" };
     std::vector<std::string> successCodes;
     std::vector<std::string> errorCodes;
     std::vector<Parameter> parameters;
