@@ -1,4 +1,9 @@
 
+VERSION 2023.2.3.0
+--
+-   NEW : gvk-xml updated to be able to select "vulkan" or "vulkansc", default is "vulkan" (VulkanSC is currently unsupported)
+-   REMOVED : gvk no longer configures install via CMake, consuming projects must handle installation if required
+
 VERSION 2023.1.0
 --
 -   NEW : Basic Ubuntu 20.04 support
