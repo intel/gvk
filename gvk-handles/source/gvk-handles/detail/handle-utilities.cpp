@@ -363,6 +363,20 @@ VkResult initialize_control_block<PipelineLayout>(PipelineLayout& pipelineLayout
 }
 
 template <>
+VkResult initialize_control_block<ShaderEXT>(ShaderEXT& shader)
+{
+    auto& shaderControlBlock = shader.mReference.get_obj();
+    const VkShaderCreateInfoEXT& shaderCreateInfo = shaderControlBlock.mShaderCreateInfoEXT;
+    if (shaderCreateInfo.setLayoutCount && shaderCreateInfo.pSetLayouts) {
+        shaderControlBlock.mDescriptorSetLayouts.resize(shaderCreateInfo.setLayoutCount);
+        for (uint32_t i = 0; i < shaderCreateInfo.setLayoutCount; ++i) {
+            shaderControlBlock.mDescriptorSetLayouts[i] = HandleId<VkDevice, VkDescriptorSetLayout>(shaderControlBlock.mDevice, shaderCreateInfo.pSetLayouts[i]);
+        }
+    }
+    return VK_SUCCESS;
+}
+
+template <>
 VkResult initialize_control_block<SurfaceKHR>(SurfaceKHR& surface)
 {
     auto& surfaceControlBlock = surface.mReference.get_obj();

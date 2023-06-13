@@ -29,6 +29,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-structures/defaults.hpp"
 #include "gvk-structures/serialization.hpp"
 #include "gvk-structures/to-string.hpp"
+#include "validate-structure-serialization.hpp"
 
 #ifdef VK_USE_PLATFORM_XLIB_KHR
 #undef None
@@ -58,38 +59,9 @@ Test cases cover the following:
     VkShaderModuleCreateInfo
 */
 
-template <typename VulkanStructureType>
-inline void validate_structure_serialization(const VulkanStructureType& obj, bool printSerializedBytes = false)
-{
-    std::stringstream strStrm(std::ios::binary | std::ios::in | std::ios::out);
-    gvk::serialize(strStrm, obj);
-    if (printSerializedBytes) {
-        std::vector<uint8_t> serialized((std::istream_iterator<uint8_t>(strStrm)), std::istream_iterator<uint8_t>());
-        std::stringstream message;
-        message << serialized.size() << " bytes { ";
-        for (auto byte : serialized) {
-            message << byte << " ";
-        }
-        message << "}";
-        FAIL() << message.str();
-    } else {
-        gvk::Auto<VulkanStructureType> deserialized;
-        gvk::deserialize(strStrm, nullptr, deserialized);
-        if (obj != deserialized) {
-            FAIL()
-                << "===============================================================================" << std::endl
-                << gvk::to_string(obj) << std::endl
-                << "-------------------------------------------------------------------------------" << std::endl
-                << gvk::to_string(deserialized) << std::endl
-                << "===============================================================================" << std::endl
-                << std::endl;
-        }
-    }
-}
-
 TEST(Serialization, Basic)
 {
-    validate_structure_serialization(VkExtent3D{  256, 512, 1024 });
+    gvk::validation::validate_structure_serialization(VkExtent3D{  256, 512, 1024 });
 }
 
 TEST(Serialization, Union)
@@ -99,7 +71,7 @@ TEST(Serialization, Union)
     clearColorValue.float32[1] = 0.5f;
     clearColorValue.float32[2] = 0.5f;
     clearColorValue.float32[3] = 1;
-    validate_structure_serialization(clearColorValue);
+    gvk::validation::validate_structure_serialization(clearColorValue);
 }
 
 TEST(Serialization, UnionWithUnionMember)
@@ -109,7 +81,7 @@ TEST(Serialization, UnionWithUnionMember)
     clearValue.color.float32[1] = 0.5f;
     clearValue.color.float32[2] = 0.5f;
     clearValue.color.float32[3] = 1;
-    validate_structure_serialization(clearValue);
+    gvk::validation::validate_structure_serialization(clearValue);
 }
 
 TEST(Serialization, StructureWithUnionMember)
@@ -121,7 +93,7 @@ TEST(Serialization, StructureWithUnionMember)
     clearAttachment.clearValue.color.float32[1] = 0.5f;
     clearAttachment.clearValue.color.float32[2] = 0.5f;
     clearAttachment.clearValue.color.float32[3] = 1;
-    validate_structure_serialization(clearAttachment);
+    gvk::validation::validate_structure_serialization(clearAttachment);
 }
 
 TEST(Serialization, StructureWithStaticallySizedArrayMember)
@@ -138,7 +110,7 @@ TEST(Serialization, StructureWithStaticallySizedArrayMember)
     intelHD530MemoryProperties.memoryHeaps[0].flags = VK_MEMORY_HEAP_DEVICE_LOCAL_BIT;
     intelHD530MemoryProperties.memoryHeaps[1].size = 1079741824;
     intelHD530MemoryProperties.memoryHeaps[1].flags = VK_MEMORY_HEAP_DEVICE_LOCAL_BIT;
-    validate_structure_serialization(intelHD530MemoryProperties);
+    gvk::validation::validate_structure_serialization(intelHD530MemoryProperties);
 
     VkPhysicalDeviceMemoryProperties nvidiaGTX1070MemoryProperties { };
     nvidiaGTX1070MemoryProperties.memoryTypeCount = 11;
@@ -169,7 +141,7 @@ TEST(Serialization, StructureWithStaticallySizedArrayMember)
     nvidiaGTX1070MemoryProperties.memoryHeaps[0].flags = VK_MEMORY_HEAP_DEVICE_LOCAL_BIT;
     nvidiaGTX1070MemoryProperties.memoryHeaps[1].size = 17012817920;
     nvidiaGTX1070MemoryProperties.memoryHeaps[1].flags = 0;
-    validate_structure_serialization(nvidiaGTX1070MemoryProperties);
+    gvk::validation::validate_structure_serialization(nvidiaGTX1070MemoryProperties);
 }
 
 TEST(Serialization, StructureWithDynamicallySizedArrayMember)
@@ -179,21 +151,21 @@ TEST(Serialization, StructureWithDynamicallySizedArrayMember)
     imageCreateInfo.sharingMode = VK_SHARING_MODE_MAX_ENUM;
     imageCreateInfo.queueFamilyIndexCount = (uint32_t)queueFamilyIndices.size();
     imageCreateInfo.pQueueFamilyIndices = queueFamilyIndices.data();
-    validate_structure_serialization(imageCreateInfo);
+    gvk::validation::validate_structure_serialization(imageCreateInfo);
 }
 
 TEST(Serialization, StructureWithStaticallySizedStringMember)
 {
     VkPhysicalDeviceProperties intelHD530Properties{ };
     strcpy(intelHD530Properties.deviceName, "Intel(R) HD Graphics 530");
-    validate_structure_serialization(intelHD530Properties);
+    gvk::validation::validate_structure_serialization(intelHD530Properties);
 }
 
 TEST(Serialization, StructureWithDynamicallySizedStringMember)
 {
     VkApplicationInfo applicationInfo{ };
     applicationInfo.pApplicationName = "Intel GPA";
-    validate_structure_serialization(applicationInfo);
+    gvk::validation::validate_structure_serialization(applicationInfo);
 }
 
 TEST(Serialization, StructureWithArrayOfStringsMember)
@@ -207,7 +179,7 @@ TEST(Serialization, StructureWithArrayOfStringsMember)
     };
     instanceCreateInfo.enabledLayerCount = (uint32_t)enabledLayerNames0.size();
     instanceCreateInfo.ppEnabledLayerNames = enabledLayerNames0.data();
-    validate_structure_serialization(instanceCreateInfo);
+    gvk::validation::validate_structure_serialization(instanceCreateInfo);
 }
 
 TEST(Serialization, StructureWithPNextMember)
@@ -218,7 +190,7 @@ TEST(Serialization, StructureWithPNextMember)
     importMemoryHostPointerInfo.sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT;
     importMemoryHostPointerInfo.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT;
     memoryAllocateInfo.pNext = &importMemoryHostPointerInfo;
-    validate_structure_serialization(memoryAllocateInfo);
+    gvk::validation::validate_structure_serialization(memoryAllocateInfo);
 }
 
 TEST(Serialization, StructureWithDynamicArrayOfStructureWithDynamicArray)
@@ -248,7 +220,7 @@ TEST(Serialization, StructureWithDynamicArrayOfStructureWithDynamicArray)
         return deviceCreateInfo;
     };
     auto deviceCreateInfo = createDeviceCreateInfo(queuePriorites, deviceQueueCreateInfos);
-    validate_structure_serialization(deviceCreateInfo);
+    gvk::validation::validate_structure_serialization(deviceCreateInfo);
 }
 
 TEST(Serialization, StructureWithPointerToStructure)
@@ -261,7 +233,7 @@ TEST(Serialization, StructureWithPointerToStructure)
     instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     instanceCreateInfo.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
     instanceCreateInfo.pApplicationInfo = &applicationInfo;
-    validate_structure_serialization(instanceCreateInfo);
+    gvk::validation::validate_structure_serialization(instanceCreateInfo);
 }
 
 TEST(Serialization, VkPipelineMultisampleStateCreateInfo)
@@ -273,7 +245,7 @@ TEST(Serialization, VkPipelineMultisampleStateCreateInfo)
     for (size_t i = 0; i < sampleMask0.size(); ++i) {
         sampleMask0[i] = (uint32_t)((i + 1) * 3);
     }
-    validate_structure_serialization(pipelineMultiSampleCreateInfo);
+    gvk::validation::validate_structure_serialization(pipelineMultiSampleCreateInfo);
 }
 
 TEST(Serialization, VkShaderModuleCreateInfo)
@@ -284,5 +256,5 @@ TEST(Serialization, VkShaderModuleCreateInfo)
     auto shaderModuleCreateInfo = gvk::get_default<VkShaderModuleCreateInfo>();
     shaderModuleCreateInfo.codeSize = (uint32_t)spirv.size() * sizeof(uint32_t);
     shaderModuleCreateInfo.pCode = spirv.data();
-    validate_structure_serialization(shaderModuleCreateInfo);
+    gvk::validation::validate_structure_serialization(shaderModuleCreateInfo);
 }

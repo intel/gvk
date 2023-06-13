@@ -35,15 +35,18 @@ namespace state_tracker {
 VkResult StateTracker::post_vkCreatePipelineLayout(VkDevice device, const VkPipelineLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineLayout* pPipelineLayout, VkResult gvkResult)
 {
     if (gvkResult == VK_SUCCESS) {
+        assert(device);
+        assert(pCreateInfo);
+        assert(pPipelineLayout);
         gvkResult = BasicStateTracker::post_vkCreatePipelineLayout(device, pCreateInfo, pAllocator, pPipelineLayout, gvkResult);
         assert(gvkResult == VK_SUCCESS);
         PipelineLayout gvkPipelineLayout({ device, *pPipelineLayout });
         assert(gvkPipelineLayout);
         auto& controlBlock = gvkPipelineLayout.mReference.get_obj();
-        controlBlock.mDescriptorSetLayouts.resize(pCreateInfo->setLayoutCount);
+        controlBlock.mDescriptorSetLayouts.reserve(pCreateInfo->setLayoutCount);
         for (uint32_t setLayout_i = 0; setLayout_i < pCreateInfo->setLayoutCount; ++setLayout_i) {
-            controlBlock.mDescriptorSetLayouts[setLayout_i] = DescriptorSetLayout({ device, pCreateInfo->pSetLayouts[setLayout_i] });
-            assert(controlBlock.mDescriptorSetLayouts[setLayout_i]);
+            controlBlock.mDescriptorSetLayouts.push_back(DescriptorSetLayout({ device, pCreateInfo->pSetLayouts[setLayout_i] }));
+            assert(controlBlock.mDescriptorSetLayouts.back());
         }
     }
     return gvkResult;
@@ -54,18 +57,22 @@ VkResult StateTracker::post_vkCreateComputePipelines(VkDevice device, VkPipeline
     if (gvkResult == VK_SUCCESS) {
         Device gvkDevice = device;
         assert(gvkDevice);
-        for (uint32_t pipeline_i = 0; pipeline_i < createInfoCount; ++pipeline_i) {
+        assert(createInfoCount);
+        assert(pCreateInfos);
+        assert(pPipelines);
+        for (uint32_t createInfo_i = 0; createInfo_i < createInfoCount; ++createInfo_i) {
+            const auto& createInfo = pCreateInfos[createInfo_i];
             Pipeline gvkPipeline;
-            gvkPipeline.mReference.reset(gvk::newref, gvk::HandleId<VkDevice, VkPipeline>(device, pPipelines[pipeline_i]));
+            gvkPipeline.mReference.reset(gvk::newref, gvk::HandleId<VkDevice, VkPipeline>(device, pPipelines[createInfo_i]));
             auto& controlBlock = gvkPipeline.mReference.get_obj();
             controlBlock.mStateTrackedObjectInfo.flags = GVK_STATE_TRACKED_OBJECT_STATUS_ACTIVE_BIT;
-            controlBlock.mVkPipeline = pPipelines[pipeline_i];
+            controlBlock.mVkPipeline = pPipelines[createInfo_i];
             controlBlock.mDevice = gvkDevice;
             controlBlock.mPipelineCache = PipelineCache({ device, pipelineCache });
-            controlBlock.mPipelineLayout = PipelineLayout({ device, pCreateInfos[pipeline_i].layout });
+            controlBlock.mPipelineLayout = PipelineLayout({ device, createInfo.layout });
             controlBlock.mAllocationCallbacks = pAllocator ? *pAllocator : VkAllocationCallbacks { };
-            controlBlock.mComputePipelineCreateInfo = pCreateInfos[pipeline_i];
-            controlBlock.mShaderModules.push_back(ShaderModule({ device, pCreateInfos[pipeline_i].stage.module }));
+            controlBlock.mComputePipelineCreateInfo = createInfo;
+            controlBlock.mShaderModules.push_back(ShaderModule({ device, createInfo.stage.module }));
             assert(controlBlock.mShaderModules.back());
             gvkDevice.mReference.get_obj().mPipelineTracker.insert(gvkPipeline);
         }
@@ -78,20 +85,25 @@ VkResult StateTracker::post_vkCreateGraphicsPipelines(VkDevice device, VkPipelin
     if (gvkResult == VK_SUCCESS) {
         Device gvkDevice = device;
         assert(gvkDevice);
-        for (uint32_t pipeline_i = 0; pipeline_i < createInfoCount; ++pipeline_i) {
+        assert(createInfoCount);
+        assert(pCreateInfos);
+        assert(pPipelines);
+        for (uint32_t createInfo_i = 0; createInfo_i < createInfoCount; ++createInfo_i) {
+            const auto& createInfo = pCreateInfos[createInfo_i];
             Pipeline gvkPipeline;
-            gvkPipeline.mReference.reset(gvk::newref, gvk::HandleId<VkDevice, VkPipeline>(device, pPipelines[pipeline_i]));
+            gvkPipeline.mReference.reset(gvk::newref, gvk::HandleId<VkDevice, VkPipeline>(device, pPipelines[createInfo_i]));
             auto& controlBlock = gvkPipeline.mReference.get_obj();
             controlBlock.mStateTrackedObjectInfo.flags = GVK_STATE_TRACKED_OBJECT_STATUS_ACTIVE_BIT;
-            controlBlock.mVkPipeline = pPipelines[pipeline_i];
+            controlBlock.mVkPipeline = pPipelines[createInfo_i];
             controlBlock.mDevice = gvkDevice;
             controlBlock.mPipelineCache = PipelineCache({ device, pipelineCache });
-            controlBlock.mPipelineLayout = PipelineLayout({ device, pCreateInfos[pipeline_i].layout });
-            controlBlock.mRenderPass = RenderPass({ device, pCreateInfos[pipeline_i].renderPass });
+            controlBlock.mPipelineLayout = PipelineLayout({ device, createInfo.layout });
+            controlBlock.mRenderPass = RenderPass({ device, createInfo.renderPass });
             controlBlock.mAllocationCallbacks = pAllocator ? *pAllocator : VkAllocationCallbacks { };
-            controlBlock.mGraphicsPipelineCreateInfo = pCreateInfos[pipeline_i];
-            for (uint32_t stage_i = 0; stage_i < pCreateInfos[pipeline_i].stageCount; ++stage_i) {
-                controlBlock.mShaderModules.push_back(ShaderModule({ device, pCreateInfos[pipeline_i].pStages[stage_i].module }));
+            controlBlock.mGraphicsPipelineCreateInfo = createInfo;
+            controlBlock.mShaderModules.reserve(createInfo.stageCount);
+            for (uint32_t stage_i = 0; stage_i < createInfo.stageCount; ++stage_i) {
+                controlBlock.mShaderModules.push_back(ShaderModule({ device, createInfo.pStages[stage_i].module }));
                 assert(controlBlock.mShaderModules.back());
             }
             gvkDevice.mReference.get_obj().mPipelineTracker.insert(gvkPipeline);
@@ -105,20 +117,25 @@ VkResult StateTracker::post_vkCreateRayTracingPipelinesKHR(VkDevice device, VkDe
     if (gvkResult == VK_SUCCESS) {
         Device gvkDevice = device;
         assert(gvkDevice);
-        for (uint32_t pipeline_i = 0; pipeline_i < createInfoCount; ++pipeline_i) {
+        assert(createInfoCount);
+        assert(pCreateInfos);
+        assert(pPipelines);
+        for (uint32_t createInfo_i = 0; createInfo_i < createInfoCount; ++createInfo_i) {
+            const auto& createInfo = pCreateInfos[createInfo_i];
             Pipeline gvkPipeline;
-            gvkPipeline.mReference.reset(gvk::newref, gvk::HandleId<VkDevice, VkPipeline>(device, pPipelines[pipeline_i]));
+            gvkPipeline.mReference.reset(gvk::newref, gvk::HandleId<VkDevice, VkPipeline>(device, pPipelines[createInfo_i]));
             auto& controlBlock = gvkPipeline.mReference.get_obj();
             controlBlock.mStateTrackedObjectInfo.flags = GVK_STATE_TRACKED_OBJECT_STATUS_ACTIVE_BIT;
-            controlBlock.mVkPipeline = pPipelines[pipeline_i];
+            controlBlock.mVkPipeline = pPipelines[createInfo_i];
             controlBlock.mDevice = gvkDevice;
             controlBlock.mDeferredOperationKHR = DeferredOperationKHR({ device, deferredOperation });
             controlBlock.mPipelineCache = PipelineCache({ device, pipelineCache });
-            controlBlock.mPipelineLayout = PipelineLayout({ device, pCreateInfos[pipeline_i].layout });
+            controlBlock.mPipelineLayout = PipelineLayout({ device, createInfo.layout });
             controlBlock.mAllocationCallbacks = pAllocator ? *pAllocator : VkAllocationCallbacks { };
-            controlBlock.mRayTracingPipelineCreateInfoKHR = pCreateInfos[pipeline_i];
-            for (uint32_t stage_i = 0; stage_i < pCreateInfos[pipeline_i].stageCount; ++stage_i) {
-                controlBlock.mShaderModules.push_back(ShaderModule({ device, pCreateInfos[pipeline_i].pStages[stage_i].module }));
+            controlBlock.mRayTracingPipelineCreateInfoKHR = createInfo;
+            controlBlock.mShaderModules.reserve(createInfo.stageCount);
+            for (uint32_t stage_i = 0; stage_i < createInfo.stageCount; ++stage_i) {
+                controlBlock.mShaderModules.push_back(ShaderModule({ device, createInfo.pStages[stage_i].module }));
                 assert(controlBlock.mShaderModules.back());
             }
             gvkDevice.mReference.get_obj().mPipelineTracker.insert(gvkPipeline);
@@ -132,19 +149,24 @@ VkResult StateTracker::post_vkCreateRayTracingPipelinesNV(VkDevice device, VkPip
     if (gvkResult == VK_SUCCESS) {
         Device gvkDevice = device;
         assert(gvkDevice);
-        for (uint32_t pipeline_i = 0; pipeline_i < createInfoCount; ++pipeline_i) {
+        assert(createInfoCount);
+        assert(pCreateInfos);
+        assert(pPipelines);
+        for (uint32_t createInfo_i = 0; createInfo_i < createInfoCount; ++createInfo_i) {
+            const auto& createInfo = pCreateInfos[createInfo_i];
             Pipeline gvkPipeline;
-            gvkPipeline.mReference.reset(gvk::newref, gvk::HandleId<VkDevice, VkPipeline>(device, pPipelines[pipeline_i]));
+            gvkPipeline.mReference.reset(gvk::newref, gvk::HandleId<VkDevice, VkPipeline>(device, pPipelines[createInfo_i]));
             auto& controlBlock = gvkPipeline.mReference.get_obj();
             controlBlock.mStateTrackedObjectInfo.flags = GVK_STATE_TRACKED_OBJECT_STATUS_ACTIVE_BIT;
-            controlBlock.mVkPipeline = pPipelines[pipeline_i];
+            controlBlock.mVkPipeline = pPipelines[createInfo_i];
             controlBlock.mDevice = gvkDevice;
             controlBlock.mPipelineCache = PipelineCache({ device, pipelineCache });
-            controlBlock.mPipelineLayout = PipelineLayout({ device, pCreateInfos[pipeline_i].layout });
+            controlBlock.mPipelineLayout = PipelineLayout({ device, createInfo.layout });
             controlBlock.mAllocationCallbacks = pAllocator ? *pAllocator : VkAllocationCallbacks { };
-            controlBlock.mRayTracingPipelineCreateInfoNV = pCreateInfos[pipeline_i];
-            for (uint32_t stage_i = 0; stage_i < pCreateInfos[pipeline_i].stageCount; ++stage_i) {
-                controlBlock.mShaderModules.push_back(ShaderModule({ device, pCreateInfos[pipeline_i].pStages[stage_i].module }));
+            controlBlock.mRayTracingPipelineCreateInfoNV = createInfo;
+            controlBlock.mShaderModules.reserve(createInfo.stageCount);
+            for (uint32_t stage_i = 0; stage_i < createInfo.stageCount; ++stage_i) {
+                controlBlock.mShaderModules.push_back(ShaderModule({ device, createInfo.pStages[stage_i].module }));
                 assert(controlBlock.mShaderModules.back());
             }
             gvkDevice.mReference.get_obj().mPipelineTracker.insert(gvkPipeline);

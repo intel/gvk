@@ -91,6 +91,7 @@ gvk_add_layer(
         "${sourcePath}/image.cpp"
         "${sourcePath}/instance.cpp"
         "${sourcePath}/pipeline.cpp"
+        "${sourcePath}/shader.cpp"
         "${sourcePath}/state-tracked-handle-utilities.cpp"
         "${sourcePath}/state-tracker.cpp"
         "${sourcePath}/swapchain.cpp"

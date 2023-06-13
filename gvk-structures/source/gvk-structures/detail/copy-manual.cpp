@@ -238,6 +238,22 @@ template <> void destroy_structure_copy<VkAccelerationStructureBuildGeometryInfo
     destroy_dynamic_pointer_array_copy(obj.geometryCount, obj.ppGeometries, pAllocator);
 }
 
+template <> VkAccelerationStructureTrianglesDisplacementMicromapNV create_structure_copy<VkAccelerationStructureTrianglesDisplacementMicromapNV>(const VkAccelerationStructureTrianglesDisplacementMicromapNV& obj, const VkAllocationCallbacks* pAllocator)
+{
+    auto result = obj;
+    result.pNext = create_pnext_copy(obj.pNext, pAllocator);
+    result.pUsageCounts = create_dynamic_array_copy(obj.usageCountsCount, obj.pUsageCounts, pAllocator);
+    result.ppUsageCounts = create_dynamic_pointer_array_copy(obj.usageCountsCount, obj.ppUsageCounts, pAllocator);
+    return result;
+}
+
+template <> void destroy_structure_copy<VkAccelerationStructureTrianglesDisplacementMicromapNV>(const VkAccelerationStructureTrianglesDisplacementMicromapNV& obj, const VkAllocationCallbacks* pAllocator)
+{
+    destroy_pnext_copy(obj.pNext, pAllocator);
+    destroy_dynamic_array_copy(obj.usageCountsCount, obj.pUsageCounts, pAllocator);
+    destroy_dynamic_pointer_array_copy(obj.usageCountsCount, obj.ppUsageCounts, pAllocator);
+}
+
 template <> VkAccelerationStructureTrianglesOpacityMicromapEXT create_structure_copy<VkAccelerationStructureTrianglesOpacityMicromapEXT>(const VkAccelerationStructureTrianglesOpacityMicromapEXT& obj, const VkAllocationCallbacks* pAllocator)
 {
     auto result = obj;
@@ -326,6 +342,28 @@ template <> void destroy_structure_copy<VkPipelineMultisampleStateCreateInfo>(co
 {
     destroy_pnext_copy(obj.pNext, pAllocator);
     destroy_dynamic_array_copy((obj.rasterizationSamples + 31) / 32, obj.pSampleMask, pAllocator);
+}
+
+template <> VkShaderCreateInfoEXT create_structure_copy<VkShaderCreateInfoEXT>(const VkShaderCreateInfoEXT& obj, const VkAllocationCallbacks* pAllocator)
+{
+    auto result = obj;
+    result.pNext = (const void*)create_pnext_copy(obj.pNext, pAllocator);
+    result.pCode = create_dynamic_array_copy(obj.codeSize, (uint8_t*)obj.pCode, pAllocator);
+    result.pName = create_dynamic_string_copy(obj.pName, pAllocator);
+    result.pSetLayouts = create_dynamic_array_copy(obj.setLayoutCount, obj.pSetLayouts, pAllocator);
+    result.pPushConstantRanges = create_dynamic_array_copy(obj.pushConstantRangeCount, obj.pPushConstantRanges, pAllocator);
+    result.pSpecializationInfo = create_dynamic_array_copy(1, obj.pSpecializationInfo, pAllocator);
+    return result;
+}
+
+template <> void destroy_structure_copy<VkShaderCreateInfoEXT>(const VkShaderCreateInfoEXT& obj, const VkAllocationCallbacks* pAllocator)
+{
+    destroy_pnext_copy(obj.pNext, pAllocator);
+    destroy_dynamic_array_copy(obj.codeSize, (uint8_t*)obj.pCode, pAllocator);
+    destroy_dynamic_string_copy(obj.pName, pAllocator);
+    destroy_dynamic_array_copy(obj.setLayoutCount, obj.pSetLayouts, pAllocator);
+    destroy_dynamic_array_copy(obj.pushConstantRangeCount, obj.pPushConstantRanges, pAllocator);
+    destroy_dynamic_array_copy(1, obj.pSpecializationInfo, pAllocator);
 }
 
 template <> VkShaderModuleCreateInfo create_structure_copy<VkShaderModuleCreateInfo>(const VkShaderModuleCreateInfo& obj, const VkAllocationCallbacks* pAllocator)

@@ -356,6 +356,52 @@ inline void load(ArchiveType& archive, VkAccelerationStructureBuildGeometryInfoK
 }
 
 template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkAccelerationStructureTrianglesDisplacementMicromapNV& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+    archive(obj.displacementBiasAndScaleFormat);
+    archive(obj.displacementVectorFormat);
+    archive(obj.displacementBiasAndScaleBuffer);
+    archive(obj.displacementBiasAndScaleStride);
+    archive(obj.displacementVectorBuffer);
+    archive(obj.displacementVectorStride);
+    archive(obj.displacedMicromapPrimitiveFlags);
+    archive(obj.displacedMicromapPrimitiveFlagsStride);
+    archive(obj.indexType);
+    archive(obj.indexBuffer);
+    archive(obj.indexStride);
+    archive(obj.baseTriangle);
+    archive(obj.usageCountsCount);
+    gvk::detail::cerealize_dynamic_array(archive, obj.usageCountsCount, obj.pUsageCounts);
+    gvk::detail::cerealize_dynamic_pointer_array(archive, obj.usageCountsCount, obj.ppUsageCounts);
+    gvk::detail::cerealize_handle(archive, obj.micromap);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkAccelerationStructureTrianglesDisplacementMicromapNV& obj)
+{
+    archive(obj.sType);
+    obj.pNext = gvk::detail::decerealize_pnext(archive);
+    archive(obj.displacementBiasAndScaleFormat);
+    archive(obj.displacementVectorFormat);
+    archive(obj.displacementBiasAndScaleBuffer);
+    archive(obj.displacementBiasAndScaleStride);
+    archive(obj.displacementVectorBuffer);
+    archive(obj.displacementVectorStride);
+    archive(obj.displacedMicromapPrimitiveFlags);
+    archive(obj.displacedMicromapPrimitiveFlagsStride);
+    archive(obj.indexType);
+    archive(obj.indexBuffer);
+    archive(obj.indexStride);
+    archive(obj.baseTriangle);
+    archive(obj.usageCountsCount);
+    obj.pUsageCounts = gvk::detail::decerealize_dynamic_array<VkMicromapUsageEXT>(archive);
+    obj.ppUsageCounts = gvk::detail::decerealize_dynamic_pointer_array<VkMicromapUsageEXT>(archive);
+    obj.micromap = gvk::detail::decerealize_handle<VkMicromapEXT>(archive);
+}
+
+template <typename ArchiveType>
 inline void save(ArchiveType& archive, const VkAccelerationStructureTrianglesOpacityMicromapEXT& obj)
 {
     archive(obj.sType);
@@ -501,6 +547,44 @@ inline void load(ArchiveType& archive, VkPipelineMultisampleStateCreateInfo& obj
     obj.pSampleMask = gvk::detail::decerealize_dynamic_array<VkSampleMask>(archive);
     archive(obj.alphaToCoverageEnable);
     archive(obj.alphaToOneEnable);
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkShaderCreateInfoEXT& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+    archive(obj.flags);
+    archive(obj.stage);
+    archive(obj.nextStage);
+    archive(obj.codeType);
+    archive(obj.codeSize);
+    gvk::detail::cerealize_dynamic_array(archive, obj.codeSize, (const uint8_t*)obj.pCode);
+    gvk::detail::cerealize_dynamic_string(archive, obj.pName);
+    archive(obj.setLayoutCount);
+    gvk::detail::cerealize_dynamic_handle_array(archive, obj.setLayoutCount, obj.pSetLayouts);
+    archive(obj.pushConstantRangeCount);
+    gvk::detail::cerealize_dynamic_array(archive, obj.pushConstantRangeCount, obj.pPushConstantRanges);
+    gvk::detail::cerealize_dynamic_array(archive, 1, obj.pSpecializationInfo);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkShaderCreateInfoEXT& obj)
+{
+    archive(obj.sType);
+    obj.pNext = gvk::detail::decerealize_pnext(archive);
+    archive(obj.flags);
+    archive(obj.stage);
+    archive(obj.nextStage);
+    archive(obj.codeType);
+    archive(obj.codeSize);
+    obj.pCode = gvk::detail::decerealize_dynamic_array<uint8_t>(archive);
+    obj.pName = gvk::detail::decerealize_dynamic_string(archive);
+    archive(obj.setLayoutCount);
+    obj.pSetLayouts = gvk::detail::decerealize_dynamic_handle_array<VkDescriptorSetLayout>(archive);
+    archive(obj.pushConstantRangeCount);
+    obj.pPushConstantRanges = gvk::detail::decerealize_dynamic_array<VkPushConstantRange>(archive);
+    obj.pSpecializationInfo = gvk::detail::decerealize_dynamic_array<VkSpecializationInfo>(archive);
 }
 
 template <typename ArchiveType>

@@ -110,6 +110,7 @@ private:
             "VkCommandBuffer",
             "VkDescriptorSet",
             "VkDisplayModeKHR",
+            "VkShaderEXT",
             "VkSurfaceKHR",
             "VkSwapchainKHR",
         };

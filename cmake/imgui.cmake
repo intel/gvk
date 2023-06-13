@@ -6,7 +6,7 @@ include(FetchContent)
 FetchContent_Declare(
     imgui
     GIT_REPOSITORY "https://github.com/ocornut/imgui.git"
-    GIT_TAG 1ebb91382757777382b3629ced2a573996e46453 # 1.89.5
+    GIT_TAG 5319d1cffafd5045c4742892c38c9e5cfa23d195 # 1.89.6
     GIT_PROGRESS TRUE
 )
 FetchContent_MakeAvailable(imgui)

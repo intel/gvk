@@ -136,4 +136,6 @@ gvk_add_target_test(
         "${testsPath}/handle-enumeration.tests.cpp"
         "${testsPath}/serialization.tests.cpp"
         "${testsPath}/to-string.tests.cpp"
+        "${testsPath}/validate-structure-serialization.hpp"
+        "${testsPath}/validation-allocator.hpp"
 )

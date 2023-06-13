@@ -119,6 +119,10 @@ public:
     VkResult post_vkCreateRayTracingPipelinesNV(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkRayTracingPipelineCreateInfoNV* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines, VkResult gvkResult) override final;
 
     ///////////////////////////////////////////////////////////////////////////////
+    // Defined in /source/gvk-state-tracker/shader.cpp
+    VkResult post_vkCreateShadersEXT(VkDevice device, uint32_t createInfoCount, const VkShaderCreateInfoEXT* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkShaderEXT* pShaders, VkResult gvkResult) override final;
+
+    ///////////////////////////////////////////////////////////////////////////////
     // Defined in /source/gvk-state-tracker/query-pool.cpp
 #if 0
     VkResult post_vkCreateQueryPool(VkDevice device, const VkQueryPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkQueryPool* pQueryPool, VkResult gvkResult) override final;

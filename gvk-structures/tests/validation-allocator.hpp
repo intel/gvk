@@ -24,16 +24,60 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "gvk-xml.hpp"
-#include "handles.generator.hpp"
+#pragma once
 
-int main(int, const char*[])
+#define _CRT_SECURE_NO_WARNINGS
+
+#include "gvk-defines.hpp"
+
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+#undef None
+#undef Bool
+#endif
+#include "gtest/gtest.h"
+
+namespace gvk {
+namespace validation {
+
+class Allocator
 {
-    tinyxml2::XMLDocument xmlDocument;
-    auto xmlResult = xmlDocument.LoadFile(GVK_XML_FILE_PATH);
-    if (xmlResult == tinyxml2::XML_SUCCESS) {
-        gvk::xml::Manifest manifest(xmlDocument);
-        gvk::cppgen::HandlesGenerator::generate(manifest);
+public:
+    inline Allocator()
+    {
+        mAllocationCallbacks.pUserData = this;
+        mAllocationCallbacks.pfnAllocation = validate_allocation;
+        mAllocationCallbacks.pfnFree = validate_free;
     }
-    return 0;
-}
+
+    inline ~Allocator()
+    {
+        if (!mAllocations.empty()) {
+            ADD_FAILURE();
+        }
+    }
+
+    inline const VkAllocationCallbacks& get_allocation_callbacks() const
+    {
+        return mAllocationCallbacks;
+    }
+
+    inline static void* validate_allocation(void* pUserData, size_t size, size_t, VkSystemAllocationScope)
+    {
+        auto pMemory = malloc(size);
+        ((Allocator*)pUserData)->mAllocations.insert(pMemory);
+        return pMemory;
+    }
+
+    inline static void validate_free(void* pUserData, void* pMemory)
+    {
+        ((Allocator*)pUserData)->mAllocations.erase(pMemory);
+        free(pMemory);
+    }
+
+private:
+    VkAllocationCallbacks mAllocationCallbacks{ };
+    std::set<void*> mAllocations;
+};
+
+} // namespace validation
+} // namespace gvk

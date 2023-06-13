@@ -215,6 +215,30 @@ inline auto make_tuple(const VkAccelerationStructureBuildGeometryInfoKHR& obj)
     );
 }
 
+inline auto make_tuple(const VkAccelerationStructureTrianglesDisplacementMicromapNV& obj)
+{
+    return std::make_tuple(
+        obj.sType,
+        detail::PNextTupleElementWrapper { obj.pNext },
+        obj.displacementBiasAndScaleFormat,
+        obj.displacementVectorFormat,
+        obj.displacementBiasAndScaleBuffer,
+        obj.displacementBiasAndScaleStride,
+        obj.displacementVectorBuffer,
+        obj.displacementVectorStride,
+        obj.displacedMicromapPrimitiveFlags,
+        obj.displacedMicromapPrimitiveFlagsStride,
+        obj.indexType,
+        obj.indexBuffer,
+        obj.indexStride,
+        obj.baseTriangle,
+        obj.usageCountsCount,
+        detail::ArrayTupleElementWrapper<VkMicromapUsageEXT> { (size_t)obj.usageCountsCount, obj.pUsageCounts },
+        detail::PointerArrayTupleElementWrapper<VkMicromapUsageEXT> { (size_t)obj.usageCountsCount, obj.ppUsageCounts },
+        obj.micromap
+    );
+}
+
 inline auto make_tuple(const VkAccelerationStructureTrianglesOpacityMicromapEXT& obj)
 {
     return std::make_tuple(
@@ -297,6 +321,26 @@ inline auto make_tuple(const VkPipelineMultisampleStateCreateInfo& obj)
         detail::ArrayTupleElementWrapper<VkSampleMask>{ ((size_t)obj.rasterizationSamples + 31) / 32, obj.pSampleMask },
         obj.alphaToCoverageEnable,
         obj.alphaToOneEnable
+    );
+}
+
+inline auto make_tuple(const VkShaderCreateInfoEXT& obj)
+{
+    return std::make_tuple(
+        obj.sType,
+        detail::PNextTupleElementWrapper { obj.pNext },
+        obj.flags,
+        obj.stage,
+        obj.nextStage,
+        obj.codeType,
+        obj.codeSize,
+        detail::ArrayTupleElementWrapper<uint8_t> { obj.codeSize, (const uint8_t*)obj.pCode },
+        detail::StringTupleElementWrapper { obj.pName },
+        obj.setLayoutCount,
+        detail::ArrayTupleElementWrapper<VkDescriptorSetLayout> { obj.setLayoutCount, obj.pSetLayouts },
+        obj.pushConstantRangeCount,
+        detail::ArrayTupleElementWrapper<VkPushConstantRange> { obj.pushConstantRangeCount, obj.pPushConstantRanges },
+        detail::ArrayTupleElementWrapper<VkSpecializationInfo> { 1, obj.pSpecializationInfo }
     );
 }
 

@@ -28,6 +28,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-structures/comparison-operators.hpp"
 #include "gvk-structures/copy.hpp"
+#include "gvk-structures/serialization.hpp"
+#include "validate-structure-serialization.hpp"
+#include "validation-allocator.hpp"
 
 #ifdef VK_USE_PLATFORM_XLIB_KHR
 #undef None
@@ -38,53 +41,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <array>
 #include <cstdlib>
 
-class ValidationAllocator
-{
-public:
-    inline ValidationAllocator()
-    {
-        mAllocationCallbacks.pUserData = this;
-        mAllocationCallbacks.pfnAllocation = validate_allocation;
-        mAllocationCallbacks.pfnFree = validate_free;
-    }
-
-    inline ~ValidationAllocator()
-    {
-        if (!mAllocations.empty()) {
-            ADD_FAILURE();
-        }
-    }
-
-    inline const VkAllocationCallbacks& get_allocation_callbacks() const
-    {
-        return mAllocationCallbacks;
-    }
-
-    inline static void* validate_allocation(void* pUserData, size_t size, size_t, VkSystemAllocationScope)
-    {
-        auto pMemory = malloc(size);
-        ((ValidationAllocator*)pUserData)->mAllocations.insert(pMemory);
-        return pMemory;
-    }
-
-    inline static void validate_free(void* pUserData, void* pMemory)
-    {
-        ((ValidationAllocator*)pUserData)->mAllocations.erase(pMemory);
-        free(pMemory);
-    }
-
-private:
-    VkAllocationCallbacks mAllocationCallbacks{ };
-    std::set<void*> mAllocations;
-};
-
 TEST(create_structure_copy, Basic)
 {
     VkExtent3D extent3d { };
     extent3d.width = 256;
     extent3d.height = 512;
     extent3d.depth = 1024;
-    ValidationAllocator allocator;
+    gvk::validation::Allocator allocator;
     auto copy = gvk::detail::create_structure_copy(extent3d, &allocator.get_allocation_callbacks());
     EXPECT_EQ(extent3d, copy);
 }
@@ -96,7 +59,7 @@ TEST(create_structure_copy, Union)
     clearColorValue.float32[1] = 0.5f;
     clearColorValue.float32[2] = 0.5f;
     clearColorValue.float32[3] = 1;
-    ValidationAllocator allocator;
+    gvk::validation::Allocator allocator;
     auto copy = gvk::detail::create_structure_copy(clearColorValue, &allocator.get_allocation_callbacks());
     EXPECT_EQ(clearColorValue, copy);
 }
@@ -110,7 +73,7 @@ TEST(create_structure_copy, StructureWithUnionMember)
     clearAttachment.clearValue.color.float32[1] = 0.5f;
     clearAttachment.clearValue.color.float32[2] = 0.5f;
     clearAttachment.clearValue.color.float32[3] = 1;
-    ValidationAllocator allocator;
+    gvk::validation::Allocator allocator;
     auto copy = gvk::detail::create_structure_copy(clearAttachment, &allocator.get_allocation_callbacks());
     EXPECT_EQ(clearAttachment, copy);
 }
@@ -129,7 +92,7 @@ TEST(create_structure_copy, StructureWithStaticallySizedArrayMember)
     intelHD530MemoryProperties.memoryHeaps[0].flags = VK_MEMORY_HEAP_DEVICE_LOCAL_BIT;
     intelHD530MemoryProperties.memoryHeaps[1].size = 1079741824;
     intelHD530MemoryProperties.memoryHeaps[1].flags = VK_MEMORY_HEAP_DEVICE_LOCAL_BIT;
-    ValidationAllocator allocator;
+    gvk::validation::Allocator allocator;
     auto copy = gvk::detail::create_structure_copy(intelHD530MemoryProperties, &allocator.get_allocation_callbacks());
     EXPECT_EQ(intelHD530MemoryProperties, copy);
 }
@@ -140,7 +103,7 @@ TEST(create_structure_copy, StructureWithDynamicallySizedArrayMember)
     std::array<uint32_t, 4> queueFamilyIndices { 1, 4, 6, 8 };
     imageCreateInfo.queueFamilyIndexCount = (uint32_t)queueFamilyIndices.size();
     imageCreateInfo.pQueueFamilyIndices = queueFamilyIndices.data();
-    ValidationAllocator allocator;
+    gvk::validation::Allocator allocator;
     auto copy = gvk::detail::create_structure_copy(imageCreateInfo, &allocator.get_allocation_callbacks());
     EXPECT_EQ(imageCreateInfo, copy);
     queueFamilyIndices[0] = 4;
@@ -155,7 +118,7 @@ TEST(create_structure_copy, StructureWithStaticallySizedStringMember)
 {
     VkPhysicalDeviceProperties intelHD530Properties { };
     strcpy(intelHD530Properties.deviceName, "Intel(R) HD Graphics 530");
-    ValidationAllocator allocator;
+    gvk::validation::Allocator allocator;
     auto copy = gvk::detail::create_structure_copy(intelHD530Properties, &allocator.get_allocation_callbacks());
     EXPECT_EQ(intelHD530Properties, copy);
 }
@@ -164,7 +127,7 @@ TEST(create_structure_copy, StructureWithDynamicallySizedStringMember)
 {
     VkApplicationInfo applicationInfo { };
     applicationInfo.pApplicationName = "Intel GPA";
-    ValidationAllocator allocator;
+    gvk::validation::Allocator allocator;
     auto copy = gvk::detail::create_structure_copy(applicationInfo, &allocator.get_allocation_callbacks());
     EXPECT_EQ(applicationInfo, copy);
     applicationInfo.pApplicationName = "Intel GPA Player";
@@ -183,7 +146,7 @@ TEST(create_structure_copy, StructureWithArrayOfStringsMember)
     };
     instanceCreateInfo.enabledLayerCount = (uint32_t)enabledLayerNames.size();
     instanceCreateInfo.ppEnabledLayerNames = enabledLayerNames.data();
-    ValidationAllocator allocator;
+    gvk::validation::Allocator allocator;
     auto copy = gvk::detail::create_structure_copy(instanceCreateInfo, &allocator.get_allocation_callbacks());
     EXPECT_EQ(instanceCreateInfo, copy);
     enabledLayerNames[2] = "VK_LAYER_4";
@@ -201,7 +164,7 @@ TEST(create_structure_copy, StructureWithPNextMember)
     float hostAllocation;
     importMemoryHostPointerInfo.pHostPointer = &hostAllocation;
     memoryAllocateInfo.pNext = &importMemoryHostPointerInfo;
-    ValidationAllocator allocator;
+    gvk::validation::Allocator allocator;
     auto copy = gvk::detail::create_structure_copy(memoryAllocateInfo, &allocator.get_allocation_callbacks());
     EXPECT_EQ(memoryAllocateInfo, copy);
     importMemoryHostPointerInfo.pHostPointer = nullptr;
@@ -227,7 +190,7 @@ TEST(create_structure_copy, StructureWithEmbeddedStructureWithDynamicArray)
     VkDeviceCreateInfo deviceCreateInfo { };
     deviceCreateInfo.queueCreateInfoCount = (uint32_t)deviceQueueCreateInfosCollection.size();
     deviceCreateInfo.pQueueCreateInfos = deviceQueueCreateInfosCollection.data();
-    ValidationAllocator allocator;
+    gvk::validation::Allocator allocator;
     auto copy = gvk::detail::create_structure_copy(deviceCreateInfo, &allocator.get_allocation_callbacks());
     EXPECT_EQ(deviceCreateInfo, copy);
     queuePrioritesCollection[2][2] = 0;
@@ -250,7 +213,7 @@ TEST(create_structure_copy, StructureWithChainedPNexts)
     imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageCreateInfo.pNext = &bufferCreateInfo;
     imageCreateInfo.extent = { 512, 512, 1 };
-    ValidationAllocator allocator;
+    gvk::validation::Allocator allocator;
     auto copy = gvk::detail::create_structure_copy(imageCreateInfo, &allocator.get_allocation_callbacks());
     EXPECT_EQ(imageCreateInfo, copy);
     // Altering memoryAllocateInfo should cause the comparison to be inequal...
@@ -274,7 +237,7 @@ TEST(create_structure_copy, StructuresWithPointersToStructures)
     VkInstanceCreateInfo instanceCreateInfo { };
     instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     instanceCreateInfo.pApplicationInfo = &applicationInfo;
-    ValidationAllocator allocator;
+    gvk::validation::Allocator allocator;
     auto copy = gvk::detail::create_structure_copy(instanceCreateInfo, &allocator.get_allocation_callbacks());
     EXPECT_EQ(instanceCreateInfo, copy);
     applicationInfo.applicationVersion = 1;
@@ -291,7 +254,7 @@ TEST(create_structure_copy, VkPipelineMultisampleStateCreateInfo)
     for (size_t i = 0; i < sampleMask.size(); ++i) {
         sampleMask[i] = (uint32_t)((i + 1) * 3);
     }
-    ValidationAllocator allocator;
+    gvk::validation::Allocator allocator;
     auto copy = gvk::detail::create_structure_copy(pipelineMultiSampleCreateInfo, &allocator.get_allocation_callbacks());
     EXPECT_EQ(pipelineMultiSampleCreateInfo, copy);
     sampleMask.front() = 0;
@@ -308,7 +271,7 @@ TEST(create_structure_copy, VkShaderModuleCreateInfo)
     shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     shaderModuleCreateInfo.codeSize = (uint32_t)spirv.size() * sizeof(uint32_t);
     shaderModuleCreateInfo.pCode = spirv.data();
-    ValidationAllocator allocator;
+    gvk::validation::Allocator allocator;
     auto copy = gvk::detail::create_structure_copy(shaderModuleCreateInfo, &allocator.get_allocation_callbacks());
     EXPECT_EQ(shaderModuleCreateInfo, copy);
     shaderModuleCreateInfo.codeSize /= 2;
@@ -318,4 +281,156 @@ TEST(create_structure_copy, VkShaderModuleCreateInfo)
     auto diff = memcmp(shaderModuleCreateInfo.pCode, spirv.data(), codeSize);
     EXPECT_EQ(diff, 0);
     gvk::detail::destroy_structure_copy(copy, &allocator.get_allocation_callbacks());
+}
+
+template <typename StructureType, typename FieldType, typename ModifyFieldFunctionType>
+inline bool modify_validate_revert(const StructureType& lhs, const StructureType& rhs, FieldType& field, ModifyFieldFunctionType modifyField)
+{
+    auto value = field;
+    modifyField(field);
+    auto success = lhs != rhs;
+    field = value;
+    return success && lhs == rhs;
+}
+
+template <typename StructureType, typename FieldType>
+inline bool modify_validate_revert(const StructureType& lhs, const StructureType& rhs, FieldType& field)
+{
+    return modify_validate_revert(lhs, rhs, field, [&](auto&) { field = { }; });
+}
+
+TEST(structure_tests, VkShaderCreateInfoEXT)
+{
+    // NOTE : This test validates copy, comparison, and serialization for
+    //  VkShaderCreateInfoEXT.
+    // TODO : Abstract this into a test suite that can do this same sequence of
+    //  validation for any structure.
+
+    // Setup data that will be deep copied
+    std::array<uint32_t, 8> spirv {
+        8, 16, 32, 64, 128, 256, 512, 1024
+    };
+    std::array<VkDescriptorSetLayout, 3> descriptorSetLayouts {
+        (VkDescriptorSetLayout)1, (VkDescriptorSetLayout)2, (VkDescriptorSetLayout)3
+    };
+    auto pushConstantRangeSize = sizeof(VkTransformMatrixKHR);
+    std::array<VkPushConstantRange, 2> pushConstantRanges {
+        VkPushConstantRange { VK_SHADER_STAGE_VERTEX_BIT, (uint32_t)pushConstantRangeSize, (uint32_t)pushConstantRangeSize },
+        VkPushConstantRange { VK_SHADER_STAGE_VERTEX_BIT, (uint32_t)pushConstantRangeSize * 2, (uint32_t)pushConstantRangeSize },
+    };
+    std::array<VkSpecializationMapEntry, 3> specializationMapEntries {
+        VkSpecializationMapEntry { 11, 21, 31 },
+        VkSpecializationMapEntry { 12, 22, 32 },
+        VkSpecializationMapEntry { 13, 23, 33 },
+    };
+    std::array<uint32_t, 3> specializationData {
+        2048, 4096, 8192
+    };
+    VkSpecializationInfo specializationInfo { };
+    specializationInfo.mapEntryCount = (uint32_t)specializationMapEntries.size();
+    specializationInfo.pMapEntries = specializationMapEntries.data();
+    specializationInfo.dataSize = (uint32_t)specializationData.size() * sizeof(uint32_t);
+    specializationInfo.pData = specializationData.data();
+
+    // Setup VkShaderCreateInfoEXT
+    VkShaderCreateInfoEXT shaderCreateInfo { };
+    shaderCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT;
+    shaderCreateInfo.codeType = VK_SHADER_CODE_TYPE_SPIRV_EXT;
+    shaderCreateInfo.codeSize = spirv.size() * sizeof(uint32_t);
+    shaderCreateInfo.pCode = spirv.data();
+    shaderCreateInfo.pName = "Vertex Shader";
+    shaderCreateInfo.setLayoutCount = (uint32_t)descriptorSetLayouts.size();
+    shaderCreateInfo.pSetLayouts = descriptorSetLayouts.data();
+    shaderCreateInfo.pushConstantRangeCount = (uint32_t)pushConstantRanges.size();
+    shaderCreateInfo.pPushConstantRanges = pushConstantRanges.data();
+    shaderCreateInfo.pSpecializationInfo = &specializationInfo;
+
+    // Create copy using ValidationAllocator to track allocations
+    gvk::validation::Allocator allocator;
+    auto copy = gvk::detail::create_structure_copy(shaderCreateInfo, &allocator.get_allocation_callbacks());
+
+    // Assert that fields requiring allocated memory have valid pointers/sizes and
+    //  that they do not point to the source structure's data
+    ASSERT_TRUE(copy.pCode);
+    ASSERT_NE(copy.pCode, shaderCreateInfo.pCode);
+    ASSERT_TRUE(copy.pName);
+    ASSERT_NE(copy.pName, shaderCreateInfo.pName);
+    ASSERT_EQ(copy.setLayoutCount, shaderCreateInfo.setLayoutCount);
+    ASSERT_TRUE(copy.pSetLayouts);
+    ASSERT_NE(copy.pSetLayouts, shaderCreateInfo.pSetLayouts);
+    ASSERT_EQ(copy.pushConstantRangeCount, shaderCreateInfo.pushConstantRangeCount);
+    ASSERT_TRUE(copy.pPushConstantRanges);
+    ASSERT_NE(copy.pPushConstantRanges, shaderCreateInfo.pPushConstantRanges);
+    ASSERT_TRUE(copy.pSpecializationInfo);
+    ASSERT_NE(copy.pSpecializationInfo, shaderCreateInfo.pSpecializationInfo);
+    ASSERT_EQ(copy.pSpecializationInfo->mapEntryCount, shaderCreateInfo.pSpecializationInfo->mapEntryCount);
+    ASSERT_TRUE(copy.pSpecializationInfo->pMapEntries);
+    ASSERT_NE(copy.pSpecializationInfo->pMapEntries, shaderCreateInfo.pSpecializationInfo->pMapEntries);
+    ASSERT_EQ(copy.pSpecializationInfo->dataSize, shaderCreateInfo.pSpecializationInfo->dataSize);
+    ASSERT_TRUE(copy.pSpecializationInfo->pData);
+    ASSERT_NE(copy.pSpecializationInfo->pData, shaderCreateInfo.pSpecializationInfo->pData);
+
+    // Walk the structure validating equality for each field
+    EXPECT_EQ(copy.sType, shaderCreateInfo.sType);
+    EXPECT_EQ(copy.codeType, shaderCreateInfo.codeType);
+    EXPECT_EQ(copy.codeSize, shaderCreateInfo.codeSize);
+    EXPECT_FALSE(memcmp(copy.pCode, shaderCreateInfo.pCode, copy.codeSize));
+    EXPECT_FALSE(strcmp(shaderCreateInfo.pName, copy.pName));
+    for (uint32_t i = 0; i < copy.setLayoutCount; ++i) {
+        EXPECT_EQ(copy.pSetLayouts[i], shaderCreateInfo.pSetLayouts[i]);
+    }
+    for (uint32_t i = 0; i < copy.pushConstantRangeCount; ++i) {
+        EXPECT_EQ(copy.pPushConstantRanges[i], shaderCreateInfo.pPushConstantRanges[i]);
+    }
+    for (uint32_t i = 0; i < copy.pSpecializationInfo->mapEntryCount; ++i) {
+        EXPECT_EQ(copy.pSpecializationInfo->pMapEntries[i], shaderCreateInfo.pSpecializationInfo->pMapEntries[i]);
+    }
+    for (uint32_t i = 0; i < copy.pSpecializationInfo->dataSize; ++i) {
+        EXPECT_EQ(((const uint8_t*)copy.pSpecializationInfo->pData)[i], ((const uint8_t*)shaderCreateInfo.pSpecializationInfo->pData)[i]);
+    }
+
+    // Validate operator==()
+    EXPECT_EQ(copy, shaderCreateInfo);
+
+    // Modify, validate, and revert each field
+    EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, shaderCreateInfo.sType));
+    EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, shaderCreateInfo.codeType));
+    EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, shaderCreateInfo.codeSize));
+    EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, shaderCreateInfo.pCode));
+    for (auto& value : spirv) {
+        EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, value));
+    }
+    EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, shaderCreateInfo.pName));
+    EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, shaderCreateInfo.pName, [](auto& field) { field = "Fragment Shader"; }));
+    EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, shaderCreateInfo.setLayoutCount));
+    EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, shaderCreateInfo.pSetLayouts));
+    for (auto& descriptorSetLayout : descriptorSetLayouts) {
+        EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, descriptorSetLayout));
+    }
+    EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, shaderCreateInfo.pushConstantRangeCount));
+    EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, shaderCreateInfo.pPushConstantRanges));
+    for (auto& pushConstantRange : pushConstantRanges) {
+        EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, pushConstantRange.stageFlags));
+        EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, pushConstantRange.offset));
+        EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, pushConstantRange.size));
+    }
+    EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, shaderCreateInfo.pSpecializationInfo));
+    EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, ((VkSpecializationInfo*)shaderCreateInfo.pSpecializationInfo)->mapEntryCount));
+    EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, ((VkSpecializationInfo*)shaderCreateInfo.pSpecializationInfo)->pMapEntries));
+    for (auto& specializationMapEntry : specializationMapEntries) {
+        EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, specializationMapEntry.constantID));
+        EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, specializationMapEntry.offset));
+        EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, specializationMapEntry.size));
+    }
+    EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, ((VkSpecializationInfo*)shaderCreateInfo.pSpecializationInfo)->dataSize));
+    EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, ((VkSpecializationInfo*)shaderCreateInfo.pSpecializationInfo)->pData));
+    for (auto& value : specializationData) {
+        EXPECT_TRUE(modify_validate_revert(copy, shaderCreateInfo, value));
+    }
+
+    // Destroy copy using ValidationAllocator to validate that memory is released
+    gvk::detail::destroy_structure_copy(copy, &allocator.get_allocation_callbacks());
+
+    // Validate structure serialization
+    gvk::validation::validate_structure_serialization(shaderCreateInfo);
 }

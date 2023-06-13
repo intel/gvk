@@ -283,6 +283,43 @@ void print<VkAccelerationStructureBuildGeometryInfoKHR>(Printer& printer, const 
 }
 
 template <>
+void print<VkAccelerationStructureTrianglesDisplacementMicromapNV>(Printer& printer, const VkAccelerationStructureTrianglesDisplacementMicromapNV& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            detail::print_pnext(printer, obj.pNext);
+            printer.print_field("displacementBiasAndScaleFormat", obj.displacementBiasAndScaleFormat);
+            printer.print_field("displacementVectorFormat", obj.displacementVectorFormat);
+            printer.print_field("displacementBiasAndScaleBuffer", obj.displacementBiasAndScaleBuffer);
+            printer.print_field("displacementBiasAndScaleStride", obj.displacementBiasAndScaleStride);
+            printer.print_field("displacementVectorBuffer", obj.displacementVectorBuffer);
+            printer.print_field("displacementVectorStride", obj.displacementVectorStride);
+            printer.print_field("displacedMicromapPrimitiveFlags", obj.displacedMicromapPrimitiveFlags);
+            printer.print_field("displacedMicromapPrimitiveFlagsStride", obj.displacedMicromapPrimitiveFlagsStride);
+            printer.print_field("indexType", obj.indexType);
+            printer.print_field("indexBuffer", obj.indexBuffer);
+            printer.print_field("indexStride", obj.indexStride);
+            printer.print_field("baseTriangle", obj.baseTriangle);
+            printer.print_field("usageCountsCount", obj.usageCountsCount);
+            printer.print_array("pGeometries", obj.usageCountsCount, obj.pUsageCounts);
+            printer.print_array("ppGeometries", obj.usageCountsCount, obj.ppUsageCounts,
+                [&](auto, auto pUsageCount)
+                {
+                    if (pUsageCount) {
+                        print(printer, *pUsageCount);
+                    } else {
+                        printer.mOstrm << "null";
+                    }
+                }
+            );
+            printer.print_field("micromap", obj.micromap);
+        }
+    );
+}
+
+template <>
 void print<VkAccelerationStructureTrianglesOpacityMicromapEXT>(Printer& printer, const VkAccelerationStructureTrianglesOpacityMicromapEXT& obj)
 {
     printer.print_object(
@@ -399,6 +436,30 @@ void print<VkPipelineMultisampleStateCreateInfo>(Printer& printer, const VkPipel
             printer.print_array("pSampleMask", (obj.rasterizationSamples + 31) / 32, obj.pSampleMask);
             printer.print_field("alphaToCoverageEnable", obj.alphaToCoverageEnable);
             printer.print_field("alphaToOneEnable", obj.alphaToOneEnable);
+        }
+    );
+}
+
+template <>
+void print<VkShaderCreateInfoEXT>(Printer& printer, const VkShaderCreateInfoEXT& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            detail::print_pnext(printer, obj.pNext);
+            printer.print_field("flags", obj.flags);
+            printer.print_field("stage", obj.stage);
+            printer.print_field("nextStage", obj.nextStage);
+            printer.print_field("codeType", obj.codeType);
+            printer.print_field("codeSize", obj.codeSize);
+            printer.print_array("pCode", obj.codeSize, (const uint8_t*)obj.pCode);
+            printer.print_field("pName", obj.pName);
+            printer.print_field("setLayoutCount", obj.setLayoutCount);
+            printer.print_array("pSetLayouts", obj.setLayoutCount, obj.pSetLayouts);
+            printer.print_field("pushConstantRangeCount", obj.pushConstantRangeCount);
+            printer.print_array("pPushConstantRanges", obj.pushConstantRangeCount, obj.pPushConstantRanges);
+            printer.print_pointer("pSpecializationInfo", obj.pSpecializationInfo);
         }
     );
 }
