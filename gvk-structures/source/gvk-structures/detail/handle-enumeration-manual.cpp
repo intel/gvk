@@ -154,36 +154,44 @@ GVK_STUB_ENUMERATE_STRUCTURE_HANDLES_DEFINITION(VkVideoSessionParametersUpdateIn
 template <>
 void enumerate_structure_handles<VkAccelerationStructureBuildGeometryInfoKHR>(const VkAccelerationStructureBuildGeometryInfoKHR& obj, EnumerateHandlesCallback callback)
 {
-    (void)obj;
-    (void)callback;
+    enumerate_pnext_handles(obj.pNext, callback);
+    enumerate_handle(obj.srcAccelerationStructure, callback);
+    enumerate_handle(obj.dstAccelerationStructure, callback);
+    enumerate_dynamic_structure_array_handles(obj.geometryCount, obj.pGeometries, callback);
+    enumerate_dynamic_structure_array_handles(obj.geometryCount, obj.ppGeometries, callback);
+}
+
+template <>
+void enumerate_structure_handles<VkAccelerationStructureTrianglesDisplacementMicromapNV>(const VkAccelerationStructureTrianglesDisplacementMicromapNV& obj, EnumerateHandlesCallback callback)
+{
+    enumerate_pnext_handles(obj.pNext, callback);
+    enumerate_handle(obj.micromap, callback);
 }
 
 template <>
 void enumerate_structure_handles<VkAccelerationStructureTrianglesOpacityMicromapEXT>(const VkAccelerationStructureTrianglesOpacityMicromapEXT& obj, EnumerateHandlesCallback callback)
 {
-    (void)obj;
-    (void)callback;
+    enumerate_pnext_handles(obj.pNext, callback);
+    enumerate_handle(obj.micromap, callback);
 }
 
 template <>
 void enumerate_structure_handles<VkAccelerationStructureVersionInfoKHR>(const VkAccelerationStructureVersionInfoKHR& obj, EnumerateHandlesCallback callback)
 {
-    (void)obj;
-    (void)callback;
+    enumerate_pnext_handles(obj.pNext, callback);
 }
 
 template <>
 void enumerate_structure_handles<VkMicromapBuildInfoEXT>(const VkMicromapBuildInfoEXT& obj, EnumerateHandlesCallback callback)
 {
-    (void)obj;
-    (void)callback;
+    enumerate_pnext_handles(obj.pNext, callback);
+    enumerate_handle(obj.dstMicromap, callback);
 }
 
 template <>
 void enumerate_structure_handles<VkMicromapVersionInfoEXT>(const VkMicromapVersionInfoEXT& obj, EnumerateHandlesCallback callback)
 {
-    (void)obj;
-    (void)callback;
+    enumerate_pnext_handles(obj.pNext, callback);
 }
 
 template <> void enumerate_structure_handles<VkPipelineCacheCreateInfo>(const VkPipelineCacheCreateInfo& obj, EnumerateHandlesCallback callback)
@@ -194,21 +202,27 @@ template <> void enumerate_structure_handles<VkPipelineCacheCreateInfo>(const Vk
 template <>
 void enumerate_structure_handles<VkPipelineMultisampleStateCreateInfo>(const VkPipelineMultisampleStateCreateInfo& obj, EnumerateHandlesCallback callback)
 {
-    (void)obj;
-    (void)callback;
+    enumerate_pnext_handles(obj.pNext, callback);
 }
 
 template <> void enumerate_structure_handles<VkSpecializationInfo>(const VkSpecializationInfo& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
+    // NOOP : No handles
+}
+
+template <>
+void enumerate_structure_handles<VkShaderCreateInfoEXT>(const VkShaderCreateInfoEXT& obj, EnumerateHandlesCallback callback)
+{
+    enumerate_pnext_handles(obj.pNext, callback);
+    enumerate_dynamic_handle_array(obj.setLayoutCount, obj.pSetLayouts, callback);
 }
 
 template <>
 void enumerate_structure_handles<VkShaderModuleCreateInfo>(const VkShaderModuleCreateInfo& obj, EnumerateHandlesCallback callback)
 {
-    (void)obj;
-    (void)callback;
+    enumerate_pnext_handles(obj.pNext, callback);
 }
 
 template <>
@@ -216,6 +230,7 @@ void enumerate_structure_handles<VkTransformMatrixKHR>(const VkTransformMatrixKH
 {
     (void)obj;
     (void)callback;
+    // NOOP : No handles
 }
 
 ////////////////////////////////////////////////////////////////////////////////

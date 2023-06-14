@@ -1,4 +1,8 @@
 
+VERSION 2023.2.3.1
+--
+-   NEW : Preliminary support for VkShaderEXT
+
 VERSION 2023.2.3.0
 --
 -   NEW : gvk-xml updated to be able to select "vulkan" or "vulkansc", default is "vulkan" (VulkanSC is currently unsupported)

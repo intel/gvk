@@ -86,12 +86,14 @@ int main(int, const char*[])
         apiElements.manuallyImplemented.insert("VkImportSemaphoreWin32HandleInfoKHR");
         // Special case members
         apiElements.manuallyImplemented.insert("VkAccelerationStructureBuildGeometryInfoKHR");
+        apiElements.manuallyImplemented.insert("VkAccelerationStructureTrianglesDisplacementMicromapNV");
         apiElements.manuallyImplemented.insert("VkAccelerationStructureTrianglesOpacityMicromapEXT");
         apiElements.manuallyImplemented.insert("VkAccelerationStructureVersionInfoKHR");
         apiElements.manuallyImplemented.insert("VkMicromapBuildInfoEXT");
         apiElements.manuallyImplemented.insert("VkMicromapVersionInfoEXT");
         apiElements.manuallyImplemented.insert("VkPipelineCacheCreateInfo");
         apiElements.manuallyImplemented.insert("VkPipelineMultisampleStateCreateInfo");
+        apiElements.manuallyImplemented.insert("VkShaderCreateInfoEXT");
         apiElements.manuallyImplemented.insert("VkShaderModuleCreateInfo");
         apiElements.manuallyImplemented.insert("VkSpecializationInfo");
         apiElements.manuallyImplemented.insert("VkTransformMatrixKHR");

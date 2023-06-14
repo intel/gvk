@@ -66,8 +66,9 @@ template <> VkResult initialize_control_block<Device>(Device& device);
 template <> VkResult initialize_control_block<CommandBuffer>(CommandBuffer& commandBuffer);
 template <> VkResult initialize_control_block<Framebuffer>(Framebuffer& framebuffer);
 template <> VkResult initialize_control_block<PipelineLayout>(PipelineLayout& pipelineLayout);
-template <> VkResult initialize_control_block<SurfaceKHR>(SurfaceKHR& surfaceKHR);
-template <> VkResult initialize_control_block<SwapchainKHR>(SwapchainKHR& swapchainKHR);
+template <> VkResult initialize_control_block<ShaderEXT>(ShaderEXT& shader);
+template <> VkResult initialize_control_block<SurfaceKHR>(SurfaceKHR& surface);
+template <> VkResult initialize_control_block<SwapchainKHR>(SwapchainKHR& swapchain);
 
 } // namespace detail
 } // namespace gvk

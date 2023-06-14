@@ -833,6 +833,17 @@ VkResult RestorePointApplier::process_VkDisplayModeKHR(const GvkStateTrackedObje
     return { };
 }
 
+VkResult RestorePointApplier::process_VkShaderEXT(const GvkStateTrackedObject& stateTrackedObject, const GvkShaderRestoreInfoEXT& restoreInfo)
+{
+    assert(mCurrentObjects.empty());
+    mCurrentObjects.push_back(stateTrackedObject);
+    auto vkResult = VK_ERROR_FEATURE_NOT_PRESENT;
+    // TODO : RestorePointApplier::process_VkShaderEXT()
+    (void)restoreInfo;
+    mCurrentObjects.clear();
+    return vkResult;
+}
+
 VkResult RestorePointApplier::process_VkSurfaceKHR(const GvkStateTrackedObject& stateTrackedObject, const GvkSurfaceRestoreInfoKHR& restoreInfo)
 {
     assert(mCurrentObjects.empty());

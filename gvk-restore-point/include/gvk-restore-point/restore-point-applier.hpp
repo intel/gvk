@@ -55,6 +55,7 @@ protected:
     VkResult process_VkFence(const GvkStateTrackedObject& stateTrackedObject, const GvkFenceRestoreInfo& restoreInfo) override final;
     VkResult process_VkSemaphore(const GvkStateTrackedObject& stateTrackedObject, const GvkSemaphoreRestoreInfo& restoreInfo) override final;
     VkResult process_VkDisplayModeKHR(const GvkStateTrackedObject& stateTrackedObject, const GvkDisplayModeRestoreInfoKHR& restoreInfo) override final;
+    VkResult process_VkShaderEXT(const GvkStateTrackedObject& stateTrackedObject, const GvkShaderRestoreInfoEXT& restoreInfo) override final;
     VkResult process_VkSurfaceKHR(const GvkStateTrackedObject& stateTrackedObject, const GvkSurfaceRestoreInfoKHR& restoreInfo) override final;
     VkResult process_VkSwapchainKHR(const GvkStateTrackedObject& stateTrackedObject, const GvkSwapchainRestoreInfoKHR& restoreInfo) override final;
 };
