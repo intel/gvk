@@ -26,7 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-command-structures/detail/cerealization-manual.hpp"
+// #include "gvk-command-structures/detail/cerealization-manual.hpp"
 #include "gvk-command-structures/detail/make-tuple-manual.hpp"
 #include "gvk-command-structures/generated/command.h"
 #include "gvk-command-structures/generated/command-enumerations-to-string.hpp"

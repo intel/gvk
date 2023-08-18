@@ -25,6 +25,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include "gvk-restore-point/detail/copy-engine.hpp"
+#include "gvk-restore-point/detail/asio-include.hpp"
 #include "gvk-format-info.hpp"
 
 #include <cassert>
@@ -32,9 +33,18 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace gvk {
 
+CopyEngine::CopyEngine()
+    : mpThreadPool { new asio::thread_pool }
+{
+}
+
 CopyEngine::~CopyEngine()
 {
     reset();
+    // NOTE : asio::thread_pool is forward declared...when compiling GPA FW, MSVC
+    //  tries to generate a default dtor for std::unique_ptr<asio::thread_pool>()
+    //  even though asio is included here...very annoying.
+    delete mpThreadPool;
 }
 
 void CopyEngine::reset()
@@ -60,8 +70,9 @@ void CopyEngine::set_thread_initialization_callback(std::function<void(std::thre
 void CopyEngine::download(VkDevice vkDevice, DeviceMemoryCopyInfo deviceMemoryCopyInfo)
 {
     if (mMultiThreaded) {
+        assert(mpThreadPool);
         asio::post(
-            mThreadPool,
+            *mpThreadPool,
             [this, vkDevice, deviceMemoryCopyInfo]()
             {
                 initialize_thread();
@@ -76,8 +87,9 @@ void CopyEngine::download(VkDevice vkDevice, DeviceMemoryCopyInfo deviceMemoryCo
 void CopyEngine::upload(VkDevice vkDevice, DeviceMemoryCopyInfo deviceMemoryCopyInfo)
 {
     if (mMultiThreaded) {
+        assert(mpThreadPool);
         asio::post(
-            mThreadPool,
+            *mpThreadPool,
             [this, vkDevice, deviceMemoryCopyInfo]()
             {
                 initialize_thread();
@@ -92,8 +104,9 @@ void CopyEngine::upload(VkDevice vkDevice, DeviceMemoryCopyInfo deviceMemoryCopy
 void CopyEngine::transition_image_layouts(VkDevice vkDevice, ImageCopyInfo imageCopyInfo)
 {
     if (mMultiThreaded) {
+        assert(mpThreadPool);
         asio::post(
-            mThreadPool,
+            *mpThreadPool,
             [this, vkDevice, imageCopyInfo]()
             {
                 initialize_thread();
@@ -108,7 +121,8 @@ void CopyEngine::transition_image_layouts(VkDevice vkDevice, ImageCopyInfo image
 void CopyEngine::wait()
 {
     if (mMultiThreaded) {
-        mThreadPool.wait();
+        assert(mpThreadPool);
+        mpThreadPool->wait();
     }
     for (const auto& itr : mTaskResources) {
         const auto& gvkDevice = itr.first;

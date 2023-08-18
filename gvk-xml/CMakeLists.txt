@@ -5,16 +5,16 @@ set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
 set(includePath "${includeDirectory}/gvk-xml")
 set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk-xml/")
 gvk_add_static_library(
-    target
+    TARGET
         gvk-xml
-    folder
+    FOLDER
         "gvk-xml/"
-    linkLibraries
+    LINK_LIBRARIES
         gvk-string
         tinyxml2
-    includeDirectories
+    INCLUDE_DIRECTORIES
         "${includeDirectory}"
-    includeFiles
+    INCLUDE_FILES
         "${includePath}/api-element.hpp"
         "${includePath}/command.hpp"
         "${includePath}/defines.hpp"
@@ -28,7 +28,7 @@ gvk_add_static_library(
         "${includePath}/platform.hpp"
         "${includePath}/structure.hpp"
         "${includeDirectory}/gvk-xml.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${sourcePath}/api-element.cpp"
         "${sourcePath}/command.cpp"
         "${sourcePath}/enumeration.cpp"
@@ -46,16 +46,20 @@ gvk_add_static_library(
 ################################################################################
 # gvk.xml-to-json
 gvk_add_executable(
-    target
+    TARGET
         gvk-xml-to-json
-    folder
+    FOLDER
         "gvk-xml/"
-    linkLibraries
+    LINK_LIBRARIES
         gvk-xml
-    sourceFiles
+    SOURCE_FILES
         "${CMAKE_CURRENT_LIST_DIR}/gvk-xml-to-json.cpp"
-    compileDefinitions
+    COMPILE_DEFINITIONS
         GVK_XML_FILE_PATH="${Vulkan_XML}"
 )
 add_custom_target(gvk-xml-to-json.runner ALL COMMAND gvk-xml-to-json > gvk.json)
 set_target_properties(gvk-xml-to-json.runner PROPERTIES FOLDER "${GVK_IDE_FOLDER}/gvk-xml/")
+
+################################################################################
+# gvk-xml install
+gvk_install_library(TARGET gvk-xml)

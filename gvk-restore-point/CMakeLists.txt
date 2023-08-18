@@ -35,25 +35,25 @@ set(generatedSourceFiles
 )
 set(generatorSourcePath "${CMAKE_CURRENT_LIST_DIR}/generator/")
 gvk_add_code_generator(
-    target
+    TARGET
         gvk-restore-point.generator
-    folder
+    FOLDER
         "gvk-restore-point/"
-    linkLibraries
+    LINK_LIBRARIES
         gvk-cppgen
-    includeDirectories
+    INCLUDE_DIRECTORIES
         "${generatorSourcePath}/"
-    includeFiles
+    INCLUDE_FILES
         "${generatorSourcePath}/apply-command-buffer-restore-point.generator.hpp"
         "${generatorSourcePath}/basic-restore-point-applier.generator.hpp"
         "${generatorSourcePath}/basic-restore-point-creator.generator.hpp"
         "${generatorSourcePath}/create-command-buffer-restore-point.generator.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${generatorSourcePath}/main.cpp"
-    outputFiles
+    OUTPUT_FILES
         "${generatedIncludeFiles}"
         "${generatedSourceFiles}"
-    compileDefinitions
+    COMPILE_DEFINITIONS
         GVK_RESTORE_POINT_GENERATED_INCLUDE_PATH="${generatedIncludePath}"
         GVK_RESTORE_POINT_GENERATED_INCLUDE_PREFIX="gvk-restore-point/generated/"
         GVK_RESTORE_POINT_GENERATED_SOURCE_PATH="${generatedSourcePath}"
@@ -67,21 +67,22 @@ set(includePath "${includeDirectory}/gvk-restore-point/")
 set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk-restore-point/")
 set(linkLibraries "")
 gvk_add_static_library(
-    target
+    TARGET
         gvk-restore-point
-    folder
+    FOLDER
         "gvk-restore-point/"
-    linkLibraries
+    LINK_LIBRARIES
         gvk-command-structures
         gvk-handles
         gvk-reference
         gvk-runtime
         VK_LAYER_INTEL_gvk_state_tracker-interface
-    includeDirectories
+        asio
+        Threads::Threads
+    INCLUDE_DIRECTORIES
         "${generatedIncludeDirectory}"
         "${includeDirectory}"
-        "${asioSourceDirectory}/asio/include/"
-    includeFiles
+    INCLUDE_FILES
         "${generatedIncludeFiles}"
         "${includePath}/detail/asio-include.hpp"
         "${includePath}/detail/copy-engine.hpp"
@@ -90,10 +91,14 @@ gvk_add_static_library(
         "${includePath}/restore-point-creator.hpp"
         "${includePath}/restore-point-info.hpp"
         "${includeDirectory}/gvk-restore-point.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${generatedSourceFiles}"
         "${sourcePath}/detail/copy-engine.cpp"
         "${sourcePath}/detail/restore-info-to-string-manual.cpp"
         "${sourcePath}/restore-point-applier.cpp"
         "${sourcePath}/restore-point-creator.cpp"
 )
+
+################################################################################
+# gvk-restore-point install
+gvk_install_library(TARGET gvk-restore-point)

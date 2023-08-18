@@ -20,27 +20,27 @@ set(generatedSourceFiles
 )
 set(generatorSourcePath "${CMAKE_CURRENT_LIST_DIR}/generator/")
 gvk_add_code_generator(
-    target
+    TARGET
         VK_LAYER_INTEL_gvk_state_tracker.generator
-    folder
+    FOLDER
         "gvk-state-tracker/"
-    linkLibraries
+    LINK_LIBRARIES
         gvk-cppgen
-    includeDirectories
+    INCLUDE_DIRECTORIES
         "${generatorSourcePath}/"
-    includeFiles
+    INCLUDE_FILES
         "${generatorSourcePath}/basic-state-tracker.generator.hpp"
         "${generatorSourcePath}/basic-cmd-tracker.generator.hpp"
         "${generatorSourcePath}/enumerate-state-tracked-objects.generator.hpp"
         "${generatorSourcePath}/get-state-tracked-object-create-info.generator.hpp"
         "${generatorSourcePath}/get-state-tracked-object-info.generator.hpp"
         "${generatorSourcePath}/state-tracked-handles.generator.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${generatorSourcePath}/main.cpp"
-    outputFiles
+    OUTPUT_FILES
         "${generatedIncludeFiles}"
         "${generatedSourceFiles}"
-    compileDefinitions
+    COMPILE_DEFINITIONS
         GVK_STATE_TRACKER_GENERATED_INCLUDE_PATH="${generatedIncludePath}"
         GVK_STATE_TRACKER_GENERATED_INCLUDE_PREFIX="gvk-state-tracker/generated/"
         GVK_STATE_TRACKER_GENERATED_SOURCE_PATH="${generatedSourcePath}"
@@ -53,21 +53,21 @@ set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
 set(includePath "${includeDirectory}/gvk-state-tracker/")
 set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk-state-tracker/")
 gvk_add_layer(
-    target
+    TARGET
         VK_LAYER_INTEL_gvk_state_tracker
-    folder
+    FOLDER
         "gvk-state-tracker/"
-    linkLibraries
+    LINK_LIBRARIES
         gvk-command-structures
         gvk-reference
         gvk-runtime
-    interfaceFiles
+    INTERFACE_FILES
         "${includeDirectory}/VK_LAYER_INTEL_gvk_state_tracker.h"
         "${includeDirectory}/VK_LAYER_INTEL_gvk_state_tracker.hpp"
-    includeDirectories
+    INCLUDE_DIRECTORIES
         "${generatedIncludeDirectory}"
         "${includeDirectory}"
-    includeFiles
+    INCLUDE_FILES
         "${generatedIncludeFiles}"
         "${includePath}/cmd-tracker.hpp"
         "${includePath}/dependency-enumerator.hpp"
@@ -77,7 +77,7 @@ gvk_add_layer(
         "${includePath}/object-tracker.hpp"
         "${includePath}/state-tracker.hpp"
         "${includePath}/thread-safe-unordered-map.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${generatedSourceFiles}"
         "${sourcePath}/buffer.cpp"
         "${sourcePath}/cmd-tracker.cpp"
@@ -95,9 +95,9 @@ gvk_add_layer(
         "${sourcePath}/state-tracked-handle-utilities.cpp"
         "${sourcePath}/state-tracker.cpp"
         "${sourcePath}/swapchain.cpp"
-    description
+    DESCRIPTION
         "Intel(R) GPA Utilities for Vulkan* state tracker"
-    entryPoints
+    ENTRY_POINTS
         gvkSetStateTrackerPhysicalDevices
         gvkEnumerateStateTrackedObjects
         gvkEnumerateStateTrackedObjectDependencies
@@ -120,20 +120,20 @@ endif()
 # VK_LAYER_INTEL_gvk_state_tracker.test
 set(testsPath "${CMAKE_CURRENT_LIST_DIR}/tests/")
 gvk_add_target_test(
-    target
+    TARGET
         VK_LAYER_INTEL_gvk_state_tracker
-    folder
+    FOLDER
         "gvk-state-tracker/"
-    linkLibraries
+    LINK_LIBRARIES
         gvk-handles
         gvk-math
         gvk-spirv
         gvk-system
-    includeDirectories
+    INCLUDE_DIRECTORIES
         "${includeDirectory}"
-    includeFiles
+    INCLUDE_FILES
         "${testsPath}/state-tracker-test-utilities.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${testsPath}/command-buffer.tests.cpp"
         "${testsPath}/descriptor-set.tests.cpp"
         "${testsPath}/device-memory-binding.tests.cpp"
@@ -141,6 +141,11 @@ gvk_add_target_test(
         "${testsPath}/pipeline.tests.cpp"
         "${testsPath}/state-tracker-test-utilities.cpp"
         "${testsPath}/swapchain.tests.cpp"
-    compileDefinitions
+    COMPILE_DEFINITIONS
         GVK_STATE_TRACKER_LAYER_JSON_PATH="$<TARGET_FILE_DIR:VK_LAYER_INTEL_gvk_state_tracker>"
 )
+
+################################################################################
+# VK_LAYER_INTEL_gvk_state_tracker install
+gvk_install_library(TARGET VK_LAYER_INTEL_gvk_state_tracker-interface)
+gvk_install_layer(TARGET VK_LAYER_INTEL_gvk_state_tracker)

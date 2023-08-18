@@ -13,22 +13,22 @@ set(generatedSourceFiles
 )
 set(generatorSourcePath "${CMAKE_CURRENT_LIST_DIR}/generator/")
 gvk_add_code_generator(
-    target
+    TARGET
         gvk-handles.generator
-    folder
+    FOLDER
         "gvk-handles/"
-    linkLibraries
+    LINK_LIBRARIES
         gvk-cppgen
-    includeDirectories
+    INCLUDE_DIRECTORIES
         "${generatorSourcePath}/"
-    includeFiles
+    INCLUDE_FILES
         "${generatorSourcePath}/handles.generator.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${generatorSourcePath}/main.cpp"
-    outputFiles
+    OUTPUT_FILES
         "${generatedIncludeFiles}"
         "${generatedSourceFiles}"
-    compileDefinitions
+    COMPILE_DEFINITIONS
         GVK_HANDLES_GENERATED_INCLUDE_PATH="${generatedIncludePath}"
         GVK_HANDLES_GENERATED_INCLUDE_PREFIX="gvk-handles/generated/"
         GVK_HANDLES_GENERATED_SOURCE_PATH="${generatedSourcePath}"
@@ -44,21 +44,21 @@ set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
 set(includePath "${includeDirectory}/gvk-handles/")
 set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk-handles/")
 gvk_add_static_library(
-    target
+    TARGET
         gvk-handles
-    folder
+    FOLDER
         "gvk-handles/"
-    linkLibraries
+    LINK_LIBRARIES
         gvk-format-info
         gvk-reference
         gvk-runtime
         gvk-string
         gvk-structures
-    includeDirectories
+        VulkanMemoryAllocator
+    INCLUDE_DIRECTORIES
         "${generatedIncludeDirectory}"
         "${includeDirectory}"
-        "${VulkanMemoryAllocatorSourceDirectory}/include/"
-    includeFiles
+    INCLUDE_FILES
         "${generatedIncludeFiles}"
         "${includePath}/detail/handle-utilities.hpp"
         "${includePath}/context.hpp"
@@ -69,7 +69,7 @@ gvk_add_static_library(
         "${includePath}/utilities.hpp"
         "${includePath}/wsi-manager.hpp"
         "${includeDirectory}/gvk-handles.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${generatedSourceFiles}"
         "${sourcePath}/detail/handle-utilities.cpp"
         "${sourcePath}/context.cpp"
@@ -83,10 +83,14 @@ gvk_add_static_library(
 # gvk-handles.test
 set(testsPath "${CMAKE_CURRENT_LIST_DIR}/tests/")
 gvk_add_target_test(
-    target
+    TARGET
         gvk-handles
-    folder
+    FOLDER
         "gvk-handles/"
-    sourceFiles
+    SOURCE_FILES
         "${testsPath}/render-target.tests.cpp"
 )
+
+################################################################################
+# gvk-handles install
+gvk_install_library(TARGET gvk-handles)

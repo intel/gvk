@@ -5,16 +5,16 @@ set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
 set(includePath "${includeDirectory}/gvk-cppgen/")
 set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk-cppgen/")
 gvk_add_static_library(
-    target
+    TARGET
         gvk-cppgen
-    folder
+    FOLDER
         "gvk-cppgen/"
-    linkLibraries
+    LINK_LIBRARIES
         gvk-string
         gvk-xml
-    includeDirectories
+    INCLUDE_DIRECTORIES
         "${includeDirectory}"
-    includeFiles
+    INCLUDE_FILES
         "${includePath}/api-element-collection-declaration-generator.hpp"
         "${includePath}/api-element-collection-info.hpp"
         "${includePath}/basic-handle-generator.hpp"
@@ -38,7 +38,7 @@ gvk_add_static_library(
         "${includePath}/structure-to-string-generator.hpp"
         "${includePath}/utilities.hpp"
         "${includeDirectory}/gvk-cppgen.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${sourcePath}/api-element-collection-declaration-generator.cpp"
         "${sourcePath}/basic-handle-generator.cpp"
         "${sourcePath}/basic-structure-member-processor-generator.cpp"

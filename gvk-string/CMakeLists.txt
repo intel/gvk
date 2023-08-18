@@ -5,18 +5,18 @@ set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
 set(includePath "${includeDirectory}/gvk-string/")
 set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk-string/")
 gvk_add_static_library(
-    target
+    TARGET
         gvk-string
-    folder
+    FOLDER
         "gvk-string/"
-    includeDirectories
+    INCLUDE_DIRECTORIES
         "${includeDirectory}"
-    includeFiles
+    INCLUDE_FILES
         "${includePath}/printer.hpp"
         "${includePath}/to-string.hpp"
         "${includePath}/utilities.hpp"
         "${includeDirectory}/gvk-string.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${sourcePath}/utilities.cpp"
 )
 
@@ -24,11 +24,15 @@ gvk_add_static_library(
 # gvk-string.test
 set(testsPath "${CMAKE_CURRENT_LIST_DIR}/tests/")
 gvk_add_target_test(
-    target
+    TARGET
         gvk-string
-    folder
+    FOLDER
         "gvk-string/"
-    sourceFiles
+    SOURCE_FILES
         "${testsPath}/printer.tests.cpp"
         "${testsPath}/utilities.tests.cpp"
 )
+
+################################################################################
+# gvk-string install
+gvk_install_library(TARGET gvk-string)

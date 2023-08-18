@@ -5,17 +5,17 @@ set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
 set(includePath "${includeDirectory}/gvk-reference/")
 set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk-reference/")
 gvk_add_static_library(
-    target
+    TARGET
         gvk-reference
-    folder
+    FOLDER
         "gvk-reference/"
-    includeDirectories
+    INCLUDE_DIRECTORIES
         "${includeDirectory}"
-    includeFiles
+    INCLUDE_FILES
         "${includePath}/handle-id.hpp"
         "${includePath}/reference.hpp"
         "${includeDirectory}/gvk-reference.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${sourcePath}/reference.cpp"
 )
 
@@ -23,12 +23,16 @@ gvk_add_static_library(
 # gvk-reference.test
 set(testsPath "${CMAKE_CURRENT_LIST_DIR}/tests/")
 gvk_add_target_test(
-    target
+    TARGET
         gvk-reference
-    folder
+    FOLDER
         "gvk-reference/"
-    linkLibraries
-        asio_INTERFACE
-    sourceFiles
+    LINK_LIBRARIES
+        asio
+    SOURCE_FILES
         "${testsPath}/reference.tests.cpp"
 )
+
+################################################################################
+# gvk-reference install
+gvk_install_library(TARGET gvk-reference)

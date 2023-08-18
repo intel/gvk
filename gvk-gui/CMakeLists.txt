@@ -5,20 +5,20 @@ set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
 set(includePath "${includeDirectory}/gvk-gui/")
 set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk-gui/")
 gvk_add_static_library(
-    target
+    TARGET
         gvk-gui
-    folder
+    FOLDER
         "gvk-gui/"
-    linkLibraries
+    LINK_LIBRARIES
         gvk-handles
         gvk-spirv
         gvk-system
         imgui
-    includeDirectories
+    INCLUDE_DIRECTORIES
         "${includeDirectory}"
-    includeFiles
+    INCLUDE_FILES
         "${includePath}/renderer.hpp"
         "${includeDirectory}/gvk-gui.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${sourcePath}/renderer.cpp"
 )

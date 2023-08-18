@@ -1,5 +1,5 @@
 
-LIBRARY @args_target@
+LIBRARY @ARGS_TARGET@
 EXPORTS
 vkNegotiateLoaderLayerInterfaceVersion
-@args_entryPoints@
+@ARGS_ENTRY_POINTS@

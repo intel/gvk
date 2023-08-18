@@ -10,23 +10,23 @@ FetchContent_Declare(
     GIT_PROGRESS TRUE
 )
 FetchContent_MakeAvailable(imgui)
-FetchContent_GetProperties(imgui SOURCE_DIR imguiSourceDirectory)
+FetchContent_GetProperties(imgui SOURCE_DIR imgui_SOURCE_DIR)
 
 gvk_add_static_library(
-    target imgui
-    folder "external/"
-    includeDirectories "${imguiSourceDirectory}"
-    includeFiles
-        "${imguiSourceDirectory}/imconfig.h"
-        "${imguiSourceDirectory}/imgui.h"
-        "${imguiSourceDirectory}/imgui_internal.h"
-        "${imguiSourceDirectory}/imstb_rectpack.h"
-        "${imguiSourceDirectory}/imstb_textedit.h"
-        "${imguiSourceDirectory}/imstb_truetype.h"
-    sourceFiles
-        "${imguiSourceDirectory}/imgui.cpp"
-        "${imguiSourceDirectory}/imgui_demo.cpp"
-        "${imguiSourceDirectory}/imgui_draw.cpp"
-        "${imguiSourceDirectory}/imgui_tables.cpp"
-        "${imguiSourceDirectory}/imgui_widgets.cpp"
+    TARGET imgui
+    FOLDER "external/"
+    INCLUDE_DIRECTORIES "${imgui_SOURCE_DIR}"
+    INCLUDE_FILES
+        "${imgui_SOURCE_DIR}/imconfig.h"
+        "${imgui_SOURCE_DIR}/imgui.h"
+        "${imgui_SOURCE_DIR}/imgui_internal.h"
+        "${imgui_SOURCE_DIR}/imstb_rectpack.h"
+        "${imgui_SOURCE_DIR}/imstb_textedit.h"
+        "${imgui_SOURCE_DIR}/imstb_truetype.h"
+    SOURCE_FILES
+        "${imgui_SOURCE_DIR}/imgui.cpp"
+        "${imgui_SOURCE_DIR}/imgui_demo.cpp"
+        "${imgui_SOURCE_DIR}/imgui_draw.cpp"
+        "${imgui_SOURCE_DIR}/imgui_tables.cpp"
+        "${imgui_SOURCE_DIR}/imgui_widgets.cpp"
 )

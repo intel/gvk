@@ -2,11 +2,11 @@
 {
     "file_format_version" : "1.1.1",
     "layer" : {
-        "name": "@args_target@",
+        "name": "@ARGS_TARGET@",
         "type": "GLOBAL",
         "library_path": "@libraryPath@",
         "api_version": "@Vulkan_VERSION@",
-        "implementation_version": "@args_version@",
-        "description": "@args_description@"
+        "implementation_version": "@ARGS_VERSION@",
+        "description": "@ARGS_DESCRIPTION@"
     }
 }

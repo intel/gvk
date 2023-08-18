@@ -31,13 +31,13 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "CompanyName", "@args_company@"
-            VALUE "FileDescription", "@args_description@"
-            VALUE "FileVersion", "@args_version@"
-            VALUE "InternalName", "@args_target@.dll"
-            VALUE "LegalCopyright", "@args_copyright@"
-            VALUE "OriginalFilename", "@args_target@.dll"
-            VALUE "ProductName", "@args_target@"
+            VALUE "CompanyName", "@ARGS_COMPANY@"
+            VALUE "FileDescription", "@ARGS_DESCRIPTION@"
+            VALUE "FileVersion", "@ARGS_VERSION@"
+            VALUE "InternalName", "@ARGS_TARGET@.dll"
+            VALUE "LegalCopyright", "@ARGS_COPYRIGHT@"
+            VALUE "OriginalFilename", "@ARGS_TARGET@.dll"
+            VALUE "ProductName", "@ARGS_TARGET@"
             VALUE "ProductVersion", "@Vulkan_VERSION@"
         END
     END

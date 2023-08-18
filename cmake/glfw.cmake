@@ -14,5 +14,6 @@ FetchContent_Declare(
     GIT_PROGRESS TRUE
 )
 FetchContent_MakeAvailable(glfw)
-set_target_properties(glfw PROPERTIES FOLDER "${GVK_IDE_FOLDER}/external/glfw/")
-set_target_properties(update_mappings PROPERTIES FOLDER "${GVK_IDE_FOLDER}/external/glfw/")
+set(folder "${GVK_IDE_FOLDER}/external/glfw/")
+set_target_properties(glfw PROPERTIES FOLDER "${folder}")
+set_target_properties(update_mappings PROPERTIES FOLDER "${folder}")

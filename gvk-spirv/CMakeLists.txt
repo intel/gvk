@@ -5,20 +5,22 @@ set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
 set(includePath "${includeDirectory}/gvk-spirv/")
 set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk-spirv/")
 gvk_add_static_library(
-    target
+    TARGET
         gvk-spirv
-    folder
+    FOLDER
         "gvk-spirv/"
-    linkLibraries
+    LINK_LIBRARIES
         gvk-handles
-        glslang_INTERFACE
-        SPIRV-Cross_INTERFACE
-    includeDirectories
+        SPIRV-Headers
+        SPIRV-Tools-static
+        ${glslangLibraries}
+        ${spirvCrossLibraries}
+    INCLUDE_DIRECTORIES
         "${includeDirectory}"
-    includeFiles
+    INCLUDE_FILES
         "${includePath}/context.hpp"
         "${includeDirectory}/gvk-spirv.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${sourcePath}/context.cpp"
 )
 
@@ -26,10 +28,14 @@ gvk_add_static_library(
 # gvk-spirv.test
 set(testsPath "${CMAKE_CURRENT_LIST_DIR}/tests/")
 gvk_add_target_test(
-    target
+    TARGET
         gvk-spirv
-    folder
+    FOLDER
         "gvk-spirv/"
-    sourceFiles
+    SOURCE_FILES
         "${testsPath}/context.tests.cpp"
 )
+
+################################################################################
+# gvk-spirv install
+gvk_install_library(TARGET gvk-spirv)

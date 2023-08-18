@@ -27,113 +27,45 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-spirv/context.hpp"
 #include "gvk-structures.hpp"
 
+#ifdef GVK_COMPILER_MSVC
+#pragma warning(push, 0)
+#endif // GVK_COMPILER_MSVC
+
+#define ENABLE_HLSL
+#include "glslang/Public/ResourceLimits.h"
 #include "glslang/Public/ShaderLang.h"
 #include "glslang/SPIRV/GlslangToSpv.h"
+#include "spirv_common.hpp"
 #include "spirv_glsl.hpp"
+#include "spirv_hlsl.hpp"
+#include "spirv_parser.hpp"
+#include "spirv-tools/libspirv.hpp"
+
+// HACK : Both SPV_VERSION and SPV_REVISION are unconditionally defined by
+//  SPIRV-Cross and SPIRV-Headers, so both are being cleared before including
+//  spirv/1.2/spirv.h.
+//
+//  build/_deps/spirv-headers-src/include/spirv/1.2/spirv.h:53: error: "SPV_VERSION" redefined [-Werror]  53 | #define SPV_VERSION 0x10200
+//  build/_deps/spirv-cross-src/spirv.hpp:54: note: this is the location of the previous definition       54 | #define SPV_VERSION 0x10600
+//
+//  build/_deps/spirv-headers-src/include/spirv/1.2/spirv.h:54: error: "SPV_REVISION" redefined [-Werror] 54 | #define SPV_REVISION 2
+//  build/_deps/spirv-cross-src/spirv.hpp:55: note: this is the location of the previous definition       55 | #define SPV_REVISION 1
+//
+// TODO : Figure out the correct include order, conditional include, etc. to
+//  ensure there's no mismatch.
+#undef SPV_VERSION
+#undef SPV_REVISION
+#include "spirv/1.2/spirv.h"
+
+#ifdef GVK_COMPILER_MSVC
+#pragma warning(pop)
+#endif // GVK_COMPILER_MSVC
 
 #include <cassert>
 #include <iostream>
 
 namespace gvk {
 namespace spirv {
-
-static TBuiltInResource get_built_in_resource()
-{
-    TBuiltInResource builtInResource { };
-    builtInResource.maxLights = 32;
-    builtInResource.maxClipPlanes = 6;
-    builtInResource.maxTextureUnits = 32;
-    builtInResource.maxTextureCoords = 32;
-    builtInResource.maxVertexAttribs = 64;
-    builtInResource.maxVertexUniformComponents = 4096;
-    builtInResource.maxVaryingFloats = 64;
-    builtInResource.maxVertexTextureImageUnits = 32;
-    builtInResource.maxCombinedTextureImageUnits = 80;
-    builtInResource.maxTextureImageUnits = 32;
-    builtInResource.maxFragmentUniformComponents = 4096;
-    builtInResource.maxDrawBuffers = 32;
-    builtInResource.maxVertexUniformVectors = 128;
-    builtInResource.maxVaryingVectors = 8;
-    builtInResource.maxFragmentUniformVectors = 16;
-    builtInResource.maxVertexOutputVectors = 16;
-    builtInResource.maxFragmentInputVectors = 15;
-    builtInResource.minProgramTexelOffset = -8;
-    builtInResource.maxProgramTexelOffset = 7;
-    builtInResource.maxClipDistances = 8;
-    builtInResource.maxComputeWorkGroupCountX = 65535;
-    builtInResource.maxComputeWorkGroupCountY = 65535;
-    builtInResource.maxComputeWorkGroupCountZ = 65535;
-    builtInResource.maxComputeWorkGroupSizeX = 1024;
-    builtInResource.maxComputeWorkGroupSizeY = 1024;
-    builtInResource.maxComputeWorkGroupSizeZ = 64;
-    builtInResource.maxComputeUniformComponents = 1024;
-    builtInResource.maxComputeTextureImageUnits = 16;
-    builtInResource.maxComputeImageUniforms = 8;
-    builtInResource.maxComputeAtomicCounters = 8;
-    builtInResource.maxComputeAtomicCounterBuffers = 1;
-    builtInResource.maxVaryingComponents = 60;
-    builtInResource.maxVertexOutputComponents = 64;
-    builtInResource.maxGeometryInputComponents = 64;
-    builtInResource.maxGeometryOutputComponents = 128;
-    builtInResource.maxFragmentInputComponents = 128;
-    builtInResource.maxImageUnits = 8;
-    builtInResource.maxCombinedImageUnitsAndFragmentOutputs = 8;
-    builtInResource.maxCombinedShaderOutputResources = 8;
-    builtInResource.maxImageSamples = 0;
-    builtInResource.maxVertexImageUniforms = 0;
-    builtInResource.maxTessControlImageUniforms = 0;
-    builtInResource.maxTessEvaluationImageUniforms = 0;
-    builtInResource.maxGeometryImageUniforms = 0;
-    builtInResource.maxFragmentImageUniforms = 8;
-    builtInResource.maxCombinedImageUniforms = 8;
-    builtInResource.maxGeometryTextureImageUnits = 16;
-    builtInResource.maxGeometryOutputVertices = 256;
-    builtInResource.maxGeometryTotalOutputComponents = 1024;
-    builtInResource.maxGeometryUniformComponents = 1024;
-    builtInResource.maxGeometryVaryingComponents = 64;
-    builtInResource.maxTessControlInputComponents = 128;
-    builtInResource.maxTessControlOutputComponents = 128;
-    builtInResource.maxTessControlTextureImageUnits = 16;
-    builtInResource.maxTessControlUniformComponents = 1024;
-    builtInResource.maxTessControlTotalOutputComponents = 4096;
-    builtInResource.maxTessEvaluationInputComponents = 128;
-    builtInResource.maxTessEvaluationOutputComponents = 128;
-    builtInResource.maxTessEvaluationTextureImageUnits = 16;
-    builtInResource.maxTessEvaluationUniformComponents = 1024;
-    builtInResource.maxTessPatchComponents = 120;
-    builtInResource.maxPatchVertices = 32;
-    builtInResource.maxTessGenLevel = 64;
-    builtInResource.maxViewports = 16;
-    builtInResource.maxVertexAtomicCounters = 0;
-    builtInResource.maxTessControlAtomicCounters = 0;
-    builtInResource.maxTessEvaluationAtomicCounters = 0;
-    builtInResource.maxGeometryAtomicCounters = 0;
-    builtInResource.maxFragmentAtomicCounters = 8;
-    builtInResource.maxCombinedAtomicCounters = 8;
-    builtInResource.maxAtomicCounterBindings = 1;
-    builtInResource.maxVertexAtomicCounterBuffers = 0;
-    builtInResource.maxTessControlAtomicCounterBuffers = 0;
-    builtInResource.maxTessEvaluationAtomicCounterBuffers = 0;
-    builtInResource.maxGeometryAtomicCounterBuffers = 0;
-    builtInResource.maxFragmentAtomicCounterBuffers = 1;
-    builtInResource.maxCombinedAtomicCounterBuffers = 1;
-    builtInResource.maxAtomicCounterBufferSize = 16384;
-    builtInResource.maxTransformFeedbackBuffers = 4;
-    builtInResource.maxTransformFeedbackInterleavedComponents = 64;
-    builtInResource.maxCullDistances = 8;
-    builtInResource.maxCombinedClipAndCullDistances = 8;
-    builtInResource.maxSamples = 4;
-    builtInResource.limits.nonInductiveForLoops = 1;
-    builtInResource.limits.whileLoops = 1;
-    builtInResource.limits.doWhileLoops = 1;
-    builtInResource.limits.generalUniformIndexing = 1;
-    builtInResource.limits.generalAttributeMatrixVectorIndexing = 1;
-    builtInResource.limits.generalVaryingIndexing = 1;
-    builtInResource.limits.generalSamplerIndexing = 1;
-    builtInResource.limits.generalVariableIndexing = 1;
-    builtInResource.limits.generalConstantMatrixVectorIndexing = 1;
-    return builtInResource;
-}
 
 std::mutex Context::sMutex;
 uint32_t Context::sInstanceCount;
@@ -203,8 +135,9 @@ VkResult Context::compile(ShaderInfo* pShaderInfo)
     shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_4);
     shader.setStrings(&pGlsl, 1);
     auto messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
-    auto builtInResource = get_built_in_resource();
-    if (shader.parse(&builtInResource, 100, false, messages)) {
+    auto pDefaultResources = GetDefaultResources();
+    assert(pDefaultResources);
+    if (shader.parse(pDefaultResources, 100, false, messages)) {
         glslang::TProgram program;
         program.addShader(&shader);
         if (program.link(messages)) {
@@ -329,5 +262,525 @@ VkResult create_pipeline_layout(const Device& device, const BindingInfo& binding
     return gvkResult;
 }
 
+namespace detail {
+
+void EnableGLSLCompiler()
+{
+    auto success = glslang::InitializeProcess();
+    (void)success;
+    assert(success);
+}
+
+void DisableGLSLCompiler()
+{
+    glslang::FinalizeProcess();
+}
+
+struct SpirvShaderInfo
+{
+    std::map<uint32_t, std::string> filename;
+    std::map<uint32_t, std::string> source;
+    api_types::ShaderLanguage language;
+    std::string entryPoint;
+};
+
+spv_result_t ExtractShaderSourceCallback(void* user_data, const spv_parsed_instruction_t* instruction)
+{
+    if (instruction->opcode != SpvOpSource && instruction->opcode != SpvOpString && instruction->opcode != SpvOpEntryPoint) {
+        return SPV_SUCCESS;
+    }
+
+    SpirvShaderInfo* result = (SpirvShaderInfo*)(user_data);
+
+    switch (instruction->opcode) {
+    case SpvOpSource: {
+        result->language = api_types::GPA_SHADER_LANGUAGE_UNKNOWN;
+        SpvSourceLanguage language = static_cast<SpvSourceLanguage>(instruction->words[instruction->operands[0].offset]);
+        switch (language) {
+        case SpvSourceLanguage::SpvSourceLanguageGLSL: {
+            result->language = api_types::GPA_SHADER_LANGUAGE_GLSL;
+            break;
+        }
+        case SpvSourceLanguage::SpvSourceLanguageHLSL: {
+            result->language = api_types::GPA_SHADER_LANGUAGE_HLSL;
+            break;
+        }
+        default: {
+            break;
+        }
+        }
+        if (instruction->num_operands == 4) {
+            uint32_t fileId = instruction->words[instruction->operands[2].offset];
+            result->source[fileId] = (char*)(instruction->words + instruction->operands[3].offset);
+        }
+        break;
+    }
+    case SpvOpString: {
+        assert(instruction->num_operands == 2);
+        uint32_t fileId = instruction->words[instruction->operands[0].offset];
+        result->filename[fileId] = (char*)(instruction->words + instruction->operands[1].offset);
+        break;
+    }
+    case SpvOpEntryPoint: {
+        for (uint16_t i = 0; i < instruction->num_operands; i++) {
+            auto& operand = instruction->operands[i];
+            if (operand.type == SPV_OPERAND_TYPE_LITERAL_STRING) {
+                result->entryPoint = (char*)(instruction->words + instruction->operands[i].offset);
+                break;
+            }
+        }
+        break;
+    }
+    }
+    return SPV_SUCCESS;
+}
+
+#ifdef GVK_COMPILER_MSVC
+#pragma warning(push)
+#pragma warning(disable : 4702)
+#endif
+
+bool CompileFromSPIRV(api_types::ShaderLanguage sourceLanguage, std::vector<uint32_t> const* spirv, std::vector<api_types::SourceFile>& files)
+{
+    if (!spirv) {
+        return false;
+    }
+
+    static spv_context context = spvContextCreate(spv_target_env::SPV_ENV_UNIVERSAL_1_3);
+    SpirvShaderInfo shaderInfo;
+    spvBinaryParse(context, &shaderInfo, spirv->data(), spirv->size(), nullptr, ExtractShaderSourceCallback, nullptr);
+
+    if (shaderInfo.language == sourceLanguage && !shaderInfo.source.empty()) {
+        for (auto& file : shaderInfo.source) {
+            const std::string firstLine = "#line 1\n";
+            std::string content = file.second;
+            std::string filename = shaderInfo.filename[file.first];
+            size_t pos = content.find(firstLine);
+            if (pos != std::string::npos) {
+                content = content.substr(pos + firstLine.length());
+                files.push_back({ content, filename });
+            }
+            return true;
+        }
+    }
+
+    std::unique_ptr<spirv_cross::CompilerGLSL> compiler;
+    try {
+        using namespace api_types;
+        if (sourceLanguage == GPA_SHADER_LANGUAGE_HLSL) {
+            spirv_cross::CompilerHLSL* compilerHLSL = new spirv_cross::CompilerHLSL(*spirv);
+            spirv_cross::CompilerHLSL::Options optionsHLSL = {};
+            optionsHLSL.shader_model = 50;  // Default to Shader Model 5.0.
+            compilerHLSL->set_hlsl_options(optionsHLSL);
+            compiler = std::unique_ptr<spirv_cross::CompilerGLSL>(compilerHLSL);
+        } else {
+            compiler = std::unique_ptr<spirv_cross::CompilerGLSL>(new spirv_cross::CompilerGLSL(*spirv));
+        }
+        auto options = compiler->get_common_options();
+        options.vulkan_semantics = true;
+        options.separate_shader_objects = true;
+        compiler->set_common_options(options);
+        std::string res = compiler->compile();
+        files.push_back({res, ""});
+    } catch (spirv_cross::CompilerError& error) {
+        std::string res = error.what();
+        res += "\n";
+        if (compiler) {
+            res += compiler->get_partial_source();
+        }
+        files.push_back({res, ""});
+        return false;
+    }
+    return true;
+}
+
+#ifdef GVK_COMPILER_MSVC
+#pragma warning(pop)
+#endif
+
+void CompileToSPIRV(
+    api_types::ShaderStageFlagBits stage,
+    api_types::ShaderLanguage language,
+    std::string const& shaderCode,
+    std::vector<uint32_t>* spirv,
+    std::string* infoLog,
+    std::string* debugLog
+)
+{
+    using namespace api_types;
+    if (!spirv || !debugLog) {
+        return;
+    }
+    spirv->clear();
+    infoLog->clear();
+    debugLog->clear();
+    EShLanguage eshStage;
+    switch (stage) {
+    case GPA_SHADER_STAGE_VERTEX:
+        eshStage = EShLangVertex;
+        break;
+    case GPA_SHADER_STAGE_TESSELLATION_CONTROL:
+        eshStage = EShLangTessControl;
+        break;
+    case GPA_SHADER_STAGE_TESSELLATION_EVALUATION:
+        eshStage = EShLangTessEvaluation;
+        break;
+    case GPA_SHADER_STAGE_GEOMETRY:
+        eshStage = EShLangGeometry;
+        break;
+    case GPA_SHADER_STAGE_FRAGMENT:
+        eshStage = EShLangFragment;
+        break;
+    case GPA_SHADER_STAGE_COMPUTE:
+        eshStage = EShLangCompute;
+        break;
+    default:
+        *infoLog = "Invalid shader stage";
+        *debugLog = "Invalid shader stage";
+        return;
+    }
+
+    glslang::TShader shader(eshStage);
+    const char* sourceCStr[]{ shaderCode.c_str() };
+    shader.setStrings(sourceCStr, 1);
+    EShMessages messages = (EShMessages)EShMsgDefault;
+    if (language == GPA_SHADER_LANGUAGE_HLSL) {
+        shader.setEntryPoint("main");
+        shader.setHlslIoMapping(true);
+        messages = (EShMessages)(EShMsgDefault | EShMsgSpvRules | EShMsgVulkanRules | EShMsgHlslLegalization | EShMsgReadHlsl);
+    }
+    else if (language == GPA_SHADER_LANGUAGE_GLSL) {
+        messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
+    }
+    if (!shader.parse(GetDefaultResources(), 100, false, messages)) {
+        *infoLog = shader.getInfoLog();
+        *debugLog = shader.getInfoDebugLog();
+        return;
+    }
+    glslang::TProgram program;
+    program.addShader(&shader);
+    if (!program.link(messages)) {
+        *infoLog = shader.getInfoLog();
+        *debugLog = shader.getInfoDebugLog();
+        return;
+    }
+    glslang::GlslangToSpv(*program.getIntermediate(eshStage), *spirv);
+}
+
+bool GetReadableSPIRVfromBinarySPIRV(void* spirv, size_t binarySize, std::string& readableSPIRV)
+{
+    uint32_t options = SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES;
+    spv_target_env env = spv_target_env::SPV_ENV_UNIVERSAL_1_0;
+
+    spvtools::SpirvTools disassembler(env);
+
+    return disassembler.Disassemble((uint32_t*)spirv, binarySize, &readableSPIRV, options);
+}
+
+std::string GetGLSLFromSPIRV(std::vector<uint32_t> const& spirv)
+{
+    std::string result;
+    spirv_cross::CompilerGLSL* glsl = nullptr;
+    try {
+        glsl = new spirv_cross::CompilerGLSL(spirv);
+        auto options = glsl->get_common_options();
+        options.vulkan_semantics = true;
+        options.separate_shader_objects = true;
+        glsl->set_common_options(options);
+        result = glsl->compile();
+    } catch (...) {
+        result = " !!! ONLY PARTIAL SHADER AVAILABLE DUE TO SPIRV-CROSS ERROR !!!\n\n";
+        if (glsl) {
+            result += glsl->get_partial_source();
+        }
+    }
+    delete glsl;
+    return result;
+}
+
+bool GetBinarySPIRVfromReadableSPIRV(std::string const& readableSPIRV, std::vector<uint32_t>& spirv)
+{
+    spirv.clear();
+
+    spv_target_env env = spv_target_env::SPV_ENV_UNIVERSAL_1_0;
+    uint32_t options = SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS;
+
+    spvtools::SpirvTools assembler(env);
+    if (!assembler.Assemble(readableSPIRV, &spirv, options)) {
+        return false;
+    }
+
+    return true;
+}
+
+void GetSPIRVFromGLSL(
+    api_types::ShaderStageFlagBits stage,
+    std::string const& glsl,
+    std::vector<uint32_t>& spirv,
+    std::string& infoLog,
+    std::string& debugLog
+)
+{
+    using namespace api_types;
+    spirv.clear();
+    infoLog.clear();
+    debugLog.clear();
+    EShLanguage eshStage;
+    switch (stage) {
+    case GPA_SHADER_STAGE_VERTEX:
+        eshStage = EShLangVertex;
+        break;
+    case GPA_SHADER_STAGE_TESSELLATION_CONTROL:
+        eshStage = EShLangTessControl;
+        break;
+    case GPA_SHADER_STAGE_TESSELLATION_EVALUATION:
+        eshStage = EShLangTessEvaluation;
+        break;
+    case GPA_SHADER_STAGE_GEOMETRY:
+        eshStage = EShLangGeometry;
+        break;
+    case GPA_SHADER_STAGE_FRAGMENT:
+        eshStage = EShLangFragment;
+        break;
+    case GPA_SHADER_STAGE_COMPUTE:
+        eshStage = EShLangCompute;
+        break;
+    default:
+        infoLog = "Invalid shader stage";
+        debugLog = "Invalid shader stage";
+        return;
+    }
+    glslang::TShader shader(eshStage);
+    const char* sourceCStr[]{ glsl.c_str() };
+    shader.setStrings(sourceCStr, 1);
+    auto messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
+    if (!shader.parse(GetDefaultResources(), 100, false, messages)) {
+        infoLog = shader.getInfoLog();
+        debugLog = shader.getInfoDebugLog();
+        return;
+    }
+    glslang::TProgram program;
+    program.addShader(&shader);
+    if (!program.link(messages)) {
+        infoLog = shader.getInfoLog();
+        debugLog = shader.getInfoDebugLog();
+        return;
+    }
+    glslang::GlslangToSpv(*program.getIntermediate(eshStage), spirv);
+}
+
+struct SpirVResourceContainer
+{
+    spirv_cross::Resource resource{};
+    spirv_cross::SPIRType type{};
+    unsigned location{};
+
+    bool operator==(SpirVResourceContainer const& other)
+    {
+        return location == other.location && type.basetype == other.type.basetype && type.vecsize == other.type.vecsize;
+    }
+
+    bool operator!=(SpirVResourceContainer const& other) { return !this->operator==(other); }
+};
+
+bool CompareResourceContainersByLocation(const SpirVResourceContainer& lhs, const SpirVResourceContainer& rhs)
+{
+    return lhs.location < rhs.location;
+}
+
+char const* LookupBaseType(spirv_cross::SPIRType::BaseType input)
+{
+    using namespace spirv_cross;
+    switch (input) {
+    case SPIRType::BaseType::Unknown:
+        return "Unknown";
+        break;
+    case SPIRType::BaseType::Void:
+        return "Void";
+        break;
+    case SPIRType::BaseType::Boolean:
+        return "Boolean";
+        break;
+    case SPIRType::BaseType::Char:
+        return "Char";
+        break;
+    case SPIRType::BaseType::Int:
+        return "Int";
+        break;
+    case SPIRType::BaseType::UInt:
+        return "UInt";
+        break;
+    case SPIRType::BaseType::Int64:
+        return "Int64";
+        break;
+    case SPIRType::BaseType::UInt64:
+        return "UInt64";
+        break;
+    case SPIRType::BaseType::AtomicCounter:
+        return "AtomicCounter";
+        break;
+    case SPIRType::BaseType::Half:
+        return "Half";
+        break;
+    case SPIRType::BaseType::Float:
+        return "Float";
+        break;
+    case SPIRType::BaseType::Double:
+        return "Double";
+        break;
+    case SPIRType::BaseType::Struct:
+        return "Struct";
+        break;
+    case SPIRType::BaseType::Image:
+        return "Image";
+        break;
+    case SPIRType::BaseType::SampledImage:
+        return "SampledImage";
+        break;
+    case SPIRType::BaseType::Sampler:
+        return "Sampler";
+        break;
+    default:
+        return "Unknown";
+        break;
+    }
+}
+
+void BuildResourceContainer(
+    std::vector<SpirVResourceContainer>& resContainer,
+    std::vector<spirv_cross::Resource> const& spvResources,
+    spirv_cross::CompilerGLSL const& glsl
+)
+{
+    for (spirv_cross::Resource const& resource : spvResources) {
+        SpirVResourceContainer res;
+        res.resource = resource;
+        res.type = glsl.get_type(resource.type_id);
+        res.location = glsl.get_decoration(resource.id, spv::DecorationLocation);
+        resContainer.push_back(res);
+    }
+}
+
+void CompareShaderResourceContainerLists(
+    std::vector<SpirVResourceContainer> shaderOne,
+    std::vector<SpirVResourceContainer> shaderTwo,
+    std::vector<std::string>& errors,
+    std::string shaderOneName, std::string shaderTwoName
+)
+{
+    for (size_t i = 0; i < shaderOne.size(); i++) {
+        if (shaderOne[i] != shaderTwo[i]) {
+            std::stringstream message;
+            message << shaderOneName << " has ";
+            if (shaderOne[i].type.vecsize > 0 && shaderOne[i].type.columns == 1) {
+                message << "a vec" << shaderOne[i].type.vecsize << " of type ";
+            } else if (shaderOne[i].type.columns > 1) {
+                message << "a mat" << shaderOne[i].type.columns << " of type ";
+            }
+            message << LookupBaseType(shaderOne[i].type.basetype) << " named " << shaderOne[i].resource.name << " at location = " << shaderOne[i].location << "|";
+            message << shaderTwoName << " has ";
+            if (shaderTwo[i].type.vecsize > 0 && shaderTwo[i].type.columns == 1) {
+                message << "a vec" << shaderTwo[i].type.vecsize << " of type ";
+            } else if (shaderTwo[i].type.columns > 1) {
+                message << "a mat" << shaderTwo[i].type.columns << " of type ";
+            }
+            message << LookupBaseType(shaderTwo[i].type.basetype) << " named " << shaderTwo[i].resource.name << " at location = " << shaderTwo[i].location;
+            errors.push_back(message.str());
+        }
+    }
+}
+
+bool IsSpirVCompatible(
+    std::vector<uint32_t> const& spirv0,
+    std::vector<uint32_t> const& spirv1,
+    std::vector<std::string>& errors,
+    std::string shader0Name,
+    std::string shader1Name
+)
+{
+    spirv_cross::CompilerGLSL glsl0(spirv0);
+    spirv_cross::CompilerGLSL glsl1(spirv1);
+
+    spirv_cross::ShaderResources resources0 = glsl0.get_shader_resources();
+    spirv_cross::ShaderResources resources1 = glsl1.get_shader_resources();
+
+    // Each of these blocks is pulling stage input/output/uniforms
+    // pulling details we care about, and then sorting based on location
+    // so that we can compare for compatability
+
+    // stage inputs
+    std::vector<spirv_cross::Resource> inputs0(resources0.stage_inputs);
+    std::vector<spirv_cross::Resource> inputs1(resources1.stage_inputs);
+    std::vector<SpirVResourceContainer> in0;
+    std::vector<SpirVResourceContainer> in1;
+
+    BuildResourceContainer(in0, inputs0, glsl0);
+    BuildResourceContainer(in1, inputs1, glsl1);
+
+    std::sort(in0.begin(), in0.end(), CompareResourceContainersByLocation);
+    std::sort(in1.begin(), in1.end(), CompareResourceContainersByLocation);
+
+    // stage outputs
+    std::vector<spirv_cross::Resource> outputs0(resources0.stage_outputs);
+    std::vector<spirv_cross::Resource> outputs1(resources1.stage_outputs);
+    std::vector<SpirVResourceContainer> out0;
+    std::vector<SpirVResourceContainer> out1;
+
+    BuildResourceContainer(out0, outputs0, glsl0);
+    BuildResourceContainer(out1, outputs1, glsl1);
+
+    std::sort(out0.begin(), out0.end(), CompareResourceContainersByLocation);
+    std::sort(out1.begin(), out1.end(), CompareResourceContainersByLocation);
+
+    // uniform buffers
+    std::vector<spirv_cross::Resource> uniforms0(resources0.uniform_buffers);
+    std::vector<spirv_cross::Resource> uniforms1(resources1.uniform_buffers);
+    std::vector<SpirVResourceContainer> uni0;
+    std::vector<SpirVResourceContainer> uni1;
+
+    BuildResourceContainer(uni0, uniforms0, glsl0);
+    BuildResourceContainer(uni1, uniforms1, glsl1);
+
+    std::sort(uni0.begin(), uni0.end(), CompareResourceContainersByLocation);
+    std::sort(uni1.begin(), uni1.end(), CompareResourceContainersByLocation);
+
+    bool equivalence = true;
+    // early outs,
+    if (inputs0.size() != inputs1.size()) {
+        errors.push_back("Mismatch in stage inputs detected");
+        equivalence = false;
+    }
+
+    if (outputs0.size() != outputs1.size()) {
+        errors.push_back("Mismatch in stage outputs detected");
+        equivalence = false;
+    }
+
+    if (uniforms0.size() != uniforms1.size()) {
+        errors.push_back("Mismatch in stage uniforms detected");
+        equivalence = false;
+    }
+
+    if (!equivalence) {
+        return false;
+    }
+
+    // we can assume the lists are the same size, and are sorted
+    // so we can walk the array and compare 1[i] to 2[i]
+
+    CompareShaderResourceContainerLists(in0, in1, errors, shader0Name, shader1Name);
+    CompareShaderResourceContainerLists(out0, out1, errors, shader0Name, shader1Name);
+    CompareShaderResourceContainerLists(uni0, uni1, errors, shader0Name, shader1Name);
+
+    // if errors contains anythimg more than the 3 messages above, signal the shaders
+    // are incompatable
+    if (errors.size() > 2) {
+        return false;
+    }
+
+    return true;
+}
+
+} // namespace detail
 } // namespace spirv
 } // namespace gvk

@@ -32,6 +32,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-runtime.hpp"
 #include "gvk-structures.hpp"
 #include "gvk-structures/generated/core-structure-enumerate-handles.hpp"
+#include "gvk-restore-point/detail/asio-include.hpp"
 #include "gvk-restore-point/detail/restore-point-applier-base.hpp"
 
 #include "gvk-restore-point/generated/basic-restore-point-applier.hpp"
@@ -96,6 +97,10 @@ std::string restored_handle_to_string(HandleType handle)
 
 detail::RestorePointApplierBase::~RestorePointApplierBase()
 {
+    // NOTE : asio::thread_pool is forward declared...when compiling GPA FW, MSVC
+    //  tries to generate a default dtor for std::unique_ptr<asio::thread_pool>()
+    //  even though asio is included here...very annoying.
+    delete mpThreadPool;
 }
 
 detail::RestorePointApplierBase::CapturedHandle detail::RestorePointApplierBase::get_captured_handle(RestoredHandle restoredHandle) const
@@ -224,8 +229,11 @@ VkResult detail::RestorePointApplierBase::restore_image_layouts(GvkStateTrackedO
         auto vkImage = (VkImage)get_restored_handle(stateTrackedObject.handle);
         mApplyInfo.processImageLayoutsCallback(vkDevice, vkImage, *restoreInfo->pImageCreateInfo, restoreInfo->pImageLayouts);
     } else {
+        if (!mpThreadPool) {
+            mpThreadPool = new asio::thread_pool;
+        }
         asio::post(
-            mThreadPool,
+            *mpThreadPool,
             [this, stateTrackedObject]()
             {
                 auto restoreInfo = get_restore_info<GvkImageRestoreInfo>("VkImage", stateTrackedObject.handle);
@@ -341,6 +349,10 @@ VkResult detail::RestorePointApplierBase::restore_command_buffer_cmds(const GvkS
     return { };
 }
 #endif
+
+RestorePointApplier::~RestorePointApplier()
+{
+}
 
 VkResult RestorePointApplier::apply_restore_point(const restore_point::ApplyInfo& restorePointInfo, const DispatchTable& dispatchTable, const DispatchTable& dynamicDispatchTable)
 {

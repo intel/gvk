@@ -39,6 +39,7 @@ class RestorePointApplier final
     : public gvk::detail::BasicRestorePointApplier
 {
 public:
+    ~RestorePointApplier();
     VkResult apply_restore_point(const restore_point::ApplyInfo& restorePointInfo, const DispatchTable& dispatchTable, const DispatchTable& dynamicDispatchTable) override final;
 
 protected:
