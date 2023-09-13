@@ -99,4 +99,8 @@ private:
     uint32_t mIndexCount { };
 };
 
+VkResult resize(VkDeviceSize size, gvk::Buffer* pBuffer);
+VkResult expand(VkDeviceSize size, gvk::Buffer* pBuffer);
+VkResult create_staging_buffer(const gvk::Device& device, VkDeviceSize size, gvk::Buffer* pBuffer);
+
 } // namespace gvk

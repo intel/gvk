@@ -3,10 +3,11 @@ include_guard()
 
 include(FetchContent)
 
+set(imgui_VERSION c6e0284ac58b3f205c95365478888f7b53b077e2) # 1.89.9
 FetchContent_Declare(
     imgui
     GIT_REPOSITORY "https://github.com/ocornut/imgui.git"
-    GIT_TAG 5319d1cffafd5045c4742892c38c9e5cfa23d195 # 1.89.6
+    GIT_TAG ${imgui_VERSION}
     GIT_PROGRESS TRUE
 )
 FetchContent_MakeAvailable(imgui)

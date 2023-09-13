@@ -175,5 +175,36 @@ VkResult StateTracker::post_vkCreateRayTracingPipelinesNV(VkDevice device, VkPip
     return gvkResult;
 }
 
+VkResult StateTracker::post_vkCreateExecutionGraphPipelinesAMDX(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkExecutionGraphPipelineCreateInfoAMDX* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines, VkResult gvkResult)
+{
+    if (gvkResult == VK_SUCCESS) {
+        Device gvkDevice = device;
+        assert(gvkDevice);
+        assert(createInfoCount);
+        assert(pCreateInfos);
+        assert(pPipelines);
+        for (uint32_t createInfo_i = 0; createInfo_i < createInfoCount; ++createInfo_i) {
+            const auto& createInfo = pCreateInfos[createInfo_i];
+            Pipeline gvkPipeline;
+            gvkPipeline.mReference.reset(gvk::newref, gvk::HandleId<VkDevice, VkPipeline>(device, pPipelines[createInfo_i]));
+            auto& controlBlock = gvkPipeline.mReference.get_obj();
+            controlBlock.mStateTrackedObjectInfo.flags = GVK_STATE_TRACKED_OBJECT_STATUS_ACTIVE_BIT;
+            controlBlock.mVkPipeline = pPipelines[createInfo_i];
+            controlBlock.mDevice = gvkDevice;
+            controlBlock.mPipelineCache = PipelineCache({ device, pipelineCache });
+            controlBlock.mPipelineLayout = PipelineLayout({ device, createInfo.layout });
+            controlBlock.mAllocationCallbacks = pAllocator ? *pAllocator : VkAllocationCallbacks { };
+            controlBlock.mExecutionGraphPipelineCreateInfoAMDX = createInfo;
+            controlBlock.mShaderModules.reserve(createInfo.stageCount);
+            for (uint32_t stage_i = 0; stage_i < createInfo.stageCount; ++stage_i) {
+                controlBlock.mShaderModules.push_back(ShaderModule({ device, createInfo.pStages[stage_i].module }));
+                assert(controlBlock.mShaderModules.back());
+            }
+            gvkDevice.mReference.get_obj().mPipelineTracker.insert(gvkPipeline);
+        }
+    }
+    return gvkResult;
+}
+
 } // namespace state_tracker
 } // namespace gvk

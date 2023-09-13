@@ -54,10 +54,10 @@ VkResult create_mesh(
         VertexPositionTexcoordColor {{ -w, -h,  d }, { 0, 0 }, { bottomColor }},
         VertexPositionTexcoordColor {{ -w, -h, -d }, { 0, 0 }, { bottomColor }},
         // Front
-        VertexPositionTexcoordColor {{ -w,  h,  w }, { 0, 0 }, { topColor }},
-        VertexPositionTexcoordColor {{  w,  h,  w }, { 0, 0 }, { topColor }},
-        VertexPositionTexcoordColor {{  w, -h,  w }, { 0, 0 }, { bottomColor }},
-        VertexPositionTexcoordColor {{ -w, -h,  w }, { 0, 0 }, { bottomColor }},
+        VertexPositionTexcoordColor {{ -w,  h,  d }, { 0, 0 }, { topColor }},
+        VertexPositionTexcoordColor {{  w,  h,  d }, { 0, 0 }, { topColor }},
+        VertexPositionTexcoordColor {{  w, -h,  d }, { 0, 0 }, { bottomColor }},
+        VertexPositionTexcoordColor {{ -w, -h,  d }, { 0, 0 }, { bottomColor }},
         // Right
         VertexPositionTexcoordColor {{  w,  h,  d }, { 0, 0 }, { topColor }},
         VertexPositionTexcoordColor {{  w,  h, -d }, { 0, 0 }, { topColor }},

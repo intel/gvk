@@ -8,7 +8,7 @@ set(SPIRV_CROSS_ENABLE_TESTS             OFF CACHE BOOL "" FORCE)
 set(SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS ON  CACHE BOOL "" FORCE)
 set(SPIRV_CROSS_FORCE_PIC                ON  CACHE BOOL "" FORCE)
 set(SPIRV_CROSS_SKIP_INSTALL             ON  CACHE BOOL "" FORCE)
-set(SPIRV-Cross_VERSION 7cb2f62e3ba4d9acff27fea40ddc5a2844f39d5e) # sdk-1.3.250.0
+set(SPIRV-Cross_VERSION bccaa94db814af33d8ef05c153e7c34d8bd4d685) # sdk-1.3.261.1
 FetchContent_Declare(
     SPIRV-Cross
     GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Cross.git"

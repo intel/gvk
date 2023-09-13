@@ -449,15 +449,13 @@ void Renderer::record_cmds(VkCommandBuffer vkCommandBuffer) const
     assert(dispatchTable.gvkCmdSetScissor);
     assert(dispatchTable.gvkCmdBindDescriptorSets);
     assert(dispatchTable.gvkCmdDrawIndexed);
-
     auto pImDrawData = ImGui::GetDrawData();
     assert(pImDrawData);
-    if (pImDrawData->CmdListsCount) {
-        assert(pImDrawData->CmdLists);
+    if (!pImDrawData->CmdLists.empty()) {
         record_render_state_setup_cmds(vkCommandBuffer, pImDrawData);
         int vertexOffset = 0;
         int indexOffset = 0;
-        for (int cmdList_i = 0; cmdList_i < pImDrawData->CmdListsCount; ++cmdList_i) {
+        for (int cmdList_i = 0; cmdList_i < pImDrawData->CmdLists.size(); ++cmdList_i) {
             auto pCmdList = pImDrawData->CmdLists[cmdList_i];
             for (int cmd_i = 0; cmd_i < pCmdList->CmdBuffer.Size; ++cmd_i) {
                 const auto& cmd = pCmdList->CmdBuffer[cmd_i];

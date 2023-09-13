@@ -67,12 +67,14 @@ public:
         if (handle.name == "VkBuffer") {
             add_manually_implemented_ctor("VkResult create(const Device& device, const VkBufferCreateInfo* pBufferCreateInfo, const VmaAllocationCreateInfo* pAllocationCreateInfo, Buffer* pBuffer)");
             add_member(MemberInfo("VmaAllocation", "mVmaAllocation", "VmaAllocation"));
+            add_member(MemberInfo("VmaAllocationCreateInfo", "mVmaAllocationCreateInfo", "VmaAllocationCreateInfo"));
             add_manually_implemented_dtor();
         }
         if (handle.name == "VkImage") {
             add_manually_implemented_ctor("VkResult create(const Device& device, const VkImageCreateInfo* pImageCreateInfo, const VmaAllocationCreateInfo* pAllocationCreateInfo, Image* pImage)");
             add_member(MemberInfo("VkSwapchainKHR", "mVkSwapchainKHR", "SwapchainKHR"));
             add_member(MemberInfo("VmaAllocation", "mVmaAllocation", "VmaAllocation"));
+            add_member(MemberInfo("VmaAllocationCreateInfo", "mVmaAllocationCreateInfo", "VmaAllocationCreateInfo"));
             add_manually_implemented_dtor();
         }
         if (handle.name == "VkDeferredOperationKHR") {

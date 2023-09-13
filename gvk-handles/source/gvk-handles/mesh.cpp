@@ -49,4 +49,46 @@ void Mesh::record_cmds(const gvk::CommandBuffer& commandBuffer) const
     dispatchTable.gvkCmdDrawIndexed(commandBuffer, (uint32_t)mIndexCount, 1, 0, 0, 0);
 }
 
+VkResult resize(VkDeviceSize size, gvk::Buffer* pBuffer)
+{
+    assert(pBuffer);
+    assert(*pBuffer);
+    gvk_result_scope_begin(VK_SUCCESS) {
+        auto bufferCreateInfo = pBuffer->get<VkBufferCreateInfo>();
+        if (bufferCreateInfo.size != size) {
+            bufferCreateInfo.size = size;
+            const auto& device = pBuffer->get<gvk::Device>();
+            const auto& allocationCreateInfo = pBuffer->get<VmaAllocationCreateInfo>();
+            gvk_result(gvk::Buffer::create(device, &bufferCreateInfo, &allocationCreateInfo, pBuffer));
+        }
+    } gvk_result_scope_end;
+    return gvkResult;
+}
+
+VkResult expand(VkDeviceSize size, gvk::Buffer* pBuffer)
+{
+    assert(pBuffer);
+    assert(*pBuffer);
+    return pBuffer->get<VkBufferCreateInfo>().size < size ? resize(size, pBuffer) : VK_SUCCESS;
+}
+
+VkResult create_staging_buffer(const gvk::Device& device, VkDeviceSize size, gvk::Buffer* pBuffer)
+{
+    assert(pBuffer);
+    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+        if (*pBuffer) {
+            gvk_result(expand(size, pBuffer));
+        } else {
+            auto bufferCreateInfo = gvk::get_default<VkBufferCreateInfo>();
+            bufferCreateInfo.size = size;
+            bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            auto allocationCreateInfo = gvk::get_default<VmaAllocationCreateInfo>();
+            allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+            allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+            gvk_result(gvk::Buffer::create(device, &bufferCreateInfo, &allocationCreateInfo, pBuffer));
+        }
+    } gvk_result_scope_end;
+    return gvkResult;
+}
+
 } // namespace gvk

@@ -145,6 +145,7 @@ VkResult Buffer::create(const Device& device, const VkBufferCreateInfo* pBufferC
             bufferControlBlock.mDevice = device;
             bufferControlBlock.mBufferCreateInfo = *pBufferCreateInfo;
             bufferControlBlock.mVmaAllocation = vmaAllocation;
+            bufferControlBlock.mVmaAllocationCreateInfo = *pAllocationCreateInfo;
             gvk_result(detail::initialize_control_block(bufferControlBlock));
         }
     } gvk_result_scope_end;
@@ -165,6 +166,7 @@ VkResult Image::create(const Device& device, const VkImageCreateInfo* pImageCrea
             imageControlBlock.mDevice = device;
             imageControlBlock.mImageCreateInfo = *pImageCreateInfo;
             imageControlBlock.mVmaAllocation = vmaAllocation;
+            imageControlBlock.mVmaAllocationCreateInfo = *pAllocationCreateInfo;
             gvk_result(detail::initialize_control_block(imageControlBlock));
         }
     } gvk_result_scope_end;

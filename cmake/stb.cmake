@@ -3,10 +3,11 @@ include_guard()
 
 include(FetchContent)
 
+set(stb_VERSION 5736b15f7ea0ffb08dd38af21067c314d6a3aae9)
 FetchContent_Declare(
     stb
     GIT_REPOSITORY "https://github.com/nothings/stb.git"
-    GIT_TAG 5736b15f7ea0ffb08dd38af21067c314d6a3aae9
+    GIT_TAG ${stb_VERSION}
     GIT_PROGRESS TRUE
 )
 FetchContent_MakeAvailable(stb)

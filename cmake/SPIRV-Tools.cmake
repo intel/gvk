@@ -5,7 +5,7 @@ include(FetchContent)
 
 set(SPIRV_SKIP_EXECUTABLES   ON CACHE BOOL "" FORCE)
 set(SKIP_SPIRV_TOOLS_INSTALL ON CACHE BOOL "" FORCE)
-set(SPIRV-Tools_VERSION e7c6084fd1d6d6f5ac393e842728d8be309688ca) # sdk-1.3.250.0
+set(SPIRV-Tools_VERSION e553b884c7c9febaa4e52334f683641fb5f196a0) # sdk-1.3.261.1
 FetchContent_Declare(
     SPIRV-Tools
     GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Tools.git"

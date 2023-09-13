@@ -9,7 +9,7 @@ set(ENABLE_GLSLANG_INSTALL  OFF CACHE BOOL "" FORCE)
 set(ENABLE_GLSLANG_JS       OFF CACHE BOOL "" FORCE)
 set(ENABLE_GLSLANG_WEBMIN   OFF CACHE BOOL "" FORCE)
 set(SKIP_GLSLANG_INSTALL    ON  CACHE BOOL "" FORCE)
-set(glslang_VERSION d1517d64cfca91f573af1bf7341dc3a5113349c0) # sdk-1.3.250.0
+set(glslang_VERSION 76b52ebf77833908dc4c0dd6c70a9c357ac720bd) # sdk-1.3.261.1
 FetchContent_Declare(
     glslang
     GIT_REPOSITORY "https://github.com/KhronosGroup/glslang.git"
