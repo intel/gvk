@@ -177,7 +177,7 @@ VkResult DeferredOperationKHR::create(const Device& device, const VkAllocationCa
 {
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         assert(pDeferredOperation);
-        auto dispatchTable = device.get<DispatchTable>();
+        const auto& dispatchTable = device.get<DispatchTable>();
         assert(dispatchTable.gvkCreateDeferredOperationKHR);
         VkDeferredOperationKHR vkDeferredOperationKHR = VK_NULL_HANDLE;
         auto pVkDeferredOperationKHR = &vkDeferredOperationKHR;
@@ -235,7 +235,7 @@ VkResult initialize_control_block<Device>(Device& device)
 {
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         auto& deviceControlBlock = device.mReference.get_obj();
-        deviceControlBlock.mInstance = deviceControlBlock.mPhysicalDevice.get<Instance>();
+        deviceControlBlock.mInstance = deviceControlBlock.mPhysicalDevice.get<VkInstance>();
         const auto& physicalDeviceDispatchTable = deviceControlBlock.mPhysicalDevice.get<DispatchTable>();
         deviceControlBlock.mDispatchTable.gvkGetDeviceProcAddr = physicalDeviceDispatchTable.gvkGetDeviceProcAddr;
         if (!deviceControlBlock.mUnmanaged) {

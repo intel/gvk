@@ -83,9 +83,9 @@ inline void record_render_pass_layout_transitions(VkDevice device, const RenderP
 {
     assert(renderPassCreateInfo.pAttachments);
     for (uint32_t i = 0; i < renderPassCreateInfo.attachmentCount && i < framebufferAttachments.size(); ++i) {
-        auto gvkImageView = framebufferAttachments[i];
+        const auto& gvkImageView = framebufferAttachments[i];
         assert(gvkImageView);
-        auto imageViewCreateInfo = gvkImageView.get<VkImageViewCreateInfo>();
+        const auto& imageViewCreateInfo = gvkImageView.get<VkImageViewCreateInfo>();
         recordImageLayoutTransition(device, imageViewCreateInfo.image, imageViewCreateInfo.subresourceRange, renderPassCreateInfo.pAttachments[i].finalLayout);
     }
 }
@@ -95,7 +95,7 @@ void CmdTracker::record_vkCmdEndRenderPass(VkCommandBuffer commandBuffer)
     BasicCmdTracker::record_vkCmdEndRenderPass(commandBuffer);
     CommandBuffer gvkCommandBuffer(commandBuffer);
     assert(gvkCommandBuffer);
-    auto gvkDevice = gvkCommandBuffer.get<Device>();
+    const auto& gvkDevice = gvkCommandBuffer.get<Device>();
     assert(gvkDevice);
 
     RenderPass gvkRenderPass;
@@ -112,18 +112,18 @@ void CmdTracker::record_vkCmdEndRenderPass(VkCommandBuffer commandBuffer)
     assert(gvkRenderPass);
     assert(gvkFramebuffer);
 
-    auto renderPassCreateInfo = gvkRenderPass.get<VkRenderPassCreateInfo>();
+    const auto& renderPassCreateInfo = gvkRenderPass.get<VkRenderPassCreateInfo>();
     if (renderPassCreateInfo.sType == get_stype<VkRenderPassCreateInfo>()) {
-        record_render_pass_layout_transitions(gvkDevice, renderPassCreateInfo, gvkFramebuffer.get<const std::vector<ImageView>&>(),
+        record_render_pass_layout_transitions(gvkDevice, renderPassCreateInfo, gvkFramebuffer.get<std::vector<ImageView>>(),
             [&](VkDevice device, VkImage image, const VkImageSubresourceRange& imageSubresourceRange, VkImageLayout imageLayout)
             {
                 record_image_layout_transition(device, image, imageSubresourceRange, imageLayout);
             }
         );
     } else {
-        auto renderPassCreateInfo2 = gvkRenderPass.get<VkRenderPassCreateInfo2>();
+        const auto& renderPassCreateInfo2 = gvkRenderPass.get<VkRenderPassCreateInfo2>();
         assert(renderPassCreateInfo2.sType == get_stype<VkRenderPassCreateInfo2>());
-        record_render_pass_layout_transitions(gvkDevice, renderPassCreateInfo2, gvkFramebuffer.get<const std::vector<ImageView>&>(),
+        record_render_pass_layout_transitions(gvkDevice, renderPassCreateInfo2, gvkFramebuffer.get<std::vector<ImageView>>(),
             [&](VkDevice device, VkImage image, const VkImageSubresourceRange& imageSubresourceRange, VkImageLayout imageLayout)
             {
                 record_image_layout_transition(device, image, imageSubresourceRange, imageLayout);
@@ -293,7 +293,7 @@ void CmdTracker::record_vkCmdPipelineBarrier(VkCommandBuffer commandBuffer, VkPi
         CommandBuffer gvkCommandBuffer;
         gvkCommandBuffer = CommandBuffer(commandBuffer);
         assert(gvkCommandBuffer);
-        auto gvkDevice = gvkCommandBuffer.get<Device>();
+        const auto& gvkDevice = gvkCommandBuffer.get<Device>();
         assert(gvkDevice);
         for (uint32_t imageMemoryBarrier_i = 0; imageMemoryBarrier_i < imageMemoryBarrierCount; ++imageMemoryBarrier_i) {
             const auto& imageMemoryBarrier = pImageMemoryBarriers[imageMemoryBarrier_i];
@@ -312,7 +312,7 @@ void CmdTracker::record_vkCmdPipelineBarrier2(VkCommandBuffer commandBuffer, con
         CommandBuffer gvkCommandBuffer;
         gvkCommandBuffer = CommandBuffer(commandBuffer);
         assert(gvkCommandBuffer);
-        auto gvkDevice = gvkCommandBuffer.get<Device>();
+        const auto& gvkDevice = gvkCommandBuffer.get<Device>();
         assert(gvkDevice);
         for (uint32_t imageMemoryBarrier_i = 0; imageMemoryBarrier_i < imageMemoryBarrierCount; ++imageMemoryBarrier_i) {
             const auto& imageMemoryBarrier = pImageMemoryBarriers[imageMemoryBarrier_i];
@@ -333,7 +333,7 @@ void CmdTracker::record_vkCmdWaitEvents(VkCommandBuffer commandBuffer, uint32_t 
         CommandBuffer gvkCommandBuffer;
         gvkCommandBuffer = CommandBuffer(commandBuffer);
         assert(gvkCommandBuffer);
-        auto gvkDevice = gvkCommandBuffer.get<Device>();
+        const auto& gvkDevice = gvkCommandBuffer.get<Device>();
         assert(gvkDevice);
         for (uint32_t imageMemoryBarrier_i = 0; imageMemoryBarrier_i < imageMemoryBarrierCount; ++imageMemoryBarrier_i) {
             const auto& imageMemoryBarrier = pImageMemoryBarriers[imageMemoryBarrier_i];
@@ -353,7 +353,7 @@ void CmdTracker::record_vkCmdWaitEvents2(VkCommandBuffer commandBuffer, uint32_t
             CommandBuffer gvkCommandBuffer;
             gvkCommandBuffer = CommandBuffer(commandBuffer);
             assert(gvkCommandBuffer);
-            auto gvkDevice = gvkCommandBuffer.get<Device>();
+            const auto& gvkDevice = gvkCommandBuffer.get<Device>();
             assert(gvkDevice);
             for (uint32_t imageMemoryBarrier_i = 0; imageMemoryBarrier_i < imageMemoryBarrierCount; ++imageMemoryBarrier_i) {
                 const auto& imageMemoryBarrier = pImageMemoryBarriers[imageMemoryBarrier_i];
@@ -376,7 +376,7 @@ void CmdTracker::record_image_layout_transition(VkDevice device, VkImage image, 
     if (imageLayoutTrackerItr == mImageLayoutTrackers.end()) {
         Image gvkImage({ device, image });
         assert(gvkImage);
-        imageLayoutTrackerItr = mImageLayoutTrackers.insert({ image, gvkImage.get<const ImageLayoutTracker&>() }).first;
+        imageLayoutTrackerItr = mImageLayoutTrackers.insert({ image, gvkImage.get<ImageLayoutTracker>() }).first;
     }
     imageLayoutTrackerItr->second.set_image_layouts(imageSubresourceRange, imageLayout);
 }

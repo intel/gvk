@@ -39,12 +39,12 @@ void Mesh::reset()
 
 void Mesh::record_cmds(const gvk::CommandBuffer& commandBuffer) const
 {
-    auto dispatchTable = commandBuffer.get<Device>().get<DispatchTable>();
+    const auto& dispatchTable = commandBuffer.get<Device>().get<DispatchTable>();
     assert(dispatchTable.gvkCmdBindVertexBuffers);
     assert(dispatchTable.gvkCmdBindIndexBuffer);
     assert(dispatchTable.gvkCmdDrawIndexed);
     VkDeviceSize vertexDataOffset = 0;
-    dispatchTable.gvkCmdBindVertexBuffers(commandBuffer, 0, 1, &mGpuBuffer.get<const VkBuffer&>(), &vertexDataOffset);
+    dispatchTable.gvkCmdBindVertexBuffers(commandBuffer, 0, 1, &mGpuBuffer.get<VkBuffer>(), &vertexDataOffset);
     dispatchTable.gvkCmdBindIndexBuffer(commandBuffer, mGpuBuffer, mIndexDataOffset, mIndexType);
     dispatchTable.gvkCmdDrawIndexed(commandBuffer, (uint32_t)mIndexCount, 1, 0, 0, 0);
 }
@@ -57,9 +57,9 @@ VkResult resize(VkDeviceSize size, gvk::Buffer* pBuffer)
         auto bufferCreateInfo = pBuffer->get<VkBufferCreateInfo>();
         if (bufferCreateInfo.size != size) {
             bufferCreateInfo.size = size;
-            const auto& device = pBuffer->get<gvk::Device>();
+            const auto& device = pBuffer->get<Device>();
             const auto& allocationCreateInfo = pBuffer->get<VmaAllocationCreateInfo>();
-            gvk_result(gvk::Buffer::create(device, &bufferCreateInfo, &allocationCreateInfo, pBuffer));
+            gvk_result(Buffer::create(device, &bufferCreateInfo, &allocationCreateInfo, pBuffer));
         }
     } gvk_result_scope_end;
     return gvkResult;
@@ -79,13 +79,13 @@ VkResult create_staging_buffer(const gvk::Device& device, VkDeviceSize size, gvk
         if (*pBuffer) {
             gvk_result(expand(size, pBuffer));
         } else {
-            auto bufferCreateInfo = gvk::get_default<VkBufferCreateInfo>();
+            auto bufferCreateInfo = get_default<VkBufferCreateInfo>();
             bufferCreateInfo.size = size;
             bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-            auto allocationCreateInfo = gvk::get_default<VmaAllocationCreateInfo>();
+            auto allocationCreateInfo = get_default<VmaAllocationCreateInfo>();
             allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
             allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
-            gvk_result(gvk::Buffer::create(device, &bufferCreateInfo, &allocationCreateInfo, pBuffer));
+            gvk_result(Buffer::create(device, &bufferCreateInfo, &allocationCreateInfo, pBuffer));
         }
     } gvk_result_scope_end;
     return gvkResult;

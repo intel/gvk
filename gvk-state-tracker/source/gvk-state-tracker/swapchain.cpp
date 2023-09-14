@@ -39,10 +39,8 @@ VkResult StateTracker::post_vkCreateSwapchainKHR(VkDevice device, const VkSwapch
     if (gvkResult == VK_SUCCESS) {
         Device gvkDevice = device;
         assert(gvkDevice);
-        PhysicalDevice gvkPhysicalDevice = gvkDevice.get<PhysicalDevice>();
+        const auto& gvkPhysicalDevice = gvkDevice.get<PhysicalDevice>();
         assert(gvkPhysicalDevice);
-        Instance gvkInstance = gvkPhysicalDevice.get<Instance>();
-        assert(gvkInstance);
         assert(pCreateInfo);
         assert(pSwapchain);
         assert(*pSwapchain);
@@ -52,7 +50,7 @@ VkResult StateTracker::post_vkCreateSwapchainKHR(VkDevice device, const VkSwapch
         swapchainControlBlock.mStateTrackedObjectInfo.flags = GVK_STATE_TRACKED_OBJECT_STATUS_ACTIVE_BIT;
         swapchainControlBlock.mVkSwapchainKHR = *pSwapchain;
         swapchainControlBlock.mDevice = gvkDevice;
-        swapchainControlBlock.mSurfaceKHR = SurfaceKHR({ gvkInstance, pCreateInfo->surface });
+        swapchainControlBlock.mSurfaceKHR = SurfaceKHR({ gvkPhysicalDevice.get<VkInstance>(), pCreateInfo->surface });
         assert(swapchainControlBlock.mSurfaceKHR);
         swapchainControlBlock.mAllocationCallbacks = pAllocator ? *pAllocator : VkAllocationCallbacks { };
         swapchainControlBlock.mSwapchainCreateInfoKHR = *pCreateInfo;

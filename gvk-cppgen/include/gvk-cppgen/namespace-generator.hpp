@@ -42,6 +42,9 @@ public:
 private:
     std::ostream& mOstream;
     std::vector<std::string> mNamespaces;
+
+    NamespaceGenerator(const NamespaceGenerator&) = delete;
+    NamespaceGenerator& operator=(const NamespaceGenerator&) = delete;
 };
 
 } // namespace cppgen

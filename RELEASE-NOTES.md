@@ -1,4 +1,8 @@
 
+VERSION 2023.2.3.3
+--
+-   CHANGED : Handle accessors now return `const T&`
+
 VERSION 2023.2.3.1
 --
 -   NEW : Preliminary support for VkShaderEXT

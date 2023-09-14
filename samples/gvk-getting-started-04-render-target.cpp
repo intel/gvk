@@ -508,8 +508,8 @@ int main(int, const char*[])
                     //  floor...
                     auto pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
                     vkCmdBindPipeline(commandBuffer, pipelineBindPoint, cubePipeline);
-                    vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, cubePipeline.get<gvk::PipelineLayout>(), 0, 1, &(const VkDescriptorSet&)reflectionCameraDescriptorSet, 0, nullptr);
-                    vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, cubePipeline.get<gvk::PipelineLayout>(), 1, 1, &(const VkDescriptorSet&)cubeDescriptorSet, 0, nullptr);
+                    vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, cubePipeline.get<gvk::PipelineLayout>(), 0, 1, &reflectionCameraDescriptorSet.get<VkDescriptorSet>(), 0, nullptr);
+                    vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, cubePipeline.get<gvk::PipelineLayout>(), 1, 1, &cubeDescriptorSet.get<VkDescriptorSet>(), 0, nullptr);
                     cubeMesh.record_cmds(commandBuffer);
                 }
                 vkCmdEndRenderPass(commandBuffer);
@@ -531,11 +531,11 @@ int main(int, const char*[])
                     //  cube...
                     auto pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
                     vkCmdBindPipeline(commandBuffer, pipelineBindPoint, floorPipeline);
-                    vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, floorPipeline.get<gvk::PipelineLayout>(), 0, 1, &(const VkDescriptorSet&)cameraDescriptorSet, 0, nullptr);
-                    vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, floorPipeline.get<gvk::PipelineLayout>(), 1, 1, &(const VkDescriptorSet&)floorDescriptorSet, 0, nullptr);
+                    vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, floorPipeline.get<gvk::PipelineLayout>(), 0, 1, &cameraDescriptorSet.get<VkDescriptorSet>(), 0, nullptr);
+                    vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, floorPipeline.get<gvk::PipelineLayout>(), 1, 1, &floorDescriptorSet.get<VkDescriptorSet>(), 0, nullptr);
                     floorMesh.record_cmds(commandBuffer);
                     vkCmdBindPipeline(commandBuffer, pipelineBindPoint, cubePipeline);
-                    vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, cubePipeline.get<gvk::PipelineLayout>(), 1, 1, &(const VkDescriptorSet&)cubeDescriptorSet, 0, nullptr);
+                    vkCmdBindDescriptorSets(commandBuffer, pipelineBindPoint, cubePipeline.get<gvk::PipelineLayout>(), 1, 1, &cubeDescriptorSet.get<VkDescriptorSet>(), 0, nullptr);
                     cubeMesh.record_cmds(commandBuffer);
                 }
                 vkCmdEndRenderPass(commandBuffer);

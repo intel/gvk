@@ -81,7 +81,7 @@ public:
                     {
                         auto bufferCopy = get_default<VkBufferCopy>();
                         bufferCopy.size = bufferCreateInfo.size;
-                        auto dispatchTable = device.get<DispatchTable>();
+                        const auto& dispatchTable = device.get<DispatchTable>();
                         assert(dispatchTable.gvkCmdCopyBuffer);
                         dispatchTable.gvkCmdCopyBuffer(vkCommandBuffer, mCpuBuffer, mGpuBuffer, 1, &bufferCopy);
                     }

@@ -43,7 +43,7 @@ VkResult RenderTarget::create(const Device& device, const RenderTarget::CreateIn
         auto framebufferCreateInfo = *pRenderTargetCreateInfo->pFramebufferCreateInfo;
         auto renderPass = RenderPass::get({ device, framebufferCreateInfo.renderPass });
         assert(renderPass);
-        auto renderPassCreateInfo = renderPass.get<VkRenderPassCreateInfo2>();
+        const auto& renderPassCreateInfo = renderPass.get<VkRenderPassCreateInfo2>();
         if (renderPassCreateInfo.attachmentCount && renderPassCreateInfo.pAttachments) {
             std::vector<ImageView> imageViews;
             std::vector<VkImageView> vkImageViews;
@@ -136,7 +136,7 @@ RenderPass RenderTarget::get_render_pass() const
 
 VkRenderPassBeginInfo RenderTarget::get_render_pass_begin_info() const
 {
-    auto framebufferCreateInfo = mFramebuffer.get<VkFramebufferCreateInfo>();
+    const auto& framebufferCreateInfo = mFramebuffer.get<VkFramebufferCreateInfo>();
     return VkRenderPassBeginInfo {
         /* .sType           = */ get_stype<VkRenderPassBeginInfo>(),
         /* .pNext           = */ nullptr,
@@ -154,8 +154,8 @@ VkImageMemoryBarrier RenderTarget::get_image_memory_barrier(uint32_t attachmentI
     auto image = get_image(attachmentIndex);
     if (image) {
         imageMemoryBarrier.image = image;
-        auto renderPass = mFramebuffer.get<RenderPass>();
-        auto renderPassCreateInfo = renderPass ? renderPass.get<VkRenderPassCreateInfo2>() : get_default<VkRenderPassCreateInfo2>();
+        const auto& renderPass = mFramebuffer.get<RenderPass>();
+        const auto& renderPassCreateInfo = renderPass ? renderPass.get<VkRenderPassCreateInfo2>() : get_default<VkRenderPassCreateInfo2>();
         if (attachmentIndex < renderPassCreateInfo.attachmentCount && renderPassCreateInfo.pAttachments) {
             const auto& attachmentDescription = renderPassCreateInfo.pAttachments[attachmentIndex];
             imageMemoryBarrier.oldLayout = attachmentDescription.finalLayout;
@@ -174,8 +174,8 @@ VkImageMemoryBarrier2 RenderTarget::get_image_memory_barrier_2(uint32_t attachme
         imageMemoryBarrier.image = image;
         imageMemoryBarrier.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
         imageMemoryBarrier.dstStageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
-        auto renderPass = mFramebuffer.get<RenderPass>();
-        auto renderPassCreateInfo = renderPass ? renderPass.get<VkRenderPassCreateInfo2>() : get_default<VkRenderPassCreateInfo2>();
+        const auto& renderPass = mFramebuffer.get<RenderPass>();
+        const auto& renderPassCreateInfo = renderPass ? renderPass.get<VkRenderPassCreateInfo2>() : get_default<VkRenderPassCreateInfo2>();
         if (attachmentIndex < renderPassCreateInfo.attachmentCount && renderPassCreateInfo.pAttachments) {
             const auto& attachmentDescription = renderPassCreateInfo.pAttachments[attachmentIndex];
             imageMemoryBarrier.oldLayout = attachmentDescription.finalLayout;

@@ -77,6 +77,9 @@ public:
 private:
     VkAllocationCallbacks mAllocationCallbacks{ };
     std::set<void*> mAllocations;
+
+    Allocator(const Allocator&) = delete;
+    Allocator& operator=(const Allocator&) = delete;
 };
 
 } // namespace validation

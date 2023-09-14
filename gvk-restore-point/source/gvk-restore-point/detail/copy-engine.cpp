@@ -225,16 +225,16 @@ void CopyEngine::download_impl(VkDevice vkDevice, DeviceMemoryCopyInfo deviceMem
 
     auto submitInfo = get_default<VkSubmitInfo>();
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &taskResources.gvkCommandBuffer.get<const VkCommandBuffer&>();
+    submitInfo.pCommandBuffers = &taskResources.gvkCommandBuffer.get<VkCommandBuffer>();
     {
         std::lock_guard<std::mutex> lock(mQueueMutex);
         vkResult = dispatchTable.gvkQueueSubmit(get_queue_family(gvkDevice, 0).queues[0], 1, &submitInfo, taskResources.gvkFence);
         assert(vkResult == VK_SUCCESS);
     }
 
-    vkResult = dispatchTable.gvkWaitForFences(gvkDevice, 1, &taskResources.gvkFence.get<const VkFence&>(), VK_TRUE, UINT64_MAX);
+    vkResult = dispatchTable.gvkWaitForFences(gvkDevice, 1, &taskResources.gvkFence.get<VkFence>(), VK_TRUE, UINT64_MAX);
     assert(vkResult == VK_SUCCESS);
-    vkResult = dispatchTable.gvkResetFences(gvkDevice, 1, &taskResources.gvkFence.get<const VkFence&>());
+    vkResult = dispatchTable.gvkResetFences(gvkDevice, 1, &taskResources.gvkFence.get<VkFence>());
     assert(vkResult == VK_SUCCESS);
 
     const char* pData = nullptr;
@@ -297,16 +297,16 @@ void CopyEngine::upload_impl(VkDevice vkDevice, DeviceMemoryCopyInfo deviceMemor
 
         auto submitInfo = get_default<VkSubmitInfo>();
         submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &taskResources.gvkCommandBuffer.get<const VkCommandBuffer&>();
+        submitInfo.pCommandBuffers = &taskResources.gvkCommandBuffer.get<VkCommandBuffer>();
         {
             std::lock_guard<std::mutex> lock(mQueueMutex);
             vkResult = dispatchTable.gvkQueueSubmit(get_queue_family(gvkDevice, 0).queues[0], 1, &submitInfo, taskResources.gvkFence);
             assert(vkResult == VK_SUCCESS);
         }
 
-        vkResult = dispatchTable.gvkWaitForFences(gvkDevice, 1, &taskResources.gvkFence.get<const VkFence&>(), VK_TRUE, UINT64_MAX);
+        vkResult = dispatchTable.gvkWaitForFences(gvkDevice, 1, &taskResources.gvkFence.get<VkFence>(), VK_TRUE, UINT64_MAX);
         assert(vkResult == VK_SUCCESS);
-        vkResult = dispatchTable.gvkResetFences(gvkDevice, 1, &taskResources.gvkFence.get<const VkFence&>());
+        vkResult = dispatchTable.gvkResetFences(gvkDevice, 1, &taskResources.gvkFence.get<VkFence>());
         assert(vkResult == VK_SUCCESS);
     }
 }
@@ -339,7 +339,7 @@ void CopyEngine::transition_image_layouts_impl(VkDevice vkDevice, ImageCopyInfo 
         if (!imageMemoryBarriers.empty()) {
             Device gvkDevice(vkDevice);
             assert(gvkDevice);
-            auto dispatchTable = gvkDevice.get<DispatchTable>();
+            const auto& dispatchTable = gvkDevice.get<DispatchTable>();
 
             auto& taskResources = get_task_resources(gvkDevice, 1);
             auto commandBufferBeginInfo = get_default<VkCommandBufferBeginInfo>();
@@ -365,7 +365,7 @@ void CopyEngine::transition_image_layouts_impl(VkDevice vkDevice, ImageCopyInfo 
 
             auto submitInfo = get_default<VkSubmitInfo>();
             submitInfo.commandBufferCount = 1;
-            submitInfo.pCommandBuffers = &taskResources.gvkCommandBuffer.get<const VkCommandBuffer&>();
+            submitInfo.pCommandBuffers = &taskResources.gvkCommandBuffer.get<VkCommandBuffer>();
             {
                 std::lock_guard<std::mutex> lock(mQueueMutex);
                 vkResult = dispatchTable.gvkQueueSubmit(get_queue_family(gvkDevice, 0).queues[0], 1, &submitInfo, taskResources.gvkFence);
@@ -373,9 +373,9 @@ void CopyEngine::transition_image_layouts_impl(VkDevice vkDevice, ImageCopyInfo 
             }
 
             assert(dispatchTable.gvkWaitForFences);
-            vkResult = dispatchTable.gvkWaitForFences(gvkDevice, 1, &taskResources.gvkFence.get<const VkFence&>(), VK_TRUE, UINT64_MAX);
+            vkResult = dispatchTable.gvkWaitForFences(gvkDevice, 1, &taskResources.gvkFence.get<VkFence>(), VK_TRUE, UINT64_MAX);
             assert(dispatchTable.gvkResetFences);
-            vkResult = dispatchTable.gvkResetFences(gvkDevice, 1, &taskResources.gvkFence.get<const VkFence&>());
+            vkResult = dispatchTable.gvkResetFences(gvkDevice, 1, &taskResources.gvkFence.get<VkFence>());
             assert(vkResult == VK_SUCCESS);
         }
     }

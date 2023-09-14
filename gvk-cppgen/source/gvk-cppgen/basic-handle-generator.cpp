@@ -85,7 +85,7 @@ BasicHandleGenerator::BasicHandleGenerator(const xml::Manifest& manifest, const 
         mMemberInfos.erase(MemberInfo("std::vector<DescriptorSetLayout>"));
         memberInfo.storageType = "DescriptorSetLayout";
         memberInfo.storageName = "mDescriptorSetLayout";
-        memberInfo.accessorType = "const " + memberInfo.storageType + "&";
+        memberInfo.accessorType = memberInfo.storageType;
         add_member(memberInfo);
     }
 }
@@ -258,7 +258,7 @@ public:
     {handleName}({handleName}&&) = default;
     {handleName}& operator=(const {handleName}&) = default;
     {handleName}& operator=({handleName}&&) = default;
-    inline operator Vk{handleName}() const { return get<Vk{handleName}>(); };
+    inline operator const Vk{handleName}&() const { return get<Vk{handleName}>(); };
 )", replacements);
     if (mGenerateCtorDeclarations) {
         for (const auto& ctor : mCtors) {
@@ -282,7 +282,7 @@ public:
     }
     file << string::replace(
 R"(    static {handleName} get(const HandleIdType& handleId);
-    template <typename T> T get() const;
+    template <typename T> const T& get() const;
     void reset();
 private:
     class ControlBlock;
@@ -397,16 +397,14 @@ void BasicHandleGenerator::generate_accessors(FileGenerator& file, const xml::Ma
     CompileGuardGenerator handleCompileGuardGenerator(file, mHandle.compileGuards);
     file << string::replace(
 R"(template <typename T>
-T {handleName}::get() const
+const T& {handleName}::get() const
 {
-    if constexpr (std::is_same_v<T, VkObjectType>) { return {handleVkObjectType}; }
+    if constexpr (std::is_same_v<T, VkObjectType>) { static const auto sObjectType = {handleVkObjectType}; return sObjectType; }
 )", replacements);
     if (mHandle.isDispatchable) {
-        file << "    if constexpr (std::is_same_v<T, VkHandleType>) { return mReference.get_id(); }" << std::endl;
-        file << "    if constexpr (std::is_same_v<T, const VkHandleType&>) { return mReference.get_id(); }" << std::endl;
+        file << "    if constexpr (std::is_same_v<T, VkHandleType>) { return mReference.get_id(); }\n";
     } else {
-        file << "    if constexpr (std::is_same_v<T, VkHandleType>) { return mReference.get_id().get_handle(); }" << std::endl;
-        file << "    if constexpr (std::is_same_v<T, const VkHandleType&>) { return mReference.get_id().get_handle(); }" << std::endl;
+        file << "    if constexpr (std::is_same_v<T, VkHandleType>) { return mReference.get_id().get_handle(); }\n";
         file << "    if constexpr (std::is_same_v<T, DispatchableVkHandleType>) { return mReference.get_id().get_dispatchable_handle(); }\n";
         file << "    if constexpr (std::is_same_v<T, HandleIdType>) { return mReference.get_id(); }\n";
     }
@@ -469,7 +467,7 @@ void BasicHandleGenerator::add_member(const xml::Manifest& manifest, const xml::
             } else {
                 memberInfo.storageType = "std::vector<" + string::strip_vk(member.unqualifiedType) + ">";
                 memberInfo.storageName += "s";
-                memberInfo.accessorType = "const " + memberInfo.storageType + "&";
+                memberInfo.accessorType = memberInfo.storageType;
             }
         } else {
             const auto& structureItr = manifest.structures.find(member.unqualifiedType);

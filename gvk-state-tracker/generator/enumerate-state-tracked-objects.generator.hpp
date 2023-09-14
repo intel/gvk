@@ -45,36 +45,10 @@ public:
         file << "#include \"gvk-state-tracker/generated/state-tracked-handles.hpp\"" << std::endl;
         file << "#include \"gvk-state-tracker/dependency-enumerator.hpp\"" << std::endl;
         file << "#include \"gvk-state-tracker/state-tracker.hpp\"" << std::endl;
+        file << "#include \"gvk-structures/get-object-type.hpp\"" << std::endl;
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk::state_tracker");
         file << std::endl;
-
-        file << "template <typename HandleIdType>" << std::endl;
-        file << "HandleIdType to_handle_id(const GvkStateTrackedObject&)" << std::endl;
-        file << "{" << std::endl;
-        file << "    return { };" << std::endl;
-        file << "}" << std::endl;
-        file << std::endl;
-        for (const auto& handleItr : manifest.handles) {
-            const auto& handle = handleItr.second;
-            if (handle.alias.empty()) {
-                CompileGuardGenerator compileGuardGenerator(file, handle.compileGuards);
-                file << "template <>" << std::endl;
-                file << string::replace("{gvkHandleType}::HandleIdType to_handle_id<{gvkHandleType}::HandleIdType>(const GvkStateTrackedObject& stateTrackedObject)", "{gvkHandleType}", string::strip_vk(handle.name)) << std::endl;
-                file << "{" << std::endl;
-                file << "    assert(stateTrackedObject.type == " << handle.vkObjectType << ");" << std::endl;
-                if (handle.name == "VkPhysicalDevice") {
-                    file << "    return StateTracker::get_loader_physical_device_handle((VkPhysicalDevice)stateTrackedObject.handle);" << std::endl;
-                } else if (handle.isDispatchable) {
-                    file << "    return (" << string::strip_vk(handle.name) << "::HandleIdType)stateTrackedObject.handle;" << std::endl;
-                } else {
-                    file << string::replace("    return {gvkHandleType}::HandleIdType(({gvkHandleType}::DispatchableVkHandleType)stateTrackedObject.dispatchableHandle, ({gvkHandleType}::VkHandleType)stateTrackedObject.handle);", "{gvkHandleType}", string::strip_vk(handle.name)) << std::endl;
-                }
-                file << "}" << std::endl;
-                file << std::endl;
-            }
-        }
-
         file << "void StateTracker::enumerate_state_tracked_objects(const GvkStateTrackedObject* pStateTrackedObject, const GvkStateTrackedObjectEnumerateInfo* pEnumerateInfo)" << std::endl;
         file << "{" << std::endl;
         file << "    assert(pStateTrackedObject);" << std::endl;
@@ -104,7 +78,7 @@ public:
         file << "    } break;" << std::endl;
         file << "    }" << std::endl;
         file << "}" << std::endl;
-
+        file << std::endl;
         file << "void StateTracker::enumerate_state_tracked_object_dependencies(const GvkStateTrackedObject* pStateTrackedObject, const GvkStateTrackedObjectEnumerateInfo* pEnumerateInfo)" << std::endl;
         file << "{" << std::endl;
         file << "    assert(pStateTrackedObject);" << std::endl;
@@ -132,7 +106,13 @@ public:
                                 file << tab << "    handle.mReference.get_obj()." << member.storageName << ".enumerate_dependencies(DependencyEnumerator::enumerate, &dependencyEnuemrator);" << std::endl;
                             }
                         } else if (manifest.handles.count(member.storageType)) {
-                            file << tab << "    handle.get<" << string::strip_vk(member.accessorType) << ">().enumerate_dependencies(DependencyEnumerator::enumerate, &dependencyEnuemrator);" << std::endl;
+                            assert(member.storageType == member.accessorType);
+                            file << tab << "    auto parentStateTrackedObject = *pStateTrackedObject;" << std::endl;
+                            file << tab << "    parentStateTrackedObject.type = detail::get_object_type<" << member.storageType << ">();" << std::endl;
+                            file << tab << "    parentStateTrackedObject.handle = (uint64_t)handle.get<" << member.accessorType << ">();" << std::endl;
+                            file << tab << "    auto parentHandle = to_handle<" << string::strip_vk(member.storageType) << ">(parentStateTrackedObject);" << std::endl;
+                            file << tab << "    assert(parentHandle);" << std::endl;
+                            file << tab << "    parentHandle.enumerate_dependencies(DependencyEnumerator::enumerate, &dependencyEnuemrator);" << std::endl;
                         } else if (member.storageName == "mImmutableSamplers") {
                             file << "            for (const auto& immutableSamplersItr : handle.mReference.get_obj().mImmutableSamplers) {" << std::endl;
                             file << "                for (const auto& immutableSampler : immutableSamplersItr.second) {" << std::endl;

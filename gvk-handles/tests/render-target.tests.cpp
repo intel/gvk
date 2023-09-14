@@ -218,7 +218,7 @@ TEST(RenderTarget, ResourceCreation)
 
     // Get color VkFormat
     auto colorFormat = VK_FORMAT_UNDEFINED;
-    auto physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
+    const auto& physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
     gvk::enumerate_formats(
         physicalDevice.get<gvk::DispatchTable>().gvkGetPhysicalDeviceFormatProperties2,
         physicalDevice,

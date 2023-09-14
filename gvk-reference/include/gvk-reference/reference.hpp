@@ -343,7 +343,10 @@ private:
 
     private:
         IdType mId { 0 };
-        ObjType mObj;
+        ObjType mObj { };
+
+        LifetimeMonitor(const LifetimeMonitor&) = delete;
+        LifetimeMonitor& operator=(const LifetimeMonitor&) = delete;
     };
 
     class Enumerator final
@@ -398,9 +401,12 @@ private:
         }
 
     private:
-        Enumerator() = default;
         std::mutex mMutex;
         std::unordered_map<IdType, std::weak_ptr<LifetimeMonitor>> mWeakReferences;
+
+        Enumerator() = default;
+        Enumerator(const Enumerator&) = delete;
+        Enumerator& operator=(const Enumerator&) = delete;
     };
 
     inline friend bool operator==(const Reference& lhs, const Reference& rhs)

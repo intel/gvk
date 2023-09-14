@@ -63,12 +63,12 @@ TEST(Swapchain, SwapchainResourceLifetime)
     ASSERT_TRUE(create_state_tracked_object_record(wsiManager.get_swapchain(), wsiManager.get_swapchain().get<VkSwapchainCreateInfoKHR>(), expectedInstanceObjects));
     ASSERT_FALSE(wsiManager.get_swapchain().get<gvk::Images>().empty());
     for (const auto& renderTarget : wsiManager.get_render_targets()) {
-        auto framebuffer = renderTarget.get_framebuffer();
-        auto renderPass = framebuffer.get<gvk::RenderPass>();
+        const auto& framebuffer = renderTarget.get_framebuffer();
+        const auto& renderPass = framebuffer.get<gvk::RenderPass>();
         ASSERT_TRUE(create_state_tracked_object_record(framebuffer, framebuffer.get<VkFramebufferCreateInfo>(), expectedInstanceObjects));
         ASSERT_TRUE(create_state_tracked_object_record(renderPass, renderPass.get<VkRenderPassCreateInfo2>(), expectedInstanceObjects));
         for (const auto& imageView : framebuffer.get<gvk::ImageViews>()) {
-            auto image = imageView.get<gvk::Image>();
+            const auto& image = imageView.get<gvk::Image>();
             ASSERT_TRUE(create_state_tracked_object_record(imageView, imageView.get<VkImageViewCreateInfo>(), expectedInstanceObjects));
             ASSERT_TRUE(create_state_tracked_object_record(image, image.get<VkImageCreateInfo>(), expectedInstanceObjects));
         }
@@ -77,7 +77,7 @@ TEST(Swapchain, SwapchainResourceLifetime)
         ASSERT_TRUE(create_state_tracked_object_record(image, image.get<VkImageCreateInfo>(), expectedInstanceObjects));
     }
     for (const auto& commandBuffer : wsiManager.get_command_buffers()) {
-        auto commandPool = commandBuffer.get<gvk::CommandPool>();
+        const auto& commandPool = commandBuffer.get<gvk::CommandPool>();
         ASSERT_TRUE(create_state_tracked_object_record(commandBuffer, commandBuffer.get<VkCommandBufferAllocateInfo>(), expectedInstanceObjects));
         ASSERT_TRUE(create_state_tracked_object_record(commandPool, commandPool.get<VkCommandPoolCreateInfo>(), expectedInstanceObjects));
     }

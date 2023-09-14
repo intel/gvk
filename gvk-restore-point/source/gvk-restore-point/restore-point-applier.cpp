@@ -263,7 +263,7 @@ VkResult detail::RestorePointApplierBase::restore_image_layouts(GvkStateTrackedO
                     auto [gvkCommandBuffer, gvkFence] = get_thread_command_buffer(gvkDevice);
                     auto commandBufferBeginInfo = get_default<VkCommandBufferBeginInfo>();
                     commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-                    auto dispatchTable = gvkDevice.get<DispatchTable>();
+                    const auto& dispatchTable = gvkDevice.get<DispatchTable>();
                     assert(dispatchTable.gvkBeginCommandBuffer);
                     auto vkResult = dispatchTable.gvkBeginCommandBuffer(gvkCommandBuffer, &commandBufferBeginInfo);
                     assert(vkResult == VK_SUCCESS);
@@ -284,7 +284,7 @@ VkResult detail::RestorePointApplierBase::restore_image_layouts(GvkStateTrackedO
                     std::lock_guard<std::mutex> lock(mThreadCommandBuffersMutex);
                     auto submitInfo = get_default<VkSubmitInfo>();
                     submitInfo.commandBufferCount = 1;
-                    submitInfo.pCommandBuffers = &gvkCommandBuffer.get<const VkCommandBuffer&>();
+                    submitInfo.pCommandBuffers = &gvkCommandBuffer.get<VkCommandBuffer>();
                     vkResult = dispatchTable.gvkQueueSubmit(get_queue_family(gvkDevice, 0).queues[0], 1, &submitInfo, VK_NULL_HANDLE);
                     assert(vkResult == VK_SUCCESS);
                 }
@@ -787,7 +787,7 @@ VkResult RestorePointApplier::process_VkFence(const GvkStateTrackedObject& state
     if (restoreInfo.signaled && !(restoreInfo.pFenceCreateInfo->flags & VK_FENCE_CREATE_SIGNALED_BIT)) {
         Device gvkDevice((VkDevice)get_restored_handle(stateTrackedObject.dispatchableHandle));
         assert(gvkDevice);
-        auto gvkQueue = gvkDevice.get<QueueFamilies>()[0].queues[0];
+        const auto& gvkQueue = gvkDevice.get<QueueFamilies>()[0].queues[0];
         auto vkFence = (VkFence)get_restored_handle(stateTrackedObject.handle);
         vkResult = mDispatchTable.gvkQueueSubmit(gvkQueue, 0, nullptr, vkFence);
         assert(vkResult == VK_SUCCESS);
@@ -810,7 +810,7 @@ VkResult RestorePointApplier::process_VkSemaphore(const GvkStateTrackedObject& s
         if (restoreInfo.statusFlags & GVK_STATE_TRACKER_OBJECT_STATUS_SIGNALED_BIT) {
             Device gvkDevice((VkDevice)get_restored_handle(get_object(VK_OBJECT_TYPE_DEVICE, restoreInfo.dependencyCount, (const GvkStateTrackedObject*)restoreInfo.pDependencies).handle));
             assert(gvkDevice);
-            auto gvkQueue = gvkDevice.get<QueueFamilies>()[0].queues[0];
+            const auto& gvkQueue = gvkDevice.get<QueueFamilies>()[0].queues[0];
             const auto& dispatchTable = gvkDevice.get<DispatchTable>();
             auto [gvkCommandBuffer, gvkFence] = get_thread_command_buffer(gvkDevice);
             auto commandBufferBeginInfo = get_default<VkCommandBufferBeginInfo>();
@@ -821,16 +821,16 @@ VkResult RestorePointApplier::process_VkSemaphore(const GvkStateTrackedObject& s
             assert(vkResult == VK_SUCCESS);
             auto submitInfo = get_default<VkSubmitInfo>();
             submitInfo.commandBufferCount = 1;
-            submitInfo.pCommandBuffers = &gvkCommandBuffer.get<const VkCommandBuffer&>();
+            submitInfo.pCommandBuffers = &gvkCommandBuffer.get<VkCommandBuffer>();
             submitInfo.signalSemaphoreCount = 1;
             auto vkSemaphore = (VkSemaphore)get_restored_handle(stateTrackedObject.handle);
             submitInfo.pSignalSemaphores = &vkSemaphore;
             vkResult = dispatchTable.gvkQueueSubmit(gvkQueue, 1, &submitInfo, gvkFence);
             assert(vkResult == VK_SUCCESS);
 
-            vkResult = dispatchTable.gvkWaitForFences(gvkDevice, 1, &gvkFence.get<const VkFence&>(), VK_TRUE, UINT64_MAX);
+            vkResult = dispatchTable.gvkWaitForFences(gvkDevice, 1, &gvkFence.get<VkFence>(), VK_TRUE, UINT64_MAX);
             assert(vkResult == VK_SUCCESS);
-            vkResult = dispatchTable.gvkResetFences(gvkDevice, 1, &gvkFence.get<const VkFence&>());
+            vkResult = dispatchTable.gvkResetFences(gvkDevice, 1, &gvkFence.get<VkFence>());
             assert(vkResult == VK_SUCCESS);
         }
     }

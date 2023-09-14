@@ -124,7 +124,7 @@ static void validate_pipeline_layout_creation(
     const auto& descriptorSetLayouts = pipelineLayout.get<gvk::DescriptorSetLayouts>();
     ASSERT_EQ(descriptorSetLayoutBindings.size(), descriptorSetLayouts.size());
     for (size_t layout_i = 0; layout_i < descriptorSetLayouts.size(); ++layout_i) {
-        auto descriptorSetLayoutCreateInfo = descriptorSetLayouts[layout_i].get<VkDescriptorSetLayoutCreateInfo>();
+        const auto& descriptorSetLayoutCreateInfo = descriptorSetLayouts[layout_i].get<VkDescriptorSetLayoutCreateInfo>();
         ASSERT_EQ(descriptorSetLayoutCreateInfo.bindingCount, descriptorSetLayoutBindings[layout_i].size());
         for (size_t binding_i = 0; binding_i < descriptorSetLayoutCreateInfo.bindingCount; ++binding_i) {
             const auto& expected = descriptorSetLayoutBindings[layout_i][binding_i];
@@ -134,7 +134,7 @@ static void validate_pipeline_layout_creation(
     }
 
     // Validate pushConstantRanges
-    auto pipelineLayoutCreateInfo = pipelineLayout.get<VkPipelineLayoutCreateInfo>();
+    const auto& pipelineLayoutCreateInfo = pipelineLayout.get<VkPipelineLayoutCreateInfo>();
     ASSERT_EQ(pipelineLayoutCreateInfo.pushConstantRangeCount, pushConstantRanges.size());
     for (uint32_t i = 0; i < pipelineLayoutCreateInfo.pushConstantRangeCount; ++i) {
         EXPECT_EQ(pushConstantRanges[i], pipelineLayoutCreateInfo.pPushConstantRanges[i]);

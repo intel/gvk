@@ -450,7 +450,7 @@ public:
 inline VkFormat get_render_pass_color_format(const gvk::Context& context)
 {
     auto colorFormat = VK_FORMAT_UNDEFINED;
-    auto physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
+    const auto& physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
     gvk::enumerate_formats(
         physicalDevice.get<gvk::DispatchTable>().gvkGetPhysicalDeviceFormatProperties2,
         physicalDevice,
@@ -490,7 +490,7 @@ inline std::map<GvkStateTrackedObject, ObjectRecord> get_expected_instance_objec
         }
     }
     for (const auto& commandBuffer : context.get_command_buffers()) {
-        auto commandPool = context.get_command_buffers()[0].get<gvk::CommandPool>();
+        const auto& commandPool = context.get_command_buffers()[0].get<gvk::CommandPool>();
         create_state_tracked_object_record(commandPool, commandPool.get<VkCommandPoolCreateInfo>(), expectedInstanceObjects);
         create_state_tracked_object_record(commandBuffer, commandBuffer.get<VkCommandBufferAllocateInfo>(), expectedInstanceObjects);
     }
