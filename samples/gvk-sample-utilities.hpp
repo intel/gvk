@@ -26,6 +26,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
+#ifndef VK_NO_PROTOTYPES
+#define VK_NO_PROTOTYPES
+#endif
 #include "gvk-defines.hpp"
 #include "gvk-format-info.hpp"
 #include "gvk-gui.hpp"
@@ -274,7 +277,7 @@ inline VkSampleCountFlagBits gvk_sample_get_render_pass_sample_count(const gvk::
 {
     assert(renderPass);
     auto sampleCount = VK_SAMPLE_COUNT_1_BIT;
-    auto renderPassCreateInfo = renderPass.get<VkRenderPassCreateInfo2>();
+    const auto& renderPassCreateInfo = renderPass.get<VkRenderPassCreateInfo2>();
     for (uint32_t i = 0; i < renderPassCreateInfo.attachmentCount; ++i) {
         sampleCount = std::max(sampleCount, renderPassCreateInfo.pAttachments[i].samples);
     }
@@ -284,7 +287,7 @@ inline VkSampleCountFlagBits gvk_sample_get_render_pass_sample_count(const gvk::
 inline VkFormat gvk_sample_get_render_pass_depth_format(const gvk::RenderPass& renderPass)
 {
     assert(renderPass);
-    auto renderPassCreateInfo = renderPass.get<VkRenderPassCreateInfo2>();
+    const auto& renderPassCreateInfo = renderPass.get<VkRenderPassCreateInfo2>();
     for (uint32_t i = 0; i < renderPassCreateInfo.attachmentCount; ++i) {
         auto format = renderPassCreateInfo.pAttachments[i].format;
         if (gvk::get_image_aspect_flags(format) & VK_IMAGE_ASPECT_DEPTH_BIT) {
@@ -423,7 +426,7 @@ inline VkResult gvk_sample_allocate_descriptor_sets(const gvk::Pipeline& pipelin
         std::vector<VkDescriptorSetLayout> vkDescriptorSetLayouts;
         for (const auto& descriptorSetLayout : pipeline.get<gvk::PipelineLayout>().get<gvk::DescriptorSetLayouts>()) {
             vkDescriptorSetLayouts.push_back(descriptorSetLayout);
-            auto descriptorSetLayoutCreateInfo = descriptorSetLayout.get<VkDescriptorSetLayoutCreateInfo>();
+            const auto& descriptorSetLayoutCreateInfo = descriptorSetLayout.get<VkDescriptorSetLayoutCreateInfo>();
             for (uint32_t i = 0; i < descriptorSetLayoutCreateInfo.bindingCount; ++i) {
                 const auto& descriptorSetLayoutBinding = descriptorSetLayoutCreateInfo.pBindings[i];
                 descriptorPoolSizes.push_back({
@@ -502,7 +505,7 @@ inline VkResult gvk_sample_create_render_target(const gvk::Context& context, Gvk
             assert(requestedDepthFormatInfo.componentCount);
             assert(requestedDepthFormatInfo.pComponents);
             auto requestedDepthBits = requestedDepthFormatInfo.pComponents[0].bits;
-            auto physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
+            const auto& physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
             gvk::enumerate_formats(
                 physicalDevice.get<gvk::DispatchTable>().gvkGetPhysicalDeviceFormatProperties2,
                 physicalDevice,

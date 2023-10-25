@@ -33,20 +33,20 @@ set(generatedSourceFiles
 )
 set(generatorSourcePath "${CMAKE_CURRENT_LIST_DIR}/generator/")
 gvk_add_code_generator(
-    target
+    TARGET
         gvk-command-structures.generator
-    folder
+    FOLDER
         "gvk-command-structures/"
-    linkLibraries
+    LINK_LIBRARIES
         gvk-cppgen
-    includeFiles
+    INCLUDE_FILES
         "${generatorSourcePath}/execute-command-structure.generator.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${generatorSourcePath}/main.cpp"
-    outputFiles
+    OUTPUT_FILES
         "${generatedIncludeFiles}"
         "${generatedSourceFiles}"
-    compileDefinitions
+    COMPILE_DEFINITIONS
         GVK_COMMAND_STRUCTURES_GENERATED_INCLUDE_PATH="${generatedIncludePath}"
         GVK_COMMAND_STRUCTURES_GENERATED_INCLUDE_PREFIX="gvk-command-structures/generated/"
         GVK_COMMAND_STRUCTURES_GENERATED_SOURCE_PATH="${generatedSourcePath}"
@@ -59,22 +59,22 @@ set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
 set(includePath "${includeDirectory}/gvk-command-structures/")
 set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk-command-structures/")
 gvk_add_static_library(
-    target
+    TARGET
         gvk-command-structures
-    folder
+    FOLDER
         "gvk-command-structures/"
-    linkLibraries
+    LINK_LIBRARIES
         gvk-runtime
         gvk-structures
-    includeDirectories
+    INCLUDE_DIRECTORIES
         "${generatedIncludeDirectory}"
         "${includeDirectory}"
-    includeFiles
+    INCLUDE_FILES
         "${generatedIncludeFiles}"
         "${includePath}/detail/cerealization-manual.hpp"
         "${includePath}/detail/make-tuple-manual.hpp"
         "${includeDirectory}/gvk-command-structures.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${generatedSourceFiles}"
         "${sourcePath}/detail/copy-manual.cpp"
         "${sourcePath}/detail/handle-enumeration-manual.cpp"
@@ -83,3 +83,7 @@ gvk_add_static_library(
 if(MSVC)
     set_source_files_properties("${generatedSourcePath}/command-structure-comparison-operators.cpp" PROPERTIES COMPILE_FLAGS "/bigobj")
 endif()
+
+################################################################################
+# gvk-command-structures install
+gvk_install_library(TARGET gvk-command-structures)

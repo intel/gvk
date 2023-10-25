@@ -68,6 +68,7 @@ private:
             "vkCreateGraphicsPipelines",
             "vkCreateRayTracingPipelinesKHR",
             "vkCreateRayTracingPipelinesNV",
+            "vkCreateExecutionGraphPipelinesAMDX",
             "vkCreateShadersEXT",
         };
         return sCommandsRequiringCustomImplementation.count(name);

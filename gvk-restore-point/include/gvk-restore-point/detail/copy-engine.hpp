@@ -27,14 +27,19 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 #include "gvk-handles.hpp"
-#include "gvk-restore-point/detail/asio-include.hpp"
 
 #include <filesystem>
 #include <functional>
 #include <map>
+#include <memory>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+namespace asio {
+class thread_pool;
+} // namespace asio
 
 namespace gvk {
 
@@ -62,6 +67,7 @@ public:
         std::function<void(VkImage)> onProcessLayouts;
     };
 
+    CopyEngine();
     ~CopyEngine();
     void reset();
 
@@ -89,7 +95,7 @@ private:
     void transition_image_layouts_impl(VkDevice vkDevice, ImageCopyInfo imageCopyInfo);
 
     bool mMultiThreaded { true };
-    asio::thread_pool mThreadPool;
+    asio::thread_pool* mpThreadPool { nullptr };
     std::mutex mQueueMutex;
     std::mutex mTaskResourceMutex;
     std::unordered_set<std::thread::id> mInitializedThreads;

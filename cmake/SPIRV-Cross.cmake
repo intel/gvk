@@ -8,32 +8,32 @@ set(SPIRV_CROSS_ENABLE_TESTS             OFF CACHE BOOL "" FORCE)
 set(SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS ON  CACHE BOOL "" FORCE)
 set(SPIRV_CROSS_FORCE_PIC                ON  CACHE BOOL "" FORCE)
 set(SPIRV_CROSS_SKIP_INSTALL             ON  CACHE BOOL "" FORCE)
+set(SPIRV-Cross_VERSION bccaa94db814af33d8ef05c153e7c34d8bd4d685) # sdk-1.3.261.1
 FetchContent_Declare(
     SPIRV-Cross
     GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Cross.git"
-    GIT_TAG d26c233e1c2629fec1ae1b6fdf538958e5d52bff # sdk-1.3.243.0
+    GIT_TAG ${SPIRV-Cross_VERSION}
     GIT_PROGRESS TRUE
 )
 FetchContent_MakeAvailable(SPIRV-Cross)
-set(folder "${GVK_IDE_FOLDER}/external/SPIRV-Cross/")
-set_target_properties(spirv-cross-c       PROPERTIES FOLDER "${folder}")
-set_target_properties(spirv-cross-core    PROPERTIES FOLDER "${folder}")
-set_target_properties(spirv-cross-cpp     PROPERTIES FOLDER "${folder}")
-set_target_properties(spirv-cross-glsl    PROPERTIES FOLDER "${folder}")
-set_target_properties(spirv-cross-hlsl    PROPERTIES FOLDER "${folder}")
-set_target_properties(spirv-cross-msl     PROPERTIES FOLDER "${folder}")
-set_target_properties(spirv-cross-reflect PROPERTIES FOLDER "${folder}")
-set_target_properties(spirv-cross-util    PROPERTIES FOLDER "${folder}")
-add_library(SPIRV-Cross_INTERFACE INTERFACE)
-target_link_libraries(
-    SPIRV-Cross_INTERFACE
-    INTERFACE
-        spirv-cross-c
-        spirv-cross-core
-        spirv-cross-cpp
-        spirv-cross-glsl
-        spirv-cross-hlsl
-        spirv-cross-msl
-        spirv-cross-reflect
-        spirv-cross-util
-)
+FetchContent_GetProperties(SPIRV-Cross SOURCE_DIR SPIRV-Cross_SOURCE_DIR)
+
+macro(gvk_setup_spirv_cross_target spirvCrossTarget)
+    list(APPEND spirvCrossLibraries ${spirvCrossTarget})
+    set_target_properties(${spirvCrossTarget} PROPERTIES FOLDER "${GVK_IDE_FOLDER}/external/SPIRV-Cross/")
+    gvk_install_artifacts(TARGET ${spirvCrossTarget} VERSION ${SPIRV-Cross_VERSION})
+endmacro()
+
+gvk_setup_spirv_cross_target(spirv-cross-c)
+gvk_setup_spirv_cross_target(spirv-cross-core)
+gvk_setup_spirv_cross_target(spirv-cross-cpp)
+gvk_setup_spirv_cross_target(spirv-cross-glsl)
+gvk_setup_spirv_cross_target(spirv-cross-hlsl)
+gvk_setup_spirv_cross_target(spirv-cross-msl)
+gvk_setup_spirv_cross_target(spirv-cross-reflect)
+gvk_setup_spirv_cross_target(spirv-cross-util)
+
+if(GVK_CREATE_INSTALL_PACKAGE)
+    file(GLOB spirvCrossHeaderFiles "${SPIRV-Cross_SOURCE_DIR}/*.h" "${SPIRV-Cross_SOURCE_DIR}/*.hpp")
+    install(FILES ${spirvCrossHeaderFiles} DESTINATION include/spirv_cross/)
+endif()

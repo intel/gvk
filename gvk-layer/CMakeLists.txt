@@ -14,23 +14,23 @@ set(generatedSourceFiles
 )
 set(generatorSourcePath "${CMAKE_CURRENT_LIST_DIR}/generator/")
 gvk_add_code_generator(
-    target
+    TARGET
         gvk-layer.generator
-    folder
+    FOLDER
         "gvk-layer/"
-    linkLibraries
+    LINK_LIBRARIES
         gvk-cppgen
-    includeDirectories
+    INCLUDE_DIRECTORIES
         "${generatorSourcePath}/"
-    includeFiles
+    INCLUDE_FILES
         "${generatorSourcePath}/basic-layer.generator.hpp"
         "${generatorSourcePath}/layer-hooks.generator.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${generatorSourcePath}/main.cpp"
-    outputFiles
+    OUTPUT_FILES
         "${generatedIncludeFiles}"
         "${generatedSourceFiles}"
-    compileDefinitions
+    COMPILE_DEFINITIONS
         GVK_LAYER_GENERATED_INCLUDE_PATH="${generatedIncludePath}"
         GVK_LAYER_GENERATED_INCLUDE_PREFIX="gvk-layer/generated/"
         GVK_LAYER_GENERATED_SOURCE_PATH="${generatedSourcePath}"
@@ -43,20 +43,24 @@ set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
 set(includePath "${includeDirectory}/gvk-layer/")
 set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk-layer/")
 gvk_add_static_library(
-    target
+    TARGET
         gvk-layer
-    folder
+    FOLDER
         "gvk-layer/"
-    linkLibraries
+    LINK_LIBRARIES
         gvk-runtime
-    includeDirectories
+    INCLUDE_DIRECTORIES
         "${generatedIncludeDirectory}"
         "${includeDirectory}"
-    includeFiles
+    INCLUDE_FILES
         "${generatedIncludeFiles}"
         "${includePath}/registry.hpp"
         "${includeDirectory}/gvk-layer.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${generatedSourceFiles}"
         "${sourcePath}/registry.cpp"
 )
+
+################################################################################
+# gvk-layer install
+gvk_install_library(TARGET gvk-layer)

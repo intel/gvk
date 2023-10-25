@@ -207,7 +207,7 @@ int main(int, const char*[])
 
                 vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
                 // Bind our gvk::DescriptorSet for use with the bound gvk::Pipeline...
-                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get<gvk::PipelineLayout>(), 0, 1, &(const VkDescriptorSet&)descriptorSet, 0, nullptr);
+                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get<gvk::PipelineLayout>(), 0, 1, &descriptorSet.get<VkDescriptorSet>(), 0, nullptr);
 
                 mesh.record_cmds(commandBuffer);
                 vkCmdEndRenderPass(commandBuffer);

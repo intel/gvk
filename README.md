@@ -20,7 +20,7 @@ Ensure the following tools are installed...
  - [Git](https://git-scm.com/)
  - [Python](https://www.python.org/downloads/) v3+ (Make sure to select "Add to PATH" when prompted)
  - [Visual Studio](https://visualstudio.microsoft.com/vs/community/) 2019 (Make sure to select "Desktop development with C++" when prompted)
- - [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) v1.3.243.0
+ - [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) v1.3.261.1
 
 The following command lines are for configuring a Visual Studio solution using a  `bash` like terminal (Git Bash comes with the Git install by default on Windows) in a directory called `gitrepos/intel` on drive `C:`...
 ```

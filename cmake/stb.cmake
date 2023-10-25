@@ -3,20 +3,21 @@ include_guard()
 
 include(FetchContent)
 
+set(stb_VERSION 5736b15f7ea0ffb08dd38af21067c314d6a3aae9)
 FetchContent_Declare(
     stb
     GIT_REPOSITORY "https://github.com/nothings/stb.git"
-    GIT_TAG 5736b15f7ea0ffb08dd38af21067c314d6a3aae9
+    GIT_TAG ${stb_VERSION}
     GIT_PROGRESS TRUE
 )
 FetchContent_MakeAvailable(stb)
-FetchContent_GetProperties(stb SOURCE_DIR stbSourceDirectory)
-FetchContent_GetProperties(stb BINARY_DIR stbBinaryDirectory)
+FetchContent_GetProperties(stb SOURCE_DIR stb_SOURCE_DIR)
+FetchContent_GetProperties(stb BINARY_DIR stb_BINARY_DIR)
 
-macro(add_stb_file stbFile implementationMacro)
-    file(COPY "${stbSourceDirectory}/${stbFile}.h" DESTINATION "${stbBinaryDirectory}/stb/")
-    list(APPEND includeFiles "${stbBinaryDirectory}/stb/${stbFile}.h")
-    set(sourceFile "${stbBinaryDirectory}/stb/${stbFile}.cpp")
+macro(gvk_add_stb_file stbFile implementationMacro)
+    file(COPY "${stb_SOURCE_DIR}/${stbFile}.h" DESTINATION "${stb_BINARY_DIR}/stb/")
+    list(APPEND includeFiles "${stb_BINARY_DIR}/stb/${stbFile}.h")
+    set(sourceFile "${stb_BINARY_DIR}/stb/${stbFile}.cpp")
     list(APPEND sourceFiles "${sourceFile}")
     if(NOT EXISTS "${sourceFile}")
         file(WRITE "${sourceFile}"
@@ -34,12 +35,12 @@ macro(add_stb_file stbFile implementationMacro)
     endif()
 endmacro()
 
-add_stb_file(stb_image STB_IMAGE_IMPLEMENTATION)
+gvk_add_stb_file(stb_image STB_IMAGE_IMPLEMENTATION)
 
 gvk_add_static_library(
-    target stb
-    folder "external/"
-    includeDirectories "${stbBinaryDirectory}/"
-    includeFiles "${includeFiles}"
-    sourceFiles "${sourceFiles}"
+    TARGET stb
+    FOLDER "external/"
+    INCLUDE_DIRECTORIES "${stb_BINARY_DIR}/"
+    INCLUDE_FILES "${includeFiles}"
+    SOURCE_FILES "${sourceFiles}"
 )

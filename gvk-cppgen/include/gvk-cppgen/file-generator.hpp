@@ -44,6 +44,9 @@ public:
 
 private:
     std::filesystem::path mFilePath;
+
+    FileGenerator(const FileGenerator&) = delete;
+    FileGenerator& operator=(const FileGenerator&) = delete;
 };
 
 } // namespace cppgen

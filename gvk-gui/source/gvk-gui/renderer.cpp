@@ -412,7 +412,7 @@ VkResult Renderer::end_gui(uint32_t fenceCount, const VkFence* pVkFences)
                 auto originalSize = mVertexIndexBuffer ? mVertexIndexBuffer.get<VkBufferCreateInfo>().size : 0;
                 (void)originalSize;
                 if (mVertexIndexBuffer && fenceCount && pVkFences) {
-                    auto dispatchTable = mDevice.get<DispatchTable>();
+                    const auto& dispatchTable = mDevice.get<DispatchTable>();
                     assert(dispatchTable.gvkWaitForFences);
                     dispatchTable.gvkWaitForFences(mDevice, fenceCount, pVkFences, VK_TRUE, UINT64_MAX);
                 }
@@ -445,19 +445,17 @@ VkResult Renderer::end_gui(uint32_t fenceCount, const VkFence* pVkFences)
 
 void Renderer::record_cmds(VkCommandBuffer vkCommandBuffer) const
 {
-    auto dispatchTable = mDevice.get<DispatchTable>();
+    const auto& dispatchTable = mDevice.get<DispatchTable>();
     assert(dispatchTable.gvkCmdSetScissor);
     assert(dispatchTable.gvkCmdBindDescriptorSets);
     assert(dispatchTable.gvkCmdDrawIndexed);
-
     auto pImDrawData = ImGui::GetDrawData();
     assert(pImDrawData);
-    if (pImDrawData->CmdListsCount) {
-        assert(pImDrawData->CmdLists);
+    if (!pImDrawData->CmdLists.empty()) {
         record_render_state_setup_cmds(vkCommandBuffer, pImDrawData);
         int vertexOffset = 0;
         int indexOffset = 0;
-        for (int cmdList_i = 0; cmdList_i < pImDrawData->CmdListsCount; ++cmdList_i) {
+        for (int cmdList_i = 0; cmdList_i < pImDrawData->CmdLists.size(); ++cmdList_i) {
             auto pCmdList = pImDrawData->CmdLists[cmdList_i];
             for (int cmd_i = 0; cmd_i < pCmdList->CmdBuffer.Size; ++cmd_i) {
                 const auto& cmd = pCmdList->CmdBuffer[cmd_i];
@@ -596,14 +594,14 @@ VkResult Renderer::create_pipeline(const RenderPass& renderPass, const VkAllocat
         pipelineMultisampleStateCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
         auto pipelineDepthStencilStateCreateInfo = get_default<VkPipelineDepthStencilStateCreateInfo>();
 
-        auto renderPassCreateInfo = renderPass.get<VkRenderPassCreateInfo>();
+        const auto& renderPassCreateInfo = renderPass.get<VkRenderPassCreateInfo>();
         if (renderPassCreateInfo.sType == get_stype<VkRenderPassCreateInfo>()) {
             assert(!renderPass.get<VkRenderPassCreateInfo2>().sType);
             for (uint32_t i = 0; i < renderPassCreateInfo.attachmentCount; ++i) {
                 pipelineMultisampleStateCreateInfo.rasterizationSamples = std::max(pipelineMultisampleStateCreateInfo.rasterizationSamples, renderPassCreateInfo.pAttachments[i].samples);
             }
         } else {
-            auto renderPassCreateInfo2 = renderPass.get<VkRenderPassCreateInfo2>();
+            const auto& renderPassCreateInfo2 = renderPass.get<VkRenderPassCreateInfo2>();
             assert(!renderPassCreateInfo.sType);
             assert(renderPassCreateInfo2.sType == get_stype<VkRenderPassCreateInfo2>());
             for (uint32_t i = 0; i < renderPassCreateInfo2.attachmentCount; ++i) {
@@ -674,7 +672,7 @@ VkResult Renderer::create_image_view_and_sampler(VkQueue vkQueue, VkCommandBuffe
         gvk_result(execute_immediately(mDevice, vkQueue, vkCommandBuffer, VK_NULL_HANDLE,
             [&](auto)
             {
-                auto dispatchTable = mDevice.get<DispatchTable>();
+                const auto& dispatchTable = mDevice.get<DispatchTable>();
                 assert(dispatchTable.gvkCmdPipelineBarrier);
                 assert(dispatchTable.gvkCmdCopyBufferToImage);
 
@@ -713,7 +711,7 @@ VkResult Renderer::allocate_and_update_descriptor_set(const VkAllocationCallback
     assert(mpImGuiContext);
     assert(mDevice);
     assert(mPipeline);
-    auto pipelineLayout = mPipeline.get<PipelineLayout>();
+    const auto& pipelineLayout = mPipeline.get<PipelineLayout>();
     assert(pipelineLayout);
     const auto& descriptorSetLayouts = pipelineLayout.get<DescriptorSetLayouts>();
     assert(descriptorSetLayouts.size() == 1);
@@ -734,7 +732,7 @@ VkResult Renderer::allocate_and_update_descriptor_set(const VkAllocationCallback
         auto descriptorSetAllocateInfo = get_default<VkDescriptorSetAllocateInfo>();
         descriptorSetAllocateInfo.descriptorPool = descriptorPool;
         descriptorSetAllocateInfo.descriptorSetCount = 1;
-        descriptorSetAllocateInfo.pSetLayouts = &descriptorSetLayouts[0].get<const VkDescriptorSetLayout&>();
+        descriptorSetAllocateInfo.pSetLayouts = &descriptorSetLayouts[0].get<VkDescriptorSetLayout>();
         gvk_result(DescriptorSet::allocate(mDevice, &descriptorSetAllocateInfo, &mFontDescriptorSet));
 
         auto descriptorImageInfo = get_default<VkDescriptorImageInfo>();
@@ -746,7 +744,7 @@ VkResult Renderer::allocate_and_update_descriptor_set(const VkAllocationCallback
         writeDescriptorSet.descriptorCount = 1;
         writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         writeDescriptorSet.pImageInfo = &descriptorImageInfo;
-        auto dispatchTable = mDevice.get<DispatchTable>();
+        const auto& dispatchTable = mDevice.get<DispatchTable>();
         assert(dispatchTable.gvkUpdateDescriptorSets);
         dispatchTable.gvkUpdateDescriptorSets(mDevice, 1, &writeDescriptorSet, 0, nullptr);
         ImGui::GetIO().Fonts->SetTexID(mFontDescriptorSet);
@@ -756,7 +754,7 @@ VkResult Renderer::allocate_and_update_descriptor_set(const VkAllocationCallback
 
 void Renderer::record_render_state_setup_cmds(VkCommandBuffer vkCommandBuffer, const ImDrawData* pImDrawData) const
 {
-    auto dispatchTable = mDevice.get<DispatchTable>();
+    const auto& dispatchTable = mDevice.get<DispatchTable>();
     assert(dispatchTable.gvkCmdSetViewport);
     assert(dispatchTable.gvkCmdBindPipeline);
     assert(dispatchTable.gvkCmdPushConstants);
@@ -779,7 +777,7 @@ void Renderer::record_render_state_setup_cmds(VkCommandBuffer vkCommandBuffer, c
 
     if (pImDrawData->TotalVtxCount) {
         VkDeviceSize vertexDataOffset = 0;
-        dispatchTable.gvkCmdBindVertexBuffers(vkCommandBuffer, 0, 1, &mVertexIndexBuffer.get<const VkBuffer&>(), &vertexDataOffset);
+        dispatchTable.gvkCmdBindVertexBuffers(vkCommandBuffer, 0, 1, &mVertexIndexBuffer.get<VkBuffer>(), &vertexDataOffset);
         dispatchTable.gvkCmdBindIndexBuffer(vkCommandBuffer, mVertexIndexBuffer, mIndexDataOffset, get_index_type<ImDrawIdx>());
     }
 }

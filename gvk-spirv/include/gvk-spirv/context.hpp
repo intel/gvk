@@ -30,9 +30,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-handles/handles.hpp"
 
 #include <array>
+#include <limits>
 #include <map>
 #include <mutex>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace gvk {
@@ -142,6 +144,75 @@ Creates a PipelineLayout from a given spirv::BindingInfo
 */
 VkResult create_pipeline_layout(const Device& device, const BindingInfo& bindingInfo, const VkAllocationCallbacks* pAllocator, PipelineLayout* pPipelineLayout);
 
+namespace detail {
+namespace api_types {
+
+enum ShaderLanguage
+{
+    GPA_SHADER_LANGUAGE_UNKNOWN = 0,
+    GPA_SHADER_LANGUAGE_GLSL,
+    GPA_SHADER_LANGUAGE_HLSL,
+    GPA_SHADER_LANGUAGE_CM,
+    GPA_SHADER_LANGUAGE_DXBC,
+    GPA_SHADER_LANGUAGE_DXIL,
+    GPA_SHADER_LANGUAGE_SPIRV,
+    GPA_SHADER_LANGUAGE_ISA,
+    GPA_SHADER_LANGUAGE_COUNT,
+    GPA_SHADER_LANGUAGE_BEGIN = GPA_SHADER_LANGUAGE_UNKNOWN,
+    GPA_SHADER_LANGUAGE_END = GPA_SHADER_LANGUAGE_COUNT
+};
+
+enum ShaderStageFlagBits : uint32_t
+{
+    GPA_SHADER_STAGE_UNKNOWN                 = 0,
+    GPA_SHADER_STAGE_VERTEX                  = 1,
+    GPA_SHADER_STAGE_HULL                    = 1 << 1,
+    GPA_SHADER_STAGE_TESSELLATION_CONTROL    = GPA_SHADER_STAGE_HULL,
+    GPA_SHADER_STAGE_DOMAIN                  = 1 << 2,
+    GPA_SHADER_STAGE_TESSELLATION_EVALUATION = GPA_SHADER_STAGE_DOMAIN,
+    GPA_SHADER_STAGE_GEOMETRY                = 1 << 3,
+    GPA_SHADER_STAGE_PIXEL                   = 1 << 4,
+    GPA_SHADER_STAGE_FRAGMENT                = GPA_SHADER_STAGE_PIXEL,
+    GPA_SHADER_STAGE_COMPUTE                 = 1 << 5,
+    GPA_SHADER_STAGE_RAYGEN                  = 1 << 6,
+    GPA_SHADER_STAGE_ANY_HIT                 = 1 << 7,
+    GPA_SHADER_STAGE_CLOSEST_HIT             = 1 << 8,
+    GPA_SHADER_STAGE_MISS                    = 1 << 9,
+    GPA_SHADER_STAGE_INTERSECTION            = 1 << 10,
+    GPA_SHADER_STAGE_CALLABLE                = 1 << 11,
+    GPA_SHADER_STAGE_AMPLIFICATION           = 1 << 12,
+    GPA_SHADER_STAGE_MESH                    = 1 << 13,
+    GPA_SHADER_STAGE_DXIL_LIBRARY            = 1 << 14,
+    GPA_SHADER_STAGE_ALL_GRAPHICS =
+        GPA_SHADER_STAGE_VERTEX |
+        GPA_SHADER_STAGE_HULL |
+        GPA_SHADER_STAGE_DOMAIN |
+        GPA_SHADER_STAGE_GEOMETRY |
+        GPA_SHADER_STAGE_FRAGMENT,
+    GPA_SHADER_STAGE_ALL = std::numeric_limits<uint32_t>::max(),
+};
+using ShaderStageFlags = uint32_t;
+
+class SourceFile final
+{
+public:
+    std::string content;
+    std::string filename;
+};
+
+} // namespace api_types
+
+void EnableGLSLCompiler();
+void DisableGLSLCompiler();
+bool CompileFromSPIRV(api_types::ShaderLanguage sourceLanguage, std::vector<uint32_t> const* spirv, std::vector<api_types::SourceFile>& files);
+void CompileToSPIRV(api_types::ShaderStageFlagBits stage, api_types::ShaderLanguage language, std::string const& shaderCode, std::vector<uint32_t>* spirv, std::string* infoLog, std::string* debugLog);
+bool GetReadableSPIRVfromBinarySPIRV(void* spirv, size_t binarySize, std::string& readableSPIRV);
+std::string GetGLSLFromSPIRV(std::vector<uint32_t> const& spirv);
+bool GetBinarySPIRVfromReadableSPIRV(std::string const& readableSPIRV, std::vector<uint32_t>& spirv);
+void GetSPIRVFromGLSL(api_types::ShaderStageFlagBits stage, std::string const& glsl, std::vector<uint32_t>& spirv, std::string& infoLog, std::string& debugLog);
+bool IsSpirVCompatible(std::vector<uint32_t> const& spirv0, std::vector<uint32_t> const& spirv1, std::vector<std::string>& errors, std::string shader0Name = "Source Shader", std::string shader1Name = "Custom Shader");
+
+} // namespace detail
 } // namespace spirv
 } // namespace gvk
 

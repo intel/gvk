@@ -125,7 +125,7 @@ VkResult StateTrackerValidationContext::create_devices(const VkDeviceCreateInfo*
     auto physicalDeviceSynchronization2Features = gvk::get_default<VkPhysicalDeviceSynchronization2Features>();
     auto availablePhysicalDeviceFeatures = gvk::get_default<VkPhysicalDeviceFeatures2>();
     availablePhysicalDeviceFeatures.pNext = &physicalDeviceSynchronization2Features;
-    auto dispatchTable = get_physical_devices()[0].get<gvk::DispatchTable>();
+    const auto& dispatchTable = get_physical_devices()[0].get<gvk::DispatchTable>();
     assert(dispatchTable.gvkGetPhysicalDeviceFeatures2);
     dispatchTable.gvkGetPhysicalDeviceFeatures2(get_physical_devices()[0], &availablePhysicalDeviceFeatures);
     auto enabledPhysicalDeviceFeatures = gvk::get_default<VkPhysicalDeviceFeatures2>();

@@ -40,15 +40,15 @@ set(generatedSourceFiles
 )
 set(generatorSourcePath "${CMAKE_CURRENT_LIST_DIR}/generator/")
 gvk_add_code_generator(
-    target
+    TARGET
         gvk-structures.generator
-    folder
+    FOLDER
         "gvk-structures/"
-    linkLibraries
+    LINK_LIBRARIES
         gvk-cppgen
-    includeDirectories
+    INCLUDE_DIRECTORIES
         "${generatorSourcePath}/"
-    includeFiles
+    INCLUDE_FILES
         "${generatorSourcePath}/cerealize-pnext.generator.hpp"
         "${generatorSourcePath}/create-pnext-copy.generator.hpp"
         "${generatorSourcePath}/decerealize-pnext.generator.hpp"
@@ -58,12 +58,12 @@ gvk_add_code_generator(
         "${generatorSourcePath}/handle-to-string.generator.hpp"
         "${generatorSourcePath}/pnext-to-string.generator.hpp"
         "${generatorSourcePath}/pnext-tuple-element-wrapper.generator.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${generatorSourcePath}/main.cpp"
-    outputFiles
+    OUTPUT_FILES
         "${generatedIncludeFiles}"
         "${generatedSourceFiles}"
-    compileDefinitions
+    COMPILE_DEFINITIONS
         GVK_STRUCTURES_GENERATED_INCLUDE_PATH="${generatedIncludePath}"
         GVK_STRUCTURES_GENERATED_INCLUDE_PREFIX="gvk-structures/generated/"
         GVK_STRUCTURES_GENERATED_SOURCE_PATH="${generatedSourcePath}"
@@ -79,18 +79,19 @@ set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
 set(includePath "${includeDirectory}/gvk-structures/")
 set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk-structures/")
 gvk_add_static_library(
-    target
+    TARGET
         gvk-structures
-    folder
+    FOLDER
         "gvk-structures/"
-    linkLibraries
+    LINK_LIBRARIES
         gvk-runtime
-        # cereal
-    includeDirectories
+        cereal
+        # cereal_INTERFACE
+    INCLUDE_DIRECTORIES
         "${generatedIncludeDirectory}"
         "${includeDirectory}"
-        "${cerealSourceDirectory}/include/"
-    includeFiles
+        # "${cerealSourceDirectory}/include/"
+    INCLUDE_FILES
         "${generatedIncludeFiles}"
         "${includePath}/detail/cerealization-manual.hpp"
         "${includePath}/detail/cerealization-utilities.hpp"
@@ -112,7 +113,7 @@ gvk_add_static_library(
         "${includePath}/serialization.hpp"
         "${includePath}/to-string.hpp"
         "${includeDirectory}/gvk-structures.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${generatedSourceFiles}"
         "${sourcePath}/detail/cerealization-utilities.cpp"
         "${sourcePath}/detail/copy-manual.cpp"
@@ -126,11 +127,11 @@ gvk_add_static_library(
 # gvk-structures.test
 set(testsPath "${CMAKE_CURRENT_LIST_DIR}/tests/")
 gvk_add_target_test(
-    target
+    TARGET
         gvk-structures
-    folder
+    FOLDER
         "gvk-structures/"
-    sourceFiles
+    SOURCE_FILES
         "${testsPath}/comparison-operator.tests.cpp"
         "${testsPath}/copy.tests.cpp"
         "${testsPath}/handle-enumeration.tests.cpp"
@@ -139,3 +140,7 @@ gvk_add_target_test(
         "${testsPath}/validate-structure-serialization.hpp"
         "${testsPath}/validation-allocator.hpp"
 )
+
+################################################################################
+# gvk-structures install
+gvk_install_library(TARGET gvk-structures)

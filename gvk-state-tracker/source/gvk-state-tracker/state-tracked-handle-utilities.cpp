@@ -52,9 +52,8 @@ void PhysicalDevice::enumerate(PFN_gvkEnumerateStateTrackedObjectsCallback pfnCa
         } break;
         }
         pfnCallback(&stateTrackedObject, nullptr, pUserData);
-        const auto& controlBlock = mReference.get_obj();
-        controlBlock.mDeviceTracker.enumerate(pfnCallback, pUserData);
-        controlBlock.mDisplayKHRTracker.enumerate(pfnCallback, pUserData);
+        mReference.get_obj().mDeviceTracker.enumerate(pfnCallback, pUserData);
+        mReference.get_obj().mDisplayKHRTracker.enumerate(pfnCallback, pUserData);
     }
 }
 
@@ -78,7 +77,8 @@ void PhysicalDevice::enumerate_dependencies(PFN_gvkEnumerateStateTrackedObjectsC
         } break;
         }
         pfnCallback(&stateTrackedObject, nullptr, pUserData);
-        get<Instance>().enumerate_dependencies(pfnCallback, pUserData);
+        Instance instance = get<VkInstance>();
+        instance.enumerate_dependencies(pfnCallback, pUserData);
     }
 }
 
@@ -103,8 +103,7 @@ void DisplayKHR::enumerate(PFN_gvkEnumerateStateTrackedObjectsCallback pfnCallba
         } break;
         }
         pfnCallback(&stateTrackedObject, nullptr, pUserData);
-        const auto& controlBlock = mReference.get_obj();
-        controlBlock.mDisplayModeKHRTracker.enumerate(pfnCallback, pUserData);
+        mReference.get_obj().mDisplayModeKHRTracker.enumerate(pfnCallback, pUserData);
     }
 }
 
@@ -177,7 +176,7 @@ void DisplayModeKHR::enumerate_dependencies(PFN_gvkEnumerateStateTrackedObjectsC
         } break;
         }
         pfnCallback(&stateTrackedObject, nullptr, pUserData);
-        DisplayKHR(DisplayKHR::HandleIdType(mReference.get_obj().mPhysicalDevice, mReference.get_obj().mDisplayKHR)).enumerate_dependencies(pfnCallback, pUserData);
+        mReference.get_obj().mDisplayKHR.enumerate_dependencies(pfnCallback, pUserData);
     }
 }
 
@@ -191,13 +190,7 @@ void SwapchainKHR::enumerate_dependencies(PFN_gvkEnumerateStateTrackedObjectsCal
         stateTrackedObject.dispatchableHandle = (uint64_t)get<VkDevice>();
         pfnCallback(&stateTrackedObject, nullptr, pUserData);
         mReference.get_obj().mDevice.enumerate_dependencies(pfnCallback, pUserData);
-        const auto& device = mReference.get_obj().mDevice;
-        assert(device);
-        auto physicalDevice = device ? device.get<PhysicalDevice>() : VK_NULL_HANDLE;
-        assert(physicalDevice);
-        auto instance = physicalDevice ? physicalDevice.get<Instance>() : VK_NULL_HANDLE;
-        assert(instance);
-        SurfaceKHR(SurfaceKHR::HandleIdType(instance, mReference.get_obj().mSurfaceKHR)).enumerate_dependencies(pfnCallback, pUserData);
+        mReference.get_obj().mSurfaceKHR.enumerate_dependencies(pfnCallback, pUserData);
     }
 }
 

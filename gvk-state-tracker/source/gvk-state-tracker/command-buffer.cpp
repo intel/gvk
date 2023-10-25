@@ -111,7 +111,7 @@ VkResult StateTracker::post_vkQueueSubmit(VkQueue queue, uint32_t submitCount, c
     if (submitCount && pSubmits) {
         Queue gvkQueue(queue);
         assert(gvkQueue);
-        auto gvkDevice = gvkQueue.get<Device>();
+        Device gvkDevice(gvkQueue.get<VkDevice>());
         assert(gvkDevice);
         for (uint32_t submit_i = 0; submit_i < submitCount; ++submit_i) {
             const auto& submit = pSubmits[submit_i];
@@ -157,7 +157,7 @@ VkResult StateTracker::post_vkQueueSubmit2(VkQueue queue, uint32_t submitCount, 
     if (submitCount && pSubmits) {
         Queue gvkQueue(queue);
         assert(gvkQueue);
-        auto gvkDevice = gvkQueue.get<Device>();
+        Device gvkDevice(gvkQueue.get<VkDevice>());
         assert(gvkDevice);
         for (uint32_t submit_i = 0; submit_i < submitCount; ++submit_i) {
             const auto& submit = pSubmits[submit_i];
@@ -206,7 +206,7 @@ VkResult StateTracker::post_vkQueuePresentKHR(VkQueue queue, const VkPresentInfo
 {
     Queue gvkQueue(queue);
     assert(gvkQueue);
-    auto gvkDevice = gvkQueue.get<Device>();
+    Device gvkDevice(gvkQueue.get<VkDevice>());
     assert(gvkDevice);
     for (uint32_t wait_i = 0; wait_i < pPresentInfo->waitSemaphoreCount; ++wait_i) {
         Semaphore gvkSemaphore({ gvkDevice, pPresentInfo->pWaitSemaphores[wait_i] });

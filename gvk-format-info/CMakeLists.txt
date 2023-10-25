@@ -31,23 +31,23 @@ set(generatedSourceFiles
 )
 set(generatorSourcePath "${CMAKE_CURRENT_LIST_DIR}/generator/")
 gvk_add_code_generator(
-    target
+    TARGET
         gvk-format-info.generator
-    folder
+    FOLDER
         "gvk-format-info/"
-    linkLibraries
+    LINK_LIBRARIES
         gvk-cppgen
-    includeDirectories
+    INCLUDE_DIRECTORIES
         "${generatorSourcePath}/"
-    includeFiles
+    INCLUDE_FILES
         "${generatorSourcePath}/enumerate-formats.generator.hpp"
         "${generatorSourcePath}/get-format-info.generator.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${generatorSourcePath}/main.cpp"
-    outputFiles
+    OUTPUT_FILES
         "${generatedIncludeFiles}"
         "${generatedSourceFiles}"
-    compileDefinitions
+    COMPILE_DEFINITIONS
         GVK_FORMAT_INFO_GENERATED_INCLUDE_PATH="${generatedIncludePath}"
         GVK_FORMAT_INFO_GENERATED_INCLUDE_PREFIX="gvk-format-info/generated/"
         GVK_FORMAT_INFO_GENERATED_SOURCE_PATH="${generatedSourcePath}"
@@ -59,20 +59,24 @@ gvk_add_code_generator(
 set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
 set(sourceDirectory "${CMAKE_CURRENT_LIST_DIR}/source/")
 gvk_add_static_library(
-    target
+    TARGET
         gvk-format-info
-    folder
+    FOLDER
         "gvk-format-info/"
-    linkLibraries
+    LINK_LIBRARIES
         gvk-runtime
         gvk-structures
-    includeDirectories
+    INCLUDE_DIRECTORIES
         "${generatedIncludeDirectory}"
         "${includeDirectory}"
-    includeFiles
+    INCLUDE_FILES
         "${generatedIncludeFiles}"
         "${includeDirectory}/gvk-format-info.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${generatedSourceFiles}"
         "${sourceDirectory}/gvk-format-info.cpp"
 )
+
+################################################################################
+# gvk-format-info install
+gvk_install_library(TARGET gvk-format-info)

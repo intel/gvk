@@ -3,7 +3,8 @@
 [_-][Bb]uild/
 [Cc][Mm]ake[Bb]uild/
 [Cc][Mm]ake[_-][Bb]uild/
-install/
+[Ii]nstall/
+[_-][Ii]nstall/
 build-options.cmake
 documentation/html/
 documentation/latex/

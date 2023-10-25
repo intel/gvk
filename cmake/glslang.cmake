@@ -9,32 +9,34 @@ set(ENABLE_GLSLANG_INSTALL  OFF CACHE BOOL "" FORCE)
 set(ENABLE_GLSLANG_JS       OFF CACHE BOOL "" FORCE)
 set(ENABLE_GLSLANG_WEBMIN   OFF CACHE BOOL "" FORCE)
 set(SKIP_GLSLANG_INSTALL    ON  CACHE BOOL "" FORCE)
+set(glslang_VERSION 76b52ebf77833908dc4c0dd6c70a9c357ac720bd) # sdk-1.3.261.1
 FetchContent_Declare(
     glslang
     GIT_REPOSITORY "https://github.com/KhronosGroup/glslang.git"
-    GIT_TAG 14e5a04e70057972eef8a40df422e30a3b70e4b5 # sdk-1.3.243.0
+    GIT_TAG ${glslang_VERSION}
     GIT_PROGRESS TRUE
 )
 FetchContent_MakeAvailable(glslang)
-set(folder "${GVK_IDE_FOLDER}/external/glslang/")
-set_target_properties(GenericCodeGen     PROPERTIES FOLDER "${folder}")
-set_target_properties(glslang            PROPERTIES FOLDER "${folder}")
-set_target_properties(MachineIndependent PROPERTIES FOLDER "${folder}")
-set_target_properties(OGLCompiler        PROPERTIES FOLDER "${folder}")
-set_target_properties(OSDependent        PROPERTIES FOLDER "${folder}")
-set_target_properties(SPIRV              PROPERTIES FOLDER "${folder}")
-set_target_properties(SPVRemapper        PROPERTIES FOLDER "${folder}")
-set_target_properties(HLSL               PROPERTIES FOLDER "${folder}/hlsl/")
-add_library(glslang_INTERFACE INTERFACE)
-target_link_libraries(
-    glslang_INTERFACE
-    INTERFACE
-        GenericCodeGen
-        glslang
-        MachineIndependent
-        OGLCompiler
-        OSDependent
-        SPIRV
-        SPVRemapper
-        HLSL
-)
+
+macro(gvk_setup_glslang_target glslangTarget)
+    list(APPEND glslangLibraries ${glslangTarget})
+    set_target_properties(${glslangTarget} PROPERTIES FOLDER "${GVK_IDE_FOLDER}/external/glslang/")
+    gvk_install_artifacts(TARGET ${glslangTarget} VERSION ${glslang_VERSION})
+endmacro()
+
+# HACK : glslang headers aren't being installed, but the export expects them to
+#   be at `include/External`...this modifies the INSTALL_INTERFACE to `include`
+#   to avoid an error for mssing INTERFACE_INCLUDE_DIRECTORIES on import.
+get_target_property(SPIRV_INTERFACE_INCLUDE_DIRECTORIES SPIRV INTERFACE_INCLUDE_DIRECTORIES)
+string(REPLACE "$<INSTALL_INTERFACE:include/External>" "$<INSTALL_INTERFACE:include>" SPIRV_INTERFACE_INCLUDE_DIRECTORIES "${SPIRV_INTERFACE_INCLUDE_DIRECTORIES}")
+set_target_properties(SPIRV PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${SPIRV_INTERFACE_INCLUDE_DIRECTORIES}")
+
+gvk_setup_glslang_target(GenericCodeGen)
+gvk_setup_glslang_target(glslang)
+gvk_setup_glslang_target(glslang-default-resource-limits)
+gvk_setup_glslang_target(HLSL)
+gvk_setup_glslang_target(MachineIndependent)
+gvk_setup_glslang_target(OGLCompiler)
+gvk_setup_glslang_target(OSDependent)
+gvk_setup_glslang_target(SPIRV)
+gvk_setup_glslang_target(SPVRemapper)

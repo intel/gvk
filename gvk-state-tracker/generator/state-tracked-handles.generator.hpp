@@ -42,16 +42,15 @@ public:
         : BasicHandleGenerator(manifest, handle)
     {
         generate_ctors(false, false);
-
         if (handle.name == "VkPhysicalDevice") {
-            add_member(MemberInfo("VkInstance", "mVkInstance", "Instance"));
+            add_member(MemberInfo("VkInstance", "mVkInstance", "VkInstance"));
             add_member(MemberInfo("uint64_t", "mApplicationHandle", "uint64_t"));
         }
         if (handle.name == "VkDevice") {
             add_member(MemberInfo("ObjectTracker<Queue>", "mQueueTracker"));
         }
         if (handle.name == "VkQueue") {
-            add_member(MemberInfo("VkDevice", "mVkDevice", "Device", "mReference.get_obj().mVkDevice"));
+            add_member(MemberInfo("VkDevice", "mVkDevice", "VkDevice"));
             add_member(MemberInfo("gvk::Auto<VkDeviceQueueCreateInfo>", "mDeviceQueueCreateInfo", "VkDeviceQueueCreateInfo"));
         }
         if (handle.name == "VkPipeline") {
@@ -62,10 +61,10 @@ public:
             add_member(MemberInfo("gvk::Auto<VkBindBufferMemoryInfo>", "mBindBufferMemoryInfo", "VkBindBufferMemoryInfo"));
         }
         if (handle.name == "VkImage") {
-            add_member(MemberInfo("VkSwapchainKHR", "mVkSwapchainKHR", "SwapchainKHR", "SwapchainKHR({ mReference.get_obj().mDevice, mReference.get_obj().mVkSwapchainKHR })"));
+            add_member(MemberInfo("VkSwapchainKHR", "mVkSwapchainKHR", "VkSwapchainKHR"));
             add_member(MemberInfo("std::set<VkDeviceMemory>", "mVkDeviceMemoryBindings"));
             add_member(MemberInfo("gvk::Auto<VkBindImageMemoryInfo>", "mBindImageMemoryInfo", "VkBindImageMemoryInfo"));
-            add_member(MemberInfo("ImageLayoutTracker", "mImageLayoutTracker", "const ImageLayoutTracker&"));
+            add_member(MemberInfo("ImageLayoutTracker", "mImageLayoutTracker", "ImageLayoutTracker"));
         }
         if (handle.name == "VkDeviceMemory") {
             add_member(MemberInfo("Buffer", "mDedicatedBuffer"));
@@ -184,7 +183,11 @@ R"({
                             strStrm << "        mReference.get_obj()." << memberInfo.storageName << ".enumerate_dependencies(pfnCallback, pUserData);" << std::endl;
                         }
                     } else if (manifest.handles.count(memberInfo.storageType)) {
-                        strStrm << "        get<" << string::strip_vk(memberInfo.accessorType) << ">().enumerate_dependencies(pfnCallback, pUserData);" << std::endl;
+                        assert(memberInfo.storageType == memberInfo.accessorType);
+                        strStrm << "        auto parentStateTrackedObject = stateTrackedObject;" << std::endl;
+                        strStrm << "        parentStateTrackedObject.type = detail::get_object_type<" << memberInfo.storageType << ">();" << std::endl;
+                        strStrm << "        parentStateTrackedObject.handle = (uint64_t)get<" << memberInfo.accessorType << ">();" << std::endl;
+                        strStrm << "        to_handle<" << string::strip_vk(memberInfo.storageType) << ">(parentStateTrackedObject).enumerate_dependencies(pfnCallback, pUserData); " << std::endl;
                     } else if (memberInfo.storageName == "mImmutableSamplers") {
                         strStrm << "        for (const auto& immutableSamplersItr : mReference.get_obj().mImmutableSamplers) {" << std::endl;
                         strStrm << "            for (const auto& immutableSampler : immutableSamplersItr.second) {" << std::endl;
@@ -229,7 +232,10 @@ public:
         );
         std::vector<StateTrackedHandleGenerator> generators;
         for (const auto& handleItr : manifest.handles) {
-            generators.emplace_back(manifest, handleItr.second);
+            const auto& handle = handleItr.second;
+            if (handle.alias.empty()) {
+                generators.emplace_back(manifest, handleItr.second);
+            }
         }
         generate_forward_declarations(generators);
         generate_header(module.header, manifest, generators);
@@ -252,11 +258,7 @@ private:
         file << std::endl;
     }
 
-    static void generate_header(
-        FileGenerator& file,
-        const xml::Manifest& manifest,
-        const std::vector<StateTrackedHandleGenerator>& generators
-    )
+    static void generate_header(FileGenerator& file, const xml::Manifest& manifest, const std::vector<StateTrackedHandleGenerator>& generators)
     {
         file << "#include \"gvk-state-tracker/generated/forward-declarations.inl\"" << std::endl;
         file << "#include \"gvk-state-tracker/descriptor.hpp\"" << std::endl;
@@ -285,20 +287,57 @@ private:
             generator.generate_accessors(file, manifest);
         }
         file << std::endl;
+        file << "template <typename HandleIdType>" << std::endl;
+        file << "HandleIdType to_handle_id(const GvkStateTrackedObject&)" << std::endl;
+        file << "{" << std::endl;
+        file << "    return { };" << std::endl;
+        file << "}" << std::endl;
+        file << std::endl;
+        for (const auto& handleItr : manifest.handles) {
+            const auto& handle = handleItr.second;
+            if (handle.alias.empty()) {
+                CompileGuardGenerator compileGuardGenerator(file, handle.compileGuards);
+                file << string::replace("template <> {gvkHandleType}::HandleIdType to_handle_id<{gvkHandleType}::HandleIdType>(const GvkStateTrackedObject& stateTrackedObject);", "{gvkHandleType}", string::strip_vk(handle.name)) << std::endl;
+            }
+        }
+        file << std::endl;
+        file << "template <typename HandleType>" << std::endl;
+        file << "inline HandleType to_handle(const GvkStateTrackedObject& stateTrackedObject)" << std::endl;
+        file << "{" << std::endl;
+        file << "    return to_handle_id<typename HandleType::HandleIdType>(stateTrackedObject);" << std::endl;
+        file << "}" << std::endl;
+        file << std::endl;
     }
 
-    static void generate_source(
-        FileGenerator& file,
-        const xml::Manifest& manifest,
-        const std::vector<StateTrackedHandleGenerator>& generators
-    )
+    static void generate_source(FileGenerator& file, const xml::Manifest& manifest, const std::vector<StateTrackedHandleGenerator>& generators)
     {
+        file << "#include \"gvk-state-tracker/state-tracker.hpp\"" << std::endl;
+        file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk::state_tracker");
         for (const auto& generator : generators) {
             generator.generate_handle_definition(file, manifest);
         }
         for (const auto& generator : generators) {
             generator.generate_control_block_definition(file, manifest);
+        }
+        for (const auto& handleItr : manifest.handles) {
+            const auto& handle = handleItr.second;
+            if (handle.alias.empty()) {
+                file << std::endl;
+                CompileGuardGenerator compileGuardGenerator(file, handle.compileGuards);
+                file << "template <>" << std::endl;
+                file << string::replace("{gvkHandleType}::HandleIdType to_handle_id<{gvkHandleType}::HandleIdType>(const GvkStateTrackedObject& stateTrackedObject)", "{gvkHandleType}", string::strip_vk(handle.name)) << std::endl;
+                file << "{" << std::endl;
+                file << "    assert(stateTrackedObject.type == " << handle.vkObjectType << ");" << std::endl;
+                if (handle.name == "VkPhysicalDevice") {
+                    file << "    return StateTracker::get_loader_physical_device_handle((VkPhysicalDevice)stateTrackedObject.handle);" << std::endl;
+                } else if (handle.isDispatchable) {
+                    file << "    return (" << string::strip_vk(handle.name) << "::HandleIdType)stateTrackedObject.handle;" << std::endl;
+                } else {
+                    file << string::replace("    return {gvkHandleType}::HandleIdType(({gvkHandleType}::DispatchableVkHandleType)stateTrackedObject.dispatchableHandle, ({gvkHandleType}::VkHandleType)stateTrackedObject.handle);", "{gvkHandleType}", string::strip_vk(handle.name)) << std::endl;
+                }
+                file << "}" << std::endl;
+            }
         }
         file << std::endl;
     }

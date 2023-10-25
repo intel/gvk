@@ -72,7 +72,7 @@ static void create_descriptor_pool(const gvk::Device& device, const std::vector<
     descriptorPoolSizes[15].type = VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM;
     descriptorPoolSizes[16].type = VK_DESCRIPTOR_TYPE_MUTABLE_EXT;
     for (const auto& descriptorSetLayout : descriptorSetLayouts) {
-        auto descriptorSetLayoutCreateInfo = descriptorSetLayout.get<VkDescriptorSetLayoutCreateInfo>();
+        const auto& descriptorSetLayoutCreateInfo = descriptorSetLayout.get<VkDescriptorSetLayoutCreateInfo>();
         ASSERT_TRUE(descriptorSetLayoutCreateInfo.bindingCount && descriptorSetLayoutCreateInfo.pBindings);
         for (uint32_t i = 0; i < descriptorSetLayoutCreateInfo.bindingCount; ++i) {
             const auto& binding = descriptorSetLayoutCreateInfo.pBindings[i];
@@ -155,7 +155,7 @@ TEST(DescriptorSet, BasicDescriptorBinding)
     auto descriptorSetAllocateInfo = gvk::get_default<VkDescriptorSetAllocateInfo>();
     descriptorSetAllocateInfo.descriptorPool = descriptorPool;
     descriptorSetAllocateInfo.descriptorSetCount = 1;
-    descriptorSetAllocateInfo.pSetLayouts = &descriptorSetLayouts[0].get<const VkDescriptorSetLayout&>();
+    descriptorSetAllocateInfo.pSetLayouts = &descriptorSetLayouts[0].get<VkDescriptorSetLayout>();
     gvk::DescriptorSet descriptorSet;
     ASSERT_EQ(gvk::DescriptorSet::allocate(context.get_devices()[0], &descriptorSetAllocateInfo, &descriptorSet), VK_SUCCESS);
     ASSERT_TRUE(create_state_tracked_object_record(descriptorSet, descriptorSet.get<VkDescriptorSetAllocateInfo>(), expectedInstanceObjects));
@@ -204,7 +204,7 @@ TEST(DescriptorSet, BasicDescriptorBinding)
     auto descriptorWrite = gvk::get_default<VkWriteDescriptorSet>();
     descriptorWrite.dstSet = descriptorSet;
     descriptorWrite.descriptorCount = 1;
-    auto descriptorSetLayoutCreateInfo = descriptorSetLayouts[0].get<VkDescriptorSetLayoutCreateInfo>();
+    const auto& descriptorSetLayoutCreateInfo = descriptorSetLayouts[0].get<VkDescriptorSetLayoutCreateInfo>();
     ASSERT_EQ(descriptorSetLayoutCreateInfo.bindingCount, (uint32_t)1);
     ASSERT_TRUE(descriptorSetLayoutCreateInfo.pBindings);
     descriptorWrite.descriptorType = descriptorSetLayouts[0].get<VkDescriptorSetLayoutCreateInfo>().pBindings[0].descriptorType;

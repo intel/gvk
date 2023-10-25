@@ -66,7 +66,7 @@ TEST(Pipeline, ComputePipelineResourceLifetime)
     gvk::PipelineLayout pipelineLayout;
     ASSERT_EQ(gvk::spirv::create_pipeline_layout(context.get_devices()[0], bindingInfo, nullptr, &pipelineLayout), VK_SUCCESS);
     ASSERT_TRUE(create_state_tracked_object_record(pipelineLayout, pipelineLayout.get<VkPipelineLayoutCreateInfo>(), expectedInstanceObjects));
-    auto descriptorSetLayouts = pipelineLayout.get<gvk::DescriptorSetLayouts>();
+    const auto& descriptorSetLayouts = pipelineLayout.get<gvk::DescriptorSetLayouts>();
     ASSERT_EQ(descriptorSetLayouts.size(), 1);
     ASSERT_TRUE(create_state_tracked_object_record(descriptorSetLayouts[0], descriptorSetLayouts[0].get<VkDescriptorSetLayoutCreateInfo>(), expectedInstanceObjects));
 
@@ -111,7 +111,6 @@ TEST(Pipeline, ComputePipelineResourceLifetime)
     expectedPipelineDependencies[gvk::get_state_tracked_object(descriptorSetLayouts[0])].mStateTrackedObjectInfo.flags = GVK_STATE_TRACKED_OBJECT_STATUS_DESTROYED_BIT;
     shaderModule.reset();
     pipelineLayout.reset();
-    descriptorSetLayouts.clear();
 
     enumerator.records.clear();
     pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
@@ -253,7 +252,7 @@ TEST(Pipeline, GraphicsPipelineResourceLifetime)
     gvk::PipelineLayout pipelineLayout;
     ASSERT_EQ(gvk::spirv::create_pipeline_layout(context.get_devices()[0], bindingInfo, nullptr, &pipelineLayout), VK_SUCCESS);
     ASSERT_TRUE(create_state_tracked_object_record(pipelineLayout, pipelineLayout.get<VkPipelineLayoutCreateInfo>(), expectedInstanceObjects));
-    auto descriptorSetLayouts = pipelineLayout.get<gvk::DescriptorSetLayouts>();
+    const auto& descriptorSetLayouts = pipelineLayout.get<gvk::DescriptorSetLayouts>();
     ASSERT_EQ(descriptorSetLayouts.size(), 2);
     ASSERT_TRUE(create_state_tracked_object_record(descriptorSetLayouts[0], descriptorSetLayouts[0].get<VkDescriptorSetLayoutCreateInfo>(), expectedInstanceObjects));
     ASSERT_TRUE(create_state_tracked_object_record(descriptorSetLayouts[1], descriptorSetLayouts[1].get<VkDescriptorSetLayoutCreateInfo>(), expectedInstanceObjects));
@@ -331,7 +330,6 @@ TEST(Pipeline, GraphicsPipelineResourceLifetime)
     fragmentShaderModule.reset();
     renderPass.reset();
     pipelineLayout.reset();
-    descriptorSetLayouts.clear();
 
     enumerator.records.clear();
     pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);

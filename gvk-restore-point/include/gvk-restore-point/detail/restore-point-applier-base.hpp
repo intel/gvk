@@ -32,7 +32,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-handles.hpp"
 #include "gvk-runtime.hpp"
 #include "gvk-structures.hpp"
-#include "gvk-restore-point/detail/asio-include.hpp"
 #include "gvk-restore-point/detail/copy-engine.hpp"
 #include "gvk-restore-point/restore-point-info.hpp"
 
@@ -51,7 +50,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <filesystem>
 #include <fstream>
+#include <memory>
 #include <set>
+
+namespace asio {
+class thread_pool;
+} // namespace asio
 
 namespace gvk {
 namespace detail {
@@ -158,7 +162,7 @@ protected:
     CommandBuffer mCommandBuffer;
     std::mutex mThreadCommandBuffersMutex;
     std::map<Device, std::unordered_map<std::thread::id, std::pair<CommandBuffer, Fence>>> mThreadCommandBuffers;
-    asio::thread_pool mThreadPool;
+    asio::thread_pool* mpThreadPool { nullptr };
     std::set<Instance> mInstances;
     std::set<Device> mDevices;
 

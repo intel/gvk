@@ -41,6 +41,9 @@ public:
 private:
     std::ostream& mOstream;
     std::string mHeaderGuard;
+
+    HeaderGuardGenerator(const HeaderGuardGenerator&) = delete;
+    HeaderGuardGenerator& operator=(const HeaderGuardGenerator&) = delete;
 };
 
 } // namespace cppgen

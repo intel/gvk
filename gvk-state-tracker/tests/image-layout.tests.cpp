@@ -285,7 +285,7 @@ TEST(ImageLayout, WaitEvents)
             dispatchTable.gvkCmdWaitEvents(
                 context.get_command_buffers()[0],
                 1,
-                &event.get<const VkEvent&>(),
+                &event.get<VkEvent>(),
                 VK_PIPELINE_STAGE_HOST_BIT,
                 VK_PIPELINE_STAGE_HOST_BIT,
                 0, nullptr,
@@ -367,7 +367,7 @@ TEST(ImageLayout, WaitEvents2)
         [&](auto)
         {
             assert(dispatchTable.gvkCmdWaitEvents2);
-            dispatchTable.gvkCmdWaitEvents2(context.get_command_buffers()[0], 1, &event.get<const VkEvent&>(), &dependencyInfo);
+            dispatchTable.gvkCmdWaitEvents2(context.get_command_buffers()[0], 1, &event.get<VkEvent>(), &dependencyInfo);
         }
     );
 
@@ -393,7 +393,7 @@ TEST(ImageLayout, RenderPass)
     load_gvk_state_tracker_entry_points();
 
     auto colorFormat = VK_FORMAT_UNDEFINED;
-    auto physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
+    const auto& physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
     gvk::enumerate_formats(
         physicalDevice.get<gvk::DispatchTable>().gvkGetPhysicalDeviceFormatProperties2,
         physicalDevice,
@@ -487,7 +487,7 @@ TEST(ImageLayout, RenderPass)
 
     auto renderPass = renderTarget.get_render_pass();
     ASSERT_TRUE(renderPass);
-    auto renderPassCreateInfo = renderPass.get<VkRenderPassCreateInfo2>();
+    const auto& renderPassCreateInfo = renderPass.get<VkRenderPassCreateInfo2>();
     for (uint32_t i = 0; i < renderPassCreateInfo.attachmentCount; ++i) {
         auto image = renderTarget.get_image(i);
         ASSERT_TRUE(image);
@@ -506,7 +506,7 @@ TEST(ImageLayout, RenderPass2)
 
     // Get color VkFormat
     auto colorFormat = VK_FORMAT_UNDEFINED;
-    auto physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
+    const auto& physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
     gvk::enumerate_formats(
         physicalDevice.get<gvk::DispatchTable>().gvkGetPhysicalDeviceFormatProperties2,
         physicalDevice,
@@ -602,7 +602,7 @@ TEST(ImageLayout, RenderPass2)
 
     auto renderPass = renderTarget.get_render_pass();
     ASSERT_TRUE(renderPass);
-    auto renderPassCreateInfo = renderPass.get<VkRenderPassCreateInfo2>();
+    const auto& renderPassCreateInfo = renderPass.get<VkRenderPassCreateInfo2>();
     for (uint32_t i = 0; i < renderPassCreateInfo.attachmentCount; ++i) {
         auto image = renderTarget.get_image(i);
         ASSERT_TRUE(image);

@@ -25,6 +25,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include "gvk-restore-point/detail/copy-engine.hpp"
+#include "gvk-restore-point/detail/asio-include.hpp"
 #include "gvk-format-info.hpp"
 
 #include <cassert>
@@ -32,9 +33,18 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace gvk {
 
+CopyEngine::CopyEngine()
+    : mpThreadPool { new asio::thread_pool }
+{
+}
+
 CopyEngine::~CopyEngine()
 {
     reset();
+    // NOTE : asio::thread_pool is forward declared...when compiling GPA FW, MSVC
+    //  tries to generate a default dtor for std::unique_ptr<asio::thread_pool>()
+    //  even though asio is included here...very annoying.
+    delete mpThreadPool;
 }
 
 void CopyEngine::reset()
@@ -60,8 +70,9 @@ void CopyEngine::set_thread_initialization_callback(std::function<void(std::thre
 void CopyEngine::download(VkDevice vkDevice, DeviceMemoryCopyInfo deviceMemoryCopyInfo)
 {
     if (mMultiThreaded) {
+        assert(mpThreadPool);
         asio::post(
-            mThreadPool,
+            *mpThreadPool,
             [this, vkDevice, deviceMemoryCopyInfo]()
             {
                 initialize_thread();
@@ -76,8 +87,9 @@ void CopyEngine::download(VkDevice vkDevice, DeviceMemoryCopyInfo deviceMemoryCo
 void CopyEngine::upload(VkDevice vkDevice, DeviceMemoryCopyInfo deviceMemoryCopyInfo)
 {
     if (mMultiThreaded) {
+        assert(mpThreadPool);
         asio::post(
-            mThreadPool,
+            *mpThreadPool,
             [this, vkDevice, deviceMemoryCopyInfo]()
             {
                 initialize_thread();
@@ -92,8 +104,9 @@ void CopyEngine::upload(VkDevice vkDevice, DeviceMemoryCopyInfo deviceMemoryCopy
 void CopyEngine::transition_image_layouts(VkDevice vkDevice, ImageCopyInfo imageCopyInfo)
 {
     if (mMultiThreaded) {
+        assert(mpThreadPool);
         asio::post(
-            mThreadPool,
+            *mpThreadPool,
             [this, vkDevice, imageCopyInfo]()
             {
                 initialize_thread();
@@ -108,7 +121,8 @@ void CopyEngine::transition_image_layouts(VkDevice vkDevice, ImageCopyInfo image
 void CopyEngine::wait()
 {
     if (mMultiThreaded) {
-        mThreadPool.wait();
+        assert(mpThreadPool);
+        mpThreadPool->wait();
     }
     for (const auto& itr : mTaskResources) {
         const auto& gvkDevice = itr.first;
@@ -211,16 +225,16 @@ void CopyEngine::download_impl(VkDevice vkDevice, DeviceMemoryCopyInfo deviceMem
 
     auto submitInfo = get_default<VkSubmitInfo>();
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &taskResources.gvkCommandBuffer.get<const VkCommandBuffer&>();
+    submitInfo.pCommandBuffers = &taskResources.gvkCommandBuffer.get<VkCommandBuffer>();
     {
         std::lock_guard<std::mutex> lock(mQueueMutex);
         vkResult = dispatchTable.gvkQueueSubmit(get_queue_family(gvkDevice, 0).queues[0], 1, &submitInfo, taskResources.gvkFence);
         assert(vkResult == VK_SUCCESS);
     }
 
-    vkResult = dispatchTable.gvkWaitForFences(gvkDevice, 1, &taskResources.gvkFence.get<const VkFence&>(), VK_TRUE, UINT64_MAX);
+    vkResult = dispatchTable.gvkWaitForFences(gvkDevice, 1, &taskResources.gvkFence.get<VkFence>(), VK_TRUE, UINT64_MAX);
     assert(vkResult == VK_SUCCESS);
-    vkResult = dispatchTable.gvkResetFences(gvkDevice, 1, &taskResources.gvkFence.get<const VkFence&>());
+    vkResult = dispatchTable.gvkResetFences(gvkDevice, 1, &taskResources.gvkFence.get<VkFence>());
     assert(vkResult == VK_SUCCESS);
 
     const char* pData = nullptr;
@@ -283,16 +297,16 @@ void CopyEngine::upload_impl(VkDevice vkDevice, DeviceMemoryCopyInfo deviceMemor
 
         auto submitInfo = get_default<VkSubmitInfo>();
         submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &taskResources.gvkCommandBuffer.get<const VkCommandBuffer&>();
+        submitInfo.pCommandBuffers = &taskResources.gvkCommandBuffer.get<VkCommandBuffer>();
         {
             std::lock_guard<std::mutex> lock(mQueueMutex);
             vkResult = dispatchTable.gvkQueueSubmit(get_queue_family(gvkDevice, 0).queues[0], 1, &submitInfo, taskResources.gvkFence);
             assert(vkResult == VK_SUCCESS);
         }
 
-        vkResult = dispatchTable.gvkWaitForFences(gvkDevice, 1, &taskResources.gvkFence.get<const VkFence&>(), VK_TRUE, UINT64_MAX);
+        vkResult = dispatchTable.gvkWaitForFences(gvkDevice, 1, &taskResources.gvkFence.get<VkFence>(), VK_TRUE, UINT64_MAX);
         assert(vkResult == VK_SUCCESS);
-        vkResult = dispatchTable.gvkResetFences(gvkDevice, 1, &taskResources.gvkFence.get<const VkFence&>());
+        vkResult = dispatchTable.gvkResetFences(gvkDevice, 1, &taskResources.gvkFence.get<VkFence>());
         assert(vkResult == VK_SUCCESS);
     }
 }
@@ -325,7 +339,7 @@ void CopyEngine::transition_image_layouts_impl(VkDevice vkDevice, ImageCopyInfo 
         if (!imageMemoryBarriers.empty()) {
             Device gvkDevice(vkDevice);
             assert(gvkDevice);
-            auto dispatchTable = gvkDevice.get<DispatchTable>();
+            const auto& dispatchTable = gvkDevice.get<DispatchTable>();
 
             auto& taskResources = get_task_resources(gvkDevice, 1);
             auto commandBufferBeginInfo = get_default<VkCommandBufferBeginInfo>();
@@ -351,7 +365,7 @@ void CopyEngine::transition_image_layouts_impl(VkDevice vkDevice, ImageCopyInfo 
 
             auto submitInfo = get_default<VkSubmitInfo>();
             submitInfo.commandBufferCount = 1;
-            submitInfo.pCommandBuffers = &taskResources.gvkCommandBuffer.get<const VkCommandBuffer&>();
+            submitInfo.pCommandBuffers = &taskResources.gvkCommandBuffer.get<VkCommandBuffer>();
             {
                 std::lock_guard<std::mutex> lock(mQueueMutex);
                 vkResult = dispatchTable.gvkQueueSubmit(get_queue_family(gvkDevice, 0).queues[0], 1, &submitInfo, taskResources.gvkFence);
@@ -359,9 +373,9 @@ void CopyEngine::transition_image_layouts_impl(VkDevice vkDevice, ImageCopyInfo 
             }
 
             assert(dispatchTable.gvkWaitForFences);
-            vkResult = dispatchTable.gvkWaitForFences(gvkDevice, 1, &taskResources.gvkFence.get<const VkFence&>(), VK_TRUE, UINT64_MAX);
+            vkResult = dispatchTable.gvkWaitForFences(gvkDevice, 1, &taskResources.gvkFence.get<VkFence>(), VK_TRUE, UINT64_MAX);
             assert(dispatchTable.gvkResetFences);
-            vkResult = dispatchTable.gvkResetFences(gvkDevice, 1, &taskResources.gvkFence.get<const VkFence&>());
+            vkResult = dispatchTable.gvkResetFences(gvkDevice, 1, &taskResources.gvkFence.get<VkFence>());
             assert(vkResult == VK_SUCCESS);
         }
     }

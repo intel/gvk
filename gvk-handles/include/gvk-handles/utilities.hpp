@@ -234,7 +234,7 @@ inline VkResult execute_immediately(
     gvk_result_scope_begin(VK_INCOMPLETE) {
         auto commandBufferBeginInfo = get_default<VkCommandBufferBeginInfo>();
         commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        auto dispatchTable = device.get<DispatchTable>();
+        const auto& dispatchTable = device.get<DispatchTable>();
         assert(dispatchTable.gvkBeginCommandBuffer);
         gvk_result(dispatchTable.gvkBeginCommandBuffer(vkCommandBuffer, &commandBufferBeginInfo));
         recordCommandBuffer(vkCommandBuffer);

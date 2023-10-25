@@ -4,18 +4,17 @@
 set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
 set(includePath "${includeDirectory}/gvk-system/")
 set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk-system/")
-set(linkLibraries "")
 gvk_add_static_library(
-    target
+    TARGET
         gvk-system
-    folder
+    FOLDER
         "gvk-system/"
-    linkLibraries
+    LINK_LIBRARIES
         gvk-reference
         glfw
-    includeDirectories
+    INCLUDE_DIRECTORIES
         "${includeDirectory}"
-    includeFiles
+    INCLUDE_FILES
         "${includePath}/button-set.hpp"
         "${includePath}/input.hpp"
         "${includePath}/keyboard.hpp"
@@ -24,6 +23,6 @@ gvk_add_static_library(
         "${includePath}/time.hpp"
         "${includePath}/updateable.hpp"
         "${includeDirectory}/gvk-system.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${sourcePath}/surface.cpp"
 )

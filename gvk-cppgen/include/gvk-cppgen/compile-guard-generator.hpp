@@ -42,6 +42,9 @@ public:
 private:
     std::ostream& mOstream;
     std::set<std::string> mCompileGuards;
+
+    CompileGuardGenerator(const CompileGuardGenerator&) = delete;
+    CompileGuardGenerator& operator=(const CompileGuardGenerator&) = delete;
 };
 
 } // namespace cppgen

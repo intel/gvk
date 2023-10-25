@@ -45,41 +45,43 @@ public:
     {
         if (handle.name == "VkInstance") {
             add_manually_implemented_ctor("VkResult create_unmanaged(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, const DispatchTable* pDispatchTable, VkInstance vkInstance, Instance* pGvkInstance)");
-            add_member(MemberInfo("std::vector<PhysicalDevice>", "mPhysicalDevices", "const std::vector<PhysicalDevice>&"));
+            add_member(MemberInfo("std::vector<PhysicalDevice>", "mPhysicalDevices", "std::vector<PhysicalDevice>"));
             add_member(MemberInfo("bool", "mUnmanaged"));
             add_manually_implemented_dtor();
         }
         if (handle.name == "VkPhysicalDevice") {
-            add_member(MemberInfo("VkInstance", "mVkInstance", "Instance"));
+            add_member(MemberInfo("VkInstance", "mVkInstance", "VkInstance"));
         }
         if (handle.name == "VkDevice") {
             add_manually_implemented_ctor("VkResult create_unmanaged(const PhysicalDevice& physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, const DispatchTable* pDispatchTable, VkDevice vkDevice, Device *pGvkDevice)");
             add_member(MemberInfo("Instance", "mInstance", "Instance"));
-            add_member(MemberInfo("std::vector<QueueFamily>", "mQueueFamilies", "const std::vector<QueueFamily>&"));
+            add_member(MemberInfo("std::vector<QueueFamily>", "mQueueFamilies", "std::vector<QueueFamily>"));
             add_member(MemberInfo("VmaAllocator", "mVmaAllocator", "VmaAllocator"));
             add_member(MemberInfo("bool", "mUnmanaged"));
             add_manually_implemented_dtor();
         }
         if (handle.name == "VkQueue") {
-            add_member(MemberInfo("VkDevice", "mVkDevice", "Device"));
+            add_member(MemberInfo("VkDevice", "mVkDevice", "VkDevice"));
             add_member(MemberInfo("gvk::Auto<VkDeviceQueueCreateInfo>", "mDeviceQueueCreateInfo", "VkDeviceQueueCreateInfo"));
         }
         if (handle.name == "VkBuffer") {
             add_manually_implemented_ctor("VkResult create(const Device& device, const VkBufferCreateInfo* pBufferCreateInfo, const VmaAllocationCreateInfo* pAllocationCreateInfo, Buffer* pBuffer)");
             add_member(MemberInfo("VmaAllocation", "mVmaAllocation", "VmaAllocation"));
+            add_member(MemberInfo("VmaAllocationCreateInfo", "mVmaAllocationCreateInfo", "VmaAllocationCreateInfo"));
             add_manually_implemented_dtor();
         }
         if (handle.name == "VkImage") {
             add_manually_implemented_ctor("VkResult create(const Device& device, const VkImageCreateInfo* pImageCreateInfo, const VmaAllocationCreateInfo* pAllocationCreateInfo, Image* pImage)");
-            add_member(MemberInfo("VkSwapchainKHR", "mVkSwapchainKHR", "SwapchainKHR"));
+            add_member(MemberInfo("VkSwapchainKHR", "mVkSwapchainKHR", "VkSwapchainKHR"));
             add_member(MemberInfo("VmaAllocation", "mVmaAllocation", "VmaAllocation"));
+            add_member(MemberInfo("VmaAllocationCreateInfo", "mVmaAllocationCreateInfo", "VmaAllocationCreateInfo"));
             add_manually_implemented_dtor();
         }
         if (handle.name == "VkDeferredOperationKHR") {
             generate_ctors(true, false);
         }
         if (handle.name == "VkSwapchainKHR") {
-            add_member(MemberInfo("std::vector<Image>", "mImages", "const std::vector<Image>&"));
+            add_member(MemberInfo("std::vector<Image>", "mImages", "std::vector<Image>"));
         }
         add_private_declaration("template <typename HandleType> friend VkResult gvk::detail::initialize_control_block(HandleType&)");
         if (handle.isDispatchable && handle.name != "VkCommandBuffer") {
@@ -259,12 +261,9 @@ public:
         std::vector<HandleGenerator> generators;
         for (const auto& handleItr : manifest.handles) {
             const auto& handle = handleItr.second;
-            (void)handle;
-            generators.emplace_back(manifest, handleItr.second);
-            auto& generator = generators.back();
-            (void)generator;
-
-
+            if (handle.alias.empty()) {
+                generators.emplace_back(manifest, handle);
+            }
         }
         generate_forward_declarations(generators);
         generate_header(module.header, manifest, generators);

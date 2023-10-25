@@ -5,21 +5,21 @@ set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
 set(includePath "${includeDirectory}/gvk-math/")
 set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk-math/")
 gvk_add_static_library(
-    target
+    TARGET
         gvk-math
-    folder
+    FOLDER
         "gvk-math/"
-    linkLibraries
+    LINK_LIBRARIES
         glm
-    includeDirectories
+    INCLUDE_DIRECTORIES
         "${includeDirectory}"
-    includeFiles
+    INCLUDE_FILES
         "${includePath}/camera.hpp"
         "${includePath}/color.hpp"
         "${includePath}/defines.hpp"
         "${includePath}/transform.hpp"
         "${includeDirectory}/gvk-math.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${sourcePath}/camera.cpp"
         "${sourcePath}/transform.cpp"
 )

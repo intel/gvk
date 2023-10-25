@@ -81,7 +81,7 @@ public:
                     {
                         auto bufferCopy = get_default<VkBufferCopy>();
                         bufferCopy.size = bufferCreateInfo.size;
-                        auto dispatchTable = device.get<DispatchTable>();
+                        const auto& dispatchTable = device.get<DispatchTable>();
                         assert(dispatchTable.gvkCmdCopyBuffer);
                         dispatchTable.gvkCmdCopyBuffer(vkCommandBuffer, mCpuBuffer, mGpuBuffer, 1, &bufferCopy);
                     }
@@ -98,5 +98,9 @@ private:
     VkIndexType mIndexType { VK_INDEX_TYPE_NONE_KHR };
     uint32_t mIndexCount { };
 };
+
+VkResult resize(VkDeviceSize size, gvk::Buffer* pBuffer);
+VkResult expand(VkDeviceSize size, gvk::Buffer* pBuffer);
+VkResult create_staging_buffer(const gvk::Device& device, VkDeviceSize size, gvk::Buffer* pBuffer);
 
 } // namespace gvk

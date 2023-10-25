@@ -12,22 +12,22 @@ set(generatedSourceFiles
 )
 set(generatorSourcePath "${CMAKE_CURRENT_LIST_DIR}/generator/")
 gvk_add_code_generator(
-    target
+    TARGET
         gvk-runtime.generator
-    folder
+    FOLDER
         "gvk-runtime/"
-    linkLibraries
+    LINK_LIBRARIES
         gvk-cppgen
-    includeDirectories
+    INCLUDE_DIRECTORIES
         "${generatorSourcePath}/"
-    includeFiles
+    INCLUDE_FILES
         "${generatorSourcePath}/dispatch-table.generator.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${generatorSourcePath}/main.cpp"
-    outputFiles
+    OUTPUT_FILES
         "${generatedIncludeFiles}"
         "${generatedSourceFiles}"
-    compileDefinitions
+    COMPILE_DEFINITIONS
         GVK_RUNTIME_GENERATED_INCLUDE_PATH="${generatedIncludePath}"
         GVK_RUNTIME_GENERATED_INCLUDE_PREFIX="gvk-runtime/generated/"
         GVK_RUNTIME_GENERATED_SOURCE_PATH="${generatedSourcePath}"
@@ -39,26 +39,30 @@ gvk_add_code_generator(
 set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
 set(sourceDirectory "${CMAKE_CURRENT_LIST_DIR}/source/")
 gvk_add_static_library(
-    target
+    TARGET
         gvk-runtime
-    folder
+    FOLDER
         "gvk-runtime/"
-    linkLibraries
+    LINK_LIBRARIES
         gvk-string
         Vulkan::Vulkan
         ${CMAKE_DL_LIBS}
-    includeDirectories
+    INCLUDE_DIRECTORIES
         "${generatedIncludeDirectory}"
         "${includeDirectory}"
-    includeFiles
+    INCLUDE_FILES
         "${generatedIncludeFiles}"
         "${includeDirectory}/gvk-defines.hpp"
         "${includeDirectory}/gvk-dispatch-table.hpp"
         "${includeDirectory}/gvk-environment.hpp"
         "${includeDirectory}/gvk-runtime.hpp"
-    sourceFiles
+    SOURCE_FILES
         "${generatedSourceFiles}"
         "${sourceDirectory}/gvk-defines.cpp"
         "${sourceDirectory}/gvk-environment.cpp"
         "${sourceDirectory}/gvk-runtime.cpp"
 )
+
+################################################################################
+# gvk-runtime install
+gvk_install_library(TARGET gvk-runtime)
