@@ -434,6 +434,24 @@ void CompileToSPIRV(
     case GPA_SHADER_STAGE_COMPUTE:
         eshStage = EShLangCompute;
         break;
+    case GPA_SHADER_STAGE_RAYGEN:
+        eshStage = EShLangRayGen;
+        break;
+    case GPA_SHADER_STAGE_ANY_HIT:
+        eshStage = EShLangAnyHit;
+        break;
+    case GPA_SHADER_STAGE_CLOSEST_HIT:
+        eshStage = EShLangClosestHit;
+        break;
+    case GPA_SHADER_STAGE_MISS:
+        eshStage = EShLangMiss;
+        break;
+    case GPA_SHADER_STAGE_INTERSECTION:
+        eshStage = EShLangIntersect;
+        break;
+    case GPA_SHADER_STAGE_CALLABLE:
+        eshStage = EShLangCallable;
+        break;
     default:
         *infoLog = "Invalid shader stage";
         *debugLog = "Invalid shader stage";
@@ -442,7 +460,9 @@ void CompileToSPIRV(
 
     glslang::TShader shader(eshStage);
     const char* sourceCStr[]{ shaderCode.c_str() };
+    shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_4);
     shader.setStrings(sourceCStr, 1);
+    
     EShMessages messages = (EShMessages)EShMsgDefault;
     if (language == GPA_SHADER_LANGUAGE_HLSL) {
         shader.setEntryPoint("main");
@@ -465,6 +485,7 @@ void CompileToSPIRV(
         return;
     }
     glslang::GlslangToSpv(*program.getIntermediate(eshStage), *spirv);
+   
 }
 
 bool GetReadableSPIRVfromBinarySPIRV(void* spirv, size_t binarySize, std::string& readableSPIRV)

@@ -34,6 +34,9 @@ gvk_add_target_test(
         "gvk-spirv/"
     SOURCE_FILES
         "${testsPath}/context.tests.cpp"
+        "${testsPath}/raytracing.tests.cpp"
+    INCLUDE_FILES
+        "${testsPath}/spirv-test-utilities.hpp"
 )
 
 ################################################################################
