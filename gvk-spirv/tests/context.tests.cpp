@@ -27,6 +27,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-spirv/context.hpp"
 #include "gvk-handles/context.hpp"
 #include "gvk-structures/defaults.hpp"
+#include "spirv-test-utilities.hpp"
 
 #ifdef VK_USE_PLATFORM_XLIB_KHR
 #undef None
@@ -90,60 +91,9 @@ TEST(spirv, Context)
     EXPECT_FALSE(shaderInfo.errors.empty());
 }
 
-static void validate_pipeline_layout_creation(
-    std::vector<gvk::spirv::ShaderInfo> shaderInfos,
-    const std::vector<std::vector<VkDescriptorSetLayoutBinding>>& descriptorSetLayoutBindings,
-    const std::vector<VkPushConstantRange>& pushConstantRanges
-)
-{
-    // Create gvk::spirv::Context
-    gvk::spirv::Context spirvContext;
-    ASSERT_EQ(gvk::spirv::Context::create(&gvk::get_default<gvk::spirv::Context::CreateInfo>(), &spirvContext), VK_SUCCESS);
-
-    // Create gvk::spirv::BindingInfo
-    auto bindingInfo = gvk::get_default<gvk::spirv::BindingInfo>();
-    for (auto& shaderInfo : shaderInfos) {
-        if (spirvContext.compile(&shaderInfo) == VK_SUCCESS) {
-            bindingInfo.add_shader(shaderInfo);
-        } else {
-            for (const auto& error : shaderInfo.errors) {
-                std::cerr << error << std::endl;
-            }
-        }
-    }
-
-    // Create gvk::Context
-    gvk::Context context;
-    ASSERT_EQ(gvk::Context::create(&gvk::get_default<gvk::Context::CreateInfo>(), nullptr, &context), VK_SUCCESS);
-
-    // Create gvk::PipelineLayout
-    gvk::PipelineLayout pipelineLayout;
-    ASSERT_EQ(gvk::spirv::create_pipeline_layout(context.get_devices()[0], bindingInfo, nullptr, &pipelineLayout), VK_SUCCESS);
-
-    // Validate descriptorSetLayoutBindings
-    const auto& descriptorSetLayouts = pipelineLayout.get<gvk::DescriptorSetLayouts>();
-    ASSERT_EQ(descriptorSetLayoutBindings.size(), descriptorSetLayouts.size());
-    for (size_t layout_i = 0; layout_i < descriptorSetLayouts.size(); ++layout_i) {
-        const auto& descriptorSetLayoutCreateInfo = descriptorSetLayouts[layout_i].get<VkDescriptorSetLayoutCreateInfo>();
-        ASSERT_EQ(descriptorSetLayoutCreateInfo.bindingCount, descriptorSetLayoutBindings[layout_i].size());
-        for (size_t binding_i = 0; binding_i < descriptorSetLayoutCreateInfo.bindingCount; ++binding_i) {
-            const auto& expected = descriptorSetLayoutBindings[layout_i][binding_i];
-            const auto& actual = descriptorSetLayoutCreateInfo.pBindings[binding_i];
-            EXPECT_EQ(expected, actual);
-        }
-    }
-
-    // Validate pushConstantRanges
-    const auto& pipelineLayoutCreateInfo = pipelineLayout.get<VkPipelineLayoutCreateInfo>();
-    ASSERT_EQ(pipelineLayoutCreateInfo.pushConstantRangeCount, pushConstantRanges.size());
-    for (uint32_t i = 0; i < pipelineLayoutCreateInfo.pushConstantRangeCount; ++i) {
-        EXPECT_EQ(pushConstantRanges[i], pipelineLayoutCreateInfo.pPushConstantRanges[i]);
-    }
-}
-
 TEST(spirv, BindingInfo_UniformBuffer)
 {
-    validate_pipeline_layout_creation(
+    gvk::validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
@@ -186,7 +136,7 @@ TEST(spirv, BindingInfo_UniformBuffer)
 
 TEST(spirv, BindingInfo_StorageBuffer)
 {
-    validate_pipeline_layout_creation(
+    gvk::validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
@@ -229,7 +179,7 @@ TEST(spirv, BindingInfo_StorageBuffer)
 
 TEST(spirv, BindingInfo_StorageImage)
 {
-    validate_pipeline_layout_creation(
+    gvk::validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
@@ -283,7 +233,7 @@ TEST(spirv, BindingInfo_StorageImage)
 
 TEST(spirv, BindingInfo_CombinedImageSampler)
 {
-    validate_pipeline_layout_creation(
+    gvk::validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
@@ -333,7 +283,7 @@ TEST(spirv, BindingInfo_CombinedImageSampler)
 
 TEST(spirv, BindingInfo_AccelerationStructure)
 {
-    validate_pipeline_layout_creation(
+    gvk::validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
@@ -391,7 +341,7 @@ TEST(spirv, BindingInfo_AccelerationStructure)
 
 TEST(spirv, BindingInfo_PushConstants)
 {
-    validate_pipeline_layout_creation(
+    gvk::validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,

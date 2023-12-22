@@ -19,8 +19,8 @@ Ensure the following tools are installed...
  - [CMake](https://cmake.org/download/) v3.3+ (Make sure to select "Add to PATH" when prompted)
  - [Git](https://git-scm.com/)
  - [Python](https://www.python.org/downloads/) v3+ (Make sure to select "Add to PATH" when prompted)
- - [Visual Studio](https://visualstudio.microsoft.com/vs/community/) 2019 (Make sure to select "Desktop development with C++" when prompted)
- - [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) v1.3.261.1
+ - [Visual Studio](https://visualstudio.microsoft.com/vs/community/) 2022 (Make sure to select "Desktop development with C++" when prompted)
+ - [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) v1.3.268.0
 
 The following command lines are for configuring a Visual Studio solution using a  `bash` like terminal (Git Bash comes with the Git install by default on Windows) in a directory called `gitrepos/intel` on drive `C:`...
 ```
@@ -30,12 +30,12 @@ git clone https://github.com/intel/gvk.git
 cd gvk/
 mkdir build
 cd build/
-cmake -G "Visual Studio 16 2019" -A x64 ..
+cmake -G "Visual Studio 17 2022" -A x64 ..
 cmake --build .
 ```
 ...open `gvk/build/gvk.sln` in Visual Studio, navigate to `gvk/samples/getting-started-00-triangle`, right click and select "Set as Startup Project", run.
 
-For Linux, replace `cmake -G "Visual Studio 16 2019" -A x64 ..` with `cmake ..` for the default Makefile generator.  See CMake's documentation for other generators.  Note that Windows support is further along than Linux, ymmv.
+For Linux, replace `cmake -G "Visual Studio 17 2022" -A x64 ..` with `cmake ..` for the default Makefile generator.  See CMake's documentation for other generators.  Note that Windows support is further along than Linux, ymmv.
 
 # External use
 Somewhere in your CMakeLists, add the following...

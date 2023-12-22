@@ -1,5 +1,9 @@
 
-VERSION 2023.3.0
+VERSION 2023.4.0
+--
+-   NEW : gvk::spriv::Context support for raytracing shader stages
+
+VERSION 2023.2.3.3
 --
 -   CHANGED : Handle accessors now return `const T&`
 
