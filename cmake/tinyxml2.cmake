@@ -3,7 +3,7 @@ include_guard()
 
 include(FetchContent)
 
-set(tinyxml2_VERSION 1dee28e51f9175a31955b9791c74c430fe13dc82) # 9.0.0
+set(tinyxml2_VERSION 321ea883b7190d4e85cae5512a12e5eaa8f8731f) # 10.0.0
 FetchContent_Declare(
     tinyxml2
     GIT_REPOSITORY "https://github.com/leethomason/tinyxml2.git"

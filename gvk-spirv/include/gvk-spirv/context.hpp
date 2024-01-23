@@ -210,7 +210,6 @@ bool GetReadableSPIRVfromBinarySPIRV(void* spirv, size_t binarySize, std::string
 std::string GetGLSLFromSPIRV(std::vector<uint32_t> const& spirv);
 bool GetBinarySPIRVfromReadableSPIRV(std::string const& readableSPIRV, std::vector<uint32_t>& spirv);
 void GetSPIRVFromGLSL(api_types::ShaderStageFlagBits stage, std::string const& glsl, std::vector<uint32_t>& spirv, std::string& infoLog, std::string& debugLog);
-bool IsSpirVCompatible(std::vector<uint32_t> const& spirv0, std::vector<uint32_t> const& spirv1, std::vector<std::string>& errors, std::string shader0Name = "Source Shader", std::string shader1Name = "Custom Shader");
 
 } // namespace detail
 } // namespace spirv
