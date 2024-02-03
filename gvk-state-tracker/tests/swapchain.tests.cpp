@@ -30,7 +30,6 @@ TEST(Swapchain, SwapchainResourceLifetime)
 {
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
-    load_gvk_state_tracker_entry_points();
     auto expectedInstanceObjects = get_expected_instance_objects(context);
 
     auto systemSurfaceCreateInfo = gvk::get_default<gvk::system::Surface::CreateInfo>();
@@ -106,13 +105,13 @@ TEST(Swapchain, SwapchainResourceLifetime)
     enumerateInfo.pfnCallback = StateTrackerValidationEnumerator::enumerate;
     enumerateInfo.pUserData = &enumerator;
     auto stateTrackedInstance = gvk::get_state_tracked_object(context.get_instance());
-    pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
+    gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
     for (const auto& image : wsiManager.get_swapchain().get<gvk::Images>()) {
         enumerator.records.clear();
         auto stateTrackedImage = gvk::get_state_tracked_object(image);
-        pfnGvkEnumerateStateTrackedObjectDependencies(&stateTrackedImage, &enumerateInfo);
+        gvkEnumerateStateTrackedObjectDependencies(&stateTrackedImage, &enumerateInfo);
         validate(gvk_file_line, expectedImageDependencies, enumerator.records);
     }
 }

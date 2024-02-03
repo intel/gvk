@@ -26,43 +26,54 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-command-structures/generated/command-structure-enumerate-handles.hpp"
 #include "gvk-structures/generated/core-structure-enumerate-handles.hpp"
+#include "gvk-structures/detail/get-count.hpp"
 
 namespace gvk {
 namespace detail {
 
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+GVK_STUB_ENUMERATE_STRUCTURE_HANDLES_DEFINITION(GvkCommandStructureCreateXlibSurfaceKHR)
+GVK_STUB_ENUMERATE_STRUCTURE_HANDLES_DEFINITION(GvkCommandStructureGetPhysicalDeviceXlibPresentationSupportKHR)
+#endif // VK_USE_PLATFORM_XLIB_KHR
+
 template <>
 void enumerate_structure_handles<GvkCommandStructureAllocateCommandBuffers>(const GvkCommandStructureAllocateCommandBuffers& obj, EnumerateHandlesCallback callback)
 {
-    (void)obj;
-    (void)callback;
+    enumerate_handle(obj.device, callback);
+    enumerate_dynamic_structure_array_handles(1, obj.pAllocateInfo, callback);
+    enumerate_dynamic_handle_array(gvk::detail::get_count(obj.pAllocateInfo ? obj.pAllocateInfo->commandBufferCount : 0), obj.pCommandBuffers, callback);
 }
 
 template <>
 void enumerate_structure_handles<GvkCommandStructureAllocateDescriptorSets>(const GvkCommandStructureAllocateDescriptorSets& obj, EnumerateHandlesCallback callback)
 {
-    (void)obj;
-    (void)callback;
+    enumerate_handle(obj.device, callback);
+    enumerate_dynamic_structure_array_handles(1, obj.pAllocateInfo, callback);
+    enumerate_dynamic_handle_array(gvk::detail::get_count(obj.pAllocateInfo ? obj.pAllocateInfo->descriptorSetCount : 0), obj.pDescriptorSets, callback);
 }
 
 template <>
 void enumerate_structure_handles<GvkCommandStructureBuildAccelerationStructuresKHR>(const GvkCommandStructureBuildAccelerationStructuresKHR& obj, EnumerateHandlesCallback callback)
 {
-    (void)obj;
-    (void)callback;
+    enumerate_handle(obj.device, callback);
+    enumerate_handle(obj.deferredOperation, callback);
+    enumerate_dynamic_structure_array_handles(obj.infoCount, obj.pInfos, callback);
+    // Skipping obj.ppBuildRangeInfos; VkAccelerationStructureBuildRangeInfoKHR contains no handles
 }
 
 template <>
 void enumerate_structure_handles<GvkCommandStructureCmdBuildAccelerationStructuresIndirectKHR>(const GvkCommandStructureCmdBuildAccelerationStructuresIndirectKHR& obj, EnumerateHandlesCallback callback)
 {
-    (void)obj;
-    (void)callback;
+    enumerate_handle(obj.commandBuffer, callback);
+    enumerate_dynamic_structure_array_handles(obj.infoCount, obj.pInfos, callback);
 }
 
 template <>
 void enumerate_structure_handles<GvkCommandStructureCmdBuildAccelerationStructuresKHR>(const GvkCommandStructureCmdBuildAccelerationStructuresKHR& obj, EnumerateHandlesCallback callback)
 {
-    (void)obj;
-    (void)callback;
+    enumerate_handle(obj.commandBuffer, callback);
+    enumerate_dynamic_structure_array_handles(obj.infoCount, obj.pInfos, callback);
+    // Skipping obj.ppBuildRangeInfos; VkAccelerationStructureBuildRangeInfoKHR contains no handles
 }
 
 template <>
@@ -73,12 +84,6 @@ void enumerate_structure_handles<GvkCommandStructureCmdPushConstants>(const GvkC
 }
 
 template <> void enumerate_structure_handles<GvkCommandStructureCmdSetBlendConstants>(const GvkCommandStructureCmdSetBlendConstants& obj, EnumerateHandlesCallback callback)
-{
-    enumerate_handle(obj.commandBuffer, callback);
-}
-
-template <>
-void enumerate_structure_handles<GvkCommandStructureCmdSetSampleMaskEXT>(const GvkCommandStructureCmdSetSampleMaskEXT& obj, EnumerateHandlesCallback callback)
 {
     enumerate_handle(obj.commandBuffer, callback);
 }
@@ -94,30 +99,19 @@ void enumerate_structure_handles<GvkCommandStructureCmdSetFragmentShadingRateKHR
     enumerate_handle(obj.commandBuffer, callback);
 }
 
-#ifdef VK_USE_PLATFORM_XLIB_KHR
 template <>
-void enumerate_structure_handles<GvkCommandStructureCreateXlibSurfaceKHR>(const GvkCommandStructureCreateXlibSurfaceKHR& obj, EnumerateHandlesCallback callback)
+void enumerate_structure_handles<GvkCommandStructureCmdSetSampleMaskEXT>(const GvkCommandStructureCmdSetSampleMaskEXT& obj, EnumerateHandlesCallback callback)
 {
-    (void)obj;
-    (void)callback;
+    enumerate_handle(obj.commandBuffer, callback);
 }
-#endif // VK_USE_PLATFORM_XLIB_KHR
 
 template <>
 void enumerate_structure_handles<GvkCommandStructureGetAccelerationStructureBuildSizesKHR>(const GvkCommandStructureGetAccelerationStructureBuildSizesKHR& obj, EnumerateHandlesCallback callback)
 {
-    (void)obj;
-    (void)callback;
+    enumerate_handle(obj.device, callback);
+    enumerate_dynamic_structure_array_handles(1, obj.pBuildInfo, callback);
+    // Skipping obj.pSizeInfo; VkAccelerationStructureBuildSizesInfoKHR contains no handles
 }
-
-#ifdef VK_USE_PLATFORM_XLIB_KHR
-template <>
-void enumerate_structure_handles<GvkCommandStructureGetPhysicalDeviceXlibPresentationSupportKHR>(const GvkCommandStructureGetPhysicalDeviceXlibPresentationSupportKHR& obj, EnumerateHandlesCallback callback)
-{
-    (void)obj;
-    (void)callback;
-}
-#endif // VK_USE_PLATFORM_XLIB_KHR
 
 } // namespace detail
 } // namespace gvk

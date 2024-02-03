@@ -31,9 +31,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <tuple>
 
-#define GVK_STUB_MAKE_TUPLE_DEFINITION(VK_STRUCTURE_TYPE) \
-inline auto make_tuple(const VK_STRUCTURE_TYPE&) { return std::make_tuple(0); }
-
 namespace gvk {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -223,10 +220,8 @@ inline auto make_tuple(const VkAccelerationStructureBuildGeometryInfoKHR& obj)
         obj.dstAccelerationStructure,
         obj.geometryCount,
         detail::ArrayTupleElementWrapper<VkAccelerationStructureGeometryKHR>{ (size_t)obj.geometryCount, obj.pGeometries },
-        detail::PointerArrayTupleElementWrapper<VkAccelerationStructureGeometryKHR>{ (size_t)obj.geometryCount, obj.ppGeometries }
-        // NOTE : We're ignoring scratchData for comparisons...this can be revisited if
-        //  it becomes necessary to differentiate objects by scratchData...
-        // obj.scratchData
+        detail::PointerArrayTupleElementWrapper<VkAccelerationStructureGeometryKHR>{ (size_t)obj.geometryCount, obj.ppGeometries },
+        obj.scratchData
     );
 }
 

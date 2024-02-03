@@ -32,10 +32,27 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace state_tracker {
 
+VkResult StateTracker::pre_vkCreateDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice, VkResult gvkResult)
+{
+    (void)physicalDevice;
+    (void)pCreateInfo;
+    (void)pAllocator;
+    (void)pDevice;
+    for (auto itr : layer::Registry::get().VkPhysicalDevices) {
+        PhysicalDevice gvkPhysicalDevice(itr.second);
+        assert(gvkPhysicalDevice);
+        auto& physicalDeviceControlBlock = gvkPhysicalDevice.mReference.get_obj();
+        assert(!physicalDeviceControlBlock.mApplicationHandle || physicalDeviceControlBlock.mApplicationHandle == (uint64_t)itr.first);
+        physicalDeviceControlBlock.mApplicationHandle = (uint64_t)itr.first;
+    }
+    return gvkResult;
+}
+
 VkResult StateTracker::post_vkCreateDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice, VkResult gvkResult)
 {
     if (gvkResult == VK_SUCCESS) {
         assert(pCreateInfo);
+        // TODO : Move to layer::Registry so it's handled for all layers...
         auto pNext = (VkBaseOutStructure*)pCreateInfo;
         while (pNext) {
             while (pNext->pNext && pNext->pNext->sType == VK_STRUCTURE_TYPE_LOADER_DEVICE_CREATE_INFO) {

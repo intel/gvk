@@ -240,9 +240,6 @@ template <> VkAccelerationStructureBuildGeometryInfoKHR create_structure_copy<Vk
     result.pNext = (const void*)create_pnext_copy(obj.pNext, pAllocator);
     result.pGeometries = create_dynamic_array_copy(obj.geometryCount, obj.pGeometries, pAllocator);
     result.ppGeometries = create_dynamic_pointer_array_copy(obj.geometryCount, obj.ppGeometries, pAllocator);
-    // NOTE : We're not copying obj.scratchData...this can be revisited if it
-    //  becomes necessary.
-    result.scratchData = { }; // get_default<VkDeviceOrHostAddressKHR>();
     return result;
 }
 
@@ -449,14 +446,14 @@ template <> void destroy_structure_copy<VkAccelerationStructureGeometryDataKHR>(
     }
 }
 
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkAccelerationStructureMotionInstanceDataNV)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkClearColorValue)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkClearValue)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkDeviceOrHostAddressConstKHR)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkDeviceOrHostAddressKHR)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkPerformanceCounterResultKHR)
+GVK_DEFINE_DEFAULT_STRUCTURE_COPY_FUNCTIONS(VkAccelerationStructureMotionInstanceDataNV)
+GVK_DEFINE_DEFAULT_STRUCTURE_COPY_FUNCTIONS(VkClearColorValue)
+GVK_DEFINE_DEFAULT_STRUCTURE_COPY_FUNCTIONS(VkClearValue)
+GVK_DEFINE_DEFAULT_STRUCTURE_COPY_FUNCTIONS(VkDeviceOrHostAddressConstKHR)
+GVK_DEFINE_DEFAULT_STRUCTURE_COPY_FUNCTIONS(VkDeviceOrHostAddressKHR)
+GVK_DEFINE_DEFAULT_STRUCTURE_COPY_FUNCTIONS(VkPerformanceCounterResultKHR)
 GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkPerformanceValueDataINTEL)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkPipelineExecutableStatisticValueKHR)
+GVK_DEFINE_DEFAULT_STRUCTURE_COPY_FUNCTIONS(VkPipelineExecutableStatisticValueKHR)
 
 } // namespace detail
 } // namespace gvk

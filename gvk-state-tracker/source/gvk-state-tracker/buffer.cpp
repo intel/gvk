@@ -32,17 +32,41 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace state_tracker {
 
+VkResult StateTracker::post_vkCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer, VkResult gvkResult)
+{
+    return BasicStateTracker::post_vkCreateBuffer(device, pCreateInfo, pAllocator, pBuffer, gvkResult);
+}
+
+VkDeviceAddress StateTracker::post_vkGetBufferDeviceAddress(VkDevice device, const VkBufferDeviceAddressInfo* pInfo, VkDeviceAddress gvkResult)
+{
+    return BasicStateTracker::post_vkGetBufferDeviceAddress(device, pInfo, gvkResult);
+}
+
+VkDeviceAddress StateTracker::post_vkGetBufferDeviceAddressEXT(VkDevice device, const VkBufferDeviceAddressInfo* pInfo, VkDeviceAddress gvkResult)
+{
+    return post_vkGetBufferDeviceAddress(device, pInfo, gvkResult);
+}
+
+VkDeviceAddress StateTracker::post_vkGetBufferDeviceAddressKHR(VkDevice device, const VkBufferDeviceAddressInfo* pInfo, VkDeviceAddress gvkResult)
+{
+    return post_vkGetBufferDeviceAddress(device, pInfo, gvkResult);
+}
+
 void StateTracker::post_vkDestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllocationCallbacks* pAllocator)
 {
     Buffer gvkBuffer({ device, buffer });
     assert(gvkBuffer);
-    auto& gvkBufferControlBlock = gvkBuffer.mReference.get_obj();
-    if (gvkBufferControlBlock.mBindBufferMemoryInfo->sType == VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO) {
-        if (!gvkBufferControlBlock.mVkDeviceMemoryBindings.empty()) {
-            assert(gvkBufferControlBlock.mVkDeviceMemoryBindings.size() == 1);
-            DeviceMemory gvkDeviceMemory({ device, *gvkBufferControlBlock.mVkDeviceMemoryBindings.begin() });
+    auto& bufferControlBlock = gvkBuffer.mReference.get_obj();
+    if (bufferControlBlock.mBindBufferMemoryInfo->sType == VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO) {
+        if (!bufferControlBlock.mVkDeviceMemoryBindings.empty()) {
+            assert(bufferControlBlock.mVkDeviceMemoryBindings.size() == 1);
+            DeviceMemory gvkDeviceMemory({ device, *bufferControlBlock.mVkDeviceMemoryBindings.begin() });
             assert(gvkDeviceMemory);
             gvkDeviceMemory.mReference.get_obj().mVkBufferBindings.erase(buffer);
+            assert(!bufferControlBlock.mDeviceMemoryRecord || bufferControlBlock.mDeviceMemoryRecord == gvkDeviceMemory);
+            if (!gvkDeviceMemory.mReference.get_obj().mDedicatedBuffer) {
+                bufferControlBlock.mDeviceMemoryRecord = gvkDeviceMemory;
+            }
         }
     }
     BasicStateTracker::post_vkDestroyBuffer(device, buffer, pAllocator);

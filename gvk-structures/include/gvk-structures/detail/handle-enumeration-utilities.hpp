@@ -29,10 +29,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-defines.hpp"
 #include "gvk-structures/get-object-type.hpp"
 
+#include <cassert>
 #include <functional>
 
-#define GVK_STUB_ENUMERATE_STRUCTURE_HANDLES_DEFINITION(VK_STRUCTURE_TYPE) \
-template <> void enumerate_structure_handles<VK_STRUCTURE_TYPE>(const VK_STRUCTURE_TYPE&, EnumerateHandlesCallback) { }
+#define GVK_STUB_ENUMERATE_STRUCTURE_HANDLES_DEFINITION(VK_STRUCTURE_TYPE)                                                      \
+template <> void enumerate_structure_handles<VK_STRUCTURE_TYPE>(const VK_STRUCTURE_TYPE&, EnumerateHandlesCallback)             \
+{                                                                                                                               \
+    assert(false && "gvk::detail::enumerate_structure_handles<" #VK_STRUCTURE_TYPE ">() unserviced; gvk maintenance required"); \
+}
 
 namespace gvk {
 namespace detail {

@@ -34,5 +34,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-structures/enumerate-handles.hpp"
 #include "gvk-structures/get-object-type.hpp"
 #include "gvk-structures/get-stype.hpp"
+#include "gvk-structures/pnext.hpp"
 #include "gvk-structures/serialization.hpp"
 #include "gvk-structures/to-string.hpp"

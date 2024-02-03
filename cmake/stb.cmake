@@ -22,12 +22,24 @@ macro(gvk_add_stb_file stbFile implementationMacro)
     if(NOT EXISTS "${sourceFile}")
         file(WRITE "${sourceFile}"
 "
-#ifdef _MSVC_LANG
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored \"-Wmissing-field-initializers\"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored \"-Wmissing-field-initializers\"
+#elif defined(_MSVC_LANG)
 #pragma warning(push, 0)
 #endif
+
 #define ${implementationMacro}
 #include \"${stbFile}.h\"
-#ifdef _MSVC_LANG
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
+#elif defined(_MSVC_LANG)
 #pragma warning(pop)
 #endif
 "
@@ -36,6 +48,7 @@ macro(gvk_add_stb_file stbFile implementationMacro)
 endmacro()
 
 gvk_add_stb_file(stb_image STB_IMAGE_IMPLEMENTATION)
+gvk_add_stb_file(stb_image_write STB_IMAGE_WRITE_IMPLEMENTATION)
 
 gvk_add_static_library(
     TARGET stb
@@ -44,3 +57,5 @@ gvk_add_static_library(
     INCLUDE_FILES "${includeFiles}"
     SOURCE_FILES "${sourceFiles}"
 )
+
+gvk_install_artifacts(TARGET stb VERSION ${stb_VERSION})

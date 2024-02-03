@@ -10,6 +10,8 @@ macro(gvk_add_sample target)
             "${CMAKE_CURRENT_LIST_DIR}/gvk-sample-png.hpp"
             "${CMAKE_CURRENT_LIST_DIR}/gvk-sample-utilities.hpp"
             "${CMAKE_CURRENT_LIST_DIR}/${target}.cpp"
+        COMPILE_DEFINITIONS
+            GVK_XML_FILE_PATH="${Vulkan_XML}"
     )
 endmacro()
 

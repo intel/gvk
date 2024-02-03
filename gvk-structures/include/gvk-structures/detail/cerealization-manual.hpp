@@ -30,10 +30,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-structures/detail/cerealization-utilities.hpp"
 #include "gvk-structures/detail/get-count.hpp"
 
-#define GVK_STUB_CEREALIZATION_FUNCTIONS(VK_STRUCTURE_TYPE) \
-template <typename ArchiveType> inline void save(ArchiveType&, const VK_STRUCTURE_TYPE&) { } \
-template <typename ArchiveType> inline void load(ArchiveType&, VK_STRUCTURE_TYPE&) { }
-
 namespace cereal {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -350,7 +346,7 @@ inline void save(ArchiveType& archive, const VkAccelerationStructureBuildGeometr
     archive(obj.geometryCount);
     gvk::detail::cerealize_dynamic_array(archive, obj.geometryCount, obj.pGeometries);
     gvk::detail::cerealize_dynamic_pointer_array(archive, obj.geometryCount, obj.ppGeometries);
-    // NOTE : Not serializing scratchData...this can be revisited if it becomes necessary
+    archive(obj.scratchData);
 }
 
 template <typename ArchiveType>
@@ -366,8 +362,7 @@ inline void load(ArchiveType& archive, VkAccelerationStructureBuildGeometryInfoK
     archive(obj.geometryCount);
     obj.pGeometries = gvk::detail::decerealize_dynamic_array<VkAccelerationStructureGeometryKHR>(archive);
     obj.ppGeometries = gvk::detail::decerealize_dynamic_pointer_array<VkAccelerationStructureGeometryKHR>(archive);
-    // NOTE : Not serializing scratchData...this can be revisited if it becomes necessary
-    obj.scratchData = { };
+    archive(obj.scratchData);
 }
 
 template <typename ArchiveType>

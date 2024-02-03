@@ -78,5 +78,17 @@ gvk_add_static_library(
 )
 
 ################################################################################
+# gvk-format-info.test
+set(testsPath "${CMAKE_CURRENT_LIST_DIR}/tests/")
+gvk_add_target_test(
+    TARGET
+        gvk-format-info
+    FOLDER
+        "gvk-format-info/"
+    SOURCE_FILES
+        "${testsPath}/format-info.tests.cpp"
+)
+
+################################################################################
 # gvk-format-info install
 gvk_install_library(TARGET gvk-format-info)

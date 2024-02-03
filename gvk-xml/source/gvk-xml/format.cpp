@@ -62,6 +62,11 @@ Format::Format(const tinyxml2::XMLElement& xmlElement)
         assert(dimension_i < blockExtent.size());
         blockExtent[dimension_i++] = string::to_number<uint32_t>(dimension);
     }
+    for (auto& dimension : blockExtent) {
+        if (!dimension) {
+            dimension = 1;
+        }
+    }
     compressionType = get_xml_attribute(xmlElement, "compressed");
     auto pSpirvImageFormatXmlElement = xmlElement.FirstChildElement("spirvimageformat");
     if (pSpirvImageFormatXmlElement) {

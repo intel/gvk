@@ -226,8 +226,12 @@ VkResult create_descriptor_set_layouts(const Device& device, const BindingInfo& 
                 size_t i = 0;
                 auto itr = bindingInfo.descriptorSetLayoutBindings.begin();
                 while (i < *pDescriptorSetLayoutCount && itr != bindingInfo.descriptorSetLayoutBindings.end()) {
+                    auto descriptorSetLayoutCreateInfo = gvk::get_default<VkDescriptorSetLayoutCreateInfo>();
+                    const auto& descriptorSetLayoutCreateInfoItr = bindingInfo.descriptorSetLayoutCreateInfos.find(itr->first);
+                    if (descriptorSetLayoutCreateInfoItr != bindingInfo.descriptorSetLayoutCreateInfos.end()) {
+                        descriptorSetLayoutCreateInfo = descriptorSetLayoutCreateInfoItr->second;
+                    }
                     const auto& descriptorSetLayoutBindings = itr->second;
-                    auto descriptorSetLayoutCreateInfo = get_default<VkDescriptorSetLayoutCreateInfo>();
                     descriptorSetLayoutCreateInfo.bindingCount = (uint32_t)descriptorSetLayoutBindings.size();
                     descriptorSetLayoutCreateInfo.pBindings = descriptorSetLayoutBindings.data();
                     gvk_result(DescriptorSetLayout::create(device, &descriptorSetLayoutCreateInfo, pAllocator, pDescriptorSetLayouts + i));

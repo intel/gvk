@@ -43,6 +43,7 @@ public:
         file << "#include \"gvk-state-tracker/state-tracker.hpp\"" << std::endl;
         file << "#include \"gvk-defines.hpp\"" << std::endl;
         file << "#include \"VK_LAYER_INTEL_gvk_state_tracker.h\"" << std::endl;
+
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk::state_tracker");
         file << std::endl;

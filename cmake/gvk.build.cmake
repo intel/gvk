@@ -106,13 +106,16 @@ function(gvk_add_layer)
             "${CMAKE_CURRENT_BINARY_DIR}/${ARGS_TARGET}.rc"
         )
     endif()
-    add_library(${ARGS_TARGET}-interface INTERFACE "${ARGS_INTERFACE_FILES}")
-    target_link_libraries(${ARGS_TARGET}-interface INTERFACE Vulkan::Vulkan)
-    target_include_directories(${ARGS_TARGET}-interface INTERFACE "$<BUILD_INTERFACE:${ARGS_INCLUDE_DIRECTORIES}>" INTERFACE $<INSTALL_INTERFACE:include>)
-    gvk_create_file_group("${ARGS_INTERFACE_FILES}")
-    set_target_properties(${ARGS_TARGET}-interface PROPERTIES FOLDER "${GVK_IDE_FOLDER}/${ARGS_FOLDER}")
+    if(ARGS_INTERFACE_FILES)
+        add_library(${ARGS_TARGET}-interface INTERFACE "${ARGS_INTERFACE_FILES}")
+        target_link_libraries(${ARGS_TARGET}-interface INTERFACE Vulkan::Vulkan)
+        target_include_directories(${ARGS_TARGET}-interface INTERFACE "$<BUILD_INTERFACE:${ARGS_INCLUDE_DIRECTORIES}>" INTERFACE $<INSTALL_INTERFACE:include>)
+        gvk_create_file_group("${ARGS_INTERFACE_FILES}")
+        set_target_properties(${ARGS_TARGET}-interface PROPERTIES FOLDER "${GVK_IDE_FOLDER}/${ARGS_FOLDER}")
+        list(APPEND ARGS_LINK_LIBRARIES ${ARGS_TARGET}-interface)
+    endif()
     add_library(${ARGS_TARGET} SHARED "${ARGS_INCLUDE_FILES}" "${ARGS_SOURCE_FILES}")
-    list(APPEND ARGS_LINK_LIBRARIES gvk-layer ${ARGS_TARGET}-interface)
+    list(APPEND ARGS_LINK_LIBRARIES gvk-layer)
     gvk_setup_target(
         TARGET               ${ARGS_TARGET}
         FOLDER              "${ARGS_FOLDER}"
@@ -176,6 +179,7 @@ macro(gvk_add_target_test)
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:${ARGS_TARGET}.tests> "${package}/"
             )
             if(type STREQUAL SHARED_LIBRARY)
+                add_dependencies(${ARGS_TARGET}.tests ${ARGS_TARGET})
                 add_custom_command(
                     TARGET ${ARGS_TARGET} POST_BUILD
                     COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:${ARGS_TARGET}> "${package}/"

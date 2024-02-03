@@ -32,7 +32,6 @@ TEST(Pipeline, ComputePipelineResourceLifetime)
 {
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
-    load_gvk_state_tracker_entry_points();
     auto expectedInstanceObjects = get_expected_instance_objects(context);
 
     auto shaderInfo = gvk::get_default<gvk::spirv::ShaderInfo>();
@@ -96,11 +95,11 @@ TEST(Pipeline, ComputePipelineResourceLifetime)
     enumerateInfo.pfnCallback = StateTrackerValidationEnumerator::enumerate;
     enumerateInfo.pUserData = &enumerator;
     auto stateTrackedInstance = gvk::get_state_tracked_object(context.get_instance());
-    pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
+    gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
     enumerator.records.clear();
-    pfnGvkEnumerateStateTrackedObjectDependencies(&stateTrackedPipeline, &enumerateInfo);
+    gvkEnumerateStateTrackedObjectDependencies(&stateTrackedPipeline, &enumerateInfo);
     validate(gvk_file_line, expectedPipelineDependencies, enumerator.records);
 
     expectedInstanceObjects.erase(gvk::get_state_tracked_object(shaderModule));
@@ -113,11 +112,11 @@ TEST(Pipeline, ComputePipelineResourceLifetime)
     pipelineLayout.reset();
 
     enumerator.records.clear();
-    pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
+    gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
     enumerator.records.clear();
-    pfnGvkEnumerateStateTrackedObjectDependencies(&stateTrackedPipeline, &enumerateInfo);
+    gvkEnumerateStateTrackedObjectDependencies(&stateTrackedPipeline, &enumerateInfo);
     validate(gvk_file_line, expectedPipelineDependencies, enumerator.records);
 
     assert(dispatchTable.gvkDestroyPipeline);
@@ -128,7 +127,6 @@ TEST(Pipeline, GraphicsPipelineResourceLifetime)
 {
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
-    load_gvk_state_tracker_entry_points();
     auto expectedInstanceObjects = get_expected_instance_objects(context);
 
     // Setup color VkAttachmentDescription2
@@ -307,11 +305,11 @@ TEST(Pipeline, GraphicsPipelineResourceLifetime)
     enumerateInfo.pfnCallback = StateTrackerValidationEnumerator::enumerate;
     enumerateInfo.pUserData = &enumerator;
     auto stateTrackedInstance = gvk::get_state_tracked_object(context.get_instance());
-    pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
+    gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
     enumerator.records.clear();
-    pfnGvkEnumerateStateTrackedObjectDependencies(&stateTrackedPipeline, &enumerateInfo);
+    gvkEnumerateStateTrackedObjectDependencies(&stateTrackedPipeline, &enumerateInfo);
     validate(gvk_file_line, expectedPipelineDependencies, enumerator.records);
 
     expectedInstanceObjects.erase(gvk::get_state_tracked_object(vertexShaderModule));
@@ -332,11 +330,11 @@ TEST(Pipeline, GraphicsPipelineResourceLifetime)
     pipelineLayout.reset();
 
     enumerator.records.clear();
-    pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
+    gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
     enumerator.records.clear();
-    pfnGvkEnumerateStateTrackedObjectDependencies(&stateTrackedPipeline, &enumerateInfo);
+    gvkEnumerateStateTrackedObjectDependencies(&stateTrackedPipeline, &enumerateInfo);
     validate(gvk_file_line, expectedPipelineDependencies, enumerator.records);
 
     assert(dispatchTable.gvkDestroyPipeline);

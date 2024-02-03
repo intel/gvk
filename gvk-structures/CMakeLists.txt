@@ -110,6 +110,7 @@ gvk_add_static_library(
         "${includePath}/enumerate-handles.hpp"
         "${includePath}/get-object-type.hpp"
         "${includePath}/get-stype.hpp"
+        "${includePath}/pnext.hpp"
         "${includePath}/serialization.hpp"
         "${includePath}/to-string.hpp"
         "${includeDirectory}/gvk-structures.hpp"

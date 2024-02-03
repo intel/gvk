@@ -40,6 +40,17 @@ template <typename GvkHandleType>
 class ObjectTracker final
 {
 public:
+    template <typename ProcessHandleFunctionType>
+    inline bool enumerate(ProcessHandleFunctionType processHandle) const
+    {
+        return mHandles.enumerate(
+            [processHandle](const auto& handleItr)
+            {
+                return processHandle(handleItr.second);
+            }
+        );
+    }
+
     inline bool enumerate(PFN_gvkEnumerateStateTrackedObjectsCallback pfnCallback, void* pUserData) const
     {
         return mHandles.enumerate(

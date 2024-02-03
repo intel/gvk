@@ -119,6 +119,7 @@ public:
     void add_binding(uint32_t setIndex, const VkDescriptorSetLayoutBinding& descriptorSetLayoutBinding);
 
     std::map<uint32_t, std::vector<VkDescriptorSetLayoutBinding>> descriptorSetLayoutBindings;
+    std::map<uint32_t, VkDescriptorSetLayoutCreateInfo> descriptorSetLayoutCreateInfos;
     std::vector<VkPushConstantRange> pushConstantRanges;
 };
 

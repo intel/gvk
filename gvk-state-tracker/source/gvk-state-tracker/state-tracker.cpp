@@ -36,8 +36,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace state_tracker {
 
-StateTracker::PhysicalDeviceEnumerationMode StateTracker::smPhysicalDeviceEnumerationMode { PhysicalDeviceEnumerationMode::Loader };
-std::unordered_map<StateTracker::ApplicationVkPhysicalDevice, StateTracker::LoaderVkPhysicalDevice> StateTracker::smApplicationToLoaderPhysicalDevices;
+StateTracker::PhysicalDeviceEnumerationMode StateTracker::smPhysicalDeviceEnumerationMode { PhysicalDeviceEnumerationMode::Application };
 
 #if 0
 // NOTE : Defined in /build/gvk-state-tracker/source/generated/enumerate-objects.cpp
@@ -60,55 +59,20 @@ void StateTracker::set_physical_device_enumeration_mode(PhysicalDeviceEnumeratio
     smPhysicalDeviceEnumerationMode = physicalDeviceRetrievalMode;
 }
 
-StateTracker::LoaderVkPhysicalDevice StateTracker::get_loader_physical_device_handle(ApplicationVkPhysicalDevice applicationVkPhyicalDevice)
+VkPhysicalDevice StateTracker::get_loader_physical_device_handle(VkPhysicalDevice applicationVkPhyicalDevice)
 {
-    auto vkPhysicalDeviceItr = smApplicationToLoaderPhysicalDevices.find(applicationVkPhyicalDevice);
-    assert(vkPhysicalDeviceItr != smApplicationToLoaderPhysicalDevices.end());
-    return vkPhysicalDeviceItr->second;
+    auto loaderVkPhysicalDeviceItr = layer::Registry::get().VkPhysicalDevices.find(applicationVkPhyicalDevice);
+    assert(loaderVkPhysicalDeviceItr != layer::Registry::get().VkPhysicalDevices.end());
+    return loaderVkPhysicalDeviceItr->second;
 }
 
-void StateTracker::map_state_tracker_physical_devices(const GvkStateTrackedObject* pStateTrackedObject, const VkBaseInStructure*, void* pUserData)
+void StateTracker::get_state_tracker_physical_device(VkInstance instance, VkPhysicalDevice physicalDevice, VkPhysicalDevice* pStateTrackerPhysicalDevice)
 {
-    assert(pStateTrackedObject);
-    assert(pStateTrackedObject->type == VK_OBJECT_TYPE_PHYSICAL_DEVICE);
-    assert(pUserData);
-    PhysicalDevice gvkPhysicalDevice((VkPhysicalDevice)pStateTrackedObject->handle);
-    assert(gvkPhysicalDevice);
-    auto& physicalDeviceControlBlock = gvkPhysicalDevice.mReference.get_obj();
-    const auto& dispatchTableItr = layer::Registry::get().VkInstanceDispatchTables.find(layer::get_dispatch_key(physicalDeviceControlBlock.mVkInstance));
-    assert(dispatchTableItr != layer::Registry::get().VkInstanceDispatchTables.end());
-    const auto& dispatchTable = dispatchTableItr->second;
-    VkPhysicalDeviceProperties physicalDeviceProperties { };
-    dispatchTable.gvkGetPhysicalDeviceProperties(gvkPhysicalDevice, &physicalDeviceProperties);
-    auto& applicationPhysicalDevices = *(std::map<VkPhysicalDeviceProperties, std::vector<VkPhysicalDevice>>*)pUserData;
-    auto itr = applicationPhysicalDevices.find(physicalDeviceProperties);
-    assert(itr != applicationPhysicalDevices.end());
-    assert(!itr->second.empty());
-    physicalDeviceControlBlock.mApplicationHandle = (uint64_t)itr->second.back();
-    itr->second.pop_back();
-    if (itr->second.empty()) {
-        applicationPhysicalDevices.erase(physicalDeviceProperties);
-    }
-    auto inserted = smApplicationToLoaderPhysicalDevices.insert({ (VkPhysicalDevice)physicalDeviceControlBlock.mApplicationHandle, physicalDeviceControlBlock.mVkPhysicalDevice }).second;
-    assert(inserted);
-    (void)inserted;
-}
-
-void StateTracker::set_state_tracker_physical_devices(VkInstance instance, uint32_t physicalDeviceCount, const VkPhysicalDevice* pPhysicalDevices, const VkPhysicalDeviceProperties* pPhysicalDeviceProperties)
-{
-    Instance gvkInstance(instance);
-    assert(gvkInstance);
-    assert(!physicalDeviceCount == !pPhysicalDevices);
-    assert(!physicalDeviceCount == !pPhysicalDeviceProperties);
-    std::map<VkPhysicalDeviceProperties, std::vector<VkPhysicalDevice>> applicationPhysicalDevices;
-    for (uint32_t i = 0; i < physicalDeviceCount; ++i) {
-        applicationPhysicalDevices[pPhysicalDeviceProperties[i]].push_back(pPhysicalDevices[i]);
-    }
-    auto& instanceControlBlock = gvkInstance.mReference.get_obj();
-    set_physical_device_enumeration_mode(PhysicalDeviceEnumerationMode::Loader);
-    instanceControlBlock.mPhysicalDeviceTracker.enumerate(map_state_tracker_physical_devices, &applicationPhysicalDevices);
-    set_physical_device_enumeration_mode(PhysicalDeviceEnumerationMode::Application);
-    assert(applicationPhysicalDevices.empty());
+    assert(instance);
+    (void)instance;
+    assert(pStateTrackerPhysicalDevice);
+    auto itr = layer::Registry::get().VkPhysicalDevices.find(physicalDevice);
+    *pStateTrackerPhysicalDevice = itr != layer::Registry::get().VkPhysicalDevices.end() ? itr->second : VK_NULL_HANDLE;
 }
 
 void StateTracker::enumerate_state_tracked_object_bindings(const GvkStateTrackedObject* pStateTrackedObject, const GvkStateTrackedObjectEnumerateInfo* pEnumerateInfo)
@@ -166,8 +130,9 @@ void StateTracker::enumerate_state_tracked_object_bindings(const GvkStateTracked
             for (const auto& descriptorItr : gvkDescriptorSet.mReference.get_obj().mDescriptors) {
                 assert(descriptorItr.first == descriptorItr.second.descriptorSetLayoutBinding.binding);
                 const auto& descriptor = descriptorItr.second;
-                VkWriteDescriptorSetInlineUniformBlock inlineUniformBlockInfo { };
-                auto descriptorInfo = gvk::get_default<VkWriteDescriptorSet>();
+                VkWriteDescriptorSetInlineUniformBlock inlineUniformBlockInfo{ };
+                VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureInfo{ };
+                auto descriptorInfo = get_default<VkWriteDescriptorSet>();
                 descriptorInfo.dstSet = gvkDescriptorSet;
                 descriptorInfo.dstBinding = descriptor.descriptorSetLayoutBinding.binding;
                 descriptorInfo.descriptorCount = descriptor.descriptorSetLayoutBinding.descriptorCount;
@@ -195,18 +160,24 @@ void StateTracker::enumerate_state_tracked_object_bindings(const GvkStateTracked
                 } break;
                 case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK: {
                     assert(descriptorInfo.descriptorCount == descriptor.inlineUniformBlock.size());
-                    inlineUniformBlockInfo = gvk::get_default<VkWriteDescriptorSetInlineUniformBlock>();
+                    inlineUniformBlockInfo = get_default<VkWriteDescriptorSetInlineUniformBlock>();
                     inlineUniformBlockInfo.dataSize = descriptorInfo.descriptorCount;
                     inlineUniformBlockInfo.pData = descriptor.inlineUniformBlock.data();
                     descriptorInfo.pNext = &inlineUniformBlockInfo;
                 } break;
-                case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+                case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR: {
+                    assert(descriptorInfo.descriptorCount == descriptor.accelerationStructures.size());
+                    accelerationStructureInfo = get_default<VkWriteDescriptorSetAccelerationStructureKHR>();
+                    accelerationStructureInfo.accelerationStructureCount = descriptorInfo.descriptorCount;
+                    accelerationStructureInfo.pAccelerationStructures = descriptor.accelerationStructures.data();
+                    descriptorInfo.pNext = &accelerationStructureInfo;
+                } break;
                 case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV:
                 case VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM:
                 case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:
                 case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
                 default: {
-                    assert(false && "Unsupported VkDescriptorType");
+                    assert(false && "Unserviced VkDescriptorType");
                 } break;
                 }
                 pEnumerateInfo->pfnCallback(pStateTrackedObject, (const VkBaseInStructure*)&descriptorInfo, pEnumerateInfo->pUserData);
@@ -291,6 +262,24 @@ void StateTracker::get_state_tracked_mapped_memory(const GvkStateTrackedObject* 
     }
 }
 
+void StateTracker::gvk_state_tracked_accleration_structure_build_info(const GvkStateTrackedObject* pStateTrackedAcclerationStructure, VkAccelerationStructureBuildGeometryInfoKHR* pBuildGeometryInfo, VkAccelerationStructureBuildRangeInfoKHR* pBuildRangeInfos)
+{
+    assert(pStateTrackedAcclerationStructure);
+    AccelerationStructureKHR accelerationStructure({ (VkDevice)pStateTrackedAcclerationStructure->dispatchableHandle, (VkAccelerationStructureKHR)pStateTrackedAcclerationStructure->handle });
+    if (accelerationStructure) {
+        const auto& controlBlock = accelerationStructure.mReference.get_obj();
+        if (pBuildGeometryInfo) {
+            *pBuildGeometryInfo = controlBlock.mBuildGeometryInfo;
+        }
+        if (pBuildRangeInfos) {
+            assert(controlBlock.mBuildGeometryInfo->geometryCount == controlBlock.mBuildRangeInfos.size());
+            for (uint32_t i = 0; i < controlBlock.mBuildGeometryInfo->geometryCount; ++i) {
+                pBuildRangeInfos[i] = controlBlock.mBuildRangeInfos[i];
+            }
+        }
+    }
+}
+
 } // namespace state_tracker
 } // namespace gvk
 
@@ -309,9 +298,9 @@ void on_load(Registry& registry)
 extern "C" {
 #endif
 
-void VKAPI_CALL gvkSetStateTrackerPhysicalDevices(VkInstance instance, uint32_t physicalDeviceCount, const VkPhysicalDevice* pPhysicalDevices, const VkPhysicalDeviceProperties* pPhysicalDeviceProperties)
+void VKAPI_CALL gvkGetStateTrackerPhysicalDevice(VkInstance instance, VkPhysicalDevice physicalDevice, VkPhysicalDevice* pStateTrackerPhysicalDevice)
 {
-    gvk::state_tracker::StateTracker::set_state_tracker_physical_devices(instance, physicalDeviceCount, pPhysicalDevices, pPhysicalDeviceProperties);
+    gvk::state_tracker::StateTracker::get_state_tracker_physical_device(instance, physicalDevice, pStateTrackerPhysicalDevice);
 }
 
 void VKAPI_CALL gvkEnumerateStateTrackedObjects(const GvkStateTrackedObject* pStateTrackedObject, const GvkStateTrackedObjectEnumerateInfo* pEnumerateInfo)
@@ -357,6 +346,11 @@ void VKAPI_CALL gvkGetStateTrackedImageLayouts(const GvkStateTrackedObject* pSta
 void VKAPI_CALL gvkGetStateTrackedMappedMemory(const GvkStateTrackedObject* pStateTrackedDeviceMemory, VkDeviceSize* pOffset, VkDeviceSize* pSize, VkMemoryMapFlags* pFlags, void** ppData)
 {
     gvk::state_tracker::StateTracker::get_state_tracked_mapped_memory(pStateTrackedDeviceMemory, pOffset, pSize, pFlags, ppData);
+}
+
+void VKAPI_PTR gvkGetStateTrackedAcclerationStructureBuildInfo(const GvkStateTrackedObject* pStateTrackedAcclerationStructure, VkAccelerationStructureBuildGeometryInfoKHR* pBuildGeometryInfo, VkAccelerationStructureBuildRangeInfoKHR* pBuildRangeInfos)
+{
+    gvk::state_tracker::StateTracker::gvk_state_tracked_accleration_structure_build_info(pStateTrackedAcclerationStructure, pBuildGeometryInfo, pBuildRangeInfos);
 }
 
 void VKAPI_CALL gvkDisableStateTracker()

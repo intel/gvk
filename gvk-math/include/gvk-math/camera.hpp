@@ -38,6 +38,12 @@ struct Camera
 {
     class Controller;
 
+    enum class ProjectionMode
+    {
+        Perspective,
+        Orthographic,
+    };
+
     glm::mat4 view() const;
     glm::mat4 view(const glm::vec3& lookAt) const;
     glm::mat4 projection(bool flipY = true) const;
@@ -53,6 +59,7 @@ struct Camera
     float fieldOfView{ 60 };
     float nearPlane{ 0.001f };
     float farPlane{ 100.0f };
+    ProjectionMode projectionMode{ ProjectionMode::Perspective };
 };
 
 class Camera::Controller

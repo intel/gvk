@@ -32,7 +32,6 @@ TEST(CommandBuffer, CommandBufferResourceLifetime)
 {
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
-    load_gvk_state_tracker_entry_points();
     auto expectedInstanceObjects = get_expected_instance_objects(context);
     const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
 
@@ -62,7 +61,7 @@ TEST(CommandBuffer, CommandBufferResourceLifetime)
     enumerateInfo.pfnCallback = StateTrackerValidationEnumerator::enumerate;
     enumerateInfo.pUserData = &enumerator;
     auto stateTrackedInstance = gvk::get_state_tracked_object(context.get_instance());
-    pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
+    gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
     std::vector<VkCommandBuffer> vkCommandBuffersToFree(3);
@@ -79,7 +78,7 @@ TEST(CommandBuffer, CommandBufferResourceLifetime)
     dispatchTable.gvkFreeCommandBuffers(context.get_devices()[0], commandPool, (uint32_t)vkCommandBuffersToFree.size(), vkCommandBuffersToFree.data());
 
     enumerator.records.clear();
-    pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
+    gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
     GvkStateTrackedObject stateTrackedCommandPool { };
@@ -97,6 +96,6 @@ TEST(CommandBuffer, CommandBufferResourceLifetime)
     commandPool.reset();
 
     enumerator.records.clear();
-    pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
+    gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 }

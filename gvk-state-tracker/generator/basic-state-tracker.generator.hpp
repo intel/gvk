@@ -98,6 +98,7 @@ private:
             }
         }
         file << "protected:" << std::endl;
+        file << "    VkInstance mVkInstance { };" << std::endl;
         file << "    ObjectTracker<Instance> mInstanceTracker;" << std::endl;
         file << "};" << std::endl;
         file << std::endl;
@@ -185,6 +186,7 @@ private:
         strStrm << "{returnType} BasicStateTracker::post_{commandName}({layerHookParameters})" << std::endl;
         strStrm << "{" << std::endl;
         strStrm << "    if (gvkResult == VK_SUCCESS) {" << std::endl;
+        strStrm << "        assert(*{vkHandleArgument} && \"{commandName}() returned VK_SUCCESS, but {vkHandleArgument} is VK_NULL_HANDLE; this may indicate a driver bug\");" << std::endl;
         strStrm << "        {gvkHandleType} handle;" << std::endl;
         strStrm << "        handle.mReference.reset(gvk::newref, {handleIdExpression});" << std::endl;
         strStrm << "        auto& controlBlock = handle.mReference.get_obj();" << std::endl;

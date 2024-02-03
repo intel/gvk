@@ -111,6 +111,16 @@ xml::Parameter create_parameter(const std::string& type, const std::string& name
     return parameter;
 }
 
+xml::Parameter create_const_pointer_parameter(const std::string& type, const std::string& name)
+{
+    xml::Parameter parameter;
+    parameter.type = "const " + type + "*";
+    parameter.unqualifiedType = type;
+    parameter.name = name;
+    parameter.flags = gvk::xml::Const | gvk::xml::Pointer;
+    return parameter;
+}
+
 std::pair<xml::Parameter, xml::Parameter> get_array_parameters(const std::string& countName, const std::string& arrayName, const std::string& unqualifiedType)
 {
     std::pair<xml::Parameter, xml::Parameter> parameters;

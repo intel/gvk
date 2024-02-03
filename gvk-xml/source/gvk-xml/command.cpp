@@ -72,6 +72,16 @@ Command::Command(const tinyxml2::XMLElement& xmlElement)
     }
 }
 
+Parameter Command::get_create_info_parameter() const
+{
+    for (const auto& parameter : parameters) {
+        if (gvk::string::contains(parameter.type, "CreateInfo") || gvk::string::contains(parameter.type, "AllocateInfo")) {
+            return parameter;
+        }
+    }
+    return { };
+}
+
 Parameter Command::get_target_parameter() const
 {
     for (const auto& parameter : parameters) {

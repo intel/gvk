@@ -36,14 +36,16 @@ namespace state_tracker {
 class Descriptor final
 {
 public:
-    Descriptor(const VkDescriptorSetLayoutBinding& binding);
+    Descriptor(const VkDescriptorSetLayoutBinding& binding, VkDescriptorBindingFlags flags);
     uint32_t write(const VkWriteDescriptorSet& descriptorWrite);
 
     VkDescriptorSetLayoutBinding descriptorSetLayoutBinding { };
+    VkDescriptorBindingFlags descriptorBindingFlags{ };
     std::vector<VkDescriptorBufferInfo> descriptorBufferInfos;
     std::vector<VkDescriptorImageInfo> descriptorImageInfos;
     std::vector<VkBufferView> texelBufferViews;
     std::vector<uint8_t> inlineUniformBlock;
+    std::vector<VkAccelerationStructureKHR> accelerationStructures{ };
     bool immutableSamplers { false };
 };
 

@@ -41,23 +41,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace layer {
 
-class Registry final
-{
-public:
-    static Registry& get();
-    std::vector<std::unique_ptr<BasicLayer>> layers;
-    std::unordered_map<void*, DispatchTable> VkInstanceDispatchTables;
-    std::unordered_map<void*, DispatchTable> VkDeviceDispatchTables;
-    std::mutex mutex;
-
-private:
-    Registry() = default;
-    Registry(const Registry&) = delete;
-    Registry& operator=(const Registry&) = delete;
-    Registry(Registry&&) = delete;
-    Registry& operator=(Registry&&) = delete;
-};
-
 template <typename DispatchableVkHandleType>
 inline void* get_dispatch_key(DispatchableVkHandleType dispatchableVkHandle)
 {
@@ -65,13 +48,48 @@ inline void* get_dispatch_key(DispatchableVkHandleType dispatchableVkHandle)
     return *(void**)dispatchableVkHandle;
 }
 
+class Registry final
+{
+public:
+    static Registry& get();
+
+    template <typename DispatchableVkHandleType>
+    inline DispatchTable& get_instance_dispatch_table(DispatchableVkHandleType dispatchableVkHandle)
+    {
+        static DispatchTable sDispatchTable;
+        auto itr = VkInstanceDispatchTables.find(layer::get_dispatch_key(dispatchableVkHandle));
+        assert(itr != VkInstanceDispatchTables.end() && "Failed to get gvk::layer::Registry VkInstance gvk::DispatchTable; are the Vulkan SDK, runtime, and layers configured correctly?");
+        return itr != VkInstanceDispatchTables.end() ? itr->second : sDispatchTable;
+    }
+
+    template <typename DispatchableVkHandleType>
+    inline DispatchTable& get_device_dispatch_table(DispatchableVkHandleType dispatchableVkHandle)
+    {
+        static DispatchTable sDispatchTable;
+        auto itr = VkDeviceDispatchTables.find(layer::get_dispatch_key(dispatchableVkHandle));
+        assert(itr != VkDeviceDispatchTables.end() && "Failed to get gvk::layer::Registry VkDevice gvk::DispatchTable; are the Vulkan SDK, runtime, and layers configured correctly?");
+        return itr != VkDeviceDispatchTables.end() ? itr->second : sDispatchTable;
+    }
+
+    std::mutex mutex;
+    VkInstance instance{ };
+    uint32_t apiVersion{ VK_API_VERSION_1_0 };
+    std::vector<std::unique_ptr<BasicLayer>> layers;
+    std::unordered_map<void*, DispatchTable> VkInstanceDispatchTables;
+    std::unordered_map<void*, DispatchTable> VkDeviceDispatchTables;
+    using ApplicationVkPhysicalDevice = VkPhysicalDevice;
+    using LoaderVkPhysicalDevice = VkPhysicalDevice;
+    std::unordered_map<ApplicationVkPhysicalDevice, LoaderVkPhysicalDevice> VkPhysicalDevices;
+
+private:
+    Registry() = default;
+    Registry(const Registry&) = delete;
+    Registry& operator=(const Registry&) = delete;
+};
+
 extern void on_load(Registry& registry);
 VkLayerInstanceCreateInfo* get_instance_chain_info(const VkInstanceCreateInfo* pCreateInfo, VkLayerFunction layerFunction);
 VkLayerDeviceCreateInfo* get_device_chain_info(const VkDeviceCreateInfo* pCreateInfo, VkLayerFunction layerFunction);
-VkResult create_instance(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance);
-void destroy_instance(VkInstance instance, const VkAllocationCallbacks* pAllocator);
-VkResult create_device(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice);
-void destroy_device(VkDevice device, const VkAllocationCallbacks* pAllocator);
 PFN_vkVoidFunction get_instance_proc_addr(VkInstance instance, const char* pName);
 PFN_vkVoidFunction get_physical_device_proc_addr(VkInstance instance, const char* pName);
 PFN_vkVoidFunction get_device_proc_addr(VkDevice device, const char* pName);

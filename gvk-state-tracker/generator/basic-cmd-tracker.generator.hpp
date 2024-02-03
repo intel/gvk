@@ -49,6 +49,7 @@ public:
 private:
     static void generate_header(FileGenerator& file, const xml::Manifest& manifest)
     {
+        file << "#include \"gvk-state-tracker/device-address-tracker.hpp\"" << std::endl;
         file << "#include \"gvk-state-tracker/image-layout-tracker.hpp\"" << std::endl;
         file << "#include \"gvk-structures/auto.hpp\"" << std::endl;
         file << "#include \"gvk-command-structures.hpp\"" << std::endl;
@@ -64,6 +65,7 @@ private:
         file << "public:" << std::endl;
         file << "    BasicCmdTracker() = default;" << std::endl;
         file << "    virtual ~BasicCmdTracker() = 0;" << std::endl;
+        file << "    virtual void reset();" << std::endl;
         for (const auto& commandItr : manifest.commands) {
             const auto& command = commandItr.second;
             if (command.type == xml::Command::Type::Cmd) {
@@ -71,12 +73,8 @@ private:
                 file << "    virtual void record_" << command.name << "(" << get_parameter_list(command.parameters) << ");" << std::endl;
             }
         }
-        file << "    virtual void reset();" << std::endl;
         file << std::endl;
         file << "protected:" << std::endl;
-        file << "    std::unordered_map<VkImage, ImageLayoutTracker> mImageLayoutTrackers;" << std::endl;
-        file << "    Auto<GvkCommandStructureCmdBeginRenderPass> mBeginRenderPass;" << std::endl;
-        file << "    Auto<GvkCommandStructureCmdBeginRenderPass2> mBeginRenderPass2;" << std::endl;
         file << "    std::vector<const GvkCommandBaseStructure*> mCmds;" << std::endl;
         file << "    BasicCmdTracker(const BasicCmdTracker&) = delete;" << std::endl;
         file << "    BasicCmdTracker& operator=(const BasicCmdTracker&) = delete;" << std::endl;
@@ -120,9 +118,6 @@ private:
         }
         file << "void BasicCmdTracker::reset()" << std::endl;
         file << "{" << std::endl;
-        file << "    mImageLayoutTrackers.clear();" << std::endl;
-        file << "    mBeginRenderPass.reset();" << std::endl;
-        file << "    mBeginRenderPass2.reset();" << std::endl;
         file << "    for (auto pCmd : mCmds) {" << std::endl;
         file << "        assert(pCmd);" << std::endl;
         file << "        switch (pCmd->sType) {" << std::endl;
@@ -139,8 +134,7 @@ private:
                 file << "        } break;" << std::endl;
             }
         }
-        file << "        default:" << std::endl;
-        file << "        {" << std::endl;
+        file << "        default: {" << std::endl;
         file << "            assert(false && \"Unsupported GvkCommandStructureType\");" << std::endl;
         file << "        } break;" << std::endl;
         file << "        }" << std::endl;

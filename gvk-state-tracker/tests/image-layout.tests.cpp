@@ -30,7 +30,6 @@ TEST(ImageLayout, SingleMipSingleArray)
 {
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
-    load_gvk_state_tracker_entry_points();
 
     auto imageCreateInfo = gvk::get_default<VkImageCreateInfo>();
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -42,14 +41,14 @@ TEST(ImageLayout, SingleMipSingleArray)
 
     auto stateTrackedImage = gvk::get_state_tracked_object(image);
     VkImageLayout imageLayout { };
-    pfnGvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), &imageLayout);
+    gvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), &imageLayout);
     EXPECT_EQ(imageLayout, VK_IMAGE_LAYOUT_UNDEFINED);
 
     imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
     create_memory_bound_image(context, imageCreateInfo, &image, &deviceMemory);
 
     stateTrackedImage = gvk::get_state_tracked_object(image);
-    pfnGvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), &imageLayout);
+    gvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), &imageLayout);
     EXPECT_EQ(imageLayout, VK_IMAGE_LAYOUT_PREINITIALIZED);
 }
 
@@ -60,7 +59,6 @@ TEST(ImageLayout, MultiMipMultiArray)
 
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
-    load_gvk_state_tracker_entry_points();
 
     auto imageCreateInfo = gvk::get_default<VkImageCreateInfo>();
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -75,7 +73,7 @@ TEST(ImageLayout, MultiMipMultiArray)
 
     auto stateTrackedImage = gvk::get_state_tracked_object(image);
     std::vector<VkImageLayout> imageLayouts(imageCreateInfo.mipLevels * imageCreateInfo.arrayLayers);
-    pfnGvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), imageLayouts.data());
+    gvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), imageLayouts.data());
     for (const auto& imageLayout : imageLayouts) {
         EXPECT_EQ(imageLayout, VK_IMAGE_LAYOUT_UNDEFINED);
     }
@@ -84,7 +82,7 @@ TEST(ImageLayout, MultiMipMultiArray)
     create_memory_bound_image(context, imageCreateInfo, &image, &deviceMemory);
 
     stateTrackedImage = gvk::get_state_tracked_object(image);
-    pfnGvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), imageLayouts.data());
+    gvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), imageLayouts.data());
     for (const auto& imageLayout : imageLayouts) {
         EXPECT_EQ(imageLayout, VK_IMAGE_LAYOUT_PREINITIALIZED);
     }
@@ -97,7 +95,6 @@ TEST(ImageLayout, PipelineBarrier)
 
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
-    load_gvk_state_tracker_entry_points();
 
     auto imageCreateInfo = gvk::get_default<VkImageCreateInfo>();
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -150,7 +147,7 @@ TEST(ImageLayout, PipelineBarrier)
 
     auto stateTrackedImage = gvk::get_state_tracked_object(image);
     std::vector<VkImageLayout> imageLayouts(imageCreateInfo.mipLevels * imageCreateInfo.arrayLayers);
-    pfnGvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), imageLayouts.data());
+    gvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), imageLayouts.data());
     for (uint32_t arrayLayer = 0; arrayLayer < imageCreateInfo.arrayLayers; ++arrayLayer) {
         for (uint32_t mipLevel = 0; mipLevel < imageCreateInfo.mipLevels; ++mipLevel) {
             auto imageLayout = imageLayouts[arrayLayer * imageCreateInfo.mipLevels + mipLevel];
@@ -170,7 +167,6 @@ TEST(ImageLayout, PipelineBarrier2)
 
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
-    load_gvk_state_tracker_entry_points();
 
     auto imageCreateInfo = gvk::get_default<VkImageCreateInfo>();
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -218,7 +214,7 @@ TEST(ImageLayout, PipelineBarrier2)
 
     auto stateTrackedImage = gvk::get_state_tracked_object(image);
     std::vector<VkImageLayout> imageLayouts(imageCreateInfo.mipLevels * imageCreateInfo.arrayLayers);
-    pfnGvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), imageLayouts.data());
+    gvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), imageLayouts.data());
     for (uint32_t arrayLayer = 0; arrayLayer < imageCreateInfo.arrayLayers; ++arrayLayer) {
         for (uint32_t mipLevel = 0; mipLevel < imageCreateInfo.mipLevels; ++mipLevel) {
             auto imageLayout = imageLayouts[arrayLayer * imageCreateInfo.mipLevels + mipLevel];
@@ -238,7 +234,6 @@ TEST(ImageLayout, WaitEvents)
 
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
-    load_gvk_state_tracker_entry_points();
 
     auto imageCreateInfo = gvk::get_default<VkImageCreateInfo>();
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -298,7 +293,7 @@ TEST(ImageLayout, WaitEvents)
 
     auto stateTrackedImage = gvk::get_state_tracked_object(image);
     std::vector<VkImageLayout> imageLayouts(imageCreateInfo.mipLevels * imageCreateInfo.arrayLayers);
-    pfnGvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), imageLayouts.data());
+    gvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), imageLayouts.data());
     for (uint32_t arrayLayer = 0; arrayLayer < imageCreateInfo.arrayLayers; ++arrayLayer) {
         for (uint32_t mipLevel = 0; mipLevel < imageCreateInfo.mipLevels; ++mipLevel) {
             auto imageLayout = imageLayouts[arrayLayer * imageCreateInfo.mipLevels + mipLevel];
@@ -318,7 +313,6 @@ TEST(ImageLayout, WaitEvents2)
 
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
-    load_gvk_state_tracker_entry_points();
 
     auto imageCreateInfo = gvk::get_default<VkImageCreateInfo>();
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -373,7 +367,7 @@ TEST(ImageLayout, WaitEvents2)
 
     auto stateTrackedImage = gvk::get_state_tracked_object(image);
     std::vector<VkImageLayout> imageLayouts(imageCreateInfo.mipLevels * imageCreateInfo.arrayLayers);
-    pfnGvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), imageLayouts.data());
+    gvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), imageLayouts.data());
     for (uint32_t arrayLayer = 0; arrayLayer < imageCreateInfo.arrayLayers; ++arrayLayer) {
         for (uint32_t mipLevel = 0; mipLevel < imageCreateInfo.mipLevels; ++mipLevel) {
             auto imageLayout = imageLayouts[arrayLayer * imageCreateInfo.mipLevels + mipLevel];
@@ -390,7 +384,6 @@ TEST(ImageLayout, RenderPass)
 {
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
-    load_gvk_state_tracker_entry_points();
 
     auto colorFormat = VK_FORMAT_UNDEFINED;
     const auto& physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
@@ -493,7 +486,7 @@ TEST(ImageLayout, RenderPass)
         ASSERT_TRUE(image);
         auto stateTrackedImage = gvk::get_state_tracked_object(image);
         VkImageLayout imageLayout { };
-        pfnGvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), &imageLayout);
+        gvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), &imageLayout);
         EXPECT_EQ(imageLayout, renderPassCreateInfo.pAttachments[i].finalLayout);
     }
 }
@@ -502,7 +495,6 @@ TEST(ImageLayout, RenderPass2)
 {
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
-    load_gvk_state_tracker_entry_points();
 
     // Get color VkFormat
     auto colorFormat = VK_FORMAT_UNDEFINED;
@@ -608,7 +600,7 @@ TEST(ImageLayout, RenderPass2)
         ASSERT_TRUE(image);
         auto stateTrackedImage = gvk::get_state_tracked_object(image);
         VkImageLayout imageLayout { };
-        pfnGvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), &imageLayout);
+        gvkGetStateTrackedImageLayouts(&stateTrackedImage, &gvk::get_default<VkImageSubresourceRange>(), &imageLayout);
         EXPECT_EQ(imageLayout, renderPassCreateInfo.pAttachments[i].finalLayout);
     }
 }

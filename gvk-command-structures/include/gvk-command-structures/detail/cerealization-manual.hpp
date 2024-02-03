@@ -30,17 +30,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-command-structures/generated/command.h"
 #include "gvk-structures/detail/cerealization-manual.hpp"
 
+#include <algorithm>
+
 namespace cereal {
 
 GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureAllocateCommandBuffers)
 GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureAllocateDescriptorSets)
 GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureBuildAccelerationStructuresKHR)
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureCmdBuildAccelerationStructuresIndirectKHR)
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureCmdBuildAccelerationStructuresKHR)
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureCmdSetBlendConstants)
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureCmdSetSampleMaskEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureCmdSetFragmentShadingRateEnumNV)
-GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureCmdSetFragmentShadingRateKHR)
 GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureGetAccelerationStructureBuildSizesKHR)
 GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureGetDeviceProcAddr)
 GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureGetInstanceProcAddr)
@@ -57,6 +53,72 @@ GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureCreateXlibSurfaceKHR)
 GVK_STUB_CEREALIZATION_FUNCTIONS(GvkCommandStructureGetPhysicalDeviceXlibPresentationSupportKHR)
 #endif // VK_USE_PLATFORM_XLIB_KHR
 
+////////////////////////////////////////////////////////////////////////////////
+// GvkCommandStructureCmdBuildAccelerationStructuresIndirectKHR
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const GvkCommandStructureCmdBuildAccelerationStructuresIndirectKHR& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_handle(archive, obj.commandBuffer);
+    archive(obj.infoCount);
+    gvk::detail::cerealize_dynamic_array(archive, obj.infoCount, obj.pInfos);
+    gvk::detail::cerealize_dynamic_array(archive, obj.infoCount, obj.pIndirectDeviceAddresses);
+    gvk::detail::cerealize_dynamic_array(archive, obj.infoCount, obj.pIndirectStrides);
+    for (uint32_t i = 0; i < obj.infoCount; ++i) {
+        gvk::detail::cerealize_dynamic_array(archive, obj.pInfos[i].geometryCount, obj.ppMaxPrimitiveCounts[i]);
+    }
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, GvkCommandStructureCmdBuildAccelerationStructuresIndirectKHR& obj)
+{
+    archive(obj.sType);
+    obj.commandBuffer = gvk::detail::decerealize_handle<VkCommandBuffer>(archive);
+    archive(obj.infoCount);
+    obj.pInfos = gvk::detail::decerealize_dynamic_array<VkAccelerationStructureBuildGeometryInfoKHR>(archive);
+    obj.pIndirectDeviceAddresses = gvk::detail::decerealize_dynamic_array<VkDeviceAddress>(archive);
+    obj.pIndirectStrides = gvk::detail::decerealize_dynamic_array<uint32_t>(archive);
+    assert(gvk::detail::tlpDecerealizationAllocator);
+    auto pAllocator = gvk::detail::tlpDecerealizationAllocator;
+    auto ppMaxPrimitiveCounts = (uint32_t**)pAllocator->pfnAllocation(pAllocator->pUserData, obj.infoCount * sizeof(uint32_t*), 0, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+    for (uint32_t i = 0; i < obj.infoCount; ++i) {
+        ppMaxPrimitiveCounts[i] = gvk::detail::decerealize_dynamic_array<uint32_t>(archive);
+    }
+    obj.ppMaxPrimitiveCounts = ppMaxPrimitiveCounts;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// GvkCommandStructureCmdBuildAccelerationStructuresKHR
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const GvkCommandStructureCmdBuildAccelerationStructuresKHR& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_handle(archive, obj.commandBuffer);
+    archive(obj.infoCount);
+    gvk::detail::cerealize_dynamic_array(archive, obj.infoCount, obj.pInfos);
+    for (uint32_t i = 0; i < obj.infoCount; ++i) {
+        gvk::detail::cerealize_dynamic_array(archive, obj.pInfos[i].geometryCount, obj.ppBuildRangeInfos[i]);
+    }
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, GvkCommandStructureCmdBuildAccelerationStructuresKHR& obj)
+{
+    archive(obj.sType);
+    obj.commandBuffer = gvk::detail::decerealize_handle<VkCommandBuffer>(archive);
+    archive(obj.infoCount);
+    obj.pInfos = gvk::detail::decerealize_dynamic_array<VkAccelerationStructureBuildGeometryInfoKHR>(archive);
+    assert(gvk::detail::tlpDecerealizationAllocator);
+    auto pAllocator = gvk::detail::tlpDecerealizationAllocator;
+    auto ppBuildRangeInfos = (VkAccelerationStructureBuildRangeInfoKHR**)pAllocator->pfnAllocation(pAllocator->pUserData, obj.infoCount * sizeof(VkAccelerationStructureBuildRangeInfoKHR*), 0, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+    for (uint32_t i = 0; i < obj.infoCount; ++i) {
+        ppBuildRangeInfos[i] = gvk::detail::decerealize_dynamic_array<VkAccelerationStructureBuildRangeInfoKHR>(archive);
+    }
+    obj.ppBuildRangeInfos = ppBuildRangeInfos;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// GvkCommandStructureCmdPushConstants
 template <typename ArchiveType>
 inline void save(ArchiveType& archive, const GvkCommandStructureCmdPushConstants& obj)
 {
@@ -79,6 +141,84 @@ inline void load(ArchiveType& archive, GvkCommandStructureCmdPushConstants& obj)
     archive(obj.offset);
     archive(obj.size);
     obj.pValues = gvk::detail::decerealize_dynamic_array<uint8_t>(archive);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// GvkCommandStructureCmdSetBlendConstants
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const GvkCommandStructureCmdSetBlendConstants& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_handle(archive, obj.commandBuffer);
+    gvk::detail::cerealize_static_array<4>(archive, obj.blendConstants);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, GvkCommandStructureCmdSetBlendConstants& obj)
+{
+    archive(obj.sType);
+    obj.commandBuffer = gvk::detail::decerealize_handle<VkCommandBuffer>(archive);
+    gvk::detail::decerealize_static_array<4>(archive, obj.blendConstants);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// GvkCommandStructureCmdSetFragmentShadingRateEnumNV
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const GvkCommandStructureCmdSetFragmentShadingRateEnumNV& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_handle(archive, obj.commandBuffer);
+    archive(obj.shadingRate);
+    gvk::detail::cerealize_static_array<2>(archive, obj.combinerOps);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, GvkCommandStructureCmdSetFragmentShadingRateEnumNV& obj)
+{
+    archive(obj.sType);
+    obj.commandBuffer = gvk::detail::decerealize_handle<VkCommandBuffer>(archive);
+    archive(obj.shadingRate);
+    gvk::detail::decerealize_static_array<2>(archive, obj.combinerOps);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// GvkCommandStructureCmdSetFragmentShadingRateKHR
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const GvkCommandStructureCmdSetFragmentShadingRateKHR& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_handle(archive, obj.commandBuffer);
+    gvk::detail::cerealize_dynamic_array(archive, 1, obj.pFragmentSize);
+    gvk::detail::cerealize_static_array<2>(archive, obj.combinerOps);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, GvkCommandStructureCmdSetFragmentShadingRateKHR& obj)
+{
+    archive(obj.sType);
+    obj.commandBuffer = gvk::detail::decerealize_handle<VkCommandBuffer>(archive);
+    obj.pFragmentSize = gvk::detail::decerealize_dynamic_array<VkExtent2D>(archive);
+    gvk::detail::decerealize_static_array<2>(archive, obj.combinerOps);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// GvkCommandStructureCmdSetSampleMaskEXT
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const GvkCommandStructureCmdSetSampleMaskEXT& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_handle(archive, obj.commandBuffer);
+    archive(obj.samples);
+    gvk::detail::cerealize_dynamic_array(archive, std::max(1, obj.samples / 32), obj.pSampleMask);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, GvkCommandStructureCmdSetSampleMaskEXT& obj)
+{
+    archive(obj.sType);
+    obj.commandBuffer = gvk::detail::decerealize_handle<VkCommandBuffer>(archive);
+    archive(obj.samples);
+    obj.pSampleMask = gvk::detail::decerealize_dynamic_array<VkSampleMask>(archive);
 }
 
 } // namespace cereal

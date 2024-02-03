@@ -30,7 +30,7 @@ namespace gvk {
 
 VkImageAspectFlags get_image_aspect_flags(VkFormat format)
 {
-    GvkFormatInfo formatInfo = { };
+    GvkFormatInfo formatInfo { };
     get_format_info(format, &formatInfo);
     VkImageAspectFlags imageAspectFlags = VK_IMAGE_ASPECT_NONE;
     for (uint32_t i = 0; i < formatInfo.componentCount; ++i) {
@@ -56,13 +56,12 @@ VkImageAspectFlags get_image_aspect_flags(VkFormat format)
 
 uint32_t get_bits_per_texel(VkFormat format)
 {
-    GvkFormatInfo formatInfo = { };
-    get_format_info(format, &formatInfo);
-    uint32_t bitPerTexel = 0;
-    for (uint32_t i = 0; i < formatInfo.componentCount; ++i) {
-        bitPerTexel += formatInfo.pComponents[i].bits;
+    if (format) {
+        GvkFormatInfo formatInfo { };
+        get_format_info(format, &formatInfo);
+        return formatInfo.packed ? formatInfo.packed : formatInfo.blockSize * 8 / formatInfo.texelsPerBlock;
     }
-    return bitPerTexel;
+    return 0;
 }
 
 uint32_t get_bytes_per_texel(VkFormat format)
