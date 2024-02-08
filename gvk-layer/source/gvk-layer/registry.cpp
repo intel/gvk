@@ -31,6 +31,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "vulkan/vk_layer.h"
 
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+#include <Windows.h>
+#endif // VK_USE_PLATFORM_WIN32_KHRS
+
 #include <cassert>
 #include <cstring>
 #include <map>
@@ -41,8 +45,8 @@ namespace layer {
 
 Registry& Registry::get()
 {
-    static Registry sInstance;
-    return sInstance;
+    static Registry* spRegistry{ new Registry };
+    return *spRegistry;
 }
 
 VkLayerInstanceCreateInfo* get_instance_chain_info(const VkInstanceCreateInfo* pCreateInfo, VkLayerFunction layerFunction)
