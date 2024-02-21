@@ -101,7 +101,7 @@ VkResult Creator::process_VkDeviceMemory(GvkDeviceMemoryRestoreInfo& restoreInfo
 
         if (restoreInfo.flags & GVK_RESTORE_POINT_OBJECT_STATUS_ACTIVE_BIT) {
             // Submit for download
-            if (mCreateInfo.flags & GVK_RESTORE_POINT_CREATE_DEVICE_MEMORY_DATA_BIT || mCreateInfo.pfnProcessDeviceMemoryDataCallback) {
+            if (mCreateInfo.flags & GVK_RESTORE_POINT_CREATE_DEVICE_MEMORY_DATA_BIT) {
                 auto downloadInfo = get_default<CopyEngine::DownloadDeviceMemoryInfo>();
                 downloadInfo.device = device;
                 downloadInfo.memory = restoreInfo.handle;
@@ -152,18 +152,19 @@ void Creator::process_downloaded_VkDeviceMemory(const CopyEngine::DownloadDevice
     assert(pData);
     const auto& creator = *(const Creator*)downloadInfo.pUserData;
     if (creator.mCreateInfo.flags & GVK_RESTORE_POINT_CREATE_DEVICE_MEMORY_DATA_BIT) {
-        auto path = creator.mCreateInfo.path / "VkDeviceMemory";
-        std::filesystem::create_directories(path);
-        path /= to_hex_string(downloadInfo.memory);
-        std::ofstream dataFile(path.replace_extension("data"), std::ios::binary);
-        dataFile.write((char*)pData, downloadInfo.memoryAllocateInfo.allocationSize);
-    }
-    if (creator.mCreateInfo.pfnProcessDeviceMemoryDataCallback) {
-        GvkStateTrackedObject restorePointObject{ };
-        restorePointObject.type = VK_OBJECT_TYPE_DEVICE_MEMORY;
-        restorePointObject.handle = (uint64_t)downloadInfo.memory;
-        restorePointObject.dispatchableHandle = (uint64_t)downloadInfo.device;
-        creator.mCreateInfo.pfnProcessDeviceMemoryDataCallback(&restorePointObject, bindBufferMemoryInfo.memory, downloadInfo.memoryAllocateInfo.allocationSize, pData);
+        if (creator.mCreateInfo.pfnProcessResourceDataCallback) {
+            GvkStateTrackedObject restorePointObject{ };
+            restorePointObject.type = VK_OBJECT_TYPE_DEVICE_MEMORY;
+            restorePointObject.handle = (uint64_t)downloadInfo.memory;
+            restorePointObject.dispatchableHandle = (uint64_t)downloadInfo.device;
+            creator.mCreateInfo.pfnProcessResourceDataCallback(&restorePointObject, bindBufferMemoryInfo.memory, downloadInfo.memoryAllocateInfo.allocationSize, pData);
+        } else {
+            auto path = creator.mCreateInfo.path / "VkDeviceMemory";
+            std::filesystem::create_directories(path);
+            path /= to_hex_string(downloadInfo.memory);
+            std::ofstream dataFile(path.replace_extension("data"), std::ios::binary);
+            dataFile.write((char*)pData, downloadInfo.memoryAllocateInfo.allocationSize);
+        }
     }
 }
 
@@ -254,7 +255,7 @@ void Applier::process_VkDeviceMemory_data_upload(const CopyEngine::UploadDeviceM
         } else {
             assert(uploadInfo.pUserData);
             const auto& applier = *(Applier*)uploadInfo.pUserData;
-            if (applier.mApplyInfo.pfnProcessDeviceMemoryDataCallback) {
+            if (applier.mApplyInfo.pfnProcessResourceDataCallback) {
                 GvkStateTrackedObject restorePointObject{ };
                 restorePointObject.type = VK_OBJECT_TYPE_DEVICE_MEMORY;
                 restorePointObject.handle = (uint64_t)uploadInfo.memory;
@@ -262,7 +263,7 @@ void Applier::process_VkDeviceMemory_data_upload(const CopyEngine::UploadDeviceM
                 // TODO : Handle regions...
                 assert(uploadInfo.regionCount == 1);
                 assert(uploadInfo.pRegions);
-                applier.mApplyInfo.pfnProcessDeviceMemoryDataCallback(&restorePointObject, bindBufferMemoryInfo.memory, uploadInfo.pRegions[0].size, pData);
+                applier.mApplyInfo.pfnProcessResourceDataCallback(&restorePointObject, bindBufferMemoryInfo.memory, uploadInfo.pRegions[0].size, pData);
             }
         }
     } gvk_result_scope_end;

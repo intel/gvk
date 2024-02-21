@@ -40,6 +40,8 @@ namespace restore_point {
 VkResult Creator::create_restore_point(const CreateInfo& createInfo)
 {
     mLog.set_instance(createInfo.instance);
+    mLog << VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
+    mLog << "Entered gvk::restore_point::Creator::create_restore_point()" << Log::Flush;
     mCreateInfo = createInfo;
     std::filesystem::create_directories(createInfo.path);
     GvkStateTrackedObject stateTrackedInstance{ };
@@ -82,6 +84,8 @@ VkResult Creator::create_restore_point(const CreateInfo& createInfo)
     mDevices.clear();
     mDeviceQueueCreateInfos.clear();
     mCopyEngines.clear();
+    mLog << VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
+    mLog << "Leaving gvk::restore_point::Creator::create_restore_point() " << gvk::to_string(mResult, Printer::Default & ~Printer::EnumValue) << Log::Flush;
     return mResult;
 }
 
@@ -255,7 +259,7 @@ void Creator::create_VkAccelerationStructure_restore_point()
         assert(mResult == VK_SUCCESS);
 
         // TODO : Documentation
-        if (mCreateInfo.flags & GVK_RESTORE_POINT_CREATE_ACCELERATION_STRUCTURE_DATA_BIT || mCreateInfo.pfnProcessAccelerationStructureDataCallback) {
+        if (mCreateInfo.flags & GVK_RESTORE_POINT_CREATE_ACCELERATION_STRUCTURE_DATA_BIT) {
             auto downloadInfo = get_default<CopyEngine::DownloadAccelerationStructureInfo>();
             downloadInfo.accelerationStructure = accelerationStructureRestoreInfo->handle;
             downloadInfo.accelerationStructureCreateInfo = *accelerationStructureRestoreInfo->pAccelerationStructureCreateInfoKHR;

@@ -85,10 +85,6 @@ public:
     std::filesystem::path path;
     uint32_t threadCount{ };
     PFN_gvkInitializeThreadCallback pfnInitializeThreadCallback{ };
-    PFN_gvkProcessResourceDataCallback pfnProcessDeviceMemoryDataCallback{ };
-    PFN_gvkProcessResourceDataCallback pfnProcessAccelerationStructureDataCallback{ };
-    PFN_gvkProcessResourceDataCallback pfnProcessBufferDataCallback{ };
-    PFN_gvkProcessResourceDataCallback pfnProcessImageDataCallback{ };
     PFN_gvkProcessResourceDataCallback pfnProcessResourceDataCallback{ };
     VkBool32 repeating_HACK{ };
 };
@@ -101,12 +97,9 @@ public:
     VkInstance instance{ };
     std::filesystem::path path;
     uint32_t threadCount{ };
+    std::set<GvkStateTrackedObject> excludedObjects;
     PFN_gvkInitializeThreadCallback pfnInitializeThreadCallback{ };
     PFN_gvkProcessRestoredObjectCallback pfnProcessRestoredObjectCallback{ };
-    PFN_gvkProcessResourceDataCallback pfnProcessDeviceMemoryDataCallback{ };
-    PFN_gvkProcessResourceDataCallback pfnProcessAccelerationStructureDataCallback{ };
-    PFN_gvkProcessResourceDataCallback pfnProcessBufferDataCallback{ };
-    PFN_gvkProcessResourceDataCallback pfnProcessImageDataCallback{ };
     PFN_gvkProcessResourceDataCallback pfnProcessResourceDataCallback{ };
 #ifdef VK_USE_PLATFORM_WIN32_KHR
     PFN_gvkProcessWin32SurfaceCreateInfoCallback pfnProcessWin32SurfaceCreateInfoCallback{ };

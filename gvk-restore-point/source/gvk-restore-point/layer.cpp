@@ -346,10 +346,10 @@ VkResult Layer::post_vkResetDescriptorPool(VkDevice device, VkDescriptorPool des
 
 VkResult Layer::create_restore_point(VkInstance instance, const GvkRestorePointCreateInfo* pCreateInfo, GvkRestorePoint* pRestorePoint)
 {
-    (void)pRestorePoint;
     assert(instance);
     assert(pCreateInfo);
     assert(pRestorePoint);
+    *pRestorePoint = new GvkRestorePoint_T;
 
     CreateInfo createInfo { };
     auto defaultFlags =
@@ -363,12 +363,12 @@ VkResult Layer::create_restore_point(VkInstance instance, const GvkRestorePointC
     createInfo.instance = instance;
     createInfo.threadCount = 0; // TODO : Enable user control...pCreateInfo->threadCount
     createInfo.pfnInitializeThreadCallback = pCreateInfo->pfnInitializeThreadCallback;
+    createInfo.pfnProcessResourceDataCallback = pCreateInfo->pfnProcessResourceDataCallback;
     if (string::to_lower(get_env_var("DIRECT_MEMORY")) == "true") {
         createInfo.flags =
             GVK_RESTORE_POINT_CREATE_OBJECT_JSON_BIT |
             GVK_RESTORE_POINT_CREATE_OBJECT_INFO_BIT |
             GVK_RESTORE_POINT_CREATE_DEVICE_MEMORY_DATA_BIT;
-        createInfo.pfnProcessDeviceMemoryDataCallback = pCreateInfo->pfnProcessDeviceMemoryDataCallback;
     } else {
         createInfo.flags =
             GVK_RESTORE_POINT_CREATE_OBJECT_JSON_BIT |
@@ -376,9 +376,6 @@ VkResult Layer::create_restore_point(VkInstance instance, const GvkRestorePointC
             GVK_RESTORE_POINT_CREATE_ACCELERATION_STRUCTURE_DATA_BIT |
             GVK_RESTORE_POINT_CREATE_BUFFER_DATA_BIT |
             GVK_RESTORE_POINT_CREATE_IMAGE_DATA_BIT;
-        createInfo.pfnProcessAccelerationStructureDataCallback = pCreateInfo->pfnProcessAccelerationStructureDataCallback;
-        createInfo.pfnProcessBufferDataCallback = pCreateInfo->pfnProcessBufferDataCallback;
-        createInfo.pfnProcessImageDataCallback = pCreateInfo->pfnProcessImageDataCallback;
     }
     if (pCreateInfo->pPath) {
         createInfo.path = pCreateInfo->pPath;
@@ -393,6 +390,11 @@ VkResult Layer::create_restore_point(VkInstance instance, const GvkRestorePointC
     auto vkResult = creator.create_restore_point(createInfo);
     if (createInfo.repeating_HACK) {
         const auto& restorePointObjects = creator.get_restore_point_objects();
+        for (const auto& restorePointObject : restorePointObjects) {
+            auto inserted = (*pRestorePoint)->objects.insert((const GvkStateTrackedObject&)restorePointObject).second;
+            (void)inserted;
+            assert(inserted);
+        }
         auto restorePointManifest = get_default<GvkRestorePointManifest>();
         restorePointManifest.objectCount = (uint32_t)restorePointObjects.size();
         restorePointManifest.pObjects = restorePointObjects.data();
@@ -402,6 +404,28 @@ VkResult Layer::create_restore_point(VkInstance instance, const GvkRestorePointC
     }
 
     return vkResult;
+}
+
+VkResult Layer::get_restore_point_objects(VkInstance instance, GvkRestorePoint restorePoint, uint32_t* pRestorePointObjectCount, GvkStateTrackedObject* pRestorePointObjects)
+{
+    (void)instance;
+    assert(instance);
+    assert(restorePoint);
+    if (pRestorePointObjectCount) {
+        if (pRestorePointObjects) {
+            auto itr = restorePoint->objects.begin();
+            auto restorePointObjectCount = *pRestorePointObjectCount;
+            while (itr != restorePoint->objects.end() && restorePointObjectCount) {
+                *pRestorePointObjects = *itr;
+                --restorePointObjectCount;
+                ++pRestorePointObjects;
+                ++itr;
+            }
+        } else {
+            *pRestorePointObjectCount = (uint32_t)restorePoint->objects.size();
+        }
+    }
+    return pRestorePointObjectCount && *pRestorePointObjectCount == (uint32_t)restorePoint->objects.size() ? VK_SUCCESS : VK_INCOMPLETE;
 }
 
 VkResult Layer::apply_restore_point(VkInstance instance, const GvkRestorePointApplyInfo* pApplyInfo, GvkRestorePoint restorePoint)
@@ -418,14 +442,11 @@ VkResult Layer::apply_restore_point(VkInstance instance, const GvkRestorePointAp
         applyInfo.path = pApplyInfo->pwPath;
     }
     applyInfo.threadCount = pApplyInfo->threadCount;
-    applyInfo.pfnInitializeThreadCallback = pApplyInfo->pfnInitializeThreadCallback;
-    if (string::to_lower(get_env_var("DIRECT_MEMORY")) == "true") {
-        applyInfo.pfnProcessDeviceMemoryDataCallback = pApplyInfo->pfnProcessDeviceMemoryDataCallback;
-    } else {
-        applyInfo.pfnProcessAccelerationStructureDataCallback = pApplyInfo->pfnProcessAccelerationStructureDataCallback;
-        applyInfo.pfnProcessBufferDataCallback = pApplyInfo->pfnProcessBufferDataCallback;
-        applyInfo.pfnProcessImageDataCallback = pApplyInfo->pfnProcessImageDataCallback;
+    if (pApplyInfo->excludedObjectCount && pApplyInfo->pExcludedObjects) {
+        applyInfo.excludedObjects.insert(pApplyInfo->pExcludedObjects, pApplyInfo->pExcludedObjects + pApplyInfo->excludedObjectCount);
     }
+    applyInfo.pfnInitializeThreadCallback = pApplyInfo->pfnInitializeThreadCallback;
+    applyInfo.pfnProcessResourceDataCallback = pApplyInfo->pfnProcessResourceDataCallback;
     applyInfo.pfnProcessRestoredObjectCallback = pApplyInfo->pfnProcessRestoredObjectCallback;
 #ifdef VK_USE_PLATFORM_WIN32_KHR
     applyInfo.pfnProcessWin32SurfaceCreateInfoCallback = pApplyInfo->pfnProcessWin32SurfaceCreateInfoCallback;
@@ -457,8 +478,8 @@ VkResult Layer::apply_restore_point(VkInstance instance, const GvkRestorePointAp
 void Layer::destroy_restore_point(VkInstance instance, GvkRestorePoint restorePoint)
 {
     (void)instance;
-    (void)restorePoint;
     assert(instance);
+    delete restorePoint;
 }
 
 } // namespace restore_point
@@ -480,6 +501,11 @@ extern "C" {
 VkResult VKAPI_CALL gvkCreateRestorePoint(VkInstance instance, const GvkRestorePointCreateInfo* pCreateInfo, GvkRestorePoint* pRestorePoint)
 {
     return gvk::restore_point::Layer::create_restore_point(instance, pCreateInfo, pRestorePoint);
+}
+
+VkResult gvkGetRestorePointObjects(VkInstance instance, GvkRestorePoint restorePoint, uint32_t* pRestorePointObjectCount, GvkStateTrackedObject* pRestorePointObjects)
+{
+    return gvk::restore_point::Layer::get_restore_point_objects(instance, restorePoint, pRestorePointObjectCount, pRestorePointObjects);
 }
 
 VkResult VKAPI_CALL gvkApplyRestorePoint(VkInstance instance, const GvkRestorePointApplyInfo* pApplyInfo, GvkRestorePoint restorePoint)

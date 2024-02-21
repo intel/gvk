@@ -1256,7 +1256,7 @@ VkResult CopyEngine::get_task_resources(VkDeviceSize taskSize, TaskResources* pT
             VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties{ };
             VkPhysicalDevice stateTrackerPhysicalDevice = VK_NULL_HANDLE;
             gvkGetStateTrackerPhysicalDevice(mDevice.get<PhysicalDevice>().get<VkInstance>(), mDevice.get<PhysicalDevice>(), &stateTrackerPhysicalDevice);
-            auto physicalDevice = stateTrackerPhysicalDevice ? PhysicalDevice(stateTrackerPhysicalDevice) : mDevice.get<PhysicalDevice>();
+            auto physicalDevice = stateTrackerPhysicalDevice ? stateTrackerPhysicalDevice : mDevice.get<PhysicalDevice>().get<VkPhysicalDevice>();
             layerInstanceDispatchTable.gvkGetPhysicalDeviceMemoryProperties(physicalDevice, &physicalDeviceMemoryProperties);
             // mDevice.get<DispatchTable>().gvkGetBufferMemoryRequirements(mDevice, proxyBuffer, &memoryRequirements);
             layerDeviceDispatchTable.gvkDestroyBuffer(mDevice, proxyBuffer, nullptr);
@@ -1344,7 +1344,7 @@ VkResult CopyEngine::get_acceleration_structure_task_resources(VkDeviceSize task
             VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties{ };
             VkPhysicalDevice stateTrackerPhysicalDevice = VK_NULL_HANDLE;
             gvkGetStateTrackerPhysicalDevice(mDevice.get<PhysicalDevice>().get<VkInstance>(), mDevice.get<PhysicalDevice>(), &stateTrackerPhysicalDevice);
-            auto physicalDevice = stateTrackerPhysicalDevice ? PhysicalDevice(stateTrackerPhysicalDevice) : mDevice.get<PhysicalDevice>();
+            auto physicalDevice = stateTrackerPhysicalDevice ? stateTrackerPhysicalDevice : mDevice.get<PhysicalDevice>().get<VkPhysicalDevice>();
             layerInstanceDispatchTable.gvkGetPhysicalDeviceMemoryProperties(physicalDevice, &physicalDeviceMemoryProperties);
             // mDevice.get<DispatchTable>().gvkGetBufferMemoryRequirements(mDevice, proxyBuffer, &memoryRequirements);
             layerDeviceDispatchTable.gvkDestroyBuffer(mDevice, proxyBuffer, nullptr);
@@ -1440,7 +1440,7 @@ VkResult CopyEngine::get_acceleration_structure_task_resources(const GvkAccelera
             VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties{ };
             VkPhysicalDevice stateTrackerPhysicalDevice = VK_NULL_HANDLE;
             gvkGetStateTrackerPhysicalDevice(mDevice.get<PhysicalDevice>().get<VkInstance>(), mDevice.get<PhysicalDevice>(), &stateTrackerPhysicalDevice);
-            auto physicalDevice = stateTrackerPhysicalDevice ? PhysicalDevice(stateTrackerPhysicalDevice) : mDevice.get<PhysicalDevice>();
+            auto physicalDevice = stateTrackerPhysicalDevice ? stateTrackerPhysicalDevice : mDevice.get<PhysicalDevice>().get<VkPhysicalDevice>();
             layerInstanceDispatchTable.gvkGetPhysicalDeviceMemoryProperties(physicalDevice, &physicalDeviceMemoryProperties);
             // mDevice.get<DispatchTable>().gvkGetBufferMemoryRequirements(mDevice, proxyBuffer, &memoryRequirements);
             layerDeviceDispatchTable.gvkDestroyBuffer(mDevice, proxyBuffer, nullptr);

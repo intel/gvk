@@ -44,6 +44,8 @@ namespace restore_point {
 VkResult Applier::apply_restore_point(const ApplyInfo& applyInfo)
 {
     mLog.set_instance(applyInfo.instance);
+    mLog << VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
+    mLog << "Entered gvk::restore_point::Applier::apply_restore_point()" << Log::Flush;
     mRestorePointObjects.clear();
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         mApplyInfo = applyInfo;
@@ -94,11 +96,17 @@ VkResult Applier::apply_restore_point(const ApplyInfo& applyInfo)
             // destroy_VkDescriptorSets(createdDescriptorSets);
             // Restore objects
             for (uint32_t i = 0; i < manifest->objectCount; ++i) {
-                gvk_result(restore_object(manifest->pObjects[i]));
+                const auto& object = (const GvkStateTrackedObject&)manifest->pObjects[i];
+                if (!mApplyInfo.excludedObjects.count(object)) {
+                    gvk_result(restore_object(manifest->pObjects[i]));
+                }
             }
             // Restore object states
             for (uint32_t i = 0; i < manifest->objectCount; ++i) {
-                gvk_result(restore_object_state(manifest->pObjects[i]));
+                const auto& object = (const GvkStateTrackedObject&)manifest->pObjects[i];
+                if (!mApplyInfo.excludedObjects.count(object)) {
+                    gvk_result(restore_object_state(manifest->pObjects[i]));
+                }
             }
             // Restore Buffer data
             // Restore Image data
@@ -257,6 +265,8 @@ VkResult Applier::apply_restore_point(const ApplyInfo& applyInfo)
     }
     // mApplyInfo.pLayerInfo->destroyedObjects.clear();
     mRestorePointObjects.clear();
+    mLog << VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
+    mLog << "Leaving gvk::restore_point::Applier::apply_restore_point() " << gvk::to_string(mResult, Printer::Default & ~Printer::EnumValue) << Log::Flush;
     return gvkResult;
 }
 

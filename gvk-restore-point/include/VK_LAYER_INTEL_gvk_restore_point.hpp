@@ -32,9 +32,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define VK_LAYER_INTEL_gvk_restore_point_hpp 1
 
 #include "VK_LAYER_INTEL_gvk_restore_point.h"
+#include "VK_LAYER_INTEL_gvk_state_tracker.hpp"
 
 #ifdef VK_LAYER_INTEL_gvk_restore_point_hpp_DECLARE_ENTRY_POINTS
 extern PFN_gvkCreateRestorePoint gvkCreateRestorePoint;
+extern PFN_gvkGetRestorePointObjects gvkGetRestorePointObjects;
 extern PFN_gvkApplyRestorePoint gvkApplyRestorePoint;
 extern PFN_gvkDestroyRestorePoint gvkDestroyRestorePoint;
 #endif // VK_LAYER_INTEL_gvk_restore_point_hpp_DECLARE_ENTRY_POINTS
@@ -57,6 +59,7 @@ VkResult load_layer_entry_points();
 
 #ifdef VK_LAYER_INTEL_gvk_restore_point_hpp_DECLARE_ENTRY_POINTS
 PFN_gvkCreateRestorePoint gvkCreateRestorePoint;
+PFN_gvkGetRestorePointObjects gvkGetRestorePointObjects;
 PFN_gvkApplyRestorePoint gvkApplyRestorePoint;
 PFN_gvkDestroyRestorePoint gvkDestroyRestorePoint;
 #define VK_LAYER_INTEL_LOAD_GVK_RESTORE_POINT_LAYER_ENTRY_POINT(GVK_RESTORE_POINT_LAYER_ENTRY_POINT_NAME)                                                 \
@@ -74,6 +77,7 @@ VkResult load_layer_entry_points()
         auto dlLayer = gvk_dlopen(VK_LAYER_INTEL_GVK_RESTORE_POINT_NAME);
         gvk_result(dlLayer ? VK_SUCCESS : VK_ERROR_LAYER_NOT_PRESENT);
         VK_LAYER_INTEL_LOAD_GVK_RESTORE_POINT_LAYER_ENTRY_POINT(gvkCreateRestorePoint);
+        VK_LAYER_INTEL_LOAD_GVK_RESTORE_POINT_LAYER_ENTRY_POINT(gvkGetRestorePointObjects);
         VK_LAYER_INTEL_LOAD_GVK_RESTORE_POINT_LAYER_ENTRY_POINT(gvkApplyRestorePoint);
         VK_LAYER_INTEL_LOAD_GVK_RESTORE_POINT_LAYER_ENTRY_POINT(gvkDestroyRestorePoint);
     } gvk_result_scope_end;

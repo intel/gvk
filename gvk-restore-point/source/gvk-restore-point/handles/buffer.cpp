@@ -65,7 +65,7 @@ VkResult Creator::process_VkBuffer(GvkBufferRestoreInfo& restoreInfo)
             Device(device).get<DispatchTable>().gvkGetBufferMemoryRequirements(device, restoreInfo.handle, &restoreInfo.memoryRequirements.memoryRequirements);
 
             // Submit for download
-            if (mCreateInfo.flags & GVK_RESTORE_POINT_CREATE_BUFFER_DATA_BIT || mCreateInfo.pfnProcessBufferDataCallback) {
+            if (mCreateInfo.flags & GVK_RESTORE_POINT_CREATE_BUFFER_DATA_BIT) {
                 const auto& bufferCreateInfo = restoreInfo.pBufferCreateInfo ? *restoreInfo.pBufferCreateInfo : VkBufferCreateInfo{ };
                 auto downloadInfo = get_default<CopyEngine::DownloadBufferInfo>();
                 downloadInfo.device = device;
@@ -137,18 +137,19 @@ void Creator::process_downloaded_VkBuffer(const CopyEngine::DownloadBufferInfo& 
     assert(pData);
     const auto& creator = *(const Creator*)downloadInfo.pUserData;
     if (creator.mCreateInfo.flags & GVK_RESTORE_POINT_CREATE_BUFFER_DATA_BIT) {
-        auto path = creator.mCreateInfo.path / "VkBuffer";
-        std::filesystem::create_directories(path);
-        path /= to_hex_string(downloadInfo.buffer);
-        std::ofstream dataFile(path.replace_extension("data"), std::ios::binary);
-        dataFile.write((char*)pData, downloadInfo.size);
-    }
-    if (creator.mCreateInfo.pfnProcessBufferDataCallback) {
-        GvkStateTrackedObject restorePointObject{ };
-        restorePointObject.type = VK_OBJECT_TYPE_BUFFER;
-        restorePointObject.handle = (uint64_t)downloadInfo.buffer;
-        restorePointObject.dispatchableHandle = (uint64_t)downloadInfo.device;
-        creator.mCreateInfo.pfnProcessBufferDataCallback(&restorePointObject, bindBufferMemoryInfo.memory, downloadInfo.size, pData);
+        if (creator.mCreateInfo.pfnProcessResourceDataCallback) {
+            GvkStateTrackedObject restorePointObject{ };
+            restorePointObject.type = VK_OBJECT_TYPE_BUFFER;
+            restorePointObject.handle = (uint64_t)downloadInfo.buffer;
+            restorePointObject.dispatchableHandle = (uint64_t)downloadInfo.device;
+            creator.mCreateInfo.pfnProcessResourceDataCallback(&restorePointObject, bindBufferMemoryInfo.memory, downloadInfo.size, pData);
+        } else {
+            auto path = creator.mCreateInfo.path / "VkBuffer";
+            std::filesystem::create_directories(path);
+            path /= to_hex_string(downloadInfo.buffer);
+            std::ofstream dataFile(path.replace_extension("data"), std::ios::binary);
+            dataFile.write((char*)pData, downloadInfo.size);
+        }
     }
 }
 
@@ -201,12 +202,12 @@ void Applier::process_VkBuffer_data_upload(const CopyEngine::UploadBufferInfo& u
         } else {
             assert(uploadInfo.pUserData);
             const auto& applier = *(Applier*)uploadInfo.pUserData;
-            if (applier.mApplyInfo.pfnProcessBufferDataCallback) {
+            if (applier.mApplyInfo.pfnProcessResourceDataCallback) {
                 GvkStateTrackedObject restorePointObject{ };
                 restorePointObject.type = VK_OBJECT_TYPE_BUFFER;
                 restorePointObject.handle = (uint64_t)uploadInfo.buffer;
                 restorePointObject.dispatchableHandle = (uint64_t)uploadInfo.device;
-                applier.mApplyInfo.pfnProcessBufferDataCallback(&restorePointObject, bindBufferMemoryInfo.memory, uploadInfo.size, pData);
+                applier.mApplyInfo.pfnProcessResourceDataCallback(&restorePointObject, bindBufferMemoryInfo.memory, uploadInfo.size, pData);
             }
         }
     } gvk_result_scope_end;

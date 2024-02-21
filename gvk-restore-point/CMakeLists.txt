@@ -111,6 +111,7 @@ gvk_add_layer(
         "Intel(R) GPA Utilities for Vulkan* restore point"
     ENTRY_POINTS
         gvkCreateRestorePoint
+        gvkGetRestorePointObjects
         gvkDestroyRestorePoint
         gvkApplyRestorePoint
 )

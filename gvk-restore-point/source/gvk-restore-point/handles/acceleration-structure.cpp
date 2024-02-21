@@ -51,18 +51,19 @@ void Creator::process_downloaded_VkAccelerationStructureKHR(const CopyEngine::Do
     assert(pData);
     const auto& creator = *(const Creator*)downloadInfo.pUserData;
     if (creator.mCreateInfo.flags & GVK_RESTORE_POINT_CREATE_ACCELERATION_STRUCTURE_DATA_BIT) {
-        auto path = creator.mCreateInfo.path / "VkAccelerationStructureKHR";
-        std::filesystem::create_directories(path);
-        path /= to_hex_string(downloadInfo.accelerationStructure);
-        std::ofstream dataFile(path.replace_extension("data"), std::ios::binary);
-        dataFile.write((char*)pData, downloadInfo.accelerationStructureSerializedSize);
-    }
-    if (creator.mCreateInfo.pfnProcessAccelerationStructureDataCallback) {
-        GvkStateTrackedObject restorePointObject{ };
-        restorePointObject.type = VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR;
-        restorePointObject.handle = (uint64_t)downloadInfo.accelerationStructure;
-        restorePointObject.dispatchableHandle = (uint64_t)downloadInfo.device;
-        creator.mCreateInfo.pfnProcessBufferDataCallback(&restorePointObject, bindBufferMemoryInfo.memory, downloadInfo.accelerationStructureSerializedSize, pData);
+        if (creator.mCreateInfo.pfnProcessResourceDataCallback) {
+            GvkStateTrackedObject restorePointObject{ };
+            restorePointObject.type = VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR;
+            restorePointObject.handle = (uint64_t)downloadInfo.accelerationStructure;
+            restorePointObject.dispatchableHandle = (uint64_t)downloadInfo.device;
+            creator.mCreateInfo.pfnProcessResourceDataCallback(&restorePointObject, bindBufferMemoryInfo.memory, downloadInfo.accelerationStructureSerializedSize, pData);
+        } else {
+            auto path = creator.mCreateInfo.path / "VkAccelerationStructureKHR";
+            std::filesystem::create_directories(path);
+            path /= to_hex_string(downloadInfo.accelerationStructure);
+            std::ofstream dataFile(path.replace_extension("data"), std::ios::binary);
+            dataFile.write((char*)pData, downloadInfo.accelerationStructureSerializedSize);
+        }
     }
 }
 
@@ -150,12 +151,12 @@ void Applier::process_VkAccelerationStructureKHR_data_upload(const CopyEngine::U
         } else {
             assert(uploadInfo.pUserData);
             const auto& applier = *(Applier*)uploadInfo.pUserData;
-            if (applier.mApplyInfo.pfnProcessAccelerationStructureDataCallback) {
+            if (applier.mApplyInfo.pfnProcessResourceDataCallback) {
                 GvkStateTrackedObject restorePointObject{ };
                 restorePointObject.type = VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR;
                 restorePointObject.handle = (uint64_t)uploadInfo.accelerationStructure;
                 restorePointObject.dispatchableHandle = (uint64_t)uploadInfo.device;
-                applier.mApplyInfo.pfnProcessAccelerationStructureDataCallback(&restorePointObject, bindBufferMemoryInfo.memory, uploadInfo.accelerationStructureSerializedSize, pData);
+                applier.mApplyInfo.pfnProcessResourceDataCallback(&restorePointObject, bindBufferMemoryInfo.memory, uploadInfo.accelerationStructureSerializedSize, pData);
             }
         }
     } gvk_result_scope_end;

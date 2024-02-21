@@ -57,7 +57,8 @@ typedef enum GvkRestorePointCreateFlagBits {
 typedef VkFlags GvkRestorePointCreateFlags;
 
 typedef enum GvkRestorePointApplyFlagBits {
-    GVK_RESTORE_POINT_APPLY_FLATTEN_COMMAND_BUFFERS_BIT = 0x00000001,
+    GVK_RESTORE_POINT_APPLY_FORCE_FULL_RESTORATION = 0x00000001,
+    GVK_RESTORE_POINT_APPLY_FLATTEN_COMMAND_BUFFERS_BIT = 0x00000002,
     GVK_RESTORE_POINT_APPLY_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } GvkRestorePointApplyFlagBits;
 typedef VkFlags GvkRestorePointApplyFlags;
@@ -68,10 +69,6 @@ typedef struct GvkRestorePointCreateInfo {
     const wchar_t* pwPath;
     uint32_t threadCount;
     PFN_gvkInitializeThreadCallback pfnInitializeThreadCallback;
-    PFN_gvkProcessResourceDataCallback pfnProcessDeviceMemoryDataCallback;
-    PFN_gvkProcessResourceDataCallback pfnProcessAccelerationStructureDataCallback;
-    PFN_gvkProcessResourceDataCallback pfnProcessBufferDataCallback;
-    PFN_gvkProcessResourceDataCallback pfnProcessImageDataCallback;
     PFN_gvkProcessResourceDataCallback pfnProcessResourceDataCallback;
     VkBool32 repeating_HACK;
 } GvkRestorePointCreateInfo;
@@ -81,12 +78,10 @@ typedef struct GvkRestorePointApplyInfo {
     const char* pPath;
     const wchar_t* pwPath;
     uint32_t threadCount;
+    uint32_t excludedObjectCount;
+    const GvkStateTrackedObject* pExcludedObjects;
     PFN_gvkInitializeThreadCallback pfnInitializeThreadCallback;
     PFN_gvkProcessRestoredObjectCallback pfnProcessRestoredObjectCallback;
-    PFN_gvkProcessResourceDataCallback pfnProcessDeviceMemoryDataCallback;
-    PFN_gvkProcessResourceDataCallback pfnProcessAccelerationStructureDataCallback;
-    PFN_gvkProcessResourceDataCallback pfnProcessBufferDataCallback;
-    PFN_gvkProcessResourceDataCallback pfnProcessImageDataCallback;
     PFN_gvkProcessResourceDataCallback pfnProcessResourceDataCallback;
 #ifdef VK_USE_PLATFORM_WIN32_KHR
     PFN_gvkProcessWin32SurfaceCreateInfoCallback pfnProcessWin32SurfaceCreateInfoCallback;
@@ -96,6 +91,7 @@ typedef struct GvkRestorePointApplyInfo {
 } GvkRestorePointApplyInfo;
 
 typedef VkResult(VKAPI_PTR* PFN_gvkCreateRestorePoint)(VkInstance instance, const GvkRestorePointCreateInfo* pCreateInfo, GvkRestorePoint* pRestorePoint);
+typedef VkResult(VKAPI_PTR* PFN_gvkGetRestorePointObjects)(VkInstance instance, GvkRestorePoint restorePoint, uint32_t* pRestorePointObjectCount, GvkStateTrackedObject* pRestorePointObjects);
 typedef VkResult(VKAPI_PTR* PFN_gvkApplyRestorePoint)(VkInstance instance, const GvkRestorePointApplyInfo* pApplyInfo, GvkRestorePoint restorePoint);
 typedef void(VKAPI_PTR* PFN_gvkDestroyRestorePoint)(VkInstance instance, GvkRestorePoint restorePoint);
 

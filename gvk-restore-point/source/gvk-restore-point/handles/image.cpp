@@ -78,7 +78,7 @@ VkResult Creator::process_VkImage(GvkImageRestoreInfo& restoreInfo)
         Device(device).get<DispatchTable>().gvkGetImageMemoryRequirements(device, restoreInfo.handle, &restoreInfo.memoryRequirements.memoryRequirements);
 
         // Submit for download
-        if (mCreateInfo.flags & (GVK_RESTORE_POINT_CREATE_IMAGE_DATA_BIT | GVK_RESTORE_POINT_CREATE_IMAGE_PNG_BIT) || mCreateInfo.pfnProcessImageDataCallback) {
+        if (mCreateInfo.flags & (GVK_RESTORE_POINT_CREATE_IMAGE_DATA_BIT | GVK_RESTORE_POINT_CREATE_IMAGE_PNG_BIT)) {
             // TODO : Option for downloading swapchain images...
             if (!get_dependency<VkSwapchainKHR>(restoreInfo.dependencyCount, restoreInfo.pDependencies)) {
                 auto downloadInfo = get_default<CopyEngine::DownloadImageInfo>();
@@ -166,20 +166,18 @@ void Creator::process_downloaded_VkImage(const CopyEngine::DownloadImageInfo& do
         }
     }
 
-    // TODO : Documentation
-    auto imageDataSize = get_image_data_size(imageCreateInfo, downloadInfo.imageSubresourceRange);
     if (creator.mCreateInfo.flags & GVK_RESTORE_POINT_CREATE_IMAGE_DATA_BIT) {
-        std::ofstream dataFile(path.replace_extension("data"), std::ios::binary);
-        dataFile.write((char*)pData, imageDataSize);
-    }
-
-    // TODO : Documentation
-    if (creator.mCreateInfo.pfnProcessImageDataCallback) {
-        GvkStateTrackedObject restorePointObject{ };
-        restorePointObject.type = VK_OBJECT_TYPE_IMAGE;
-        restorePointObject.handle = (uint64_t)downloadInfo.image;
-        restorePointObject.dispatchableHandle = (uint64_t)downloadInfo.device;
-        creator.mCreateInfo.pfnProcessImageDataCallback(&restorePointObject, bindBufferMemoryInfo.memory, imageDataSize, pData);
+        auto imageDataSize = get_image_data_size(imageCreateInfo, downloadInfo.imageSubresourceRange);
+        if (creator.mCreateInfo.pfnProcessResourceDataCallback) {
+            GvkStateTrackedObject restorePointObject{ };
+            restorePointObject.type = VK_OBJECT_TYPE_IMAGE;
+            restorePointObject.handle = (uint64_t)downloadInfo.image;
+            restorePointObject.dispatchableHandle = (uint64_t)downloadInfo.device;
+            creator.mCreateInfo.pfnProcessResourceDataCallback(&restorePointObject, bindBufferMemoryInfo.memory, imageDataSize, pData);
+        } else {
+            std::ofstream dataFile(path.replace_extension("data"), std::ios::binary);
+            dataFile.write((char*)pData, imageDataSize);
+        }
     }
 }
 
@@ -282,12 +280,12 @@ void Applier::process_VkImage_data_upload(const CopyEngine::UploadImageInfo& upl
         } else {
             assert(uploadInfo.pUserData);
             const auto& applier = *(Applier*)uploadInfo.pUserData;
-            if (applier.mApplyInfo.pfnProcessImageDataCallback) {
+            if (applier.mApplyInfo.pfnProcessResourceDataCallback) {
                 GvkStateTrackedObject restorePointObject{ };
                 restorePointObject.type = VK_OBJECT_TYPE_IMAGE;
                 restorePointObject.handle = (uint64_t)uploadInfo.image;
                 restorePointObject.dispatchableHandle = (uint64_t)uploadInfo.device;
-                applier.mApplyInfo.pfnProcessImageDataCallback(&restorePointObject, bindBufferMemoryInfo.memory, get_image_data_size(uploadInfo.imageCreateInfo, uploadInfo.imageSubresourceRange), pData);
+                applier.mApplyInfo.pfnProcessResourceDataCallback(&restorePointObject, bindBufferMemoryInfo.memory, get_image_data_size(uploadInfo.imageCreateInfo, uploadInfo.imageSubresourceRange), pData);
             }
         }
     } gvk_result_scope_end;

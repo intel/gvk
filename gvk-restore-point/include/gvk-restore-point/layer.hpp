@@ -30,10 +30,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-restore-point/generated/basic-layer.hpp"
 #include "VK_LAYER_INTEL_gvk_restore_point.h"
 
+#include <set>
 #include <unordered_map>
 
 struct GvkRestorePoint_T
 {
+    std::set<GvkStateTrackedObject> objects;
 };
 
 namespace gvk {
@@ -67,6 +69,7 @@ public:
     ///////////////////////////////////////////////////////////////////////////////
     // Exported entry points
     static VkResult create_restore_point(VkInstance instance, const GvkRestorePointCreateInfo* pCreateInfo, GvkRestorePoint* pRestorePoint);
+    static VkResult get_restore_point_objects(VkInstance instance, GvkRestorePoint restorePoint, uint32_t* pRestorePointObjectCount, GvkStateTrackedObject* pRestorePointObjects);
     static VkResult apply_restore_point(VkInstance instance, const GvkRestorePointApplyInfo* pApplyInfo, GvkRestorePoint restorePoint);
     static void destroy_restore_point(VkInstance instance, GvkRestorePoint restorePoint);
 };
