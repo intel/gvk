@@ -233,7 +233,7 @@ private:
     Device mDevice;
     std::mutex mQueueMutex;
     Queue mQueue;
-    void(*mpfnInitializeThreadCallback)();
+    void(*mpfnInitializeThreadCallback)() { };
     std::unique_ptr<asio::thread_pool> mupThreadPool;
     std::mutex mTaskResourcesMutex;
     std::unordered_map<std::thread::id, TaskResources> mTaskResources;

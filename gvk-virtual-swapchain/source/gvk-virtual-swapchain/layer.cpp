@@ -100,7 +100,7 @@ VkResult Swapchain::post_vkCreateSwapchainKHR(VkDevice device, const VkSwapchain
         get_compatible_memory_type_indices(mGvkDevice.get<PhysicalDevice>(), memoryRequirements.memoryTypeBits, memoryPropertyFlags, &memoryTypeCount, &memoryTypeIndex);
 
         auto memoryAllocateInfo = get_default<VkMemoryAllocateInfo>();
-        auto padding = memoryRequirements.size % memoryRequirements.alignment;
+        auto padding = memoryRequirements.size % (memoryRequirements.alignment ? memoryRequirements.alignment : 1);
         memoryAllocateInfo.allocationSize = memoryRequirements.size * imageCount + padding * (imageCount - 1);
         memoryAllocateInfo.memoryTypeIndex = memoryTypeIndex;
         gvk_result(DeviceMemory::allocate(mGvkDevice, &memoryAllocateInfo, nullptr, &mGvkDeviceMemory));

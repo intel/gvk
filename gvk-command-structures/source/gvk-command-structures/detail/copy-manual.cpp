@@ -87,12 +87,12 @@ GvkCommandStructureCmdBuildAccelerationStructuresIndirectKHR create_structure_co
 template <>
 void destroy_structure_copy<GvkCommandStructureCmdBuildAccelerationStructuresIndirectKHR>(const GvkCommandStructureCmdBuildAccelerationStructuresIndirectKHR& obj, const VkAllocationCallbacks* pAllocator)
 {
-    destroy_dynamic_array_copy(obj.infoCount, obj.pInfos, pAllocator);
     destroy_dynamic_array_copy(obj.infoCount, obj.pIndirectDeviceAddresses, pAllocator);
     destroy_dynamic_array_copy(obj.infoCount, obj.pIndirectStrides, pAllocator);
     for (uint32_t i = 0; i < obj.infoCount; ++i) {
         destroy_dynamic_array_copy(obj.pInfos[i].geometryCount, obj.ppMaxPrimitiveCounts[i], pAllocator);
     }
+    destroy_dynamic_array_copy(obj.infoCount, obj.pInfos, pAllocator);
     destroy_dynamic_array_copy(obj.infoCount, obj.ppMaxPrimitiveCounts, pAllocator);
 }
 
@@ -215,8 +215,8 @@ GvkCommandStructureGetAccelerationStructureBuildSizesKHR create_structure_copy<G
 template <>
 void destroy_structure_copy<GvkCommandStructureGetAccelerationStructureBuildSizesKHR>(const GvkCommandStructureGetAccelerationStructureBuildSizesKHR& obj, const VkAllocationCallbacks* pAllocator)
 {
-    destroy_dynamic_array_copy(1, obj.pBuildInfo, pAllocator);
     destroy_dynamic_array_copy(obj.pBuildInfo->geometryCount, obj.pMaxPrimitiveCounts, pAllocator);
+    destroy_dynamic_array_copy(1, obj.pBuildInfo, pAllocator);
     destroy_dynamic_array_copy(1, obj.pSizeInfo, pAllocator);
 }
 

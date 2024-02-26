@@ -79,8 +79,11 @@ CopyEngine& CopyEngine::operator=(CopyEngine&& other)
     if (this != &other) {
         mDevice = std::move(other.mDevice);
         mQueue = std::move(other.mQueue);
+        mpfnInitializeThreadCallback = std::move(other.mpfnInitializeThreadCallback);
         mupThreadPool = std::move(other.mupThreadPool);
         mTaskResources = std::move(other.mTaskResources);
+        mAccelerationStructureTaskResources = std::move(other.mAccelerationStructureTaskResources);
+        mAccelerationStrcutureSerializationInfoRetrieved = std::move(other.mAccelerationStrcutureSerializationInfoRetrieved);
     }
     return *this;
 }

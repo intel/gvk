@@ -33,7 +33,7 @@ namespace restore_point {
 VkResult Creator::process_VkBuffer(GvkBufferRestoreInfo& restoreInfo)
 {
     // TODO : Filter downloads based on flags
-
+    assert(restoreInfo.pBufferCreateInfo);
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         // Setup GvkStateTrackedObject
         auto device = get_dependency<VkDevice>(restoreInfo.dependencyCount, restoreInfo.pDependencies);
@@ -66,7 +66,7 @@ VkResult Creator::process_VkBuffer(GvkBufferRestoreInfo& restoreInfo)
 
             // Submit for download
             if (mCreateInfo.flags & GVK_RESTORE_POINT_CREATE_BUFFER_DATA_BIT) {
-                const auto& bufferCreateInfo = restoreInfo.pBufferCreateInfo ? *restoreInfo.pBufferCreateInfo : VkBufferCreateInfo{ };
+                const auto& bufferCreateInfo = *restoreInfo.pBufferCreateInfo;
                 auto downloadInfo = get_default<CopyEngine::DownloadBufferInfo>();
                 downloadInfo.device = device;
                 downloadInfo.buffer = restoreInfo.handle;
