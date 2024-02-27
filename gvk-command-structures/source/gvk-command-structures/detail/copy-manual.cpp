@@ -59,10 +59,10 @@ GvkCommandStructureBuildAccelerationStructuresKHR create_structure_copy<GvkComma
 template <>
 void destroy_structure_copy<GvkCommandStructureBuildAccelerationStructuresKHR>(const GvkCommandStructureBuildAccelerationStructuresKHR& obj, const VkAllocationCallbacks* pAllocator)
 {
-    destroy_dynamic_array_copy(obj.infoCount, obj.pInfos, pAllocator);
     for (uint32_t i = 0; i < obj.infoCount; ++i) {
         destroy_dynamic_array_copy(obj.pInfos[i].geometryCount, obj.ppBuildRangeInfos[i], pAllocator);
     }
+    destroy_dynamic_array_copy(obj.infoCount, obj.pInfos, pAllocator);
     destroy_dynamic_array_copy(obj.infoCount, obj.ppBuildRangeInfos, pAllocator);
 }
 
@@ -115,10 +115,10 @@ GvkCommandStructureCmdBuildAccelerationStructuresKHR create_structure_copy<GvkCo
 template <>
 void destroy_structure_copy<GvkCommandStructureCmdBuildAccelerationStructuresKHR>(const GvkCommandStructureCmdBuildAccelerationStructuresKHR& obj, const VkAllocationCallbacks* pAllocator)
 {
-    destroy_dynamic_array_copy(obj.infoCount, obj.pInfos, pAllocator);
     for (uint32_t i = 0; i < obj.infoCount; ++i) {
         destroy_dynamic_array_copy(obj.pInfos[i].geometryCount, obj.ppBuildRangeInfos[i], pAllocator);
     }
+    destroy_dynamic_array_copy(obj.infoCount, obj.pInfos, pAllocator);
     destroy_dynamic_array_copy(obj.infoCount, obj.ppBuildRangeInfos, pAllocator);
 }
 
