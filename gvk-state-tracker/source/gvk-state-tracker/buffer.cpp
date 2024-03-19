@@ -32,9 +32,22 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace state_tracker {
 
+// NOTE : Cache the info arg so any changes made by this layer, or layers down
+//  the chain, can be reverted before returning control to the application.
+thread_local VkBufferCreateInfo tlApplicationBufferCreateInfo;
+VkResult StateTracker::pre_vkCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer, VkResult gvkResult)
+{
+    assert(pCreateInfo);
+    tlApplicationBufferCreateInfo = *pCreateInfo;
+    return BasicStateTracker::pre_vkCreateBuffer(device, pCreateInfo, pAllocator, pBuffer, gvkResult);
+}
+
 VkResult StateTracker::post_vkCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer, VkResult gvkResult)
 {
-    return BasicStateTracker::post_vkCreateBuffer(device, pCreateInfo, pAllocator, pBuffer, gvkResult);
+    assert(pCreateInfo);
+    gvkResult = BasicStateTracker::post_vkCreateBuffer(device, pCreateInfo, pAllocator, pBuffer, gvkResult);
+    *const_cast<VkBufferCreateInfo*>(pCreateInfo) = tlApplicationBufferCreateInfo;
+    return gvkResult;
 }
 
 VkDeviceAddress StateTracker::post_vkGetBufferDeviceAddress(VkDevice device, const VkBufferDeviceAddressInfo* pInfo, VkDeviceAddress gvkResult)

@@ -106,6 +106,7 @@ VkResult Applier::apply_restore_point(const ApplyInfo& applyInfo)
                 const auto& object = (const GvkStateTrackedObject&)manifest->pObjects[i];
                 if (!mApplyInfo.excludedObjects.count(object)) {
                     gvk_result(restore_object_state(manifest->pObjects[i]));
+                    gvk_result(BasicApplier::restore_object_name(manifest->pObjects[i]));
                 }
             }
             // Restore Buffer data
@@ -178,6 +179,9 @@ VkResult Applier::apply_restore_point(const ApplyInfo& applyInfo)
                 } break;
                 }
             }
+            for (uint32_t i = 0; i < manifest->objectCount; ++i) {
+                gvk_result(BasicApplier::restore_object_name(manifest->pObjects[i]));
+            }
             // TODO : Minize copies on repeat restore...VkBuffer, VkImage, VkAccelerationStructure
             for (const auto& capturedImage : capturedImages) {
                 // TODO : Need to be able to call process_VkImage_data() for repeat, but it's
@@ -233,6 +237,9 @@ VkResult Applier::apply_restore_point(const ApplyInfo& applyInfo)
                 default: {
                 } break;
                 }
+            }
+            for (uint32_t i = 0; i < manifest->objectCount; ++i) {
+                gvk_result(BasicApplier::restore_object_name(manifest->pObjects[i]));
             }
             for (const auto& capturedBuffer : capturedBuffers) {
                 process_VkBuffer_data(capturedBuffer);
@@ -302,6 +309,70 @@ VkResult Applier::restore_object_state(const GvkRestorePointObject& restorePoint
     gvk_result_scope_begin(VK_SUCCESS) {
         if (mRestoredObjectStates.insert(restorePointObject).second) {
             gvk_result(BasicApplier::restore_object_state(restorePointObject));
+        }
+    } gvk_result_scope_end;
+    return gvkResult;
+}
+
+VkResult Applier::restore_object_name(const GvkRestorePointObject& restorePointObject, uint32_t dependencyCount, const GvkRestorePointObject* pDependencies, const char* pName)
+{
+    gvk_result_scope_begin(VK_SUCCESS) {
+        VkPhysicalDevice vkPhysicalDevice = VK_NULL_HANDLE;
+        auto vkDevice = (VkDevice)restorePointObject.dispatchableHandle;
+        switch (restorePointObject.type) {
+        case VK_OBJECT_TYPE_DEBUG_REPORT_CALLBACK_EXT:
+        case VK_OBJECT_TYPE_DEBUG_UTILS_MESSENGER_EXT:
+        case VK_OBJECT_TYPE_SURFACE_KHR:
+        case VK_OBJECT_TYPE_INSTANCE: {
+            // TODO : restore_VkDevice() is empty...need to setup unmanaged Device.
+            //  Really need to collapse deferred vs repeat codepaths.
+#if 0
+            vkDevice = *mDevices.begin();
+#else
+            pName = nullptr;
+#endif
+        } break;
+        case VK_OBJECT_TYPE_DISPLAY_KHR: {
+#if 0
+            vkPhysicalDevice = get_dependency<VkPhysicalDevice>(dependencyCount, pDependencies);
+#else
+            pName = nullptr;
+#endif
+        } break;
+        case VK_OBJECT_TYPE_DISPLAY_MODE_KHR: {
+#if 0
+            vkPhysicalDevice = get_dependency<VkPhysicalDevice>(dependencyCount, pDependencies);
+#else
+            pName = nullptr;
+#endif
+        } break;
+        case VK_OBJECT_TYPE_QUEUE: {
+            vkDevice = get_dependency<VkDevice>(dependencyCount, pDependencies);
+        } break;
+        case VK_OBJECT_TYPE_COMMAND_BUFFER: {
+            vkDevice = get_dependency<VkDevice>(dependencyCount, pDependencies);
+        } break;
+        default: {
+            // NOOP :
+        } break;
+        }
+        if (vkPhysicalDevice) {
+            for (const auto& gvkDevice : mDevices) {
+                if (gvkDevice.get<PhysicalDevice>() == vkPhysicalDevice) {
+                    vkDevice = gvkDevice;
+                    break;
+                }
+            }
+        }
+        auto debugUtilsObjectNameInfoEXT = get_default<VkDebugUtilsObjectNameInfoEXT>();
+        debugUtilsObjectNameInfoEXT.objectType = restorePointObject.type;
+        debugUtilsObjectNameInfoEXT.objectHandle = get_restored_object(restorePointObject).handle;
+        debugUtilsObjectNameInfoEXT.pObjectName = pName;
+        vkDevice = (VkDevice)get_restored_object({ VK_OBJECT_TYPE_DEVICE, (uint64_t)vkDevice, (uint64_t)vkDevice }).handle;
+        // TODO : Need to check if the extension is loaded and set nullptr for anything
+        //  that didn't have a name set at capture time
+        if (pName) {
+            gvk_result(mApplyInfo.dispatchTable.gvkSetDebugUtilsObjectNameEXT(vkDevice, &debugUtilsObjectNameInfoEXT));
         }
     } gvk_result_scope_end;
     return gvkResult;

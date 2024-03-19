@@ -110,6 +110,8 @@ private:
         file << "protected:" << std::endl;
         file << "    virtual VkResult restore_object(const GvkRestorePointObject& restorePointObject);" << std::endl;
         file << "    virtual VkResult restore_object_state(const GvkRestorePointObject& restorePointObject);" << std::endl;
+        file << "    virtual VkResult restore_object_name(const GvkRestorePointObject& restorePointObject);" << std::endl;
+        file << "    virtual VkResult restore_object_name(const GvkRestorePointObject& restorePointObject, uint32_t dependencyCount, const GvkRestorePointObject* pDependencies, const char* pName) = 0;" << std::endl;
         file << "    VkResult process_object(const GvkRestorePointObject& restorePointObject);" << std::endl;
         file << "    VkResult process_dependencies(uint32_t dependencyCount, const GvkRestorePointObject* pDependencies);" << std::endl;
         file << "    VkResult restore_dependencies(uint32_t dependencyCount, const GvkRestorePointObject* pDependencies);" << std::endl;
@@ -215,6 +217,29 @@ private:
                 file << "            gvk_result(read_object_restore_info(mApplyInfo.path, \"" << handle.name << "\", to_hex_string(restorePointObject.handle), restoreInfo));" << std::endl;
                 file << "            gvk_result(restore_dependencies_state(restoreInfo->dependencyCount, restoreInfo->pDependencies));" << std::endl;
                 file << "            gvk_result(restore_" << handle.name << "_state(restorePointObject, *restoreInfo));" << std::endl;
+                file << "        } break;" << std::endl;
+            }
+        }
+        file << "        default: {" << std::endl;
+        file << "            gvk_result(VK_ERROR_INITIALIZATION_FAILED);" << std::endl;
+        file << "        } break;" << std::endl;
+        file << "        }" << std::endl;
+        file << "    } gvk_result_scope_end;" << std::endl;
+        file << "    return gvkResult;" << std::endl;
+        file << "}" << std::endl;
+        file << std::endl;
+        file << "VkResult BasicApplier::restore_object_name(const GvkRestorePointObject& restorePointObject)" << std::endl;
+        file << "{" << std::endl;
+        file << "    gvk_result_scope_begin(VK_SUCCESS) {" << std::endl;
+        file << "        switch (restorePointObject.type) {" << std::endl;
+        for (const auto& handleItr : manifest.handles) {
+            const auto& handle = handleItr.second;
+            if (handle.alias.empty()) {
+                CompileGuardGenerator compileGuardGenerator(file, handle.compileGuards);
+                file << "        case " << handle.vkObjectType << ": {" << std::endl;
+                file << "            Auto<" << get_restore_info_type_name(handle.name) << "> restoreInfo;" << std::endl;
+                file << "            gvk_result(read_object_restore_info(mApplyInfo.path, \"" << handle.name << "\", to_hex_string(restorePointObject.handle), restoreInfo));" << std::endl;
+                file << "            gvk_result(restore_object_name(restorePointObject, restoreInfo->dependencyCount, restoreInfo->pDependencies, restoreInfo->pName));" << std::endl;
                 file << "        } break;" << std::endl;
             }
         }

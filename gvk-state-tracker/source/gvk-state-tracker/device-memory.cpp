@@ -33,8 +33,19 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace state_tracker {
 
+// NOTE : Cache the info arg so any changes made by this layer, or layers down
+//  the chain, can be reverted before returning control to the application.
+thread_local VkMemoryAllocateInfo tlApplicationMemoryAllocateInfo;
+VkResult StateTracker::pre_vkAllocateMemory(VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory, VkResult gvkResult)
+{
+    assert(pAllocateInfo);
+    tlApplicationMemoryAllocateInfo = *pAllocateInfo;
+    return BasicStateTracker::pre_vkAllocateMemory(device, pAllocateInfo, pAllocator, pMemory, gvkResult);
+}
+
 VkResult StateTracker::post_vkAllocateMemory(VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory, VkResult gvkResult)
 {
+    assert(pAllocateInfo);
     gvkResult = BasicStateTracker::post_vkAllocateMemory(device, pAllocateInfo, pAllocator, pMemory, gvkResult);
     if (gvkResult == VK_SUCCESS) {
         DeviceMemory gvkDeviceMemory({ device, *pMemory });
@@ -91,6 +102,7 @@ VkResult StateTracker::post_vkAllocateMemory(VkDevice device, const VkMemoryAllo
             pMemoryOpaqueCaptureAddressAllocateInfo->opaqueCaptureAddress = opaqueCaptureAddress;
         }
     }
+    *const_cast<VkMemoryAllocateInfo*>(pAllocateInfo) = tlApplicationMemoryAllocateInfo;
     return gvkResult;
 }
 

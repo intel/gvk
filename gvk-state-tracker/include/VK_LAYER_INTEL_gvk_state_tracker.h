@@ -50,6 +50,7 @@ typedef VkFlags GvkStateTrackedObjectStatusFlags;
 
 typedef struct GvkStateTrackedObjectInfo {
     GvkStateTrackedObjectStatusFlags flags;
+    const char* pName;
 } GvkStateTrackedObjectInfo;
 
 typedef struct GvkStateTrackedObject {

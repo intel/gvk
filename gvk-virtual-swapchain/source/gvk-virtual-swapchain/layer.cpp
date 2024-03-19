@@ -170,9 +170,10 @@ VkResult Swapchain::post_vkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR s
     auto erased = mAvailableVkImages.erase(mPendingAcquisition);
     (void)erased;
     assert(erased);
-    auto inserted = mAcquiredVkImages.insert({ *pImageIndex, mPendingAcquisition }).second;
+    auto inserted = mAcquiredVkImages.insert({ mPendingAcquisition, *pImageIndex }).second;
     (void)inserted;
     assert(inserted);
+    *pImageIndex = mPendingAcquisition;
     mPendingAcquisition = UINT32_MAX;
     return VK_SUCCESS;
 }
@@ -202,6 +203,7 @@ void Swapchain::pre_vkQueuePresentKHR(VkCommandBuffer commandBuffer, uint32_t im
     auto actualImage = mActualImages[imageIndex];
     auto itr = mAcquiredVkImages.find(imageIndex);
     assert(itr != mAcquiredVkImages.end());
+    assert(itr->second < mVirtualVkImages.size());
     auto virtualImage = mVirtualVkImages[itr->second];
 
     // Actual VkImage VK_IMAGE_LAYOUT_UNDEFINED/VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL -> VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
@@ -273,7 +275,7 @@ void Swapchain::pre_vkQueuePresentKHR(VkCommandBuffer commandBuffer, uint32_t im
         imageMemoryBarriers.data()
     );
 
-    auto inserted = mAvailableVkImages.insert(itr->second).second;
+    auto inserted = mAvailableVkImages.insert(itr->first).second;
     (void)inserted;
     assert(inserted);
     mAcquiredVkImages.erase(itr);
@@ -787,8 +789,6 @@ namespace layer {
 void on_load(Registry& registry)
 {
     registry.layers.push_back(std::make_unique<virtual_swapchain::Layer>());
-    // TODO : Disabled by default for the time being
-    registry.layers.back()->enabled = false;
 }
 
 } // namespace layer

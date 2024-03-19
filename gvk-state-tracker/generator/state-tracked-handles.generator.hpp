@@ -220,6 +220,7 @@ R"(    }
             add_method(methodInfo);
         }
         add_member({ "GvkStateTrackedObjectInfo", "mStateTrackedObjectInfo", "GvkStateTrackedObjectInfo" });
+        add_member({ "std::string", "mName", "std::string" });
         add_private_declaration("friend class BasicStateTracker");
         add_private_declaration("friend class StateTracker");
     }
@@ -279,6 +280,7 @@ private:
         file << "#include <cassert>" << std::endl;
         file << "#include <map>" << std::endl;
         file << "#include <set>" << std::endl;
+        file << "#include <string>" << std::endl;
         file << "#include <type_traits>" << std::endl;
         file << "#include <vector>" << std::endl;
         file << std::endl;

@@ -34,8 +34,20 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace state_tracker {
 
+// NOTE : Cache the info arg so any changes made by this layer, or layers down
+//  the chain, can be reverted before returning control to the application.
+thread_local VkSwapchainCreateInfoKHR tlApplicationSwapchainCreateInfo;
+VkResult StateTracker::pre_vkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain, VkResult gvkResult)
+{
+    assert(pCreateInfo);
+    tlApplicationSwapchainCreateInfo = *pCreateInfo;
+    return BasicStateTracker::pre_vkCreateSwapchainKHR(device, pCreateInfo, pAllocator, pSwapchain, gvkResult);
+}
+
 VkResult StateTracker::post_vkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain, VkResult gvkResult)
 {
+    assert(pCreateInfo);
+    gvkResult = BasicStateTracker::post_vkCreateSwapchainKHR(device, pCreateInfo, pAllocator, pSwapchain, gvkResult);
     if (gvkResult == VK_SUCCESS) {
         Device gvkDevice = device;
         assert(gvkDevice);
@@ -89,6 +101,7 @@ VkResult StateTracker::post_vkCreateSwapchainKHR(VkDevice device, const VkSwapch
         }
         gvkDevice.mReference.get_obj().mSwapchainKHRTracker.insert(gvkSwapchain);
     }
+    *const_cast<VkSwapchainCreateInfoKHR*>(pCreateInfo) = tlApplicationSwapchainCreateInfo;
     return gvkResult;
 }
 

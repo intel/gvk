@@ -16,6 +16,7 @@ set(generatedSourceFiles
     "${generatedSourcePath}/enumerate-state-tracked-objects.cpp"
     "${generatedSourcePath}/get-state-tracked-object-create-info.cpp"
     "${generatedSourcePath}/get-state-tracked-object-info.cpp"
+    "${generatedSourcePath}/set-state-tracked-object-name.cpp"
     "${generatedSourcePath}/state-tracked-handles.cpp"
 )
 set(generatorSourcePath "${CMAKE_CURRENT_LIST_DIR}/generator/")
@@ -34,6 +35,7 @@ gvk_add_code_generator(
         "${generatorSourcePath}/enumerate-state-tracked-objects.generator.hpp"
         "${generatorSourcePath}/get-state-tracked-object-create-info.generator.hpp"
         "${generatorSourcePath}/get-state-tracked-object-info.generator.hpp"
+        "${generatorSourcePath}/set-state-tracked-object-name.generator.hpp"
         "${generatorSourcePath}/state-tracked-handles.generator.hpp"
     SOURCE_FILES
         "${generatorSourcePath}/main.cpp"

@@ -32,24 +32,22 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace cppgen {
 
-class GetStateTrackedObjectInfoGenerator final
+class SetStateTrackedObjectNameGenerator final
 {
 public:
     static void generate(const xml::Manifest& manifest)
     {
-        FileGenerator file(GVK_STATE_TRACKER_GENERATED_SOURCE_PATH "/get-state-tracked-object-info.cpp");
+        FileGenerator file(GVK_STATE_TRACKER_GENERATED_SOURCE_PATH "/set-state-tracked-object-name.cpp");
         file << std::endl;
         file << "#include \"gvk-state-tracker/generated/state-tracked-handles.hpp\"" << std::endl;
         file << "#include \"gvk-state-tracker/state-tracker.hpp\"" << std::endl;
         file << "#include \"gvk-defines.hpp\"" << std::endl;
-        file << "#include \"VK_LAYER_INTEL_gvk_state_tracker.h\"" << std::endl;
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk::state_tracker");
         file << std::endl;
-        file << "void StateTracker::get_state_tracked_object_info(const GvkStateTrackedObject* pStateTrackedObject, GvkStateTrackedObjectInfo* pStateTrackedObjectInfo)" << std::endl;
+        file << "void StateTracker::set_state_tracked_object_name(const GvkStateTrackedObject* pStateTrackedObject, const char* pName)" << std::endl;
         file << "{" << std::endl;
         file << "    assert(pStateTrackedObject);" << std::endl;
-        file << "    assert(pStateTrackedObjectInfo);" << std::endl;
         file << "    switch (pStateTrackedObject->type) {" << std::endl;
         for (const auto& handleItr : manifest.handles) {
             const auto& handle = handleItr.second;
@@ -57,17 +55,19 @@ public:
                 CompileGuardGenerator compileGuard(file, handle.compileGuards);
                 file << "    case " << handle.vkObjectType << ": {" << std::endl;
                 if (handle.name == "VkPhysicalDevice") {
-                    file << "        *pStateTrackedObjectInfo = " << string::strip_vk(handle.name) << "(get_loader_physical_device_handle((" << handle.name << ")pStateTrackedObject->handle)).get<GvkStateTrackedObjectInfo>();" << std::endl;
+                    file << "        " << string::strip_vk(handle.name) << " gvkHandle(get_loader_physical_device_handle((" << handle.name << ")pStateTrackedObject->handle));" << std::endl;
                 } else if (handle.isDispatchable) {
-                    file << "        *pStateTrackedObjectInfo = " << string::strip_vk(handle.name) << "((" << handle.name << ")pStateTrackedObject->handle).get<GvkStateTrackedObjectInfo>();" << std::endl;
+                    file << "        " << string::strip_vk(handle.name) << " gvkHandle((" << handle.name << ")pStateTrackedObject->handle);" << std::endl;
                 } else {
                     file << "        auto handle = pStateTrackedObject->handle;" << std::endl;
                     file << "        auto dispatchableHandle = pStateTrackedObject->dispatchableHandle;" << std::endl;
                     file << string::replace("        {gvkHandleType} gvkHandle({ ({gvkHandleType}::DispatchableVkHandleType)dispatchableHandle, ({gvkHandleType}::VkHandleType)handle });", "{gvkHandleType}", string::strip_vk(handle.name)) << std::endl;
-                    file << "        if (gvkHandle) {" << std::endl;
-                    file << "            *pStateTrackedObjectInfo = gvkHandle.get<GvkStateTrackedObjectInfo>();" << std::endl;
-                    file << "        }" << std::endl;
                 }
+                file << "        if (gvkHandle) {" << std::endl;
+                file << "            auto& controlBlock = gvkHandle.mReference.get_obj();" << std::endl;
+                file << "            controlBlock.mName = pName ? pName : std::string();" << std::endl;
+                file << "            controlBlock.mStateTrackedObjectInfo.pName = !controlBlock.mName.empty() ? controlBlock.mName.c_str() : nullptr;" << std::endl;
+                file << "        }" << std::endl;
                 file << "    } break;" << std::endl;
             }
         }

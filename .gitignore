@@ -12,3 +12,5 @@ _deps/
 _report/
 _scan-tools/
 __pycache__/
+*.hiv
+*.reg

@@ -167,20 +167,13 @@ VkResult Layer::pre_vkAllocateMemory(VkDevice device, const VkMemoryAllocateInfo
     (void)device;
     (void)pAllocator;
     (void)pMemory;
-    assert(pAllocateInfo);
-    auto pMemoryAllocateFlagsInfo = const_cast<VkMemoryAllocateFlagsInfo*>(get_pnext<VkMemoryAllocateFlagsInfo>(*pAllocateInfo));
-    if (pMemoryAllocateFlagsInfo && pMemoryAllocateFlagsInfo->flags & VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT) {
-        pMemoryAllocateFlagsInfo->flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT;
+    if (gvkResult == VK_SUCCESS) {
+        assert(pAllocateInfo);
+        auto pMemoryAllocateFlagsInfo = const_cast<VkMemoryAllocateFlagsInfo*>(get_pnext<VkMemoryAllocateFlagsInfo>(*pAllocateInfo));
+        if (pMemoryAllocateFlagsInfo && pMemoryAllocateFlagsInfo->flags & VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT) {
+            pMemoryAllocateFlagsInfo->flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT;
+        }
     }
-    return gvkResult;
-}
-
-VkResult Layer::post_vkAllocateMemory(VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory, VkResult gvkResult)
-{
-    (void)device;
-    (void)pAllocateInfo;
-    (void)pAllocator;
-    (void)pMemory;
     return gvkResult;
 }
 
@@ -191,74 +184,57 @@ VkResult Layer::pre_vkCreateAccelerationStructureKHR(VkDevice device, const VkAc
     (void)device;
     (void)pAllocator;
     (void)pAccelerationStructure;
-    assert(pCreateInfo);
-    const_cast<VkAccelerationStructureCreateInfoKHR*>(pCreateInfo)->createFlags |= VK_ACCELERATION_STRUCTURE_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR;
-    return gvkResult;
-}
-
-VkResult Layer::post_vkCreateAccelerationStructureKHR(VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure, VkResult gvkResult)
-{
-    (void)device;
-    (void)pCreateInfo;
-    (void)pAllocator;
-    (void)pAccelerationStructure;
+    if (gvkResult == VK_SUCCESS) {
+        assert(pCreateInfo);
+        const_cast<VkAccelerationStructureCreateInfoKHR*>(pCreateInfo)->createFlags |= VK_ACCELERATION_STRUCTURE_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR;
+    }
     return gvkResult;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // vkCreateBuffer()
-thread_local VkBufferCreateInfo tlApplicationBufferCreateInfo;
-thread_local VkBufferCreateInfo tlRestorePointBufferCreateInfo;
 VkResult Layer::pre_vkCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer, VkResult gvkResult)
 {
     (void)device;
     (void)pAllocator;
     (void)pBuffer;
-    assert(pCreateInfo);
-    tlApplicationBufferCreateInfo = *pCreateInfo;
-    if (tlApplicationBufferCreateInfo.usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
-        tlApplicationBufferCreateInfo.flags |= VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT;
+    if (gvkResult == VK_SUCCESS) {
+        assert(pCreateInfo);
+        if (pCreateInfo->usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
+            const_cast<VkBufferCreateInfo*>(pCreateInfo)->flags |= VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT;
+        }
+        const_cast<VkBufferCreateInfo*>(pCreateInfo)->usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     }
-    tlRestorePointBufferCreateInfo = tlApplicationBufferCreateInfo;
-    tlRestorePointBufferCreateInfo.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    *const_cast<VkBufferCreateInfo*>(pCreateInfo) = tlRestorePointBufferCreateInfo;
-    return gvkResult;
-}
-
-VkResult Layer::post_vkCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer, VkResult gvkResult)
-{
-    (void)device;
-    (void)pAllocator;
-    (void)pBuffer;
-    assert(pCreateInfo);
-    *const_cast<VkBufferCreateInfo*>(pCreateInfo) = tlApplicationBufferCreateInfo;
     return gvkResult;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // vkCreateImage()
-thread_local VkImageCreateInfo tlApplicationImageCreateInfo;
-thread_local VkImageCreateInfo tlRestorePointImageCreateInfo;
 VkResult Layer::pre_vkCreateImage(VkDevice device, const VkImageCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImage* pImage, VkResult gvkResult)
 {
     (void)device;
     (void)pAllocator;
     (void)pImage;
-    assert(pCreateInfo);
-    tlApplicationImageCreateInfo = *pCreateInfo;
-    tlRestorePointImageCreateInfo = tlApplicationImageCreateInfo;
-    tlRestorePointImageCreateInfo.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    *const_cast<VkImageCreateInfo*>(pCreateInfo) = tlRestorePointImageCreateInfo;
+    if (gvkResult == VK_SUCCESS) {
+        assert(pCreateInfo);
+        if (!(pCreateInfo->usage & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT)) {
+            const_cast<VkImageCreateInfo*>(pCreateInfo)->usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        }
+    }
     return gvkResult;
 }
 
-VkResult Layer::post_vkCreateImage(VkDevice device, const VkImageCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImage* pImage, VkResult gvkResult)
+///////////////////////////////////////////////////////////////////////////////
+// vkCreateSwapchainKHR()
+VkResult Layer::pre_vkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain, VkResult gvkResult)
 {
     (void)device;
     (void)pAllocator;
-    (void)pImage;
-    assert(pCreateInfo);
-    *const_cast<VkImageCreateInfo*>(pCreateInfo) = tlApplicationImageCreateInfo;
+    (void)pSwapchain;
+    if (gvkResult == VK_SUCCESS) {
+        assert(pCreateInfo);
+        const_cast<VkSwapchainCreateInfoKHR*>(pCreateInfo)->imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    }
     return gvkResult;
 }
 

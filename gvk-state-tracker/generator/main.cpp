@@ -30,6 +30,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "enumerate-state-tracked-objects.generator.hpp"
 #include "get-state-tracked-object-create-info.generator.hpp"
 #include "get-state-tracked-object-info.generator.hpp"
+#include "set-state-tracked-object-name.generator.hpp"
 #include "state-tracked-handles.generator.hpp"
 
 int main(int, const char*[])
@@ -43,6 +44,7 @@ int main(int, const char*[])
         gvk::cppgen::EnumerateStateTrackedObjectsGenerator::generate(manifest);
         gvk::cppgen::GetStateTrackedObjectCreateInfoGenerator::generate(manifest);
         gvk::cppgen::GetStateTrackedObjectInfoGenerator::generate(manifest);
+        gvk::cppgen::SetStateTrackedObjectNameGenerator::generate(manifest);
         gvk::cppgen::StateTrackedHandlesGenerator::generate(manifest);
     }
     return 0;

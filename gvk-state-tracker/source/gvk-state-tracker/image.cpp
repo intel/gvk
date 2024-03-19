@@ -32,15 +32,26 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace state_tracker {
 
+// NOTE : Cache the info arg so any changes made by this layer, or layers down
+//  the chain, can be reverted before returning control to the application.
+thread_local VkImageCreateInfo tlApplicationImageCreateInfo;
+VkResult StateTracker::pre_vkCreateImage(VkDevice device, const VkImageCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImage* pImage, VkResult gvkResult)
+{
+    assert(pCreateInfo);
+    tlApplicationImageCreateInfo = *pCreateInfo;
+    return BasicStateTracker::pre_vkCreateImage(device, pCreateInfo, pAllocator, pImage, gvkResult);
+}
+
 VkResult StateTracker::post_vkCreateImage(VkDevice device, const VkImageCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImage* pImage, VkResult gvkResult)
 {
+    assert(pCreateInfo);
+    gvkResult = BasicStateTracker::post_vkCreateImage(device, pCreateInfo, pAllocator, pImage, gvkResult);
     if (gvkResult == VK_SUCCESS) {
-        gvkResult = BasicStateTracker::post_vkCreateImage(device, pCreateInfo, pAllocator, pImage, gvkResult);
-        assert(gvkResult == VK_SUCCESS);
         Image gvkImage({ device, *pImage });
         assert(gvkImage);
         gvkImage.mReference.get_obj().mImageLayoutTracker = ImageLayoutTracker(pCreateInfo->mipLevels, pCreateInfo->arrayLayers, pCreateInfo->initialLayout);
     }
+    *const_cast<VkImageCreateInfo*>(pCreateInfo) = tlApplicationImageCreateInfo;
     return gvkResult;
 }
 

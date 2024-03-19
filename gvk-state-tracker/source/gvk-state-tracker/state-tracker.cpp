@@ -39,6 +39,8 @@ namespace state_tracker {
 StateTracker::PhysicalDeviceEnumerationMode StateTracker::smPhysicalDeviceEnumerationMode { PhysicalDeviceEnumerationMode::Application };
 
 #if 0
+// NOTE : Defined in /build/gvk-state-tracker/source/generated/set-object-name.cpp
+void set_state_tracked_object_name(const GvkStateTrackedObject* pStateTrackedObject, const char* pName);
 // NOTE : Defined in /build/gvk-state-tracker/source/generated/enumerate-objects.cpp
 void StateTracker::enumerate_state_tracked_objects(const GvkStateTrackedObject* pStateTrackedObject, PFN_gvkEnumerateStateTrackedObjectsCallback pfnCallback, void* pUserData);
 // NOTE : Defined in /build/gvk-state-tracker/source/generated/enumerate-objects.cpp
@@ -48,6 +50,41 @@ void StateTracker::get_state_tracked_object_status(const GvkStateTrackedObject* 
 // NOTE : Defined in /build/gvk-state-tracker/source/generated/get-object-create-info.cpp
 void StateTracker::get_state_tracked_object_create_info(const GvkStateTrackedObject* pStateTrackedObject, VkStructureType* pCreateInfoType, VkBaseOutStructure* pCreateInfo);
 #endif
+
+///////////////////////////////////////////////////////////////////////////////
+// vkSetDebugUtilsObjectNameEXT()
+VkResult StateTracker::post_vkSetDebugUtilsObjectNameEXT(VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo, VkResult gvkResult)
+{
+    if (gvkResult == VK_SUCCESS) {
+        assert(pNameInfo);
+        auto stateTrackedObject = get_default<GvkStateTrackedObject>();
+        stateTrackedObject.type = pNameInfo->objectType;
+        stateTrackedObject.handle = pNameInfo->objectHandle;
+        stateTrackedObject.dispatchableHandle = (uint64_t)device;
+        switch (stateTrackedObject.type) {
+        case VK_OBJECT_TYPE_SURFACE_KHR: {
+            stateTrackedObject.dispatchableHandle = (uint64_t)Device(device).get<PhysicalDevice>().get<VkInstance>();
+        } break;
+        case VK_OBJECT_TYPE_DEBUG_REPORT_CALLBACK_EXT: {
+            stateTrackedObject.dispatchableHandle = (uint64_t)Device(device).get<PhysicalDevice>().get<VkInstance>();
+        } break;
+        case VK_OBJECT_TYPE_DEBUG_UTILS_MESSENGER_EXT: {
+            stateTrackedObject.dispatchableHandle = (uint64_t)Device(device).get<PhysicalDevice>().get<VkInstance>();
+        } break;
+        case VK_OBJECT_TYPE_DISPLAY_KHR: {
+            stateTrackedObject.dispatchableHandle = (uint64_t)Device(device).get<PhysicalDevice>().get<VkPhysicalDevice>();
+        } break;
+        case VK_OBJECT_TYPE_DISPLAY_MODE_KHR: {
+            stateTrackedObject.dispatchableHandle = (uint64_t)Device(device).get<PhysicalDevice>().get<VkPhysicalDevice>();
+        } break;
+        default: {
+            // NOOP :
+        } break;
+        }
+        set_state_tracked_object_name(&stateTrackedObject, pNameInfo->pObjectName);
+    }
+    return gvkResult;
+}
 
 StateTracker::PhysicalDeviceEnumerationMode StateTracker::get_physical_device_enumeration_mode()
 {

@@ -32,8 +32,19 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace state_tracker {
 
+// NOTE : Cache the info arg so any changes made by this layer, or layers down
+//  the chain, can be reverted before returning control to the application.
+thread_local VkAccelerationStructureCreateInfoKHR tlApplicationAccelerationStructureCreateInfo;
+VkResult StateTracker::pre_vkCreateAccelerationStructureKHR(VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure, VkResult gvkResult)
+{
+    assert(pCreateInfo);
+    tlApplicationAccelerationStructureCreateInfo = *pCreateInfo;
+    return BasicStateTracker::pre_vkCreateAccelerationStructureKHR(device, pCreateInfo, pAllocator, pAccelerationStructure, gvkResult);
+}
+
 VkResult StateTracker::post_vkCreateAccelerationStructureKHR(VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure, VkResult gvkResult)
 {
+    assert(pCreateInfo);
     gvkResult = BasicStateTracker::post_vkCreateAccelerationStructureKHR(device, pCreateInfo, pAllocator, pAccelerationStructure, gvkResult);
     if (gvkResult == VK_SUCCESS && pCreateInfo->createFlags & VK_ACCELERATION_STRUCTURE_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_KHR) {
         AccelerationStructureKHR gvkAccelerationStructure({ device, *pAccelerationStructure });
@@ -52,6 +63,7 @@ VkResult StateTracker::post_vkCreateAccelerationStructureKHR(VkDevice device, co
         assert(!accelerationStructureCreateInfo.deviceAddress || accelerationStructureCreateInfo.deviceAddress == deviceAddress);
         accelerationStructureCreateInfo.deviceAddress = deviceAddress;
     }
+    *const_cast<VkAccelerationStructureCreateInfoKHR*>(pCreateInfo) = tlApplicationAccelerationStructureCreateInfo;
     return gvkResult;
 }
 

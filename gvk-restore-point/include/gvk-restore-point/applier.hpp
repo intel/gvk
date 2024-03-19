@@ -49,6 +49,7 @@ public:
 protected:
     VkResult restore_object(const GvkRestorePointObject& restorePointObject) override final;
     VkResult restore_object_state(const GvkRestorePointObject& restorePointObject) override final;
+    VkResult restore_object_name(const GvkRestorePointObject& restoredObject, uint32_t dependencyCount, const GvkRestorePointObject* pDependencies, const char* pName) override final;
     VkResult restore_VkInstance(const GvkRestorePointObject& restorePointObject, const GvkInstanceRestoreInfo& restoreInfo) override final;
     VkResult restore_VkInstance_state(const GvkRestorePointObject& restorePointObject, const GvkInstanceRestoreInfo& restoreInfo) override final;
     VkResult restore_VkDevice(const GvkRestorePointObject& restorePointObject, const GvkDeviceRestoreInfo& restoreInfo) override final;

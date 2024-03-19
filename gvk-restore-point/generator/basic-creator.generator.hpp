@@ -147,6 +147,7 @@ private:
                 file << "                auto restoreInfo = get_default<" << get_restore_info_type_name(handle.name) << ">();" << std::endl;
                 file << "                restoreInfo.flags = stateTrackedObjectInfo.flags;" << std::endl;
                 file << "                restoreInfo.handle = (" << handle.name << ")pStateTrackedObject->handle;" << std::endl;
+                file << "                restoreInfo.pName = stateTrackedObjectInfo.pName;" << std::endl;
                 file << "                restoreInfo.dependencyCount = (uint32_t)dependencyEnumerationInfo.dependencies.size();" << std::endl;
                 file << "                restoreInfo.pDependencies = !dependencyEnumerationInfo.dependencies.empty() ? dependencyEnumerationInfo.dependencies.data() : nullptr;" << std::endl;
                 if (!handle.createInfos.empty()) {

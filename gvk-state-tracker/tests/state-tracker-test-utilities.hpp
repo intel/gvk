@@ -94,7 +94,7 @@ public:
     template <typename CreateInfoType>
     inline ObjectRecord(const GvkStateTrackedObject& stateTrackedObject, const CreateInfoType& createInfo, GvkStateTrackedObjectStatusFlags statusFlags)
         : mStateTrackedObject { stateTrackedObject }
-        , mStateTrackedObjectInfo { statusFlags }
+        , mStateTrackedObjectInfo { statusFlags, nullptr }
     {
         if constexpr (std::is_same_v<CreateInfoType, VkInstanceCreateInfo>) {
             mInstanceCreateInfo = createInfo;
