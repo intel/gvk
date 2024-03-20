@@ -42,12 +42,15 @@ typedef enum GvkStateTrackedObjectStatusFlagBits {
     GVK_STATE_TRACKER_OBJECT_STATUS_PENDING_BIT = 0x00000010,
     GVK_STATE_TRACKER_OBJECT_STATUS_INVALID_BIT = 0x00000020,
     GVK_STATE_TRACKER_OBJECT_STATUS_SIGNALED_BIT = 0x00000040,
+    GVK_STATE_TRACKER_OBJECT_STATUS_ACQUIRED_BIT = 0x00000080,
+    GVK_STATE_TRACKER_OBJECT_STATUS_ALL_COMMAND_BUFFER_BIT = GVK_STATE_TRACKER_OBJECT_STATUS_RECORDING_BIT | GVK_STATE_TRACKER_OBJECT_STATUS_EXECUTABLE_BIT | GVK_STATE_TRACKER_OBJECT_STATUS_PENDING_BIT | GVK_STATE_TRACKER_OBJECT_STATUS_INVALID_BIT,
     GVK_STATE_TRACKED_OBJECT_STATUS_BITS_MAX_ENUM = 0x7FFFFFFF
 } GvkStateTrackedObjectStatusBits;
 typedef VkFlags GvkStateTrackedObjectStatusFlags;
 
 typedef struct GvkStateTrackedObjectInfo {
     GvkStateTrackedObjectStatusFlags flags;
+    const char* pName;
 } GvkStateTrackedObjectInfo;
 
 typedef struct GvkStateTrackedObject {
@@ -64,7 +67,7 @@ typedef struct GvkStateTrackedObjectEnumerateInfo {
     void* pUserData;
 } GvkStateTrackedObjectEnumerateInfo;
 
-typedef void(VKAPI_PTR* PFN_gvkSetStateTrackerPhysicalDevices)(VkInstance instance, uint32_t physicalDeviceCount, const VkPhysicalDevice* pPhysicalDevices, const VkPhysicalDeviceProperties* pPhysicalDeviceProperties);
+typedef void(VKAPI_PTR* PFN_gvkGetStateTrackerPhysicalDevice)(VkInstance instance, VkPhysicalDevice physicalDevice, VkPhysicalDevice* pStateTrackerPhysicalDevice);
 typedef void(VKAPI_PTR* PFN_gvkEnumerateStateTrackedObjects)(const GvkStateTrackedObject* pStateTrackedObject, const GvkStateTrackedObjectEnumerateInfo* pEnumerateInfo);
 typedef void(VKAPI_PTR* PFN_gvkEnumerateStateTrackedObjectDependencies)(const GvkStateTrackedObject* pStateTrackedObject, const GvkStateTrackedObjectEnumerateInfo* pEnumerateInfo);
 typedef void(VKAPI_PTR* PFN_gvkEnumerateStateTrackedObjectBindings)(const GvkStateTrackedObject* pStateTrackedObject, const GvkStateTrackedObjectEnumerateInfo* pEnumerateInfo);
@@ -74,21 +77,9 @@ typedef void(VKAPI_PTR* PFN_gvkGetStateTrackedObjectCreateInfo)(const GvkStateTr
 typedef void(VKAPI_PTR* PFN_gvkGetStateTrackedObjectAllocateInfo)(const GvkStateTrackedObject* pStateTrackedObject, VkStructureType* pAllocateInfoType, VkBaseOutStructure* pAllocateInfo);
 typedef void(VKAPI_PTR* PFN_gvkGetStateTrackedImageLayouts)(const GvkStateTrackedObject* pStateTrackedImage, const VkImageSubresourceRange* pSubresourceRange, VkImageLayout* pImageLayouts);
 typedef void(VKAPI_PTR* PFN_gvkGetStateTrackedMappedMemory)(const GvkStateTrackedObject* pStateTrackedDeviceMemory, VkDeviceSize* pOffset, VkDeviceSize* pSize, VkMemoryMapFlags* pFlags, void** ppData);
+typedef void(VKAPI_PTR* PFN_gvkGetStateTrackedAcclerationStructureBuildInfo)(const GvkStateTrackedObject* pStateTrackedAcclerationStructure, VkAccelerationStructureBuildGeometryInfoKHR* pBuildGeometryInfo, VkAccelerationStructureBuildRangeInfoKHR* pBuildRangeInfos);
 typedef void(VKAPI_PTR* PFN_gvkDisableStateTracker)();
 typedef void(VKAPI_PTR* PFN_gvkEnableStateTracker)();
-
-extern PFN_gvkSetStateTrackerPhysicalDevices pfnGvkSetStateTrackerPhysicalDevices;
-extern PFN_gvkEnumerateStateTrackedObjects pfnGvkEnumerateStateTrackedObjects;
-extern PFN_gvkEnumerateStateTrackedObjectDependencies pfnGvkEnumerateStateTrackedObjectDependencies;
-extern PFN_gvkEnumerateStateTrackedObjectBindings pfnGvkEnumerateStateTrackedObjectBindings;
-extern PFN_gvkEnumerateStateTrackedCommandBufferCmds pfnGvkEnumerateStateTrackedCommandBufferCmds;
-extern PFN_gvkGetStateTrackedObjectInfo pfnGvkGetStateTrackedObjectInfo;
-extern PFN_gvkGetStateTrackedObjectCreateInfo pfnGvkGetStateTrackedObjectCreateInfo;
-extern PFN_gvkGetStateTrackedObjectAllocateInfo pfnGvkGetStateTrackedObjectAllocateInfo;
-extern PFN_gvkGetStateTrackedImageLayouts pfnGvkGetStateTrackedImageLayouts;
-extern PFN_gvkGetStateTrackedMappedMemory pfnGvkGetStateTrackedMappedMemory;
-extern PFN_gvkDisableStateTracker pfnGvkDisableStateTracker;
-extern PFN_gvkEnableStateTracker pfnGvkEnableStateTracker;
 
 #ifdef __cplusplus
 }

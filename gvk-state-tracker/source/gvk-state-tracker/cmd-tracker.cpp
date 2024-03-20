@@ -31,6 +31,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace state_tracker {
 
+void CmdTracker::reset()
+{
+    BasicCmdTracker::reset();
+    mShaderBindingTableBuffers.clear();
+    mImageLayoutTrackers.clear();
+    mBeginRenderPass.reset();
+    mBeginRenderPass2.reset();
+}
+
 const std::vector<const GvkCommandBaseStructure*>& CmdTracker::get_cmds() const
 {
     return mCmds;
@@ -39,6 +48,27 @@ const std::vector<const GvkCommandBaseStructure*>& CmdTracker::get_cmds() const
 const std::unordered_map<VkImage, ImageLayoutTracker>& CmdTracker::get_image_layout_trackers() const
 {
     return mImageLayoutTrackers;
+}
+
+const std::vector<size_t>& CmdTracker::get_build_acceleration_sturcture_cmd_indices() const
+{
+    return mBuildAccelerationStructureCmdIndices;
+}
+
+void CmdTracker::enumerate_dependencies(PFN_gvkEnumerateStateTrackedObjectsCallback pfnCallback, void* pUserData) const
+{
+    CommandBuffer commandBuffer;
+    if (mBeginRenderPass->sType == get_stype<GvkCommandStructureCmdBeginRenderPass>()) {
+        commandBuffer = mBeginRenderPass->commandBuffer;
+    } else if (mBeginRenderPass2->sType == get_stype<GvkCommandStructureCmdBeginRenderPass2>()) {
+        commandBuffer = mBeginRenderPass2->commandBuffer;
+    }
+    if (commandBuffer) {
+        const auto& device = commandBuffer.get<Device>();
+        for (const auto& buffer : mShaderBindingTableBuffers) {
+            Buffer({ device, buffer }).enumerate_dependencies(pfnCallback, pUserData);
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -363,6 +393,50 @@ void CmdTracker::record_vkCmdWaitEvents2(VkCommandBuffer commandBuffer, uint32_t
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Acceleration Structure Cmds
+void CmdTracker::record_vkCmdBuildAccelerationStructuresIndirectKHR(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkDeviceAddress* pIndirectDeviceAddresses, const uint32_t* pIndirectStrides, const uint32_t* const* ppMaxPrimitiveCounts)
+{
+    (void)commandBuffer;
+    (void)infoCount;
+    (void)pInfos;
+    (void)pIndirectDeviceAddresses;
+    (void)pIndirectStrides;
+    (void)ppMaxPrimitiveCounts;
+    assert(false && "Unserviced vkCmd; gvk maintenance required");
+}
+
+void CmdTracker::record_vkCmdBuildAccelerationStructuresKHR(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos)
+{
+    mBuildAccelerationStructureCmdIndices.push_back(mCmds.size());
+    BasicCmdTracker::record_vkCmdBuildAccelerationStructuresKHR(commandBuffer, infoCount, pInfos, ppBuildRangeInfos);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// RayTracing Cmds
+void CmdTracker::record_vkCmdTraceRaysIndirect2KHR(VkCommandBuffer commandBuffer, VkDeviceAddress indirectDeviceAddress)
+{
+    (void)commandBuffer;
+    (void)indirectDeviceAddress;
+    assert(false && "Unserviced vkCmd; gvk maintenance required");
+}
+
+void CmdTracker::record_vkCmdTraceRaysIndirectKHR(VkCommandBuffer commandBuffer, const VkStridedDeviceAddressRegionKHR* pRaygenShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pMissShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pHitShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pCallableShaderBindingTable, VkDeviceAddress indirectDeviceAddress)
+{
+    (void)commandBuffer;
+    (void)pRaygenShaderBindingTable;
+    (void)pMissShaderBindingTable;
+    (void)pHitShaderBindingTable;
+    (void)pCallableShaderBindingTable;
+    (void)indirectDeviceAddress;
+    assert(false && "Unserviced vkCmd; gvk maintenance required");
+}
+
+void CmdTracker::record_vkCmdTraceRaysKHR(VkCommandBuffer commandBuffer, const VkStridedDeviceAddressRegionKHR* pRaygenShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pMissShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pHitShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pCallableShaderBindingTable, uint32_t width, uint32_t height, uint32_t depth)
+{
+    BasicCmdTracker::record_vkCmdTraceRaysKHR(commandBuffer, pRaygenShaderBindingTable, pMissShaderBindingTable, pHitShaderBindingTable, pCallableShaderBindingTable, width, height, depth);
+}
+
 void CmdTracker::record_vkCmdWaitEvents2KHR(VkCommandBuffer commandBuffer, uint32_t eventCount, const VkEvent* pEvents, const VkDependencyInfo* pDependencyInfos)
 {
     record_vkCmdWaitEvents2(commandBuffer, eventCount, pEvents, pDependencyInfos);
@@ -370,8 +444,8 @@ void CmdTracker::record_vkCmdWaitEvents2KHR(VkCommandBuffer commandBuffer, uint3
 
 void CmdTracker::record_image_layout_transition(VkDevice device, VkImage image, const VkImageSubresourceRange& imageSubresourceRange, VkImageLayout imageLayout)
 {
-    // TODO : We should be tracking only image layout deltas, but we're currently
-    //  writing all subresource layouts on queue submission.
+    // TODO : Should be tracking image layout deltas, but currently writing all
+    //  subresource layouts on queue submission.
     auto imageLayoutTrackerItr = mImageLayoutTrackers.find(image);
     if (imageLayoutTrackerItr == mImageLayoutTrackers.end()) {
         Image gvkImage({ device, image });

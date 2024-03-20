@@ -65,5 +65,7 @@ public:
     std::map<std::string, std::string> vkStructureTypes;
 };
 
+std::set<std::string> get_commands_referencing_type(const Manifest& manifest, const std::string& typeName);
+
 } // namespace xml
 } // namespace gvk

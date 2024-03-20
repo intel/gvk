@@ -42,6 +42,7 @@ xml::Command append_return_result_parameter(xml::Command command);
 std::string get_parameter_list(const std::vector<xml::Parameter>& parameters, bool types = true, bool names = true);
 std::string get_extension_vendor(const std::string& str);
 xml::Parameter create_parameter(const std::string& type, const std::string& name);
+xml::Parameter create_const_pointer_parameter(const std::string& type, const std::string& name);
 std::pair<xml::Parameter, xml::Parameter> get_array_parameters(const std::string& countName, const std::string& arrayName, const std::string& unqualifiedType);
 void add_array_members_to_structure(const std::string& unqualifiedType, const std::string& countName, const std::string& arrayName, xml::Structure& structure);
 std::set<std::string> get_inner_scope_compile_guards(const std::set<std::string>& outerScopeCompileGuards, std::set<std::string> innerScopeCompileGuards);

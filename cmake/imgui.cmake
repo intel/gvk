@@ -3,7 +3,7 @@ include_guard()
 
 include(FetchContent)
 
-set(imgui_VERSION b81bd7ed984ce095c20a059dd0f4d527e006998f) # 1.90
+set(imgui_VERSION d6cb3c923d28dcebb2d8d9605ccc7229ccef19eb) # 1.90.1
 FetchContent_Declare(
     imgui
     GIT_REPOSITORY "https://github.com/ocornut/imgui.git"
@@ -31,3 +31,6 @@ gvk_add_static_library(
         "${imgui_SOURCE_DIR}/imgui_tables.cpp"
         "${imgui_SOURCE_DIR}/imgui_widgets.cpp"
 )
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set_source_files_properties("${imgui_SOURCE_DIR}/imgui.cpp" PROPERTIES COMPILE_FLAGS "-Wno-strict-aliasing")
+endif()

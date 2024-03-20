@@ -127,7 +127,6 @@ TEST(DescriptorSet, BasicDescriptorBinding)
 {
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
-    load_gvk_state_tracker_entry_points();
     auto expectedInstanceObjects = get_expected_instance_objects(context);
 
     auto shaderInfo = gvk::get_default<gvk::spirv::ShaderInfo>();
@@ -181,10 +180,10 @@ TEST(DescriptorSet, BasicDescriptorBinding)
     stateTrackedDeviceMemory.handle = (uint64_t)allocationInfo.deviceMemory;
     stateTrackedDeviceMemory.dispatchableHandle = (uint64_t)(VkDevice)context.get_devices()[0];
     VkStructureType allocateInfoType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    pfnGvkGetStateTrackedObjectAllocateInfo(&stateTrackedDeviceMemory, &allocateInfoType, nullptr);
+    gvkGetStateTrackedObjectAllocateInfo(&stateTrackedDeviceMemory, &allocateInfoType, nullptr);
     ASSERT_EQ(allocateInfoType, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
     auto memoryAllocateInfo = gvk::get_default<VkMemoryAllocateInfo>();
-    pfnGvkGetStateTrackedObjectAllocateInfo(&stateTrackedDeviceMemory, &allocateInfoType, (VkBaseOutStructure*)&memoryAllocateInfo);
+    gvkGetStateTrackedObjectAllocateInfo(&stateTrackedDeviceMemory, &allocateInfoType, (VkBaseOutStructure*)&memoryAllocateInfo);
     auto& stateTrackedDeviceMemoryRecord = expectedInstanceObjects[stateTrackedDeviceMemory];
     stateTrackedDeviceMemoryRecord.mStateTrackedObject = stateTrackedDeviceMemory;
     stateTrackedDeviceMemoryRecord.mStateTrackedObjectInfo.flags = GVK_STATE_TRACKED_OBJECT_STATUS_ACTIVE_BIT;
@@ -229,16 +228,16 @@ TEST(DescriptorSet, BasicDescriptorBinding)
     enumerateInfo.pfnCallback = StateTrackerValidationEnumerator::enumerate;
     enumerateInfo.pUserData = &enumerator;
     auto stateTrackedInstance = gvk::get_state_tracked_object(context.get_instance());
-    pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
+    gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
     enumerator.records.clear();
     auto stateTrackedDescriptorSet = gvk::get_state_tracked_object(descriptorSet);
-    pfnGvkEnumerateStateTrackedObjectDependencies(&stateTrackedDescriptorSet, &enumerateInfo);
+    gvkEnumerateStateTrackedObjectDependencies(&stateTrackedDescriptorSet, &enumerateInfo);
     validate(gvk_file_line, expectedDescriptorSetDependencies, enumerator.records);
 
     enumerator.records.clear();
-    pfnGvkEnumerateStateTrackedObjectBindings(&stateTrackedDescriptorSet, &enumerateInfo);
+    gvkEnumerateStateTrackedObjectBindings(&stateTrackedDescriptorSet, &enumerateInfo);
     validate(gvk_file_line, expectedDescriptorSetBindings, enumerator.records);
 }
 
@@ -246,7 +245,6 @@ TEST(DescriptorSet, DescriptorSetResourceLifetime)
 {
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
-    load_gvk_state_tracker_entry_points();
     auto expectedInstanceObjects = get_expected_instance_objects(context);
 
     auto shaderInfo = gvk::get_default<gvk::spirv::ShaderInfo>();
@@ -297,7 +295,7 @@ TEST(DescriptorSet, DescriptorSetResourceLifetime)
     enumerateInfo.pfnCallback = StateTrackerValidationEnumerator::enumerate;
     enumerateInfo.pUserData = &enumerator;
     auto stateTrackedInstance = gvk::get_state_tracked_object(context.get_instance());
-    pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
+    gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
     std::vector<VkDescriptorSet> vkDescriptorSetsToFree(3);
@@ -315,7 +313,7 @@ TEST(DescriptorSet, DescriptorSetResourceLifetime)
     ASSERT_EQ(dispatchTable.gvkFreeDescriptorSets(context.get_devices()[0], descriptorPool, (uint32_t)vkDescriptorSetsToFree.size(), vkDescriptorSetsToFree.data()), VK_SUCCESS);
 
     enumerator.records.clear();
-    pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
+    gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
     for (auto& vkDescriptorSet : vkDescriptorSets) {
@@ -329,7 +327,7 @@ TEST(DescriptorSet, DescriptorSetResourceLifetime)
     ASSERT_EQ(dispatchTable.gvkResetDescriptorPool(context.get_devices()[0], descriptorPool, 0), VK_SUCCESS);
 
     enumerator.records.clear();
-    pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
+    gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
     vkDescriptorSets.resize(descriptorSetAllocateInfo.descriptorSetCount);
@@ -344,7 +342,7 @@ TEST(DescriptorSet, DescriptorSetResourceLifetime)
     }
 
     enumerator.records.clear();
-    pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
+    gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
     for (auto& vkDescriptorSet : vkDescriptorSets) {
@@ -358,6 +356,6 @@ TEST(DescriptorSet, DescriptorSetResourceLifetime)
     descriptorPool.reset();
 
     enumerator.records.clear();
-    pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
+    gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 }

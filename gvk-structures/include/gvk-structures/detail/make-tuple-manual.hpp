@@ -31,9 +31,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <tuple>
 
-#define GVK_STUB_MAKE_TUPLE_DEFINITION(VK_STRUCTURE_TYPE) \
-inline auto make_tuple(const VK_STRUCTURE_TYPE&) { return std::make_tuple(0); }
-
 namespace gvk {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -157,38 +154,38 @@ GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoDecodeH265SessionParametersCreateInfoKHR)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoDecodeInfoKHR)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoDecodeUsageInfoKHR)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeCapabilitiesKHR)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264CapabilitiesEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264DpbSlotInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264FrameSizeEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264GopRemainingFrameInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264NaluSliceInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264PictureInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264ProfileInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264QpEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264QualityLevelPropertiesEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264RateControlInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264RateControlLayerInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264SessionCreateInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264SessionParametersAddInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264SessionParametersCreateInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264SessionParametersFeedbackInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264SessionParametersGetInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265CapabilitiesEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265DpbSlotInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265FrameSizeEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265GopRemainingFrameInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265NaluSliceSegmentInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265PictureInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265ProfileInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265QpEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265QualityLevelPropertiesEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265RateControlInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265RateControlLayerInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265SessionCreateInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265SessionParametersAddInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265SessionParametersCreateInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265SessionParametersFeedbackInfoEXT)
-GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265SessionParametersGetInfoEXT)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264CapabilitiesKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264DpbSlotInfoKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264FrameSizeKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264GopRemainingFrameInfoKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264NaluSliceInfoKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264PictureInfoKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264ProfileInfoKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264QpKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264QualityLevelPropertiesKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264RateControlInfoKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264RateControlLayerInfoKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264SessionCreateInfoKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264SessionParametersAddInfoKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264SessionParametersCreateInfoKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264SessionParametersFeedbackInfoKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH264SessionParametersGetInfoKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265CapabilitiesKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265DpbSlotInfoKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265FrameSizeKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265GopRemainingFrameInfoKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265NaluSliceSegmentInfoKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265PictureInfoKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265ProfileInfoKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265QpKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265QualityLevelPropertiesKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265RateControlInfoKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265RateControlLayerInfoKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265SessionCreateInfoKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265SessionParametersAddInfoKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265SessionParametersCreateInfoKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265SessionParametersFeedbackInfoKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeH265SessionParametersGetInfoKHR)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeInfoKHR)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeQualityLevelInfoKHR)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeQualityLevelPropertiesKHR)
@@ -199,6 +196,7 @@ GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeSessionParametersGetInfoKHR)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEncodeUsageInfoKHR)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoEndCodingInfoKHR)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoFormatPropertiesKHR)
+GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoInlineQueryInfoKHR)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoPictureResourceInfoKHR)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoProfileInfoKHR)
 GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoProfileListInfoKHR)
@@ -222,10 +220,8 @@ inline auto make_tuple(const VkAccelerationStructureBuildGeometryInfoKHR& obj)
         obj.dstAccelerationStructure,
         obj.geometryCount,
         detail::ArrayTupleElementWrapper<VkAccelerationStructureGeometryKHR>{ (size_t)obj.geometryCount, obj.pGeometries },
-        detail::PointerArrayTupleElementWrapper<VkAccelerationStructureGeometryKHR>{ (size_t)obj.geometryCount, obj.ppGeometries }
-        // NOTE : We're ignoring scratchData for comparisons...this can be revisited if
-        //  it becomes necessary to differentiate objects by scratchData...
-        // obj.scratchData
+        detail::PointerArrayTupleElementWrapper<VkAccelerationStructureGeometryKHR>{ (size_t)obj.geometryCount, obj.ppGeometries },
+        obj.scratchData
     );
 }
 

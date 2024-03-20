@@ -16,6 +16,7 @@ set(generatedSourceFiles
     "${generatedSourcePath}/enumerate-state-tracked-objects.cpp"
     "${generatedSourcePath}/get-state-tracked-object-create-info.cpp"
     "${generatedSourcePath}/get-state-tracked-object-info.cpp"
+    "${generatedSourcePath}/set-state-tracked-object-name.cpp"
     "${generatedSourcePath}/state-tracked-handles.cpp"
 )
 set(generatorSourcePath "${CMAKE_CURRENT_LIST_DIR}/generator/")
@@ -23,7 +24,7 @@ gvk_add_code_generator(
     TARGET
         VK_LAYER_INTEL_gvk_state_tracker.generator
     FOLDER
-        "gvk-state-tracker/"
+        "VK_LAYER_INTEL_gvk_state_tracker/"
     LINK_LIBRARIES
         gvk-cppgen
     INCLUDE_DIRECTORIES
@@ -34,6 +35,7 @@ gvk_add_code_generator(
         "${generatorSourcePath}/enumerate-state-tracked-objects.generator.hpp"
         "${generatorSourcePath}/get-state-tracked-object-create-info.generator.hpp"
         "${generatorSourcePath}/get-state-tracked-object-info.generator.hpp"
+        "${generatorSourcePath}/set-state-tracked-object-name.generator.hpp"
         "${generatorSourcePath}/state-tracked-handles.generator.hpp"
     SOURCE_FILES
         "${generatorSourcePath}/main.cpp"
@@ -56,7 +58,7 @@ gvk_add_layer(
     TARGET
         VK_LAYER_INTEL_gvk_state_tracker
     FOLDER
-        "gvk-state-tracker/"
+        "VK_LAYER_INTEL_gvk_state_tracker/"
     LINK_LIBRARIES
         gvk-command-structures
         gvk-reference
@@ -72,6 +74,7 @@ gvk_add_layer(
         "${includePath}/cmd-tracker.hpp"
         "${includePath}/dependency-enumerator.hpp"
         "${includePath}/descriptor.hpp"
+        "${includePath}/device-address-tracker.hpp"
         "${includePath}/image-layout-tracker.hpp"
         "${includePath}/memory-map-info.hpp"
         "${includePath}/object-tracker.hpp"
@@ -79,11 +82,13 @@ gvk_add_layer(
         "${includePath}/thread-safe-unordered-map.hpp"
     SOURCE_FILES
         "${generatedSourceFiles}"
+        "${sourcePath}/acceleration-structure.cpp"
         "${sourcePath}/buffer.cpp"
         "${sourcePath}/cmd-tracker.cpp"
         "${sourcePath}/command-buffer.cpp"
         "${sourcePath}/dependency-enumerator.cpp"
         "${sourcePath}/descriptor-set.cpp"
+        "${sourcePath}/device-address-tracker.cpp"
         "${sourcePath}/device-memory.cpp"
         "${sourcePath}/device.cpp"
         "${sourcePath}/framebuffer.cpp"
@@ -91,14 +96,17 @@ gvk_add_layer(
         "${sourcePath}/image.cpp"
         "${sourcePath}/instance.cpp"
         "${sourcePath}/pipeline.cpp"
+        "${sourcePath}/queue.cpp"
+        "${sourcePath}/semaphore.cpp"
         "${sourcePath}/shader.cpp"
         "${sourcePath}/state-tracked-handle-utilities.cpp"
         "${sourcePath}/state-tracker.cpp"
         "${sourcePath}/swapchain.cpp"
+        "${sourcePath}/validation-cache.cpp"
     DESCRIPTION
         "Intel(R) GPA Utilities for Vulkan* state tracker"
     ENTRY_POINTS
-        gvkSetStateTrackerPhysicalDevices
+        gvkGetStateTrackerPhysicalDevice
         gvkEnumerateStateTrackedObjects
         gvkEnumerateStateTrackedObjectDependencies
         gvkEnumerateStateTrackedObjectBindings
@@ -108,6 +116,7 @@ gvk_add_layer(
         gvkGetStateTrackedObjectAllocateInfo
         gvkGetStateTrackedImageLayouts
         gvkGetStateTrackedMappedMemory
+        gvkGetStateTrackedAcclerationStructureBuildInfo
         gvkDisableStateTracker
         gvkEnableStateTracker
 )
@@ -117,13 +126,13 @@ if(MSVC)
 endif()
 
 ################################################################################
-# VK_LAYER_INTEL_gvk_state_tracker.test
+# VK_LAYER_INTEL_gvk_state_tracker.tests
 set(testsPath "${CMAKE_CURRENT_LIST_DIR}/tests/")
 gvk_add_target_test(
     TARGET
         VK_LAYER_INTEL_gvk_state_tracker
     FOLDER
-        "gvk-state-tracker/"
+        "VK_LAYER_INTEL_gvk_state_tracker/"
     LINK_LIBRARIES
         gvk-handles
         gvk-math

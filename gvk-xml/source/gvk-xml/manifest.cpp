@@ -341,5 +341,26 @@ Manifest::Manifest(const tinyxml2::XMLDocument& xmlDocument, const std::string& 
     }
 }
 
+std::set<std::string> get_commands_referencing_type(const Manifest& manifest, const std::string& typeName)
+{
+    std::set<std::string> structures;
+    for (const auto& structureItr : manifest.structures) {
+        for (const auto& member : structureItr.second.members) {
+            if (member.unqualifiedType == typeName) {
+                structures.insert(structureItr.second.name);
+            }
+        }
+    }
+    std::set<std::string> commands;
+    for (const auto& commandItr : manifest.commands) {
+        for (const auto& parameter : commandItr.second.parameters) {
+            if (parameter.unqualifiedType == typeName || structures.count(parameter.unqualifiedType)) {
+                commands.insert(commandItr.second.name);
+            }
+        }
+    }
+    return commands;
+}
+
 } // namespace xml
 } // namespace gvk

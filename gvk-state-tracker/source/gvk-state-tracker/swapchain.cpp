@@ -34,8 +34,20 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace state_tracker {
 
+// NOTE : Cache the info arg so any changes made by this layer, or layers down
+//  the chain, can be reverted before returning control to the application.
+thread_local VkSwapchainCreateInfoKHR tlApplicationSwapchainCreateInfo;
+VkResult StateTracker::pre_vkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain, VkResult gvkResult)
+{
+    assert(pCreateInfo);
+    tlApplicationSwapchainCreateInfo = *pCreateInfo;
+    return BasicStateTracker::pre_vkCreateSwapchainKHR(device, pCreateInfo, pAllocator, pSwapchain, gvkResult);
+}
+
 VkResult StateTracker::post_vkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain, VkResult gvkResult)
 {
+    assert(pCreateInfo);
+    gvkResult = BasicStateTracker::post_vkCreateSwapchainKHR(device, pCreateInfo, pAllocator, pSwapchain, gvkResult);
     if (gvkResult == VK_SUCCESS) {
         Device gvkDevice = device;
         assert(gvkDevice);
@@ -61,7 +73,7 @@ VkResult StateTracker::post_vkCreateSwapchainKHR(VkDevice device, const VkSwapch
         uint32_t imageCount = 0;
         gvkResult = dispatchTable.gvkGetSwapchainImagesKHR(gvkDevice, *pSwapchain, &imageCount, nullptr);
         assert(gvkResult == VK_SUCCESS);
-        std::vector<VkImage> vkImages(imageCount);
+        std::vector<VkImage> vkImages(imageCount); // TODO : Scratchpad allocator
         gvkResult = dispatchTable.gvkGetSwapchainImagesKHR(gvkDevice, *pSwapchain, &imageCount, vkImages.data());
         assert(gvkResult == VK_SUCCESS);
         for (auto vkImage : vkImages) {
@@ -89,19 +101,35 @@ VkResult StateTracker::post_vkCreateSwapchainKHR(VkDevice device, const VkSwapch
         }
         gvkDevice.mReference.get_obj().mSwapchainKHRTracker.insert(gvkSwapchain);
     }
+    *const_cast<VkSwapchainCreateInfoKHR*>(pCreateInfo) = tlApplicationSwapchainCreateInfo;
     return gvkResult;
 }
 
 VkResult StateTracker::post_vkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex, VkResult gvkResult)
 {
-    (void)swapchain;
     (void)timeout;
-    (void)fence;
-    (void)pImageIndex;
-    Semaphore gvkSemphore({ device, semaphore });
-    assert(gvkSemphore);
-    gvkSemphore.mReference.get_obj().mSignaled = VK_TRUE;
-    gvkSemphore.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKER_OBJECT_STATUS_SIGNALED_BIT;
+    assert(pImageIndex);
+
+    const auto& dispatchTableItr = layer::Registry::get().VkDeviceDispatchTables.find(layer::get_dispatch_key(device));
+    assert(dispatchTableItr != layer::Registry::get().VkDeviceDispatchTables.end());
+    const auto& dispatchTable = dispatchTableItr->second;
+    assert(dispatchTable.gvkGetSwapchainImagesKHR);
+
+    uint32_t imageCount = 0;
+    gvkResult = dispatchTable.gvkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr);
+    assert(gvkResult == VK_SUCCESS);
+    std::vector<VkImage> images(imageCount); // TODO : Scratchpad allocator
+    gvkResult = dispatchTable.gvkGetSwapchainImagesKHR(device, swapchain, &imageCount, images.data());
+    assert(*pImageIndex < imageCount);
+    Image gvkImage({ device, images[*pImageIndex] });
+    assert(gvkImage);
+
+    gvkImage.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKER_OBJECT_STATUS_ACQUIRED_BIT;
+    gvkImage.mReference.get_obj().mSwapchainAcquisitionFence = Fence({ device, fence });
+    gvkImage.mReference.get_obj().mSwapchainAcquisitionSemaphore = Semaphore({ device, semaphore });
+    if (gvkImage.mReference.get_obj().mSwapchainAcquisitionSemaphore) {
+        gvkImage.mReference.get_obj().mSwapchainAcquisitionSemaphore.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKER_OBJECT_STATUS_SIGNALED_BIT;
+    }
     return gvkResult;
 }
 
@@ -109,11 +137,50 @@ VkResult StateTracker::post_vkAcquireNextImage2KHR(VkDevice device, const VkAcqu
 {
     (void)pImageIndex;
     assert(pAcquireInfo);
-    Semaphore gvkSemphore({ device, pAcquireInfo->semaphore });
-    assert(gvkSemphore);
-    gvkSemphore.mReference.get_obj().mSignaled = VK_TRUE;
-    gvkSemphore.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKER_OBJECT_STATUS_SIGNALED_BIT;
+    assert(pImageIndex);
+
+    const auto& dispatchTableItr = layer::Registry::get().VkDeviceDispatchTables.find(layer::get_dispatch_key(device));
+    assert(dispatchTableItr != layer::Registry::get().VkDeviceDispatchTables.end());
+    const auto& dispatchTable = dispatchTableItr->second;
+    assert(dispatchTable.gvkGetSwapchainImagesKHR);
+
+    uint32_t imageCount = 0;
+    gvkResult = dispatchTable.gvkGetSwapchainImagesKHR(device, pAcquireInfo->swapchain, &imageCount, nullptr);
+    assert(gvkResult == VK_SUCCESS);
+    std::vector<VkImage> images(imageCount); // TODO : Scratchpad allocator
+    gvkResult = dispatchTable.gvkGetSwapchainImagesKHR(device, pAcquireInfo->swapchain, &imageCount, images.data());
+    assert(*pImageIndex < imageCount);
+    Image gvkImage({ device, images[*pImageIndex] });
+    assert(gvkImage);
+
+    gvkImage.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKER_OBJECT_STATUS_ACQUIRED_BIT;
+    gvkImage.mReference.get_obj().mSwapchainAcquisitionFence = Fence({ device, pAcquireInfo->fence });
+    gvkImage.mReference.get_obj().mSwapchainAcquisitionSemaphore = Semaphore({ device, pAcquireInfo->semaphore });
+    if (gvkImage.mReference.get_obj().mSwapchainAcquisitionSemaphore) {
+        gvkImage.mReference.get_obj().mSwapchainAcquisitionSemaphore.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKER_OBJECT_STATUS_SIGNALED_BIT;
+    }
     return gvkResult;
+}
+
+VkResult StateTracker::post_vkWaitForPresentKHR(VkDevice device, VkSwapchainKHR swapchain, uint64_t presentId, uint64_t timeout, VkResult gvkResult)
+{
+    (void)device;
+    (void)swapchain;
+    (void)presentId;
+    (void)timeout;
+    (void)gvkResult;
+    assert(false && "VK_LAYER_INTEL_gvk_state_tracker vkWaitForPresentKHR() unserviced; gvk maintenance required");
+    return VK_ERROR_FEATURE_NOT_PRESENT;
+}
+
+VkResult StateTracker::post_vkLatencySleepNV(VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepInfoNV* pSleepInfo, VkResult gvkResult)
+{
+    (void)device;
+    (void)swapchain;
+    (void)pSleepInfo;
+    (void)gvkResult;
+    assert(false && "VK_LAYER_INTEL_gvk_state_tracker vkLatencySleepNV() unserviced; gvk maintenance required");
+    return VK_ERROR_FEATURE_NOT_PRESENT;
 }
 
 void StateTracker::post_vkDestroySwapchainKHR(VkDevice device, VkSwapchainKHR swapchain, const VkAllocationCallbacks* pAllocator)
