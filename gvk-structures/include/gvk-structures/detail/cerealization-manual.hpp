@@ -30,10 +30,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-structures/detail/cerealization-utilities.hpp"
 #include "gvk-structures/detail/get-count.hpp"
 
-#define GVK_STUB_CEREALIZATION_FUNCTIONS(VK_STRUCTURE_TYPE) \
-template <typename ArchiveType> inline void save(ArchiveType&, const VK_STRUCTURE_TYPE&) { } \
-template <typename ArchiveType> inline void load(ArchiveType&, VK_STRUCTURE_TYPE&) { }
-
 namespace cereal {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -283,38 +279,38 @@ GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoDecodeH265SessionParametersCreateInfoKHR
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoDecodeInfoKHR)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoDecodeUsageInfoKHR)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeCapabilitiesKHR)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264CapabilitiesEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264DpbSlotInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264FrameSizeEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264GopRemainingFrameInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264NaluSliceInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264PictureInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264ProfileInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264QpEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264QualityLevelPropertiesEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264RateControlInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264RateControlLayerInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264SessionCreateInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264SessionParametersAddInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264SessionParametersCreateInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264SessionParametersFeedbackInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264SessionParametersGetInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265CapabilitiesEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265DpbSlotInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265FrameSizeEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265GopRemainingFrameInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265NaluSliceSegmentInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265PictureInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265ProfileInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265QpEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265QualityLevelPropertiesEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265RateControlInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265RateControlLayerInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265SessionCreateInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265SessionParametersAddInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265SessionParametersCreateInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265SessionParametersFeedbackInfoEXT)
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265SessionParametersGetInfoEXT)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264CapabilitiesKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264DpbSlotInfoKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264FrameSizeKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264GopRemainingFrameInfoKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264NaluSliceInfoKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264PictureInfoKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264ProfileInfoKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264QpKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264QualityLevelPropertiesKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264RateControlInfoKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264RateControlLayerInfoKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264SessionCreateInfoKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264SessionParametersAddInfoKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264SessionParametersCreateInfoKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264SessionParametersFeedbackInfoKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH264SessionParametersGetInfoKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265CapabilitiesKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265DpbSlotInfoKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265FrameSizeKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265GopRemainingFrameInfoKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265NaluSliceSegmentInfoKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265PictureInfoKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265ProfileInfoKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265QpKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265QualityLevelPropertiesKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265RateControlInfoKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265RateControlLayerInfoKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265SessionCreateInfoKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265SessionParametersAddInfoKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265SessionParametersCreateInfoKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265SessionParametersFeedbackInfoKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeH265SessionParametersGetInfoKHR)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeInfoKHR)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeQualityLevelInfoKHR)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeQualityLevelPropertiesKHR)
@@ -325,6 +321,7 @@ GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeSessionParametersGetInfoKHR)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEncodeUsageInfoKHR)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoEndCodingInfoKHR)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoFormatPropertiesKHR)
+GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoInlineQueryInfoKHR)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoPictureResourceInfoKHR)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoProfileInfoKHR)
 GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoProfileListInfoKHR)
@@ -349,7 +346,7 @@ inline void save(ArchiveType& archive, const VkAccelerationStructureBuildGeometr
     archive(obj.geometryCount);
     gvk::detail::cerealize_dynamic_array(archive, obj.geometryCount, obj.pGeometries);
     gvk::detail::cerealize_dynamic_pointer_array(archive, obj.geometryCount, obj.ppGeometries);
-    // NOTE : Not serializing scratchData...this can be revisited if it becomes necessary
+    archive(obj.scratchData);
 }
 
 template <typename ArchiveType>
@@ -365,8 +362,7 @@ inline void load(ArchiveType& archive, VkAccelerationStructureBuildGeometryInfoK
     archive(obj.geometryCount);
     obj.pGeometries = gvk::detail::decerealize_dynamic_array<VkAccelerationStructureGeometryKHR>(archive);
     obj.ppGeometries = gvk::detail::decerealize_dynamic_pointer_array<VkAccelerationStructureGeometryKHR>(archive);
-    // NOTE : Not serializing scratchData...this can be revisited if it becomes necessary
-    obj.scratchData = { };
+    archive(obj.scratchData);
 }
 
 template <typename ArchiveType>

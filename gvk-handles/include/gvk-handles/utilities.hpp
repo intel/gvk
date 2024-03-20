@@ -48,6 +48,19 @@ Gets the indices of phyiscal device memory types compatible with specified VkMem
 */
 void get_compatible_memory_type_indices(const PhysicalDevice& physicalDevice, uint32_t memoryTypeBits, VkMemoryPropertyFlags memoryPropertyFlags, uint32_t* pMemoryTypeCount, uint32_t* pMemoryTypeIndices);
 
+/*
+Gets the indices of phyiscal device memory types compatible with specified VkMemoryPropertyFlags
+@param [in] pPhysicalDeviceMemoryProperties A pointer to VkPhysicalDeviceMemoryProperties to use when selecting memory types
+@param [in] memoryTypeBits A bitmask with one bit set for each memory type to check for compatibility
+    @note This is generally expected to be the memoryTypeBits member of a resource's VkMemoryRequirements
+@param [in] memoryPropertyFlags a bitmask of required memory properties
+@param [in,out] pMemoryTypeCount The number of compatible memory type indices
+    @note If pMemoryTypeIndices is null, pMemoryTypeCount will be populated with the number of compatible memory type indices
+    @note If pMemoryTypeIndices is not null, pMemoryTypeCount indicates the max number of compatible memory type indices to write to pMemoryTypeIndices
+@param [out] pMemoryTypeIndices The indices of compatible memory types
+*/
+void get_compatible_memory_type_indices(const VkPhysicalDeviceMemoryProperties* pPhysicalDeviceMemoryProperties, uint32_t memoryTypeBits, VkMemoryPropertyFlags memoryPropertyFlags, uint32_t* pMemoryTypeCount, uint32_t* pMemoryTypeIndices);
+
 /**
 Gets the number of mip levels for an image with a specified VkExtent3D
 @param [in] imageExtent The VkExtent3D of the image to get the specified mip level for

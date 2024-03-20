@@ -86,8 +86,6 @@ protected:
     VkResult create_devices(const VkDeviceCreateInfo* pDeviceCreateInfo, const VkAllocationCallbacks*) override final;
 };
 
-void load_gvk_state_tracker_entry_points();
-
 class ObjectRecord final
 {
 public:
@@ -96,7 +94,7 @@ public:
     template <typename CreateInfoType>
     inline ObjectRecord(const GvkStateTrackedObject& stateTrackedObject, const CreateInfoType& createInfo, GvkStateTrackedObjectStatusFlags statusFlags)
         : mStateTrackedObject { stateTrackedObject }
-        , mStateTrackedObjectInfo { statusFlags }
+        , mStateTrackedObjectInfo { statusFlags, nullptr }
     {
         if constexpr (std::is_same_v<CreateInfoType, VkInstanceCreateInfo>) {
             mInstanceCreateInfo = createInfo;
@@ -177,130 +175,130 @@ public:
     {
         assert(pStateTrackedObject);
         mStateTrackedObject = *pStateTrackedObject;
-        pfnGvkGetStateTrackedObjectInfo(pStateTrackedObject, &mStateTrackedObjectInfo);
+        gvkGetStateTrackedObjectInfo(pStateTrackedObject, &mStateTrackedObjectInfo);
         if (pStateTrackedObject->type != VK_OBJECT_TYPE_PHYSICAL_DEVICE) {
             VkStructureType createInfoStructureType { };
-            pfnGvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, nullptr);
+            gvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, nullptr);
             switch (createInfoStructureType) {
             case gvk::get_stype<VkApplicationInfo>(): {
                 // NOOP :
             } break;
             case gvk::get_stype<VkInstanceCreateInfo>(): {
                 VkInstanceCreateInfo instanceCreateInfo { };
-                pfnGvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&instanceCreateInfo);
+                gvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&instanceCreateInfo);
                 mInstanceCreateInfo = instanceCreateInfo;
             } break;
             case gvk::get_stype<VkDeviceCreateInfo>(): {
                 VkDeviceCreateInfo deviceCreateInfo { };
-                pfnGvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&deviceCreateInfo);
+                gvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&deviceCreateInfo);
                 mDeviceCreateInfo = deviceCreateInfo;
             } break;
             case gvk::get_stype<VkDeviceQueueCreateInfo>(): {
                 VkDeviceQueueCreateInfo deviceQueueCreateInfo { };
-                pfnGvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&deviceQueueCreateInfo);
+                gvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&deviceQueueCreateInfo);
                 mDeviceQueueCreateInfo = deviceQueueCreateInfo;
             } break;
             case gvk::get_stype<VkCommandPoolCreateInfo>(): {
                 VkCommandPoolCreateInfo commandPoolCreateInfo { };
-                pfnGvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&commandPoolCreateInfo);
+                gvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&commandPoolCreateInfo);
                 mCommandPoolCreateInfo = commandPoolCreateInfo;
             } break;
             case gvk::get_stype<VkCommandBufferAllocateInfo>(): {
                 VkCommandBufferAllocateInfo commandBufferAllocateInfo { };
-                pfnGvkGetStateTrackedObjectAllocateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&commandBufferAllocateInfo);
+                gvkGetStateTrackedObjectAllocateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&commandBufferAllocateInfo);
                 mCommandBufferAllocateInfo = commandBufferAllocateInfo;
             } break;
             case gvk::get_stype<VkShaderModuleCreateInfo>(): {
                 VkShaderModuleCreateInfo shaderModuleCreateInfo { };
-                pfnGvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&shaderModuleCreateInfo);
+                gvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&shaderModuleCreateInfo);
                 mShaderModuleCreateInfo = shaderModuleCreateInfo;
             } break;
             case gvk::get_stype<VkDescriptorSetLayoutCreateInfo>(): {
                 VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo { };
-                pfnGvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&descriptorSetLayoutCreateInfo);
+                gvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&descriptorSetLayoutCreateInfo);
                 mDescriptorSetLayoutCreateInfo = descriptorSetLayoutCreateInfo;
             } break;
             case gvk::get_stype<VkRenderPassCreateInfo2>(): {
                 VkRenderPassCreateInfo2 renderPassCreateInfo2 { };
-                pfnGvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&renderPassCreateInfo2);
+                gvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&renderPassCreateInfo2);
                 mRenderPassCreateInfo2 = renderPassCreateInfo2;
             } break;
             case gvk::get_stype<VkPipelineLayoutCreateInfo>(): {
                 VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo { };
-                pfnGvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&pipelineLayoutCreateInfo);
+                gvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&pipelineLayoutCreateInfo);
                 mPipelineLayoutCreateInfo = pipelineLayoutCreateInfo;
             } break;
             case gvk::get_stype<VkComputePipelineCreateInfo>(): {
                 VkComputePipelineCreateInfo computePipelineCreateInfo { };
-                pfnGvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&computePipelineCreateInfo);
+                gvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&computePipelineCreateInfo);
                 mComputePipelineCreateInfo = computePipelineCreateInfo;
             } break;
             case gvk::get_stype<VkGraphicsPipelineCreateInfo>(): {
                 VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo { };
-                pfnGvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&graphicsPipelineCreateInfo);
+                gvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&graphicsPipelineCreateInfo);
                 mGraphicsPipelineCreateInfo = graphicsPipelineCreateInfo;
             } break;
             case gvk::get_stype<VkBufferCreateInfo>(): {
                 VkBufferCreateInfo bufferCreateInfo { };
-                pfnGvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&bufferCreateInfo);
+                gvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&bufferCreateInfo);
                 mBufferCreateInfo = bufferCreateInfo;
             } break;
             case gvk::get_stype<VkImageCreateInfo>(): {
                 VkImageCreateInfo imageCreateInfo { };
-                pfnGvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&imageCreateInfo);
+                gvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&imageCreateInfo);
                 mImageCreateInfo = imageCreateInfo;
             } break;
             case gvk::get_stype<VkImageViewCreateInfo>(): {
                 VkImageViewCreateInfo imageViewCreateInfo { };
-                pfnGvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&imageViewCreateInfo);
+                gvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&imageViewCreateInfo);
                 mImageViewCreateInfo = imageViewCreateInfo;
             } break;
             case gvk::get_stype<VkMemoryAllocateInfo>(): {
                 VkMemoryAllocateInfo memoryAllocateInfo { };
-                pfnGvkGetStateTrackedObjectAllocateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&memoryAllocateInfo);
+                gvkGetStateTrackedObjectAllocateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&memoryAllocateInfo);
                 mMemoryAllocateInfo = memoryAllocateInfo;
             } break;
             case gvk::get_stype<VkDescriptorPoolCreateInfo>(): {
                 VkDescriptorPoolCreateInfo descriptorPoolCreateInfo { };
-                pfnGvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&descriptorPoolCreateInfo);
+                gvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&descriptorPoolCreateInfo);
                 mDescriptorPoolCreateInfo = descriptorPoolCreateInfo;
             } break;
             case gvk::get_stype<VkDescriptorSetAllocateInfo>(): {
                 VkDescriptorSetAllocateInfo descriptorAllocateInfo { };
-                pfnGvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&descriptorAllocateInfo);
+                gvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&descriptorAllocateInfo);
                 mDescriptorSetAllocateInfo = descriptorAllocateInfo;
             } break;
             case gvk::get_stype<VkFenceCreateInfo>(): {
                 VkFenceCreateInfo fenceCreateInfo { };
-                pfnGvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&fenceCreateInfo);
+                gvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&fenceCreateInfo);
                 mFenceCreateInfo = fenceCreateInfo;
             } break;
             case gvk::get_stype<VkSemaphoreCreateInfo>(): {
                 VkSemaphoreCreateInfo semaphoreCreateInfo { };
-                pfnGvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&semaphoreCreateInfo);
+                gvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&semaphoreCreateInfo);
                 mSemaphoreCreateInfo = semaphoreCreateInfo;
             } break;
             case gvk::get_stype<VkFramebufferCreateInfo>(): {
                 VkFramebufferCreateInfo framebufferCreateInfo { };
-                pfnGvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&framebufferCreateInfo);
+                gvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&framebufferCreateInfo);
                 mFramebufferCreateInfo = framebufferCreateInfo;
             } break;
             case gvk::get_stype<VkSwapchainCreateInfoKHR>(): {
                 VkSwapchainCreateInfoKHR swapchainCreateInfo { };
-                pfnGvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&swapchainCreateInfo);
+                gvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&swapchainCreateInfo);
                 mSwapchainCreateInfo = swapchainCreateInfo;
             } break;
 #ifdef VK_USE_PLATFORM_XLIB_KHR
             case gvk::get_stype<VkXlibSurfaceCreateInfoKHR>(): {
                 VkXlibSurfaceCreateInfoKHR xlibSurfaceCreateInfo { };
-                pfnGvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&xlibSurfaceCreateInfo);
+                gvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&xlibSurfaceCreateInfo);
                 mXlibSurfaceCreateInfo = xlibSurfaceCreateInfo;
             } break;
 #endif
 #ifdef VK_USE_PLATFORM_WIN32_KHR
             case gvk::get_stype<VkWin32SurfaceCreateInfoKHR>(): {
                 VkWin32SurfaceCreateInfoKHR win32SurfaceCreateInfo { };
-                pfnGvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&win32SurfaceCreateInfo);
+                gvkGetStateTrackedObjectCreateInfo(pStateTrackedObject, &createInfoStructureType, (VkBaseOutStructure*)&win32SurfaceCreateInfo);
                 mWin32SurfaceCreateInfo = win32SurfaceCreateInfo;
             } break;
 #endif
@@ -500,11 +498,11 @@ template <typename ExpectedCreateInfoStructureType>
 inline void validate_state_tracked_create_info(const ExpectedCreateInfoStructureType& expectedCreateInfo, const GvkStateTrackedObject& stateTrackedObject)
 {
     VkStructureType actualCreateInfoStructureType { };
-    pfnGvkGetStateTrackedObjectCreateInfo(&stateTrackedObject, &actualCreateInfoStructureType, nullptr);
+    gvkGetStateTrackedObjectCreateInfo(&stateTrackedObject, &actualCreateInfoStructureType, nullptr);
     if (actualCreateInfoStructureType) {
         ASSERT_EQ(actualCreateInfoStructureType, gvk::get_stype<ExpectedCreateInfoStructureType>());
         ExpectedCreateInfoStructureType actualCreateInfo { };
-        pfnGvkGetStateTrackedObjectCreateInfo(&stateTrackedObject, &actualCreateInfoStructureType, (VkBaseOutStructure*)&actualCreateInfo);
+        gvkGetStateTrackedObjectCreateInfo(&stateTrackedObject, &actualCreateInfoStructureType, (VkBaseOutStructure*)&actualCreateInfo);
         ASSERT_EQ(actualCreateInfoStructureType, gvk::get_stype<ExpectedCreateInfoStructureType>());
         ASSERT_EQ(actualCreateInfo.sType, gvk::get_stype<ExpectedCreateInfoStructureType>());
         auto printerFlags = gvk::Printer::Default & ~gvk::Printer::EnumValue;
@@ -523,6 +521,7 @@ inline void validate(const std::string& message, const std::map<GvkStateTrackedO
         const auto& expectedStateTrackedObject = expectedRecordItr.first;
         const auto& expectedStateTrackedObjectRecord = expectedRecordItr.second;
         const auto& actualStateTrackedObjectItr = actualRecords.find(expectedStateTrackedObject);
+        // TODO : Once tests are passing everywhere, remove this check entirely...
         // if (expectedStateTrackedObject.type != VK_OBJECT_TYPE_PHYSICAL_DEVICE) {
             auto printerFlags = gvk::Printer::Default & ~gvk::Printer::EnumValue;
             if (actualStateTrackedObjectItr == actualRecords.end()) {

@@ -35,13 +35,20 @@ void get_compatible_memory_type_indices(const PhysicalDevice& physicalDevice, ui
 {
     assert(physicalDevice);
     assert(pMemoryTypeCount);
-    uint32_t memoryTypeCount = 0;
     const auto& dispatchTable = physicalDevice.get<DispatchTable>();
     assert(dispatchTable.gvkGetPhysicalDeviceMemoryProperties);
-    VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties { };
+    VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties{ };
     dispatchTable.gvkGetPhysicalDeviceMemoryProperties(physicalDevice, &physicalDeviceMemoryProperties);
-    for (uint32_t i = 0; i < physicalDeviceMemoryProperties.memoryTypeCount; ++i) {
-        if (memoryTypeBits & (1 << i) && (physicalDeviceMemoryProperties.memoryTypes[i].propertyFlags & memoryPropertyFlags) == memoryPropertyFlags) {
+    get_compatible_memory_type_indices(&physicalDeviceMemoryProperties, memoryTypeBits, memoryPropertyFlags, pMemoryTypeCount, pMemoryTypeIndices);
+}
+
+void get_compatible_memory_type_indices(const VkPhysicalDeviceMemoryProperties* pPhysicalDeviceMemoryProperties, uint32_t memoryTypeBits, VkMemoryPropertyFlags memoryPropertyFlags, uint32_t* pMemoryTypeCount, uint32_t* pMemoryTypeIndices)
+{
+    assert(pPhysicalDeviceMemoryProperties);
+    assert(pMemoryTypeCount);
+    uint32_t memoryTypeCount = 0;
+    for (uint32_t i = 0; i < pPhysicalDeviceMemoryProperties->memoryTypeCount; ++i) {
+        if (memoryTypeBits & (1 << i) && (pPhysicalDeviceMemoryProperties->memoryTypes[i].propertyFlags & memoryPropertyFlags) == memoryPropertyFlags) {
             if (++memoryTypeCount <= *pMemoryTypeCount && pMemoryTypeIndices) {
                 *pMemoryTypeIndices = i;
                 pMemoryTypeIndices += 1;
@@ -60,7 +67,11 @@ uint32_t get_mip_level_count(const VkExtent3D& imageExtent)
 
 VkExtent3D get_mip_level_extent(const VkExtent3D& imageExtent, uint32_t mipLevel)
 {
-    return { imageExtent.width >> mipLevel, imageExtent.height >> mipLevel, imageExtent.depth >> mipLevel };
+    return {
+        std::max<uint32_t>(1, imageExtent.width >> mipLevel),
+        std::max<uint32_t>(1, imageExtent.height >> mipLevel),
+        std::max<uint32_t>(1, imageExtent.depth >> mipLevel)
+    };
 }
 
 VkSampleCountFlagBits get_max_framebuffer_sample_count(const PhysicalDevice& physicalDevice, VkBool32 color, VkBool32 depth, VkBool32 stencil)

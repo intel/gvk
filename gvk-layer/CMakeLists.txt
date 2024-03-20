@@ -49,6 +49,7 @@ gvk_add_static_library(
         "gvk-layer/"
     LINK_LIBRARIES
         gvk-runtime
+        gvk-structures
     INCLUDE_DIRECTORIES
         "${generatedIncludeDirectory}"
         "${includeDirectory}"

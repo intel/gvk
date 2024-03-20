@@ -26,14 +26,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "state-tracker-test-utilities.hpp"
 
-PFN_gvkEnumerateStateTrackedObjects pfnGvkEnumerateStateTrackedObjects;
-PFN_gvkEnumerateStateTrackedObjectDependencies pfnGvkEnumerateStateTrackedObjectDependencies;
-PFN_gvkEnumerateStateTrackedObjectBindings pfnGvkEnumerateStateTrackedObjectBindings;
-PFN_gvkGetStateTrackedObjectInfo pfnGvkGetStateTrackedObjectInfo;
-PFN_gvkGetStateTrackedObjectCreateInfo pfnGvkGetStateTrackedObjectCreateInfo;
-PFN_gvkGetStateTrackedObjectAllocateInfo pfnGvkGetStateTrackedObjectAllocateInfo;
-PFN_gvkGetStateTrackedImageLayouts pfnGvkGetStateTrackedImageLayouts;
-PFN_gvkSetStateTrackerPhysicalDevices pfnGvkSetStateTrackerPhysicalDevices;
+// TODO : Straighten out layer interfaces...
+#define VK_LAYER_INTEL_gvk_state_tracker_hpp_IMPLEMENTATION
+#include "VK_LAYER_INTEL_gvk_state_tracker.hpp"
 
 namespace gvk {
 
@@ -105,23 +100,8 @@ VkResult StateTrackerValidationContext::create(StateTrackerValidationContext* pC
 
 VkResult StateTrackerValidationContext::create_devices(const VkDeviceCreateInfo* pDeviceCreateInfo, const VkAllocationCallbacks*)
 {
-    uint32_t physicalDeviceCount = 0;
-    mInstance.get<gvk::DispatchTable>().gvkEnumeratePhysicalDevices(mInstance, &physicalDeviceCount, nullptr);
-    std::vector<VkPhysicalDevice> vkPhysicalDevices(physicalDeviceCount);
-    mInstance.get<gvk::DispatchTable>().gvkEnumeratePhysicalDevices(mInstance, &physicalDeviceCount, vkPhysicalDevices.data());
-    std::vector<VkPhysicalDeviceProperties> physicalDeviceProperties(physicalDeviceCount);
-    for (uint32_t i = 0; i < physicalDeviceCount; ++i) {
-        mInstance.get<gvk::DispatchTable>().gvkGetPhysicalDeviceProperties(vkPhysicalDevices[i], &physicalDeviceProperties[i]);
-    }
-
-    auto dlStateTracker = gvk_dlopen(VK_LAYER_INTEL_GVK_STATE_TRACKER_NAME);
-    assert(dlStateTracker);
-    pfnGvkSetStateTrackerPhysicalDevices = (PFN_gvkSetStateTrackerPhysicalDevices)gvk_dlsym(dlStateTracker, "gvkSetStateTrackerPhysicalDevices");
-    assert(pfnGvkSetStateTrackerPhysicalDevices);
-    pfnGvkSetStateTrackerPhysicalDevices(mInstance, physicalDeviceCount, vkPhysicalDevices.data(), physicalDeviceProperties.data());
-    gvk_dlclose(dlStateTracker);
-
     assert(pDeviceCreateInfo);
+    gvk::state_tracker::load_layer_entry_points();
     auto physicalDeviceSynchronization2Features = gvk::get_default<VkPhysicalDeviceSynchronization2Features>();
     auto availablePhysicalDeviceFeatures = gvk::get_default<VkPhysicalDeviceFeatures2>();
     availablePhysicalDeviceFeatures.pNext = &physicalDeviceSynchronization2Features;
@@ -136,25 +116,4 @@ VkResult StateTrackerValidationContext::create_devices(const VkDeviceCreateInfo*
     deviceCreateInfo.pNext = &enabledPhysicalDeviceFeatures;
     mDevices.push_back({ });
     return gvk::Device::create(get_physical_devices()[0], &deviceCreateInfo, nullptr, &mDevices.back());
-}
-
-void load_gvk_state_tracker_entry_points()
-{
-    auto dlStateTracker = gvk_dlopen(VK_LAYER_INTEL_GVK_STATE_TRACKER_NAME);
-    assert(dlStateTracker);
-    pfnGvkEnumerateStateTrackedObjects = (PFN_gvkEnumerateStateTrackedObjects)gvk_dlsym(dlStateTracker, "gvkEnumerateStateTrackedObjects");
-    assert(pfnGvkEnumerateStateTrackedObjects);
-    pfnGvkEnumerateStateTrackedObjectDependencies = (PFN_gvkEnumerateStateTrackedObjectDependencies)gvk_dlsym(dlStateTracker, "gvkEnumerateStateTrackedObjectDependencies");
-    assert(pfnGvkEnumerateStateTrackedObjectDependencies);
-    pfnGvkEnumerateStateTrackedObjectBindings = (PFN_gvkEnumerateStateTrackedObjectBindings)gvk_dlsym(dlStateTracker, "gvkEnumerateStateTrackedObjectBindings");
-    assert(pfnGvkEnumerateStateTrackedObjectBindings);
-    pfnGvkGetStateTrackedObjectInfo = (PFN_gvkGetStateTrackedObjectInfo)gvk_dlsym(dlStateTracker, "gvkGetStateTrackedObjectInfo");
-    assert(pfnGvkGetStateTrackedObjectInfo);
-    pfnGvkGetStateTrackedObjectCreateInfo = (PFN_gvkGetStateTrackedObjectCreateInfo)gvk_dlsym(dlStateTracker, "gvkGetStateTrackedObjectCreateInfo");
-    assert(pfnGvkGetStateTrackedObjectCreateInfo);
-    pfnGvkGetStateTrackedObjectAllocateInfo = (PFN_gvkGetStateTrackedObjectAllocateInfo)gvk_dlsym(dlStateTracker, "gvkGetStateTrackedObjectAllocateInfo");
-    assert(pfnGvkGetStateTrackedObjectAllocateInfo);
-    pfnGvkGetStateTrackedImageLayouts = (PFN_gvkGetStateTrackedImageLayouts)gvk_dlsym(dlStateTracker, "gvkGetStateTrackedImageLayouts");
-    assert(pfnGvkGetStateTrackedImageLayouts);
-    gvk_dlclose(dlStateTracker);
 }

@@ -48,6 +48,7 @@ public:
         }
         if (handle.name == "VkDevice") {
             add_member(MemberInfo("ObjectTracker<Queue>", "mQueueTracker"));
+            add_member(MemberInfo("DeviceAddressTracker", "mDeviceAddressTracker", "DeviceAddressTracker"));
         }
         if (handle.name == "VkQueue") {
             add_member(MemberInfo("VkDevice", "mVkDevice", "VkDevice"));
@@ -56,12 +57,20 @@ public:
         if (handle.name == "VkPipeline") {
             add_member(MemberInfo("std::vector<ShaderModule>", "mShaderModules"));
         }
+        if (handle.name == "VkAccelerationStructureKHR") {
+            add_member(MemberInfo("std::vector<Buffer>", "mBuildBuffers"));
+            add_member(MemberInfo("Auto<VkAccelerationStructureBuildGeometryInfoKHR>", "mBuildGeometryInfo"));
+            add_member(MemberInfo("std::vector<Auto<VkAccelerationStructureBuildRangeInfoKHR>>", "mBuildRangeInfos"));
+        }
         if (handle.name == "VkBuffer") {
+            add_member(MemberInfo("DeviceMemory", "mDeviceMemoryRecord"));
             add_member(MemberInfo("std::set<VkDeviceMemory>", "mVkDeviceMemoryBindings"));
             add_member(MemberInfo("gvk::Auto<VkBindBufferMemoryInfo>", "mBindBufferMemoryInfo", "VkBindBufferMemoryInfo"));
         }
         if (handle.name == "VkImage") {
             add_member(MemberInfo("VkSwapchainKHR", "mVkSwapchainKHR", "VkSwapchainKHR"));
+            add_member(MemberInfo("Semaphore", "mSwapchainAcquisitionSemaphore", "Semaphore"));
+            add_member(MemberInfo("Fence", "mSwapchainAcquisitionFence", "Fence"));
             add_member(MemberInfo("std::set<VkDeviceMemory>", "mVkDeviceMemoryBindings"));
             add_member(MemberInfo("gvk::Auto<VkBindImageMemoryInfo>", "mBindImageMemoryInfo", "VkBindImageMemoryInfo"));
             add_member(MemberInfo("ImageLayoutTracker", "mImageLayoutTracker", "ImageLayoutTracker"));
@@ -86,9 +95,6 @@ public:
         }
         if (handle.name == "VkQueryPool") {
             add_member(MemberInfo("std::vector<VkBool32>", "mAvailableQueries"));
-        }
-        if (handle.name == "VkSemaphore") {
-            add_member(MemberInfo("VkBool32", "mSignaled"));
         }
         if (handle.name == "VkSwapchainKHR") {
             add_member(MemberInfo("ObjectTracker<Image>", "mImages"));
@@ -214,6 +220,7 @@ R"(    }
             add_method(methodInfo);
         }
         add_member({ "GvkStateTrackedObjectInfo", "mStateTrackedObjectInfo", "GvkStateTrackedObjectInfo" });
+        add_member({ "std::string", "mName", "std::string" });
         add_private_declaration("friend class BasicStateTracker");
         add_private_declaration("friend class StateTracker");
     }
@@ -273,6 +280,7 @@ private:
         file << "#include <cassert>" << std::endl;
         file << "#include <map>" << std::endl;
         file << "#include <set>" << std::endl;
+        file << "#include <string>" << std::endl;
         file << "#include <type_traits>" << std::endl;
         file << "#include <vector>" << std::endl;
         file << std::endl;

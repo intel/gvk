@@ -30,7 +30,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-command-structures/generated/command-structure-to-string.hpp"
 #include "gvk-structures.hpp"
 
+#include <algorithm>
+
 namespace gvk {
+
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+GVK_STUB_TO_STRING_DEFINITION(GvkCommandStructureCreateXlibSurfaceKHR)
+GVK_STUB_TO_STRING_DEFINITION(GvkCommandStructureGetPhysicalDeviceXlibPresentationSupportKHR)
+#endif // VK_USE_PLATFORM_XLIB_KHR
 
 template <>
 void print<GvkCommandStructureAllocateCommandBuffers>(Printer& printer, const GvkCommandStructureAllocateCommandBuffers& obj)
@@ -73,7 +80,9 @@ void print<GvkCommandStructureBuildAccelerationStructuresKHR>(Printer& printer, 
             printer.print_field("deferredOperation", obj.deferredOperation);
             printer.print_field("infoCount", obj.infoCount);
             printer.print_array("pInfos", obj.infoCount, obj.pInfos);
-            // TODO : const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos
+            for (uint32_t i = 0; i < obj.infoCount; ++i) {
+                printer.print_array("ppBuildRangeInfos", obj.pInfos[i].geometryCount, obj.ppBuildRangeInfos[i]);
+            }
             printer.print_field("result", obj.result);
         }
     );
@@ -89,9 +98,11 @@ void print<GvkCommandStructureCmdBuildAccelerationStructuresIndirectKHR>(Printer
             printer.print_field("commandBuffer", obj.commandBuffer);
             printer.print_field("infoCount", obj.infoCount);
             printer.print_array("pInfos", obj.infoCount, obj.pInfos);
-            // TODO : const VkDeviceAddress* pIndirectDeviceAddresses
-            // TODO : const uint32_t* pIndirectStrides
-            // TODO : const uint32_t* const* ppMaxPrimitiveCounts
+            printer.print_array("pInfos", obj.infoCount, obj.pIndirectDeviceAddresses);
+            printer.print_array("pInfos", obj.infoCount, obj.pIndirectStrides);
+            for (uint32_t i = 0; i < obj.infoCount; ++i) {
+                printer.print_array("ppMaxPrimitiveCounts", obj.pInfos[i].geometryCount, obj.ppMaxPrimitiveCounts[i]);
+            }
         }
     );
 }
@@ -106,7 +117,9 @@ void print<GvkCommandStructureCmdBuildAccelerationStructuresKHR>(Printer& printe
             printer.print_field("commandBuffer", obj.commandBuffer);
             printer.print_field("infoCount", obj.infoCount);
             printer.print_array("pInfos", obj.infoCount, obj.pInfos);
-            // TODO : const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos
+            for (uint32_t i = 0; i < obj.infoCount; ++i) {
+                printer.print_array("ppBuildRangeInfos", obj.pInfos[i].geometryCount, obj.ppBuildRangeInfos[i]);
+            }
         }
     );
 }
@@ -136,8 +149,7 @@ void print<GvkCommandStructureCmdSetBlendConstants>(Printer& printer, const GvkC
         {
             printer.print_field("sType", obj.sType);
             printer.print_field("commandBuffer", obj.commandBuffer);
-            // TODO : Fix blendConstants array
-            // TODO : const float blendConstants
+            printer.print_array("blendConstants", 4, obj.blendConstants);
         }
     );
 }
@@ -151,7 +163,7 @@ void print<GvkCommandStructureCmdSetSampleMaskEXT>(Printer& printer, const GvkCo
             printer.print_field("sType", obj.sType);
             printer.print_field("commandBuffer", obj.commandBuffer);
             printer.print_field("samples", obj.samples);
-            // TODO : const VkSampleMask* pSampleMask
+            printer.print_array("sampleMask", std::max(1, obj.samples / 32), obj.pSampleMask);
         }
     );
 }
@@ -165,7 +177,7 @@ void print<GvkCommandStructureCmdSetFragmentShadingRateEnumNV>(Printer& printer,
             printer.print_field("sType", obj.sType);
             printer.print_field("commandBuffer", obj.commandBuffer);
             printer.print_field("shadingRate", obj.shadingRate);
-            // TODO : const VkFragmentShadingRateCombinerOpKHR combinerOps
+            printer.print_array("combinerOps", 2, obj.combinerOps);
         }
     );
 }
@@ -178,8 +190,8 @@ void print<GvkCommandStructureCmdSetFragmentShadingRateKHR>(Printer& printer, co
         {
             printer.print_field("sType", obj.sType);
             printer.print_field("commandBuffer", obj.commandBuffer);
-            // TODO : const VkExtent2D* pFragmentSize
-            // TODO : const VkFragmentShadingRateCombinerOpKHR combinerOps
+            printer.print_pointer("pFragmentSize", obj.pFragmentSize);
+            printer.print_array("combinerOps", 2, obj.combinerOps);
         }
     );
 }
@@ -199,10 +211,5 @@ void print<GvkCommandStructureGetAccelerationStructureBuildSizesKHR>(Printer& pr
         }
     );
 }
-
-#ifdef VK_USE_PLATFORM_XLIB_KHR
-GVK_STUB_TO_STRING_DEFINITION(GvkCommandStructureCreateXlibSurfaceKHR)
-GVK_STUB_TO_STRING_DEFINITION(GvkCommandStructureGetPhysicalDeviceXlibPresentationSupportKHR)
-#endif // VK_USE_PLATFORM_XLIB_KHR
 
 } // namespace gvk

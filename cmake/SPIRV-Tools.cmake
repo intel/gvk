@@ -5,7 +5,7 @@ include(FetchContent)
 
 set(SPIRV_SKIP_EXECUTABLES   ON CACHE BOOL "" FORCE)
 set(SKIP_SPIRV_TOOLS_INSTALL ON CACHE BOOL "" FORCE)
-set(SPIRV-Tools_VERSION 360d469b9eac54d6c6e20f609f9ec35e3a5380ad) # sdk-1.3.268.0
+set(SPIRV-Tools_VERSION f0cc85efdbbe3a46eae90e0f915dc1509836d0fc) # vulkan-sdk-1.3.275.0
 FetchContent_Declare(
     SPIRV-Tools
     GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Tools.git"

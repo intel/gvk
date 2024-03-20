@@ -111,7 +111,6 @@ public:
                             file << tab << "    parentStateTrackedObject.type = detail::get_object_type<" << member.storageType << ">();" << std::endl;
                             file << tab << "    parentStateTrackedObject.handle = (uint64_t)handle.get<" << member.accessorType << ">();" << std::endl;
                             file << tab << "    auto parentHandle = to_handle<" << string::strip_vk(member.storageType) << ">(parentStateTrackedObject);" << std::endl;
-                            file << tab << "    assert(parentHandle);" << std::endl;
                             file << tab << "    parentHandle.enumerate_dependencies(DependencyEnumerator::enumerate, &dependencyEnuemrator);" << std::endl;
                         } else if (member.storageName == "mImmutableSamplers") {
                             file << "            for (const auto& immutableSamplersItr : handle.mReference.get_obj().mImmutableSamplers) {" << std::endl;
@@ -119,6 +118,8 @@ public:
                             file << "                    immutableSampler.enumerate_dependencies(DependencyEnumerator::enumerate, &dependencyEnuemrator);" << std::endl;
                             file << "                }" << std::endl;
                             file << "            }" << std::endl;
+                        } else if (member.storageName == "mCmdTracker") {
+                            file << "            handle.mReference.get_obj().mCmdTracker.enumerate_dependencies(DependencyEnumerator::enumerate, &dependencyEnuemrator);" << std::endl;
                         }
                     }
                 }

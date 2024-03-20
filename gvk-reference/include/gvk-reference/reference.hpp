@@ -178,7 +178,7 @@ public:
         reset(nullref);
         mId = IdType(newref);
         mspLifetimeMonitor = std::make_shared<LifetimeMonitor>(mId);
-        Enumerator::get_instance().insert(mspLifetimeMonitor);
+        Registry::get_instance().insert(mspLifetimeMonitor);
     }
 
     /**
@@ -191,7 +191,7 @@ public:
         reset(nullref);
         mId = id;
         mspLifetimeMonitor = std::make_shared<LifetimeMonitor>(mId);
-        Enumerator::get_instance().insert(mspLifetimeMonitor);
+        Registry::get_instance().insert(mspLifetimeMonitor);
     }
 
     /**
@@ -298,7 +298,7 @@ public:
     */
     inline static Reference get(const IdType& id)
     {
-        return Enumerator::get_instance().get(id);
+        return Registry::get_instance().get(id);
     }
 
     /**
@@ -309,7 +309,7 @@ public:
     template <typename ProcessReferenceFunctionType>
     inline static void enumerate(ProcessReferenceFunctionType processReference)
     {
-        return Enumerator::get_instance().enumerate(processReference);
+        return Registry::get_instance().enumerate(processReference);
     }
 
 private:
@@ -323,7 +323,7 @@ private:
 
         inline ~LifetimeMonitor()
         {
-            Enumerator::get_instance().erase(mId);
+            Registry::get_instance().erase(mId);
         }
 
         inline const IdType& get_id() const
@@ -349,7 +349,7 @@ private:
         LifetimeMonitor& operator=(const LifetimeMonitor&) = delete;
     };
 
-    class Enumerator final
+    class Registry final
     {
     public:
         inline void insert(std::shared_ptr<LifetimeMonitor> spReference)
@@ -394,19 +394,19 @@ private:
             }
         }
 
-        static Enumerator& get_instance()
+        static Registry& get_instance()
         {
-            static Enumerator sEnumerator;
-            return sEnumerator;
+            static Registry* spRegistry{ new Registry };
+            return *spRegistry;
         }
 
     private:
         std::mutex mMutex;
         std::unordered_map<IdType, std::weak_ptr<LifetimeMonitor>> mWeakReferences;
 
-        Enumerator() = default;
-        Enumerator(const Enumerator&) = delete;
-        Enumerator& operator=(const Enumerator&) = delete;
+        Registry() = default;
+        Registry(const Registry&) = delete;
+        Registry& operator=(const Registry&) = delete;
     };
 
     inline friend bool operator==(const Reference& lhs, const Reference& rhs)

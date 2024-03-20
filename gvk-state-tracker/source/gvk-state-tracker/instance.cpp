@@ -36,6 +36,7 @@ VkResult StateTracker::post_vkCreateInstance(const VkInstanceCreateInfo* pCreate
 {
     if (gvkResult == VK_SUCCESS) {
         assert(pCreateInfo);
+        // TODO : Move to layer::Registry so it's handled for all layers...
         auto pNext = (VkBaseOutStructure*)pCreateInfo;
         while (pNext) {
             while (pNext->pNext && pNext->pNext->sType == VK_STRUCTURE_TYPE_LOADER_INSTANCE_CREATE_INFO) {
@@ -46,6 +47,7 @@ VkResult StateTracker::post_vkCreateInstance(const VkInstanceCreateInfo* pCreate
         gvkResult = BasicStateTracker::post_vkCreateInstance(pCreateInfo, pAllocator, pInstance, gvkResult);
         assert(gvkResult == VK_SUCCESS);
         assert(pInstance);
+        mVkInstance = *pInstance;
         Instance gvkInstance(*pInstance);
         assert(gvkInstance);
         const auto& dispatchTableItr = layer::Registry::get().VkInstanceDispatchTables.find(layer::get_dispatch_key(*pInstance));

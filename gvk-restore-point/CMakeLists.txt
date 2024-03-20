@@ -1,53 +1,40 @@
 
 ################################################################################
-# gvk-restore-point.generator
+# VK_LAYER_INTEL_gvk_restore_point.generator
 set(generatedIncludeDirectory "${CMAKE_CURRENT_BINARY_DIR}/include/")
 set(generatedIncludePath "${generatedIncludeDirectory}/gvk-restore-point/generated/")
 set(generatedSourcePath "${CMAKE_CURRENT_BINARY_DIR}/source/gvk-restore-point/generated/")
 set(generatedIncludeFiles
-    "${generatedIncludePath}/basic-restore-point-applier.hpp"
-    "${generatedIncludePath}/basic-restore-point-creator.hpp"
-    "${generatedIncludePath}/restore-info.h"
-    "${generatedIncludePath}/restore-info-enumerations-to-string.hpp"
-    "${generatedIncludePath}/restore-info-structure-cerealization.hpp"
-    "${generatedIncludePath}/restore-info-structure-comparison-operators.hpp"
-    "${generatedIncludePath}/restore-info-structure-create-copy.hpp"
-    "${generatedIncludePath}/restore-info-structure-decerealization.hpp"
-    "${generatedIncludePath}/restore-info-structure-deserialization.hpp"
-    "${generatedIncludePath}/restore-info-structure-destroy-copy.hpp"
-    "${generatedIncludePath}/restore-info-structure-get-stype.hpp"
-    "${generatedIncludePath}/restore-info-structure-make-tuple.hpp"
-    "${generatedIncludePath}/restore-info-structure-serialization.hpp"
-    "${generatedIncludePath}/restore-info-structure-to-string.hpp"
+    "${generatedIncludePath}/basic-applier.hpp"
+    "${generatedIncludePath}/basic-creator.hpp"
+    "${generatedIncludePath}/basic-layer.hpp"
+    "${generatedIncludePath}/update-structure-handles.hpp"
 )
 set(generatedSourceFiles
-    "${generatedSourcePath}/apply-command-buffer-restore-point.cpp"
-    "${generatedSourcePath}/basic-restore-point-applier.cpp"
-    "${generatedSourcePath}/basic-restore-point-creator.cpp"
-    "${generatedSourcePath}/create-command-buffer-restore-point.cpp"
-    "${generatedSourcePath}/restore-info-enumerations-to-string.cpp"
-    "${generatedSourcePath}/restore-info-structure-comparison-operators.cpp"
-    "${generatedSourcePath}/restore-info-structure-create-copy.cpp"
-    "${generatedSourcePath}/restore-info-structure-deserialization.cpp"
-    "${generatedSourcePath}/restore-info-structure-destroy-copy.cpp"
-    "${generatedSourcePath}/restore-info-structure-serialization.cpp"
-    "${generatedSourcePath}/restore-info-structure-to-string.cpp"
+    "${generatedSourcePath}/applier-process-command-buffer.cpp"
+    "${generatedSourcePath}/basic-applier.cpp"
+    "${generatedSourcePath}/basic-creator.cpp"
+    "${generatedSourcePath}/basic-layer.cpp"
+    "${generatedSourcePath}/creator-process-command-buffer.cpp"
+    "${generatedSourcePath}/update-structure-handles.cpp"
 )
 set(generatorSourcePath "${CMAKE_CURRENT_LIST_DIR}/generator/")
 gvk_add_code_generator(
     TARGET
-        gvk-restore-point.generator
+        VK_LAYER_INTEL_gvk_restore_point.generator
     FOLDER
-        "gvk-restore-point/"
+        "VK_LAYER_INTEL_gvk_restore_point/"
     LINK_LIBRARIES
         gvk-cppgen
     INCLUDE_DIRECTORIES
         "${generatorSourcePath}/"
     INCLUDE_FILES
-        "${generatorSourcePath}/apply-command-buffer-restore-point.generator.hpp"
-        "${generatorSourcePath}/basic-restore-point-applier.generator.hpp"
-        "${generatorSourcePath}/basic-restore-point-creator.generator.hpp"
-        "${generatorSourcePath}/create-command-buffer-restore-point.generator.hpp"
+        "${generatorSourcePath}/applier-process-command-buffer.generator.hpp"
+        "${generatorSourcePath}/basic-applier.generator.hpp"
+        "${generatorSourcePath}/basic-creator.generator.hpp"
+        "${generatorSourcePath}/basic-layer.generator.hpp"
+        "${generatorSourcePath}/creator-process-command-buffer.generator.hpp"
+        "${generatorSourcePath}/update-structure-handles.generator.hpp"
     SOURCE_FILES
         "${generatorSourcePath}/main.cpp"
     OUTPUT_FILES
@@ -61,44 +48,78 @@ gvk_add_code_generator(
 )
 
 ################################################################################
-# gvk-restore-point
+# VK_LAYER_INTEL_gvk_restore_point
 set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
 set(includePath "${includeDirectory}/gvk-restore-point/")
 set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk-restore-point/")
-set(linkLibraries "")
-gvk_add_static_library(
+gvk_add_layer(
     TARGET
-        gvk-restore-point
+        VK_LAYER_INTEL_gvk_restore_point
     FOLDER
-        "gvk-restore-point/"
+        "VK_LAYER_INTEL_gvk_restore_point/"
     LINK_LIBRARIES
         gvk-command-structures
+        gvk-format-info
         gvk-handles
         gvk-reference
+        gvk-restore-info
         gvk-runtime
         VK_LAYER_INTEL_gvk_state_tracker-interface
         asio
+        stb
         Threads::Threads
+    INTERFACE_FILES
+        "${includeDirectory}/VK_LAYER_INTEL_gvk_restore_point.h"
+        "${includeDirectory}/VK_LAYER_INTEL_gvk_restore_point.hpp"
     INCLUDE_DIRECTORIES
         "${generatedIncludeDirectory}"
         "${includeDirectory}"
     INCLUDE_FILES
         "${generatedIncludeFiles}"
-        "${includePath}/detail/asio-include.hpp"
-        "${includePath}/detail/copy-engine.hpp"
-        "${includePath}/detail/restore-point-applier-base.hpp"
-        "${includePath}/restore-point-applier.hpp"
-        "${includePath}/restore-point-creator.hpp"
-        "${includePath}/restore-point-info.hpp"
-        "${includeDirectory}/gvk-restore-point.hpp"
+        "${includePath}/applier.hpp"
+        "${includePath}/copy-engine.hpp"
+        "${includePath}/creator.hpp"
+        "${includePath}/layer.hpp"
+        "${includePath}/logger.hpp"
+        "${includePath}/utilities.hpp"
     SOURCE_FILES
         "${generatedSourceFiles}"
-        "${sourcePath}/detail/copy-engine.cpp"
-        "${sourcePath}/detail/restore-info-to-string-manual.cpp"
-        "${sourcePath}/restore-point-applier.cpp"
-        "${sourcePath}/restore-point-creator.cpp"
+        "${sourcePath}/handles/acceleration-structure.cpp"
+        "${sourcePath}/handles/buffer.cpp"
+        "${sourcePath}/handles/command-buffer.cpp"
+        "${sourcePath}/handles/descriptor-set.cpp"
+        "${sourcePath}/handles/device.cpp"
+        "${sourcePath}/handles/device-memory.cpp"
+        "${sourcePath}/handles/event.cpp"
+        "${sourcePath}/handles/fence.cpp"
+        "${sourcePath}/handles/image.cpp"
+        "${sourcePath}/handles/instance.cpp"
+        "${sourcePath}/handles/pipeline.cpp"
+        "${sourcePath}/handles/physical-device.cpp"
+        "${sourcePath}/handles/query-pool.cpp"
+        "${sourcePath}/handles/queue.cpp"
+        "${sourcePath}/handles/semaphore.cpp"
+        "${sourcePath}/handles/surface.cpp"
+        "${sourcePath}/handles/swapchain.cpp"
+        "${sourcePath}/applier.cpp"
+        "${sourcePath}/copy-engine.cpp"
+        "${sourcePath}/creator.cpp"
+        "${sourcePath}/layer.cpp"
+        "${sourcePath}/logger.cpp"
+        "${sourcePath}/utilities.cpp"
+    DESCRIPTION
+        "Intel(R) GPA Utilities for Vulkan* restore point"
+    ENTRY_POINTS
+        gvkCreateRestorePoint
+        gvkGetRestorePointObjects
+        gvkDestroyRestorePoint
+        gvkApplyRestorePoint
 )
+if(MSVC)
+    set_source_files_properties("${generatedSourcePath}/update-structure-handles.cpp" PROPERTIES COMPILE_FLAGS "/bigobj")
+endif()
 
 ################################################################################
-# gvk-restore-point install
-gvk_install_library(TARGET gvk-restore-point)
+# VK_LAYER_INTEL_gvk_restore_point install
+gvk_install_library(TARGET VK_LAYER_INTEL_gvk_restore_point-interface)
+gvk_install_layer(TARGET VK_LAYER_INTEL_gvk_restore_point)

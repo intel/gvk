@@ -51,6 +51,7 @@ public:
     Command() = default;
     Command(const tinyxml2::XMLElement& xmlElement);
 
+    Parameter get_create_info_parameter() const;
     Parameter get_target_parameter() const;
 
     Type type { Type::Common };

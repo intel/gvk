@@ -41,7 +41,19 @@ glm::mat4 Camera::view(const glm::vec3& lookAt) const
 
 glm::mat4 Camera::projection(bool flipY) const
 {
-    auto m = glm::perspective(glm::radians(fieldOfView), aspectRatio, nearPlane, farPlane);
+    glm::mat4 m { };
+    switch (projectionMode) {
+    case ProjectionMode::Perspective: {
+        m = glm::perspective(glm::radians(fieldOfView), aspectRatio, nearPlane, farPlane);
+    } break;
+    case ProjectionMode::Orthographic: {
+        auto w = fieldOfView * 0.5f;
+        auto h = fieldOfView / aspectRatio * 0.5f;
+        m = glm::ortho(-w, w, -h, h, nearPlane, farPlane);
+    } break;
+    default: {
+    } break;
+    }
     if (flipY) {
         m[1][1] *= -1;
     }

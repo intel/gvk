@@ -30,8 +30,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-state-tracker/generated/basic-cmd-tracker.hpp"
 #include "gvk-structures.hpp"
 #include "gvk-defines.hpp"
+#include "VK_LAYER_INTEL_gvk_state_tracker.h"
 
 #include <unordered_map>
+#include <unordered_set>
 
 namespace gvk {
 namespace state_tracker {
@@ -40,11 +42,14 @@ class CmdTracker final
     : public BasicCmdTracker
 {
 public:
+    void reset() override final;
     const std::vector<const GvkCommandBaseStructure*>& get_cmds() const;
     const std::unordered_map<VkImage, ImageLayoutTracker>& get_image_layout_trackers() const;
+    const std::vector<size_t>& get_build_acceleration_sturcture_cmd_indices() const;
+    void enumerate_dependencies(PFN_gvkEnumerateStateTrackedObjectsCallback pfnCallback, void* pUserData) const;
 
     ////////////////////////////////////////////////////////////////////////////////
-    // RenderPass Cmds
+    // Render Pass Cmds
     void record_vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents contents) override final;
     void record_vkCmdBeginRenderPass2(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, const VkSubpassBeginInfo* pSubpassBeginInfo) override final;
     void record_vkCmdBeginRenderPass2KHR(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, const VkSubpassBeginInfo* pSubpassBeginInfo) override final;
@@ -96,8 +101,25 @@ public:
     void record_vkCmdWaitEvents2(VkCommandBuffer commandBuffer, uint32_t eventCount, const VkEvent* pEvents, const VkDependencyInfo* pDependencyInfos) override final;
     void record_vkCmdWaitEvents2KHR(VkCommandBuffer commandBuffer, uint32_t eventCount, const VkEvent* pEvents, const VkDependencyInfo* pDependencyInfos) override final;
 
+    ////////////////////////////////////////////////////////////////////////////////
+    // Acceleration Structure Cmds
+    void record_vkCmdBuildAccelerationStructuresIndirectKHR(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkDeviceAddress* pIndirectDeviceAddresses, const uint32_t* pIndirectStrides, const uint32_t* const* ppMaxPrimitiveCounts) override final;
+    void record_vkCmdBuildAccelerationStructuresKHR(VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos) override final;
+
+    ////////////////////////////////////////////////////////////////////////////////
+    // RayTracing Cmds
+    void record_vkCmdTraceRaysIndirect2KHR(VkCommandBuffer commandBuffer, VkDeviceAddress indirectDeviceAddress) override final;
+    void record_vkCmdTraceRaysIndirectKHR(VkCommandBuffer commandBuffer, const VkStridedDeviceAddressRegionKHR* pRaygenShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pMissShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pHitShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pCallableShaderBindingTable, VkDeviceAddress indirectDeviceAddress) override final;
+    void record_vkCmdTraceRaysKHR(VkCommandBuffer commandBuffer, const VkStridedDeviceAddressRegionKHR* pRaygenShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pMissShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pHitShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pCallableShaderBindingTable, uint32_t width, uint32_t height, uint32_t depth) override final;
+
 private:
     void record_image_layout_transition(VkDevice device, VkImage image, const VkImageSubresourceRange& imageSubresourceRange, VkImageLayout imageLayout);
+
+    std::unordered_set<VkBuffer> mShaderBindingTableBuffers;
+    std::unordered_map<VkImage, ImageLayoutTracker> mImageLayoutTrackers;
+    std::vector<size_t> mBuildAccelerationStructureCmdIndices;
+    Auto<GvkCommandStructureCmdBeginRenderPass> mBeginRenderPass;
+    Auto<GvkCommandStructureCmdBeginRenderPass2> mBeginRenderPass2;
 };
 
 } // namespace state_tracker

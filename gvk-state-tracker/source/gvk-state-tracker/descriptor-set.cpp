@@ -27,48 +27,60 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-state-tracker/descriptor.hpp"
 #include "gvk-state-tracker/state-tracker.hpp"
 #include "gvk-structures/get-stype.hpp"
+#include "gvk-structures/pnext.hpp"
 
 namespace gvk {
 namespace state_tracker {
 
-Descriptor::Descriptor(const VkDescriptorSetLayoutBinding& binding)
-    : descriptorSetLayoutBinding { binding }
+Descriptor::Descriptor(const VkDescriptorSetLayoutBinding& binding, VkDescriptorBindingFlags flags)
+    : descriptorSetLayoutBinding{ binding }
+    , descriptorBindingFlags{ flags }
 {
-    switch (descriptorSetLayoutBinding.descriptorType) {
-    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC: {
-        descriptorBufferInfos.resize(descriptorSetLayoutBinding.descriptorCount);
-    } break;
-    case VK_DESCRIPTOR_TYPE_SAMPLER:
-    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-    case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-    case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-    case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: {
-        descriptorImageInfos.resize(descriptorSetLayoutBinding.descriptorCount);
-        if (descriptorSetLayoutBinding.pImmutableSamplers) {
-            for (uint32_t i = 0; i < descriptorSetLayoutBinding.descriptorCount; ++i) {
-                descriptorImageInfos[i].sampler = descriptorSetLayoutBinding.pImmutableSamplers[i];
+#if 0
+    if (flags & VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT) {
+        assert(!descriptorSetLayoutBinding.pImmutableSamplers && "VkDescriptorSetLayoutBinding with VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT set provides pImmutableSamplers; gvk maintenance required");
+    } else {
+#endif
+        switch (descriptorSetLayoutBinding.descriptorType) {
+        case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+        case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+        case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+        case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC: {
+            descriptorBufferInfos.resize(descriptorSetLayoutBinding.descriptorCount);
+        } break;
+        case VK_DESCRIPTOR_TYPE_SAMPLER:
+        case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+        case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+        case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+        case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: {
+            descriptorImageInfos.resize(descriptorSetLayoutBinding.descriptorCount);
+            if (descriptorSetLayoutBinding.pImmutableSamplers) {
+                for (uint32_t i = 0; i < descriptorSetLayoutBinding.descriptorCount; ++i) {
+                    descriptorImageInfos[i].sampler = descriptorSetLayoutBinding.pImmutableSamplers[i];
+                }
             }
+        } break;
+        case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+        case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER: {
+            texelBufferViews.resize(descriptorSetLayoutBinding.descriptorCount);
+        } break;
+        case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK: {
+            inlineUniformBlock.resize(descriptorSetLayoutBinding.descriptorCount);
+        } break;
+        case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR: {
+            accelerationStructures.resize(descriptorSetLayoutBinding.descriptorCount);
+        } break;
+        case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV:
+        case VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM:
+        case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:
+        case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
+        default: {
+            assert(false && "Unserviced VkDescriptorType");
+        } break;
         }
-    } break;
-    case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-    case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER: {
-        texelBufferViews.resize(descriptorSetLayoutBinding.descriptorCount);
-    } break;
-    case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK: {
-        inlineUniformBlock.resize(descriptorSetLayoutBinding.descriptorCount);
-    } break;
-    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
-    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV:
-    case VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM:
-    case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:
-    case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
-    default: {
-        assert(false && "Unsupported VkDescriptorType");
-    } break;
+#if 0
     }
+#endif
 }
 
 uint32_t Descriptor::write(const VkWriteDescriptorSet& descriptorWrite)
@@ -130,20 +142,27 @@ uint32_t Descriptor::write(const VkWriteDescriptorSet& descriptorWrite)
             //  bytes that were written to this Descriptor.  We handle update the offsets
             //  for the rollover to the next Descriptor in write_descriptor_sets().
             // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/VkDescriptorSetLayoutBinding.html
-            auto pWriteDescriptorSetInlineUniformBlock = (const VkWriteDescriptorSetInlineUniformBlock*)descriptorWrite.pNext;
+            auto pWriteDescriptorSetInlineUniformBlock = get_pnext<VkWriteDescriptorSetInlineUniformBlock>(descriptorWrite);
             if (pWriteDescriptorSetInlineUniformBlock) {
-                assert(pWriteDescriptorSetInlineUniformBlock->sType == gvk::get_stype<VkWriteDescriptorSetInlineUniformBlock>());
                 writeCount = std::min(pWriteDescriptorSetInlineUniformBlock->dataSize, (uint32_t)inlineUniformBlock.size() - dstArrayElement);
                 memcpy(inlineUniformBlock.data() + dstArrayElement, pWriteDescriptorSetInlineUniformBlock->pData, writeCount);
             }
         } break;
-        case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+        case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR: {
+            auto pWriteDescriptorSetAccelerationStructure = get_pnext<VkWriteDescriptorSetAccelerationStructureKHR>(descriptorWrite);
+            if (pWriteDescriptorSetAccelerationStructure) {
+                while (descriptorCount && dstArrayElement < accelerationStructures.size()) {
+                    accelerationStructures[dstArrayElement] = pWriteDescriptorSetAccelerationStructure->pAccelerationStructures[resourceIndex];
+                    updateIndices();
+                }
+            }
+        } break;
         case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV:
         case VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM:
         case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:
         case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
         default: {
-            assert(false && "Unsupported VkDescriptorType");
+            assert(false && "Unserviced VkDescriptorType");
         } break;
         }
     }
@@ -211,6 +230,8 @@ VkResult StateTracker::post_vkAllocateDescriptorSets(VkDevice device, const VkDe
         assert(gvkDevice);
         DescriptorPool gvkDescriptorPool({ device, pAllocateInfo->descriptorPool });
         assert(gvkDescriptorPool);
+        auto pDescriptorSetVariableDescriptorCountAllocateInfo = get_pnext<VkDescriptorSetVariableDescriptorCountAllocateInfo>(*pAllocateInfo);
+        assert(!pDescriptorSetVariableDescriptorCountAllocateInfo || pDescriptorSetVariableDescriptorCountAllocateInfo->descriptorSetCount == pAllocateInfo->descriptorSetCount);
         for (uint32_t descriptorSet_i = 0; descriptorSet_i < pAllocateInfo->descriptorSetCount; ++descriptorSet_i) {
             DescriptorSet gvkDescriptorSet;
             gvkDescriptorSet.mReference.reset(gvk::newref, { device, pDescriptorSets[descriptorSet_i] });
@@ -224,10 +245,28 @@ VkResult StateTracker::post_vkAllocateDescriptorSets(VkDevice device, const VkDe
             gvkDescriptorPool.mReference.get_obj().mDescriptorSetTracker.insert(gvkDescriptorSet);
             assert(controlBlock.mDescriptorSetLayout);
             auto descriptorSetLayoutCreateInfo = controlBlock.mDescriptorSetLayout.get<VkDescriptorSetLayoutCreateInfo>();
+            auto pDescriptorSetLayoutBindingFlagsCreateInfo = get_pnext<VkDescriptorSetLayoutBindingFlagsCreateInfo>(descriptorSetLayoutCreateInfo);
             for (uint32_t binding_i = 0; binding_i < descriptorSetLayoutCreateInfo.bindingCount; ++binding_i) {
+#if 0
                 auto inserted = controlBlock.mDescriptors.insert({ binding_i, Descriptor(descriptorSetLayoutCreateInfo.pBindings[binding_i]) }).second;
                 (void)inserted;
                 assert(inserted);
+#else
+                auto descriptorSetLayoutBinding = descriptorSetLayoutCreateInfo.pBindings[binding_i];
+                VkDescriptorBindingFlags descriptorBindingFlags = 0;
+                if (pDescriptorSetLayoutBindingFlagsCreateInfo && binding_i < pDescriptorSetLayoutBindingFlagsCreateInfo->bindingCount) {
+                    descriptorBindingFlags = pDescriptorSetLayoutBindingFlagsCreateInfo->pBindingFlags[binding_i];
+                }
+
+                // TODO : DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT logic needs to be revisited...
+                if (pDescriptorSetVariableDescriptorCountAllocateInfo) {
+                    descriptorSetLayoutBinding.descriptorCount = pDescriptorSetVariableDescriptorCountAllocateInfo->pDescriptorCounts[descriptorSet_i];
+                }
+
+                auto inserted = controlBlock.mDescriptors.insert({ descriptorSetLayoutBinding.binding, Descriptor(descriptorSetLayoutBinding, descriptorBindingFlags) }).second;
+                (void)inserted;
+                assert(inserted);
+#endif
             }
         }
     }
@@ -314,7 +353,7 @@ void StateTracker::post_vkUpdateDescriptorSetWithTemplate(VkDevice device, VkDes
         case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:
         case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
         default: {
-            assert(false && "Unsupported VkDescriptorType");
+            assert(false && "vkUpdateDescriptorSetWithTemplate() unserviced VkDescriptorType");
         } break;
         }
         write_descriptor_sets(device, 1, &writeDescriptorSet);
@@ -393,9 +432,8 @@ void StateTracker::write_descriptor_sets(VkDevice vkDevice, uint32_t descriptorW
                         //  have the capacity for the number of bytes provided we'll rollover the bytes
                         //  that remain to the next Descriptor.
                         // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/VkDescriptorSetLayoutBinding.html
-                        auto pWriteDescriptorSetInlineUniformBlock = (const VkWriteDescriptorSetInlineUniformBlockEXT*)descriptorWrite.pNext;
+                        auto pWriteDescriptorSetInlineUniformBlock = get_pnext<VkWriteDescriptorSetInlineUniformBlock>(descriptorWrite);
                         if (pWriteDescriptorSetInlineUniformBlock) {
-                            assert(pWriteDescriptorSetInlineUniformBlock->sType == gvk::get_stype<VkWriteDescriptorSetInlineUniformBlock>());
                             rolloverInlineUniformBlock = *pWriteDescriptorSetInlineUniformBlock;
                             rolloverInlineUniformBlock.pData = (const uint8_t*)pWriteDescriptorSetInlineUniformBlock->pData + offset;
                             rolloverDescriptorWrite.pNext = &rolloverInlineUniformBlock;
@@ -407,7 +445,7 @@ void StateTracker::write_descriptor_sets(VkDevice vkDevice, uint32_t descriptorW
                     case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:
                     case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
                     default: {
-                        assert(false && "Unsupported VkDescriptorType");
+                        assert(false && "write_descriptor_sets() rollover unserviced VkDescriptorType");
                     } break;
                     }
                     descriptorCount -= descriptorItr->second.write(rolloverDescriptorWrite);
@@ -508,7 +546,7 @@ void StateTracker::copy_descriptor_sets(VkDevice vkDevice, uint32_t descriptorCo
                         case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:
                         case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
                         default: {
-                            assert(false && "Unsupported VkDescriptorType");
+                            assert(false && "copy_descriptor_sets() rollover unserviced VkDescriptorType");
                         } break;
                         }
                         while (srcDescriptorItr != srcDescriptors.end() && srcDescriptorItr->second.descriptorSetLayoutBinding.descriptorCount <= srcArrayElement) {

@@ -32,9 +32,21 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <cstdlib>
 #include <cstring>
 
-#define GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VK_STRUCTURE_TYPE) \
+#define GVK_DEFINE_DEFAULT_STRUCTURE_COPY_FUNCTIONS(VK_STRUCTURE_TYPE)                                                                             \
 template <> VK_STRUCTURE_TYPE create_structure_copy<VK_STRUCTURE_TYPE>(const VK_STRUCTURE_TYPE& obj, const VkAllocationCallbacks*) { return obj; } \
 template <> void destroy_structure_copy<VK_STRUCTURE_TYPE>(const VK_STRUCTURE_TYPE&, const VkAllocationCallbacks*) { }
+
+#define GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VK_STRUCTURE_TYPE)                                                                       \
+template <> VK_STRUCTURE_TYPE create_structure_copy<VK_STRUCTURE_TYPE>(const VK_STRUCTURE_TYPE& obj, const VkAllocationCallbacks*) \
+{                                                                                                                                  \
+    assert(false && "gvk::detail::create_structure_copy<" #VK_STRUCTURE_TYPE ">() unserviced; gvk maintenance required");          \
+    return obj;                                                                                                                    \
+}                                                                                                                                  \
+                                                                                                                                   \
+template <> void destroy_structure_copy<VK_STRUCTURE_TYPE>(const VK_STRUCTURE_TYPE&, const VkAllocationCallbacks*)                 \
+{                                                                                                                                  \
+    assert(false && "gvk::detail::destroy_structure_copy<" #VK_STRUCTURE_TYPE ">() unserviced; gvk maintenance required");         \
+}
 
 namespace gvk {
 namespace detail {

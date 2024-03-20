@@ -37,7 +37,6 @@ TEST(DeviceMemoryBindingTracking, BindBufferMemory)
 {
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
-    load_gvk_state_tracker_entry_points();
     auto expectedInstanceObjects = get_expected_instance_objects(context);
 
     auto bufferCreateInfo = gvk::get_default<VkBufferCreateInfo>();
@@ -71,7 +70,7 @@ TEST(DeviceMemoryBindingTracking, BindBufferMemory)
     enumerateInfo.pfnCallback = StateTrackerValidationEnumerator::enumerate;
     enumerateInfo.pUserData = &enumerator;
     auto stateTrackedInstance = gvk::get_state_tracked_object(context.get_instance());
-    pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
+    gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
     auto bindBufferMemoryInfo = gvk::get_default<VkBindBufferMemoryInfo>();
@@ -88,23 +87,23 @@ TEST(DeviceMemoryBindingTracking, BindBufferMemory)
 
     enumerator.records.clear();
     auto stateTrackedBuffer = gvk::get_state_tracked_object(buffer);
-    pfnGvkEnumerateStateTrackedObjectBindings(&stateTrackedBuffer, &enumerateInfo);
+    gvkEnumerateStateTrackedObjectBindings(&stateTrackedBuffer, &enumerateInfo);
     validate(gvk_file_line, expectedBufferBindings, enumerator.records);
 
     enumerator.records.clear();
     auto stateTrackedDeviceMemory = gvk::get_state_tracked_object(deviceMemory);
-    pfnGvkEnumerateStateTrackedObjectBindings(&stateTrackedDeviceMemory, &enumerateInfo);
+    gvkEnumerateStateTrackedObjectBindings(&stateTrackedDeviceMemory, &enumerateInfo);
     validate(gvk_file_line, expectedDeviceMemoryBindings, enumerator.records);
 
     expectedInstanceObjects.erase(stateTrackedDeviceMemory);
     deviceMemory.reset();
 
     enumerator.records.clear();
-    pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
+    gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
     enumerator.records.clear();
-    pfnGvkEnumerateStateTrackedObjectBindings(&stateTrackedBuffer, &enumerateInfo);
+    gvkEnumerateStateTrackedObjectBindings(&stateTrackedBuffer, &enumerateInfo);
     validate(gvk_file_line, expectedBufferBindings, enumerator.records);
 }
 
@@ -112,7 +111,6 @@ TEST(DeviceMemoryBindingTracking, BindBufferMemory2)
 {
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
-    load_gvk_state_tracker_entry_points();
     auto expectedInstanceObjects = get_expected_instance_objects(context);
 
     auto bufferCreateInfo = gvk::get_default<VkBufferCreateInfo>();
@@ -146,7 +144,7 @@ TEST(DeviceMemoryBindingTracking, BindBufferMemory2)
     enumerateInfo.pfnCallback = StateTrackerValidationEnumerator::enumerate;
     enumerateInfo.pUserData = &enumerator;
     auto stateTrackedInstance = gvk::get_state_tracked_object(context.get_instance());
-    pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
+    gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
     auto bindBufferMemoryInfo = gvk::get_default<VkBindBufferMemoryInfo>();
@@ -165,12 +163,12 @@ TEST(DeviceMemoryBindingTracking, BindBufferMemory2)
 
     enumerator.records.clear();
     auto stateTrackedBuffer = gvk::get_state_tracked_object(buffer);
-    pfnGvkEnumerateStateTrackedObjectBindings(&stateTrackedBuffer, &enumerateInfo);
+    gvkEnumerateStateTrackedObjectBindings(&stateTrackedBuffer, &enumerateInfo);
     validate(gvk_file_line, expectedBufferBindings, enumerator.records);
 
     enumerator.records.clear();
     auto stateTrackedDeviceMemory = gvk::get_state_tracked_object(deviceMemory);
-    pfnGvkEnumerateStateTrackedObjectBindings(&stateTrackedDeviceMemory, &enumerateInfo);
+    gvkEnumerateStateTrackedObjectBindings(&stateTrackedDeviceMemory, &enumerateInfo);
     validate(gvk_file_line, expectedDeviceMemoryBindings, enumerator.records);
 
     expectedInstanceObjects.erase(stateTrackedBuffer);
@@ -178,11 +176,11 @@ TEST(DeviceMemoryBindingTracking, BindBufferMemory2)
     buffer.reset();
 
     enumerator.records.clear();
-    pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
+    gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
     enumerator.records.clear();
-    pfnGvkEnumerateStateTrackedObjectBindings(&stateTrackedBuffer, &enumerateInfo);
+    gvkEnumerateStateTrackedObjectBindings(&stateTrackedBuffer, &enumerateInfo);
     validate(gvk_file_line, expectedDeviceMemoryBindings, enumerator.records);
 }
 
@@ -190,7 +188,6 @@ TEST(DeviceMemoryBindingTracking, BindImageMemory)
 {
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
-    load_gvk_state_tracker_entry_points();
     auto expectedInstanceObjects = get_expected_instance_objects(context);
 
     auto imageCreateInfo = gvk::get_default<VkImageCreateInfo>();
@@ -227,7 +224,7 @@ TEST(DeviceMemoryBindingTracking, BindImageMemory)
     enumerateInfo.pfnCallback = StateTrackerValidationEnumerator::enumerate;
     enumerateInfo.pUserData = &enumerator;
     auto stateTrackedInstance = gvk::get_state_tracked_object(context.get_instance());
-    pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
+    gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
     auto bindImageMemoryInfo = gvk::get_default<VkBindImageMemoryInfo>();
@@ -244,23 +241,23 @@ TEST(DeviceMemoryBindingTracking, BindImageMemory)
 
     enumerator.records.clear();
     auto stateTrackedImage = gvk::get_state_tracked_object(image);
-    pfnGvkEnumerateStateTrackedObjectBindings(&stateTrackedImage, &enumerateInfo);
+    gvkEnumerateStateTrackedObjectBindings(&stateTrackedImage, &enumerateInfo);
     validate(gvk_file_line, expectedImageBindings, enumerator.records);
 
     enumerator.records.clear();
     auto stateTrackedDeviceMemory = gvk::get_state_tracked_object(deviceMemory);
-    pfnGvkEnumerateStateTrackedObjectBindings(&stateTrackedDeviceMemory, &enumerateInfo);
+    gvkEnumerateStateTrackedObjectBindings(&stateTrackedDeviceMemory, &enumerateInfo);
     validate(gvk_file_line, expectedDeviceMemoryBindings, enumerator.records);
 
     expectedInstanceObjects.erase(stateTrackedDeviceMemory);
     deviceMemory.reset();
 
     enumerator.records.clear();
-    pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
+    gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
     enumerator.records.clear();
-    pfnGvkEnumerateStateTrackedObjectBindings(&stateTrackedImage, &enumerateInfo);
+    gvkEnumerateStateTrackedObjectBindings(&stateTrackedImage, &enumerateInfo);
     validate(gvk_file_line, expectedImageBindings, enumerator.records);
 }
 
@@ -268,7 +265,6 @@ TEST(DeviceMemoryBindingTracking, BindImageMemory2)
 {
     StateTrackerValidationContext context;
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
-    load_gvk_state_tracker_entry_points();
     auto expectedInstanceObjects = get_expected_instance_objects(context);
 
     auto imageCreateInfo = gvk::get_default<VkImageCreateInfo>();
@@ -305,7 +301,7 @@ TEST(DeviceMemoryBindingTracking, BindImageMemory2)
     enumerateInfo.pfnCallback = StateTrackerValidationEnumerator::enumerate;
     enumerateInfo.pUserData = &enumerator;
     auto stateTrackedInstance = gvk::get_state_tracked_object(context.get_instance());
-    pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
+    gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
     auto bindImageMemoryInfo = gvk::get_default<VkBindImageMemoryInfo>();
@@ -324,12 +320,12 @@ TEST(DeviceMemoryBindingTracking, BindImageMemory2)
 
     enumerator.records.clear();
     auto stateTrackedImage = gvk::get_state_tracked_object(image);
-    pfnGvkEnumerateStateTrackedObjectBindings(&stateTrackedImage, &enumerateInfo);
+    gvkEnumerateStateTrackedObjectBindings(&stateTrackedImage, &enumerateInfo);
     validate(gvk_file_line, expectedImageBindings, enumerator.records);
 
     enumerator.records.clear();
     auto stateTrackedDeviceMemory = gvk::get_state_tracked_object(deviceMemory);
-    pfnGvkEnumerateStateTrackedObjectBindings(&stateTrackedDeviceMemory, &enumerateInfo);
+    gvkEnumerateStateTrackedObjectBindings(&stateTrackedDeviceMemory, &enumerateInfo);
     validate(gvk_file_line, expectedDeviceMemoryBindings, enumerator.records);
 
     expectedInstanceObjects.erase(stateTrackedImage);
@@ -337,10 +333,10 @@ TEST(DeviceMemoryBindingTracking, BindImageMemory2)
     image.reset();
 
     enumerator.records.clear();
-    pfnGvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
+    gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
     enumerator.records.clear();
-    pfnGvkEnumerateStateTrackedObjectBindings(&stateTrackedImage, &enumerateInfo);
+    gvkEnumerateStateTrackedObjectBindings(&stateTrackedImage, &enumerateInfo);
     validate(gvk_file_line, expectedDeviceMemoryBindings, enumerator.records);
 }

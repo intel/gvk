@@ -29,8 +29,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-defines.hpp"
 #include "gvk-string.hpp"
 
-#define GVK_STUB_TO_STRING_DEFINITION(VK_STRUCTURE_TYPE) \
-template <> void print<VK_STRUCTURE_TYPE>(Printer&, const VK_STRUCTURE_TYPE&) { }
+#include <cassert>
+
+#define GVK_STUB_TO_STRING_DEFINITION(VK_STRUCTURE_TYPE)                                          \
+template <> void print<VK_STRUCTURE_TYPE>(Printer&, const VK_STRUCTURE_TYPE&)                     \
+{                                                                                                 \
+    assert(false && "gvk::print<" #VK_STRUCTURE_TYPE ">() unserviced; gvk maintenance required"); \
+}
 
 namespace gvk {
 

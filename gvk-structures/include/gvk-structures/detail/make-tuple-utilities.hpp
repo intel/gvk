@@ -28,7 +28,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-defines.hpp"
 
+#include <cassert>
 #include <algorithm>
+#include <tuple>
+
+#define GVK_STUB_MAKE_TUPLE_DEFINITION(VK_STRUCTURE_TYPE)                                              \
+inline auto make_tuple(const VK_STRUCTURE_TYPE&)                                                       \
+{                                                                                                      \
+    assert(false && "gvk::make_tuple<" #VK_STRUCTURE_TYPE ">() unserviced; gvk maintenance required"); \
+    return std::make_tuple(0);                                                                         \
+}
 
 namespace gvk {
 namespace detail {

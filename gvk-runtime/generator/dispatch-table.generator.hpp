@@ -130,9 +130,6 @@ private:
     {
         file << "void DispatchTable::" << signature << std::endl;
         file << "{" << std::endl;
-        if (vkHandleArgument != "VK_NULL_HANDLE") {
-            file << "    assert(" << vkHandleArgument << ");" << std::endl;
-        }
         file << "    assert(pDispatchTable);" << std::endl;
         if (!setGetProcAddr.empty()) {
             file << "    pDispatchTable->g" << getProcAddr << " = " << setGetProcAddr << ";" << std::endl;

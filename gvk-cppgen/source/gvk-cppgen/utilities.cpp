@@ -39,6 +39,7 @@ bool is_static_const_value(const std::string& apiElementName)
         "VkBufferUsageFlagBits2KHR",
         "VkFormatFeatureFlagBits2",
         "VkMemoryDecompressionMethodFlagBitsNV",
+        "VkPhysicalDeviceSchedulingControlsFlagBitsARM",
         "VkPipelineCreateFlagBits2KHR",
         "VkPipelineStageFlagBits2",
     };
@@ -107,6 +108,16 @@ xml::Parameter create_parameter(const std::string& type, const std::string& name
     parameter.type = type;
     parameter.unqualifiedType = type;
     parameter.name = name;
+    return parameter;
+}
+
+xml::Parameter create_const_pointer_parameter(const std::string& type, const std::string& name)
+{
+    xml::Parameter parameter;
+    parameter.type = "const " + type + "*";
+    parameter.unqualifiedType = type;
+    parameter.name = name;
+    parameter.flags = gvk::xml::Const | gvk::xml::Pointer;
     return parameter;
 }
 

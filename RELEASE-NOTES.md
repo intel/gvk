@@ -1,9 +1,10 @@
 
-VERSION 2023.4.0
+VERSION 2024.1.0
 --
--   NEW : gvk::spriv::Context support for raytracing shader stages
+-   NEW : VK_LAYER_INTEL_gvk_restore_point
+-   NEW : VK_LAYER_INTEL_gvk_virtual_swapchain
 
-VERSION 2023.2.3.3
+VERSION 2023.3.0
 --
 -   CHANGED : Handle accessors now return `const T&`
 

@@ -27,11 +27,17 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-layer/generated/basic-layer.hpp"
 #include "gvk-layer/generated/layer-hooks.hpp"
 #include "gvk-layer/registry.hpp"
+#include "gvk-structures.hpp"
 
 #include "vulkan/vk_layer.h"
 
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+#include <Windows.h>
+#endif // VK_USE_PLATFORM_WIN32_KHRS
+
 #include <cassert>
 #include <cstring>
+#include <map>
 #include <memory>
 
 namespace gvk {
@@ -39,8 +45,8 @@ namespace layer {
 
 Registry& Registry::get()
 {
-    static Registry sInstance;
-    return sInstance;
+    static Registry* spRegistry{ new Registry };
+    return *spRegistry;
 }
 
 VkLayerInstanceCreateInfo* get_instance_chain_info(const VkInstanceCreateInfo* pCreateInfo, VkLayerFunction layerFunction)
@@ -69,6 +75,7 @@ VkResult create_instance(const VkInstanceCreateInfo* pCreateInfo, const VkAlloca
 {
     assert(pCreateInfo);
     assert(pInstance);
+    std::lock_guard<std::mutex> lock(Registry::get().mutex);
     auto vkResult = VK_ERROR_INITIALIZATION_FAILED;
     auto pLayerInstanceCreateInfo = get_instance_chain_info(pCreateInfo, VK_LAYER_LINK_INFO);
     auto pfn_vkGetInstanceProcAddr = (pLayerInstanceCreateInfo && pLayerInstanceCreateInfo->u.pLayerInfo) ? pLayerInstanceCreateInfo->u.pLayerInfo->pfnNextGetInstanceProcAddr : nullptr;
@@ -87,7 +94,8 @@ VkResult create_instance(const VkInstanceCreateInfo* pCreateInfo, const VkAlloca
             DispatchTable instanceDispatchTable { };
             instanceDispatchTable.gvkGetInstanceProcAddr = pfn_vkGetInstanceProcAddr;
             DispatchTable::load_instance_entry_points(*pInstance, &instanceDispatchTable);
-            std::lock_guard<std::mutex> lock(Registry::get().mutex);
+            Registry::get().instance = *pInstance;
+            Registry::get().apiVersion = pCreateInfo->pApplicationInfo ? pCreateInfo->pApplicationInfo->apiVersion : VK_API_VERSION_1_0;
             Registry::get().VkInstanceDispatchTables.insert({ get_dispatch_key(*pInstance), instanceDispatchTable });
         }
         for (auto layerItr = layers.rbegin(); layerItr != layers.rend(); ++layerItr) {
@@ -101,6 +109,7 @@ VkResult create_instance(const VkInstanceCreateInfo* pCreateInfo, const VkAlloca
 void destroy_instance(VkInstance instance, const VkAllocationCallbacks* pAllocator)
 {
     assert(instance);
+    std::lock_guard<std::mutex> lock(Registry::get().mutex);
     auto& layers = Registry::get().layers;
     for (auto layerItr = layers.begin(); layerItr != layers.end(); ++layerItr) {
         assert(*layerItr && "gvk::layer::Registry contains a null layer; are layers configured correctly and intialized via gvk::layer::on_load()?");
@@ -111,10 +120,9 @@ void destroy_instance(VkInstance instance, const VkAllocationCallbacks* pAllocat
     const auto& instanceDispatchTable = instanceDispatchTableItr->second;
     assert(instanceDispatchTable.gvkDestroyInstance && "gvk::layer::Registry VkInstance gvk::DispatchTable contains a null entry point; are the Vulkan SDK, runtime, and layers configured correctly?");
     instanceDispatchTable.gvkDestroyInstance(instance, pAllocator);
-    {
-        std::lock_guard<std::mutex> lock(Registry::get().mutex);
-        Registry::get().VkInstanceDispatchTables.erase(get_dispatch_key(instance));
-    }
+    Registry::get().VkInstanceDispatchTables.clear();
+    Registry::get().VkDeviceDispatchTables.clear();
+    Registry::get().VkPhysicalDevices.clear();
     for (auto layerItr = layers.rbegin(); layerItr != layers.rend(); ++layerItr) {
         assert(*layerItr && "gvk::layer::Registry contains a null layer; are layers configured correctly and intialized via gvk::layer::on_load()?");
         (*layerItr)->post_vkDestroyInstance(instance, pAllocator);
@@ -122,12 +130,70 @@ void destroy_instance(VkInstance instance, const VkAllocationCallbacks* pAllocat
     layers.clear();
 }
 
+VkResult get_physical_device_infos(const DispatchTable& dispatchTable, VkInstance instance, std::map<VkPhysicalDeviceProperties, std::vector<VkPhysicalDevice>>& physicalDeviceInfos)
+{
+    assert(dispatchTable.gvkEnumeratePhysicalDevices);
+    assert(dispatchTable.gvkGetPhysicalDeviceProperties);
+    assert(instance);
+    physicalDeviceInfos.clear();
+    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+        uint32_t physicalDeviceCount = 0;
+        gvk_result(dispatchTable.gvkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr));
+        std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
+        gvk_result(dispatchTable.gvkEnumeratePhysicalDevices(instance, &physicalDeviceCount, physicalDevices.data()));
+        for (uint32_t i = 0; i < physicalDeviceCount; ++i) {
+            VkPhysicalDeviceProperties physicalDeviceProperties{ };
+            dispatchTable.gvkGetPhysicalDeviceProperties(physicalDevices[i], &physicalDeviceProperties);
+            physicalDeviceInfos[physicalDeviceProperties].push_back(physicalDevices[i]);
+        }
+    } gvk_result_scope_end;
+    return gvkResult;
+}
+
+VkResult create_physical_device_mappings(VkInstance instance)
+{
+    assert(instance);
+    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+        // Get VkPhysicalDevice and VkPhysicalDeviceProperties as seen by the application
+        DispatchTable applicationDispatchTable{ };
+        DispatchTable::load_global_entry_points(&applicationDispatchTable);
+        DispatchTable::load_instance_entry_points(instance, &applicationDispatchTable);
+        std::map<VkPhysicalDeviceProperties, std::vector<VkPhysicalDevice>> applicationPhysicalDeviceInfos;
+        get_physical_device_infos(applicationDispatchTable, instance, applicationPhysicalDeviceInfos);
+
+        // Get VkPhysicalDevice and VkPhysicalDeviceProperties as seen by the loader
+        const auto& layerInstanceDispatchTableItr = Registry::get().VkInstanceDispatchTables.find(get_dispatch_key(instance));
+        assert(layerInstanceDispatchTableItr != Registry::get().VkInstanceDispatchTables.end());
+        std::map<VkPhysicalDeviceProperties, std::vector<VkPhysicalDevice>> loaderPhysicalDeviceInfos;
+        get_physical_device_infos(layerInstanceDispatchTableItr->second, instance, loaderPhysicalDeviceInfos);
+
+        // Map application VkPhysicalDevices to loader VkPhysicalDevices
+        for (auto applicationPhysicalDeviceInfoItr : applicationPhysicalDeviceInfos) {
+            const auto& physicalDeviceProperties = applicationPhysicalDeviceInfoItr.first;
+            auto loaderPhysicalDeviceInfoItr = loaderPhysicalDeviceInfos.find(physicalDeviceProperties);
+            gvk_result(loaderPhysicalDeviceInfoItr != loaderPhysicalDeviceInfos.end() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            const auto& applicationPhysicalDevices = applicationPhysicalDeviceInfoItr.second;
+            const auto& loaderPhysicalDevices = loaderPhysicalDeviceInfoItr->second;
+            gvk_result(applicationPhysicalDevices.size() == loaderPhysicalDevices.size() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            for (uint32_t i = 0; i < applicationPhysicalDevices.size(); ++i) {
+                gvk_result(Registry::get().VkPhysicalDevices.insert({ applicationPhysicalDevices[i], loaderPhysicalDevices[i] }).second ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            }
+            loaderPhysicalDeviceInfos.erase(physicalDeviceProperties);
+        }
+
+        // Ensure that every VkPhysicalDevice has been mapped 
+        gvk_result(loaderPhysicalDeviceInfos.empty() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+    } gvk_result_scope_end;
+    return gvkResult;
+}
+
 VkResult create_device(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice)
 {
     assert(physicalDevice);
     assert(pCreateInfo);
     assert(pDevice);
-    auto vkResult = VK_ERROR_INITIALIZATION_FAILED;
+    std::lock_guard<std::mutex> lock(Registry::get().mutex);
+    auto vkResult = create_physical_device_mappings(Registry::get().instance);
     auto pLayerDeviceCreateInfo = get_device_chain_info(pCreateInfo, VK_LAYER_LINK_INFO);
     auto pfn_vkGetDeviceProcAddr = (pLayerDeviceCreateInfo && pLayerDeviceCreateInfo->u.pLayerInfo) ? pLayerDeviceCreateInfo->u.pLayerInfo->pfnNextGetDeviceProcAddr : nullptr;
     const auto& instanceDispatchTableItr = Registry::get().VkInstanceDispatchTables.find(get_dispatch_key(physicalDevice));
@@ -146,7 +212,6 @@ VkResult create_device(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo
             DispatchTable deviceDispatchTable { };
             deviceDispatchTable.gvkGetDeviceProcAddr = pfn_vkGetDeviceProcAddr;
             DispatchTable::load_device_entry_points(*pDevice, &deviceDispatchTable);
-            std::lock_guard<std::mutex> lock(Registry::get().mutex);
             Registry::get().VkDeviceDispatchTables.insert({ get_dispatch_key(*pDevice), deviceDispatchTable });
         }
         for (auto layerItr = layers.rbegin(); layerItr != layers.rend(); ++layerItr) {
@@ -160,6 +225,7 @@ VkResult create_device(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo
 void destroy_device(VkDevice device, const VkAllocationCallbacks* pAllocator)
 {
     assert(device);
+    std::lock_guard<std::mutex> lock(Registry::get().mutex);
     auto& layers = Registry::get().layers;
     for (auto layerItr = layers.begin(); layerItr != layers.end(); ++layerItr) {
         assert(*layerItr && "gvk::layer::Registry contains a null layer; are layers configured correctly and intialized via gvk::layer::on_load()?");
@@ -170,10 +236,7 @@ void destroy_device(VkDevice device, const VkAllocationCallbacks* pAllocator)
     const auto& deviceDispatchTable = deviceDispatchTableItr->second;
     assert(deviceDispatchTable.gvkDestroyDevice && "gvk::layer::Registry VkDevice gvk::DispatchTable contains a null entry point for vkDestroyDevice; are the Vulkan SDK, runtime, and layers configured correctly?");
     deviceDispatchTable.gvkDestroyDevice(device, pAllocator);
-    {
-        std::lock_guard<std::mutex> lock(Registry::get().mutex);
-        Registry::get().VkDeviceDispatchTables.erase(get_dispatch_key(device));
-    }
+    Registry::get().VkDeviceDispatchTables.erase(get_dispatch_key(device));
     for (auto layerItr = layers.rbegin(); layerItr != layers.rend(); ++layerItr) {
         assert(*layerItr && "gvk::layer::Registry contains a null layer; are layers configured correctly and intialized via gvk::layer::on_load()?");
         (*layerItr)->post_vkDestroyDevice(device, pAllocator);

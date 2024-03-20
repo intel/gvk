@@ -33,8 +33,20 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "cereal/archives/binary.hpp"
 #include "cereal/types/common.hpp"
 
+#include <cassert>
 #include <iosfwd>
 #include <type_traits>
+
+#define GVK_STUB_CEREALIZATION_FUNCTIONS(VK_STRUCTURE_TYPE)                                         \
+template <typename ArchiveType> inline void save(ArchiveType&, const VK_STRUCTURE_TYPE&)            \
+{                                                                                                   \
+    assert(false && "cereal::save<" #VK_STRUCTURE_TYPE ">() unserviced; gvk maintenance required"); \
+}                                                                                                   \
+                                                                                                    \
+template <typename ArchiveType> inline void load(ArchiveType&, VK_STRUCTURE_TYPE&)                  \
+{                                                                                                   \
+    assert(false && "cereal::load<" #VK_STRUCTURE_TYPE ">() unserviced; gvk maintenance required"); \
+}
 
 namespace gvk {
 namespace detail {
