@@ -82,6 +82,9 @@ Parameter::Parameter(const tinyxml2::XMLElement& xmlElement)
             assert(false);
         }
     }
+    if (length == "1") {
+        length.clear();
+    }
     if (!length.empty()) {
         flags |= Array;
         if (!(flags & Static)) {
