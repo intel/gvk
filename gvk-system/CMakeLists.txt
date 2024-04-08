@@ -26,3 +26,7 @@ gvk_add_static_library(
     SOURCE_FILES
         "${sourcePath}/surface.cpp"
 )
+
+################################################################################
+# gvk-system
+gvk_install_library(TARGET gvk-system)

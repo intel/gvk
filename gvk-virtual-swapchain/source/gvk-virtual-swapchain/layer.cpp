@@ -199,7 +199,6 @@ VkResult Swapchain::post_vkAcquireNextImage2KHR(VkDevice device, const VkAcquire
 void Swapchain::pre_vkQueuePresentKHR(VkCommandBuffer commandBuffer, uint32_t imageIndex)
 {
     assert(commandBuffer);
-
     auto actualImage = mActualImages[imageIndex];
     auto itr = mAcquiredVkImages.find(imageIndex);
     assert(itr != mAcquiredVkImages.end());

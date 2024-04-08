@@ -11,3 +11,4 @@ FetchContent_Declare(
     GIT_PROGRESS TRUE
 )
 FetchContent_MakeAvailable(glm)
+set_target_properties(glm PROPERTIES FOLDER "${GVK_IDE_FOLDER}/external/")

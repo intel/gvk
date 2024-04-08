@@ -121,6 +121,7 @@ bool Surface::create(const CreateInfo* pCreateInfo, Surface* pSurface)
                 if (pSurface->mpGlfwWindow) {
                     glfwSetWindowUserPointer(pSurface->mpGlfwWindow, pSurface);
                     glfwSetWindowCloseCallback(pSurface->mpGlfwWindow, glfw_window_close_callback);
+                    glfwSetWindowSizeCallback(pSurface->mpGlfwWindow, glfw_window_size_callback);
                     glfwSetFramebufferSizeCallback(pSurface->mpGlfwWindow, glfw_framebuffer_size_callback);
                     glfwSetCharCallback(pSurface->mpGlfwWindow, glfw_char_callback);
                     glfwSetKeyCallback(pSurface->mpGlfwWindow, glfw_key_callback);
@@ -128,7 +129,6 @@ bool Surface::create(const CreateInfo* pCreateInfo, Surface* pSurface)
                     glfwSetMouseButtonCallback(pSurface->mpGlfwWindow, glfw_mouse_button_callback);
                     glfwSetScrollCallback(pSurface->mpGlfwWindow, glfw_scroll_callback);
                     glfwSetWindowFocusCallback(pSurface->mpGlfwWindow, glfw_window_focus_callback);
-                    glfwGetFramebufferSize(pSurface->mpGlfwWindow, &pSurface->mExtent[0], &pSurface->mExtent[1]);
                     glfwWindows.insert(pSurface->mpGlfwWindow);
                 }
             }
@@ -146,12 +146,13 @@ Surface& Surface::operator=(Surface&& other) noexcept
 {
     if (this != &other) {
         mInput = std::move(other.mInput);
+        mTitle = std::move(other.mTitle);
         mStatus = std::move(other.mStatus);
-        mExtent = std::move(other.mExtent);
         mTextStream = std::move(other.mTextStream);
-        mpGlfwWindow = std::move(other.mpGlfwWindow);
-        glfwSetWindowUserPointer(mpGlfwWindow, this);
-        other.mpGlfwWindow = nullptr;
+        mpGlfwWindow = std::exchange(other.mpGlfwWindow, nullptr);
+        if (mpGlfwWindow) {
+            glfwSetWindowUserPointer(mpGlfwWindow, this);
+        }
     }
     return *this;
 }
@@ -180,8 +181,8 @@ void Surface::reset()
         );
     }
     mInput = { };
+    mTitle.clear();
     mStatus = 0;
-    mExtent = { };
     mTextStream.clear();
     mpGlfwWindow = nullptr;
 }
@@ -238,10 +239,39 @@ Surface::StatusFlags Surface::get_status() const
     return mStatus;
 }
 
-const std::array<int32_t, 2>& Surface::get_extent() const
+const std::string& Surface::get_title() const
 {
     assert(mpGlfwWindow);
-    return mExtent;
+    return mTitle;
+}
+
+void Surface::set_title(const std::string& title)
+{
+    assert(mpGlfwWindow);
+    mTitle = title;
+    glfwSetWindowTitle(mpGlfwWindow, mTitle.c_str());
+}
+
+void Surface::set_window_extent(const std::array<int32_t, 2>& extent)
+{
+    assert(mpGlfwWindow);
+    glfwSetWindowSize(mpGlfwWindow, extent[0], extent[1]);
+}
+
+std::array<int32_t, 2> Surface::get_window_extent() const
+{
+    assert(mpGlfwWindow);
+    std::array<int32_t, 2> extent{ };
+    glfwGetWindowSize(mpGlfwWindow, &extent[0], &extent[1]);
+    return extent;
+}
+
+std::array<int32_t, 2> Surface::get_framebuffer_extent() const
+{
+    assert(mpGlfwWindow);
+    std::array<int32_t, 2> extent{ };
+    glfwGetFramebufferSize(mpGlfwWindow, &extent[0], &extent[1]);
+    return extent;
 }
 
 const std::vector<uint32_t>& Surface::get_text_stream() const
@@ -444,11 +474,21 @@ void Surface::glfw_window_close_callback(GLFWwindow* glfwWindow)
     pSurface->mStatus |= Surface::CloseRequested;
 }
 
-void Surface::glfw_framebuffer_size_callback(GLFWwindow* glfwWindow, int width, int height)
+void Surface::glfw_window_size_callback(GLFWwindow* glfwWindow, int width, int height)
 {
+    (void)width;
+    (void)height;
     auto pSurface = (Surface*)glfwGetWindowUserPointer(glfwWindow);
     assert(pSurface);
-    pSurface->mExtent = { width, height };
+    pSurface->mStatus |= Resized;
+}
+
+void Surface::glfw_framebuffer_size_callback(GLFWwindow* glfwWindow, int width, int height)
+{
+    (void)width;
+    (void)height;
+    auto pSurface = (Surface*)glfwGetWindowUserPointer(glfwWindow);
+    assert(pSurface);
     pSurface->mStatus |= Resized;
 }
 

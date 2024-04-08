@@ -103,7 +103,11 @@ public:
     void set_cursor_type(CursorType cursorType);
     const Input& get_input() const;
     StatusFlags get_status() const;
-    const std::array<int32_t, 2>& get_extent() const;
+    const std::string& get_title() const;
+    void set_title(const std::string& title);
+    void set_window_extent(const std::array<int32_t, 2>& extent);
+    std::array<int32_t, 2> get_window_extent() const;
+    std::array<int32_t, 2> get_framebuffer_extent() const;
     const std::vector<uint32_t>& get_text_stream() const;
 #if defined(__linux__)
     void* get_display() const;
@@ -117,6 +121,7 @@ public:
 private:
     static void glfw_error_callback(int, const char*);
     static void glfw_window_close_callback(GLFWwindow*);
+    static void glfw_window_size_callback(GLFWwindow*, int, int);
     static void glfw_framebuffer_size_callback(GLFWwindow*, int, int);
     static void glfw_char_callback(GLFWwindow*, unsigned int);
     static void glfw_key_callback(GLFWwindow*, int, int, int, int);
@@ -127,8 +132,8 @@ private:
     static std::unordered_map<CursorType, GLFWcursor*> smCursors;
 
     Input mInput;
+    std::string mTitle;
     StatusFlags mStatus{ };
-    std::array<int32_t, 2> mExtent{ };
     std::vector<uint32_t> mTextStream;
     GLFWwindow* mpGlfwWindow { nullptr };
 

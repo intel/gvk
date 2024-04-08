@@ -3,7 +3,7 @@
 
 A collection of Vulkan C++ utilities with a general focus on tools development, and a specific focus on supporting [Intel Graphics Performance Analyzers Framework](https://intel.github.io/gpasdk-doc/).
 
-Features:
+# Features
  - Vulkan structure utilities (compare/copy/serialize/stringify)
  - Managed Vulkan handles
  - Managed WSI (Window System Integration)
@@ -13,6 +13,14 @@ Features:
  - [Vulkan Memory Allocator](https://gpuopen.com/vulkan-memory-allocator/) integration
  - Vulkan XML parsing utilities (used to keep the project up to date with the vk.xml)
  - ...and more...
+
+# Samples
+[<img src="samples/screens/gvk-getting-started-00-triangle.png" width="320" height="180">](samples/gvk-getting-started-00-triangle.cpp)
+[<img src="samples/screens/gvk-getting-started-01-mesh.png" width="320" height="180">](samples/gvk-getting-started-01-mesh.cpp)
+[<img src="samples/screens/gvk-getting-started-02-uniform-buffer.gif" width="320" height="180">](samples/gvk-getting-started-02-uniform-buffer.cpp)
+[<img src="samples/screens/gvk-getting-started-03-texture-mapping.gif" width="320" height="180">](samples/gvk-getting-started-03-texture-mapping.cpp)
+[<img src="samples/screens/gvk-getting-started-04-render-target.gif" width="320" height="180">](samples/gvk-getting-started-04-render-target.cpp)
+[<img src="samples/screens/gvk-getting-started-05-gui.gif" width="320" height="180">](samples/gvk-getting-started-05-gui.cpp)
 
 # Getting Started
 Ensure the following tools are installed...
@@ -28,10 +36,8 @@ cd c:
 cd gitrepos/intel
 git clone https://github.com/intel/gvk.git
 cd gvk/
-mkdir build
-cd build/
-cmake -G "Visual Studio 17 2022" -A x64 ..
-cmake --build .
+cmake -G "Visual Studio 17 2022" -A x64 -B build
+cmake --build build
 ```
 ...open `gvk/build/gvk.sln` in Visual Studio, navigate to `gvk/samples/getting-started-00-triangle`, right click and select "Set as Startup Project", run.
 
