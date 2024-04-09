@@ -18,4 +18,7 @@ FetchContent_MakeAvailable(glfw)
 set(folder "${GVK_IDE_FOLDER}/external/glfw/")
 set_target_properties(glfw PROPERTIES FOLDER "${folder}")
 set_target_properties(update_mappings PROPERTIES FOLDER "${folder}")
-gvk_install_artifacts(TARGET glfw VERSION ${glfw_VERSION})
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    # TODO : Need to revisit cmake exports on Linux
+    gvk_install_artifacts(TARGET glfw VERSION ${glfw_VERSION})
+endif()
