@@ -497,73 +497,81 @@ void StateTracker::copy_descriptor_sets(VkDevice vkDevice, uint32_t descriptorCo
 
             auto descriptorCount = descriptorCopy.descriptorCount;
             while (descriptorCount && srcDescriptorItr != srcDescriptors.end() && dstDescriptorItr != dstDescriptors.end()) {
-                const auto& srcDescriptorSetLayoutBinding = srcDescriptorItr->second.descriptorSetLayoutBinding;
-                const auto& dstDescriptorSetLayoutBinding = dstDescriptorItr->second.descriptorSetLayoutBinding;
-                if (srcDescriptorSetLayoutBinding.descriptorType == dstDescriptorSetLayoutBinding.descriptorType) {
-                    while (srcArrayElement < srcDescriptorSetLayoutBinding.descriptorCount && dstArrayElement < dstDescriptorSetLayoutBinding.descriptorCount) {
-                        switch (srcDescriptorSetLayoutBinding.descriptorType) {
-                        case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-                        case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-                        case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-                        case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC: {
-                            assert(srcArrayElement < srcDescriptorItr->second.descriptorBufferInfos.size());
-                            assert(dstArrayElement < dstDescriptorItr->second.descriptorBufferInfos.size());
-                            dstDescriptorItr->second.descriptorBufferInfos[dstArrayElement++] = srcDescriptorItr->second.descriptorBufferInfos[srcArrayElement++];
-                            --descriptorCount;
-                        } break;
-                        case VK_DESCRIPTOR_TYPE_SAMPLER:
-                        case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-                        case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-                        case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-                        case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: {
-                            assert(srcArrayElement < srcDescriptorItr->second.descriptorImageInfos.size());
-                            assert(dstArrayElement < dstDescriptorItr->second.descriptorImageInfos.size());
-                            dstDescriptorItr->second.descriptorImageInfos[dstArrayElement].imageView = srcDescriptorItr->second.descriptorImageInfos[srcArrayElement].imageView;
-                            dstDescriptorItr->second.descriptorImageInfos[dstArrayElement].imageLayout = srcDescriptorItr->second.descriptorImageInfos[srcArrayElement].imageLayout;
-                            if (!dstDescriptorItr->second.immutableSamplers) {
-                                dstDescriptorItr->second.descriptorImageInfos[dstArrayElement].sampler = srcDescriptorItr->second.descriptorImageInfos[srcArrayElement].sampler;
-                            }
-                            ++dstArrayElement;
-                            ++srcArrayElement;
-                            --descriptorCount;
-                        } break;
-                        case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-                        case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER: {
-                            assert(srcArrayElement < srcDescriptorItr->second.texelBufferViews.size());
-                            assert(dstArrayElement < dstDescriptorItr->second.texelBufferViews.size());
-                            dstDescriptorItr->second.texelBufferViews[dstArrayElement++] = srcDescriptorItr->second.texelBufferViews[srcArrayElement++];
-                            --descriptorCount;
-                        } break;
-                        case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK: {
-                            assert(srcArrayElement < srcDescriptorItr->second.inlineUniformBlock.size());
-                            assert(dstArrayElement < dstDescriptorItr->second.inlineUniformBlock.size());
-                            dstDescriptorItr->second.inlineUniformBlock[dstArrayElement++] = srcDescriptorItr->second.inlineUniformBlock[srcArrayElement++];
-                            --descriptorCount;
-                        } break;
-                        case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
-                        case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV:
-                        case VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM:
-                        case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:
-                        case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
-                        default: {
-                            assert(false && "copy_descriptor_sets() rollover unserviced VkDescriptorType");
-                        } break;
-                        }
-                        while (srcDescriptorItr != srcDescriptors.end() && srcDescriptorItr->second.descriptorSetLayoutBinding.descriptorCount <= srcArrayElement) {
-                            srcArrayElement = 0;
-                            ++srcDescriptorItr;
-                        }
-                        while (dstDescriptorItr != dstDescriptors.end() && dstDescriptorItr->second.descriptorSetLayoutBinding.descriptorCount <= dstArrayElement) {
-                            dstArrayElement = 0;
-                            ++dstDescriptorItr;
-                        }
-                        if (srcDescriptorItr == srcDescriptors.end() || dstDescriptorItr == dstDescriptors.end()) {
-                            break;
-                        }
-                    }
-                } else {
+                auto srcDescriptorSetLayoutBinding = srcDescriptorItr->second.descriptorSetLayoutBinding;
+                auto dstDescriptorSetLayoutBinding = dstDescriptorItr->second.descriptorSetLayoutBinding;
+                if (srcDescriptorSetLayoutBinding.descriptorType != dstDescriptorSetLayoutBinding.descriptorType) {
                     assert(false && "VkDescriptorType mismatch");
                     break;
+                }
+                while (
+                    descriptorCount &&
+                    srcArrayElement < srcDescriptorSetLayoutBinding.descriptorCount &&
+                    dstArrayElement < dstDescriptorSetLayoutBinding.descriptorCount &&
+                    srcDescriptorSetLayoutBinding.descriptorType == dstDescriptorSetLayoutBinding.descriptorType
+                ) {
+                    assert(srcDescriptorItr != srcDescriptors.end());
+                    assert(dstDescriptorItr != dstDescriptors.end());
+                    srcDescriptorSetLayoutBinding = srcDescriptorItr->second.descriptorSetLayoutBinding;
+                    dstDescriptorSetLayoutBinding = dstDescriptorItr->second.descriptorSetLayoutBinding;
+                    switch (srcDescriptorSetLayoutBinding.descriptorType) {
+                    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+                    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+                    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+                    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC: {
+                        assert(srcArrayElement < srcDescriptorItr->second.descriptorBufferInfos.size());
+                        assert(dstArrayElement < dstDescriptorItr->second.descriptorBufferInfos.size());
+                        dstDescriptorItr->second.descriptorBufferInfos[dstArrayElement++] = srcDescriptorItr->second.descriptorBufferInfos[srcArrayElement++];
+                        --descriptorCount;
+                    } break;
+                    case VK_DESCRIPTOR_TYPE_SAMPLER:
+                    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+                    case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+                    case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+                    case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: {
+                        assert(srcArrayElement < srcDescriptorItr->second.descriptorImageInfos.size());
+                        assert(dstArrayElement < dstDescriptorItr->second.descriptorImageInfos.size());
+                        dstDescriptorItr->second.descriptorImageInfos[dstArrayElement].imageView = srcDescriptorItr->second.descriptorImageInfos[srcArrayElement].imageView;
+                        dstDescriptorItr->second.descriptorImageInfos[dstArrayElement].imageLayout = srcDescriptorItr->second.descriptorImageInfos[srcArrayElement].imageLayout;
+                        if (!dstDescriptorItr->second.immutableSamplers) {
+                            dstDescriptorItr->second.descriptorImageInfos[dstArrayElement].sampler = srcDescriptorItr->second.descriptorImageInfos[srcArrayElement].sampler;
+                        }
+                        ++dstArrayElement;
+                        ++srcArrayElement;
+                        --descriptorCount;
+                    } break;
+                    case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+                    case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER: {
+                        assert(srcArrayElement < srcDescriptorItr->second.texelBufferViews.size());
+                        assert(dstArrayElement < dstDescriptorItr->second.texelBufferViews.size());
+                        dstDescriptorItr->second.texelBufferViews[dstArrayElement++] = srcDescriptorItr->second.texelBufferViews[srcArrayElement++];
+                        --descriptorCount;
+                    } break;
+                    case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK: {
+                        assert(srcArrayElement < srcDescriptorItr->second.inlineUniformBlock.size());
+                        assert(dstArrayElement < dstDescriptorItr->second.inlineUniformBlock.size());
+                        dstDescriptorItr->second.inlineUniformBlock[dstArrayElement++] = srcDescriptorItr->second.inlineUniformBlock[srcArrayElement++];
+                        --descriptorCount;
+                    } break;
+                    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+                    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV:
+                    case VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM:
+                    case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:
+                    case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
+                    default: {
+                        assert(false && "copy_descriptor_sets() rollover unserviced VkDescriptorType");
+                    } break;
+                    }
+                    while (srcDescriptorItr != srcDescriptors.end() && srcDescriptorItr->second.descriptorSetLayoutBinding.descriptorCount <= srcArrayElement) {
+                        srcArrayElement = 0;
+                        ++srcDescriptorItr;
+                    }
+                    while (dstDescriptorItr != dstDescriptors.end() && dstDescriptorItr->second.descriptorSetLayoutBinding.descriptorCount <= dstArrayElement) {
+                        dstArrayElement = 0;
+                        ++dstDescriptorItr;
+                    }
+                    if (srcDescriptorItr == srcDescriptors.end() || dstDescriptorItr == dstDescriptors.end()) {
+                        break;
+                    }
                 }
             }
         }
