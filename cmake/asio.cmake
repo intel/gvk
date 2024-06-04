@@ -3,7 +3,7 @@ include_guard()
 
 include(FetchContent)
 
-set(asio_VERSION 814f67e730e154547aea3f4d99f709cbdf1ea4a0) # 1.29.0
+set(asio_VERSION 12e0ce9e0500bf0f247dbd1ae894272656456079) # 1.30.2
 FetchContent_Declare(
     asio
     GIT_REPOSITORY "https://github.com/chriskohlhoff/asio.git"

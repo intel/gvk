@@ -3,7 +3,7 @@ include_guard()
 
 include(FetchContent)
 
-set(imgui_VERSION 277ae93c41314ba5f4c7444f37c4319cdf07e8cf) # 1.90.4
+set(imgui_VERSION 00ad3c65bc256a16521288505f26fb335440f8f5) # 1.90.7
 FetchContent_Declare(
     imgui
     GIT_REPOSITORY "https://github.com/ocornut/imgui.git"

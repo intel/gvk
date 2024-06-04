@@ -3,7 +3,7 @@ include_guard()
 
 include(FetchContent)
 
-set(stb_VERSION ae721c50eaf761660b4f90cc590453cdb0c2acd0)
+set(stb_VERSION 013ac3beddff3dbffafd5177e7972067cd2b5083)
 FetchContent_Declare(
     stb
     GIT_REPOSITORY "https://github.com/nothings/stb.git"
