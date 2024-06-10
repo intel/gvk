@@ -52,6 +52,24 @@ VkResult StateTracker::post_vkCreatePipelineLayout(VkDevice device, const VkPipe
     return gvkResult;
 }
 
+template <typename VkPipelineCreateInfoType>
+inline Pipeline set_base_pipeline(VkDevice device, uint32_t pipelineCount, const VkPipeline* pPipelines, const VkPipelineCreateInfoType& createInfo)
+{
+    (void)pipelineCount;
+    if (createInfo.flags & VK_PIPELINE_CREATE_DERIVATIVE_BIT) {
+        if (!createInfo.basePipelineHandle && 0 <= createInfo.basePipelineIndex) {
+            assert(pipelineCount);
+            assert(pPipelines);
+            assert(createInfo.basePipelineIndex < (int32_t)pipelineCount);
+            auto& mutableCreateInfo = const_cast<VkPipelineCreateInfoType&>(createInfo);
+            mutableCreateInfo.basePipelineHandle = pPipelines[createInfo.basePipelineIndex];
+            mutableCreateInfo.basePipelineIndex = -1;
+        }
+        return Pipeline({ device, createInfo.basePipelineHandle });
+    }
+    return VK_NULL_HANDLE;
+}
+
 VkResult StateTracker::post_vkCreateComputePipelines(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkComputePipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines, VkResult gvkResult)
 {
     if (gvkResult == VK_SUCCESS) {
@@ -72,6 +90,7 @@ VkResult StateTracker::post_vkCreateComputePipelines(VkDevice device, VkPipeline
             controlBlock.mPipelineLayout = PipelineLayout({ device, createInfo.layout });
             controlBlock.mAllocationCallbacks = pAllocator ? *pAllocator : VkAllocationCallbacks { };
             controlBlock.mComputePipelineCreateInfo = createInfo;
+            controlBlock.mBasePipeline = set_base_pipeline(device, createInfoCount, pPipelines, *controlBlock.mComputePipelineCreateInfo);
             controlBlock.mShaderModules.push_back(ShaderModule({ device, createInfo.stage.module }));
             assert(controlBlock.mShaderModules.back());
             gvkDevice.mReference.get_obj().mPipelineTracker.insert(gvkPipeline);
@@ -101,6 +120,7 @@ VkResult StateTracker::post_vkCreateGraphicsPipelines(VkDevice device, VkPipelin
             controlBlock.mRenderPass = RenderPass({ device, createInfo.renderPass });
             controlBlock.mAllocationCallbacks = pAllocator ? *pAllocator : VkAllocationCallbacks { };
             controlBlock.mGraphicsPipelineCreateInfo = createInfo;
+            controlBlock.mBasePipeline = set_base_pipeline(device, createInfoCount, pPipelines, *controlBlock.mGraphicsPipelineCreateInfo);
             controlBlock.mShaderModules.reserve(createInfo.stageCount);
             for (uint32_t stage_i = 0; stage_i < createInfo.stageCount; ++stage_i) {
                 controlBlock.mShaderModules.push_back(ShaderModule({ device, createInfo.pStages[stage_i].module }));
@@ -133,6 +153,7 @@ VkResult StateTracker::post_vkCreateRayTracingPipelinesKHR(VkDevice device, VkDe
             controlBlock.mPipelineLayout = PipelineLayout({ device, createInfo.layout });
             controlBlock.mAllocationCallbacks = pAllocator ? *pAllocator : VkAllocationCallbacks { };
             controlBlock.mRayTracingPipelineCreateInfoKHR = createInfo;
+            controlBlock.mBasePipeline = set_base_pipeline(device, createInfoCount, pPipelines, *controlBlock.mRayTracingPipelineCreateInfoKHR);
             controlBlock.mShaderModules.reserve(createInfo.stageCount);
             for (uint32_t stage_i = 0; stage_i < createInfo.stageCount; ++stage_i) {
                 controlBlock.mShaderModules.push_back(ShaderModule({ device, createInfo.pStages[stage_i].module }));
@@ -164,6 +185,7 @@ VkResult StateTracker::post_vkCreateRayTracingPipelinesNV(VkDevice device, VkPip
             controlBlock.mPipelineLayout = PipelineLayout({ device, createInfo.layout });
             controlBlock.mAllocationCallbacks = pAllocator ? *pAllocator : VkAllocationCallbacks { };
             controlBlock.mRayTracingPipelineCreateInfoNV = createInfo;
+            controlBlock.mBasePipeline = set_base_pipeline(device, createInfoCount, pPipelines, *controlBlock.mRayTracingPipelineCreateInfoNV);
             controlBlock.mShaderModules.reserve(createInfo.stageCount);
             for (uint32_t stage_i = 0; stage_i < createInfo.stageCount; ++stage_i) {
                 controlBlock.mShaderModules.push_back(ShaderModule({ device, createInfo.pStages[stage_i].module }));
@@ -195,6 +217,7 @@ VkResult StateTracker::post_vkCreateExecutionGraphPipelinesAMDX(VkDevice device,
             controlBlock.mPipelineLayout = PipelineLayout({ device, createInfo.layout });
             controlBlock.mAllocationCallbacks = pAllocator ? *pAllocator : VkAllocationCallbacks { };
             controlBlock.mExecutionGraphPipelineCreateInfoAMDX = createInfo;
+            controlBlock.mBasePipeline = set_base_pipeline(device, createInfoCount, pPipelines, *controlBlock.mExecutionGraphPipelineCreateInfoAMDX);
             controlBlock.mShaderModules.reserve(createInfo.stageCount);
             for (uint32_t stage_i = 0; stage_i < createInfo.stageCount; ++stage_i) {
                 controlBlock.mShaderModules.push_back(ShaderModule({ device, createInfo.pStages[stage_i].module }));

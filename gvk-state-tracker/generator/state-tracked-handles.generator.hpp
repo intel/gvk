@@ -56,6 +56,7 @@ public:
         }
         if (handle.name == "VkPipeline") {
             add_member(MemberInfo("std::vector<ShaderModule>", "mShaderModules"));
+            add_member(MemberInfo("Pipeline", "mBasePipeline"));
         }
         if (handle.name == "VkAccelerationStructureKHR") {
             add_member(MemberInfo("std::vector<Buffer>", "mBuildBuffers"));
