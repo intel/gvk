@@ -42,7 +42,6 @@ cmake_dependent_option(GVK_BUILD_SAMPLES            "" ON "GVK_BUILD_GUI;GVK_BUI
 cmake_dependent_option(GVK_BUILD_TOOLS              "" ON "GVK_BUILD_STRING" OFF)
 option                (GVK_BUILD_TESTS              "" ON)
 cmake_dependent_option(GVK_RUN_TESTS                "" ON "GVK_BUILD_TESTS" OFF)
-cmake_dependent_option(GVK_CREATE_TEST_PACKAGE      "" ON "GVK_BUILD_TESTS" OFF)
 
 ################################################################################
 # Dependencies

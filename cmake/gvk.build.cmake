@@ -173,7 +173,7 @@ macro(gvk_add_target_test)
                 COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --verbose --output-on-failures
             )
         endif()
-        if(GVK_CREATE_TEST_PACKAGE)
+        if(GVK_BUILD_TESTS)
             set(package "${CMAKE_BINARY_DIR}/gvk-test-package/")
             if(NOT EXISTS "${package}")
                 file(MAKE_DIRECTORY "${package}")

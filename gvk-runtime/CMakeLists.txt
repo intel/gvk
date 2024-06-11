@@ -67,7 +67,7 @@ gvk_add_static_library(
 # gvk-runtime install
 gvk_install_library(TARGET gvk-runtime)
 install(FILES "${CMAKE_CURRENT_LIST_DIR}/gvk-windows-layer-registry.ps1" DESTINATION bin/$<CONFIG>/)
-if(GVK_CREATE_TEST_PACKAGE)
+if(GVK_BUILD_TESTS)
     set(package "${CMAKE_BINARY_DIR}/gvk-test-package/")
     if(NOT EXISTS "${package}")
         file(MAKE_DIRECTORY "${package}")
