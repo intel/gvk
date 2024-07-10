@@ -154,6 +154,11 @@ VkResult create_physical_device_mappings(VkInstance instance)
 {
     assert(instance);
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+        // The VkPhysicalDevice handles the loader exposes to the application are
+        //  different from the ones exposed to layers.  We create a mapping between them
+        //  so that we can look up VkPhysicalDevice handles whenever necessary.
+        //  See https://github.com/KhronosGroup/Vulkan-Loader/issues/162 for more info.
+
         // Get VkPhysicalDevice and VkPhysicalDeviceProperties as seen by the application
         DispatchTable applicationDispatchTable{ };
         DispatchTable::load_global_entry_points(&applicationDispatchTable);
@@ -176,7 +181,8 @@ VkResult create_physical_device_mappings(VkInstance instance)
             const auto& loaderPhysicalDevices = loaderPhysicalDeviceInfoItr->second;
             gvk_result(applicationPhysicalDevices.size() == loaderPhysicalDevices.size() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
             for (uint32_t i = 0; i < applicationPhysicalDevices.size(); ++i) {
-                gvk_result(Registry::get().VkPhysicalDevices.insert({ applicationPhysicalDevices[i], loaderPhysicalDevices[i] }).second ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+                auto itr = Registry::get().VkPhysicalDevices.insert({ applicationPhysicalDevices[i], loaderPhysicalDevices[i] });
+                gvk_result(itr.second || itr.first->second == loaderPhysicalDevices[i] ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
             }
             loaderPhysicalDeviceInfos.erase(physicalDeviceProperties);
         }

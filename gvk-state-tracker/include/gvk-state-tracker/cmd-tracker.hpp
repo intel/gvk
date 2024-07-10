@@ -44,6 +44,7 @@ class CmdTracker final
 public:
     void reset() override final;
     const std::vector<const GvkCommandBaseStructure*>& get_cmds() const;
+    const std::set<GvkStateTrackedObject>& get_bound_objects() const;
     const std::unordered_map<VkImage, ImageLayoutTracker>& get_image_layout_trackers() const;
     const std::vector<size_t>& get_build_acceleration_sturcture_cmd_indices() const;
     void enumerate_dependencies(PFN_gvkEnumerateStateTrackedObjectsCallback pfnCallback, void* pUserData) const;
@@ -120,6 +121,7 @@ private:
     std::vector<size_t> mBuildAccelerationStructureCmdIndices;
     Auto<GvkCommandStructureCmdBeginRenderPass> mBeginRenderPass;
     Auto<GvkCommandStructureCmdBeginRenderPass2> mBeginRenderPass2;
+    std::set<GvkStateTrackedObject> mBoundObjects;
 };
 
 } // namespace state_tracker

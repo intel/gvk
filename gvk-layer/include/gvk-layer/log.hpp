@@ -24,26 +24,52 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
+#pragma once
+
 #include "gvk-defines.hpp"
-#include "gvk-restore-info/generated/restore-info.h"
-#include "gvk-restore-info/generated/restore-info-enumerations-to-string.hpp"
-#include "gvk-restore-info/generated/restore-info-structure-to-string.hpp"
-#include "gvk-structures.hpp"
+
+#include <ostream>
+#include <sstream>
 
 namespace gvk {
+namespace layer {
 
-template <>
-void print<GvkStateTrackedObject>(Printer& printer, const GvkStateTrackedObject& obj)
+class Log final
 {
-    printer.print_object(
-        [&]()
-        {
-            printer.print_field("type", obj.type);
-            // NOTE : Casting handles to VkInstance so they print hex values
-            printer.print_field("handle", (VkInstance)obj.handle);
-            printer.print_field("dispatchableHandle", (VkInstance)obj.dispatchableHandle);
-        }
-    );
+public:
+    enum Ctrl
+    {
+        Flush,
+    };
+
+    Log() = default;
+
+    void set_instance(VkInstance vkInstance);
+
+    template <typename T>
+    friend Log& operator<<(Log& log, const T& obj);
+
+private:
+    VkInstance mVkInstance{ };
+    PFN_vkSubmitDebugUtilsMessageEXT mPfnVkSubmitDebugUtilsMessage{ };
+    VkDebugUtilsMessageSeverityFlagBitsEXT mSeverity{ VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT };
+    VkDebugUtilsMessageTypeFlagBitsEXT mType{ VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT };
+    std::stringstream mStrStrm;
+
+    Log(const Log&) = delete;
+    Log& operator=(const Log&) = delete;
+};
+
+template <typename T>
+inline Log& operator<<(Log& log, const T& obj)
+{
+    log.mStrStrm << obj;
+    return log;
 }
 
+template <> Log& operator<<<VkDebugUtilsMessageSeverityFlagBitsEXT>(Log& log, const VkDebugUtilsMessageSeverityFlagBitsEXT& severity);
+template <> Log& operator<<<VkDebugUtilsMessageTypeFlagBitsEXT>(Log& log, const VkDebugUtilsMessageTypeFlagBitsEXT& type);
+template <> Log& operator<<<Log::Ctrl>(Log& log, const Log::Ctrl& ctrl);
+
+} // namespace layer
 } // namespace gvk

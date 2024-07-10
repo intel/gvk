@@ -32,16 +32,9 @@ std::vector<gvk::xml::Structure> get_restore_info_structures(const gvk::xml::Man
 {
     std::vector<gvk::xml::Structure> structures;
 
-    gvk::xml::Structure gvkRestorePointObject;
-    gvkRestorePointObject.name = "GvkRestorePointObject";
-    gvkRestorePointObject.members.push_back(gvk::cppgen::create_parameter("VkObjectType", "type"));
-    gvkRestorePointObject.members.push_back(gvk::cppgen::create_parameter("uint64_t", "handle"));
-    gvkRestorePointObject.members.push_back(gvk::cppgen::create_parameter("uint64_t", "dispatchableHandle"));
-    structures.push_back(gvkRestorePointObject);
-
     gvk::xml::Structure gvkRestorePointManifest;
     gvkRestorePointManifest.name = "GvkRestorePointManifest";
-    gvk::cppgen::add_array_members_to_structure("GvkRestorePointObject", "objectCount", "pObjects", gvkRestorePointManifest);
+    gvk::cppgen::add_array_members_to_structure("GvkStateTrackedObject", "objectCount", "pObjects", gvkRestorePointManifest);
     structures.push_back(gvkRestorePointManifest);
 
     gvk::xml::Structure gvkRestoreInfoBaseStructure;
@@ -64,7 +57,7 @@ std::vector<gvk::xml::Structure> get_restore_info_structures(const gvk::xml::Man
             }
             structure.vkStructureType += "_RESTORE_INFO";
             structure.members.push_back(gvk::cppgen::create_parameter("GvkRestoreInfoStructureType", "sType"));
-            structure.members.push_back(gvk::cppgen::create_parameter("GvkRestorePointObjectStatusFlags", "flags"));
+            structure.members.push_back(gvk::cppgen::create_parameter("GvkStateTrackedObjectStatusFlags", "flags"));
             structure.members.push_back(gvk::cppgen::create_parameter(handle.name, "handle"));
 
             gvk::xml::Parameter nameParameter;
@@ -174,7 +167,7 @@ std::vector<gvk::xml::Structure> get_restore_info_structures(const gvk::xml::Man
                 structures.push_back(swapchainImageRestoreInfo);
                 gvk::cppgen::add_array_members_to_structure("GvkSwapchainImageRestoreInfo", "imageCount", "pImages", structure);
             }
-            gvk::cppgen::add_array_members_to_structure("GvkRestorePointObject", "dependencyCount", "pDependencies", structure);
+            gvk::cppgen::add_array_members_to_structure("GvkStateTrackedObject", "dependencyCount", "pDependencies", structure);
             structures.push_back(structure);
         }
     }
@@ -207,48 +200,6 @@ gvk::xml::Enumeration get_restore_info_structure_type_enumeration(const gvk::xml
     return enumeration;
 }
 
-gvk::xml::Enumeration get_restore_point_object_status_bits_enumeration()
-{
-    gvk::xml::Enumeration enumeration;
-    enumeration.name = "GvkRestorePointObjectStatusFlagBits";
-    enumeration.isBitmask = true;
-
-    gvk::xml::Enumerator enumerator;
-    enumerator.name = "GVK_RESTORE_POINT_OBJECT_STATUS_ACTIVE_BIT";
-    enumerator.value = "0x00000001";
-    enumeration.enumerators.insert(enumerator);
-
-    enumerator.name = "GVK_RESTORE_POINT_OBJECT_STATUS_DESTROYED_BIT";
-    enumerator.value = "0x00000002";
-    enumeration.enumerators.insert(enumerator);
-
-    enumerator.name = "GVK_RESTORE_POINT_OBJECT_STATUS_RECORDING_BIT";
-    enumerator.value = "0x00000004";
-    enumeration.enumerators.insert(enumerator);
-
-    enumerator.name = "GVK_RESTORE_POINT_OBJECT_STATUS_EXECUTABLE_BIT";
-    enumerator.value = "0x00000008";
-    enumeration.enumerators.insert(enumerator);
-
-    enumerator.name = "GVK_RESTORE_POINT_OBJECT_STATUS_PENDING_BIT";
-    enumerator.value = "0x00000010";
-    enumeration.enumerators.insert(enumerator);
-
-    enumerator.name = "GVK_RESTORE_POINT_OBJECT_STATUS_INVALID_BIT";
-    enumerator.value = "0x00000020";
-    enumeration.enumerators.insert(enumerator);
-
-    enumerator.name = "GVK_RESTORE_POINT_OBJECT_STATUS_SIGNALED_BIT";
-    enumerator.value = "0x00000040";
-    enumeration.enumerators.insert(enumerator);
-
-    enumerator.name = "GVK_RESTORE_POINT_OBJECT_STATUS_ACQUIRED_BIT";
-    enumerator.value = "0x00000080";
-    enumeration.enumerators.insert(enumerator);
-
-    return enumeration;
-}
-
 int main(int, const char*[])
 {
     tinyxml2::XMLDocument xmlDocument;
@@ -262,26 +213,41 @@ int main(int, const char*[])
         apiElements.includePrefix = GVK_RESTORE_INFO_GENERATED_INCLUDE_PREFIX;
         apiElements.sourcePath = GVK_RESTORE_INFO_GENERATED_SOURCE_PATH;
         apiElements.enumerations.push_back(get_restore_info_structure_type_enumeration(manifest));
-        apiElements.enumerations.push_back(get_restore_point_object_status_bits_enumeration());
         apiElements.structures = get_restore_info_structures(manifest);
+        apiElements.declarationIncludes = {
+            "VK_LAYER_INTEL_gvk_state_tracker.h",
+        };
         apiElements.headerIncludes = {
             GVK_RESTORE_INFO_GENERATED_INCLUDE_PREFIX "restore-info.h",
+            "VK_LAYER_INTEL_gvk_state_tracker.hpp",
         };
         apiElements.sourceIncludes = {
             "gvk-structures.hpp",
         };
+
         gvk::cppgen::ApiElementCollectionDeclarationGenerator::generate(apiElements);
+        gvk::cppgen::StructureComparisonOperatorsGenerator::generate(apiElements);
+        gvk::cppgen::StructureMakeTupleGenerator::generate(manifest, apiElements);
+
+        // NOTE : GvkStateTrackedObject is defined in VK_LAYER_INTEL_gvk_state_tracker.h
+        //  which doesn't have structure utilities (ie. copy/serialize/compare/etc.) so
+        //  we're adding it here so all the utilities for it get generated
+        gvk::xml::Structure gvkStateTrackedObject;
+        gvkStateTrackedObject.name = "GvkStateTrackedObject";
+        gvkStateTrackedObject.members.push_back(gvk::cppgen::create_parameter("VkObjectType", "type"));
+        gvkStateTrackedObject.members.push_back(gvk::cppgen::create_parameter("uint64_t", "handle"));
+        gvkStateTrackedObject.members.push_back(gvk::cppgen::create_parameter("uint64_t", "dispatchableHandle"));
+        apiElements.structures.push_back(gvkStateTrackedObject);
+
         gvk::cppgen::EnumerationToStringGenerator::generate(apiElements);
         gvk::cppgen::StructureCerealizationGenerator::generate(manifest, apiElements);
-        gvk::cppgen::StructureComparisonOperatorsGenerator::generate(apiElements);
         gvk::cppgen::StructureCreateCopyGenerator::generate(manifest, apiElements);
         gvk::cppgen::StructureDecerealizationGenerator::generate(manifest, apiElements);
         gvk::cppgen::StructureDeserializationGenerator::generate(apiElements);
         gvk::cppgen::StructureDestroyCopyGenerator::generate(manifest, apiElements);
         gvk::cppgen::StructureGetSTypeGenerator::generate(apiElements);
-        gvk::cppgen::StructureMakeTupleGenerator::generate(manifest, apiElements);
         gvk::cppgen::StructureSerializationGenerator::generate(apiElements);
-        apiElements.manuallyImplemented.insert("GvkRestorePointObject");
+        apiElements.manuallyImplemented.insert("GvkStateTrackedObject");
         gvk::cppgen::StructureToStringGenerator::generate(manifest, apiElements);
     }
     return 0;

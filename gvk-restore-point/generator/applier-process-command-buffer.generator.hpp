@@ -50,9 +50,9 @@ public:
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk::restore_point");
         file << std::endl;
-        file << "VkResult Applier::process_VkCommandBuffer_cmds(const GvkRestorePointObject& restorePointObject)" << std::endl;
+        file << "VkResult Applier::restore_VkCommandBuffer_cmds(const GvkStateTrackedObject& restorePointObject)" << std::endl;
         file << "{" << std::endl;
-        file << "    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {" << std::endl;
+        file << "    gvk_result_scope_begin(VK_SUCCESS) {" << std::endl;
         file << "        auto cmdsPath = (mApplyInfo.path / \"VkCommandBuffer\" / to_hex_string(restorePointObject.handle)).replace_extension(\".cmds\");" << std::endl;
         file << "        if (std::filesystem::exists(cmdsPath)) {" << std::endl;
         file << "            std::ifstream cmdsFile(cmdsPath, std::ios::binary);" << std::endl;
@@ -77,7 +77,7 @@ public:
                 file << "                    deserialize(cmdsFile, nullptr, commandStructure);" << std::endl;
                 file << "                    auto commandBuffer = (VkCommandBuffer)get_restored_object(restorePointObject).handle;" << std::endl;
                 file << "                    const_cast<GvkCommandStructure" << string::strip_vk(command.name) << "&>(*commandStructure).commandBuffer = VK_NULL_HANDLE;" << std::endl;
-                file << "                    update_command_structure_handles(mRestorePointObjects, (uint64_t)device, *commandStructure);" << std::endl;
+                file << "                    update_command_structure_handles(mApplyInfo.gvkRestorePoint->objectMap.get_restored_objects(), (uint64_t)device, *commandStructure);" << std::endl;
                 file << "                    const_cast<GvkCommandStructure" << string::strip_vk(command.name) << "&>(*commandStructure).commandBuffer = commandBuffer;" << std::endl;
                 file << "                    detail::execute_command_structure(mApplyInfo.dispatchTable, commandStructure);" << std::endl;
                 file << "                } break;" << std::endl;

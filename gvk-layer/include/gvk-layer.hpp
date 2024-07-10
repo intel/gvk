@@ -28,4 +28,5 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-layer/generated/basic-layer.hpp"
 #include "gvk-layer/generated/layer-hooks.hpp"
+#include "gvk-layer/log.hpp"
 #include "gvk-layer/registry.hpp"

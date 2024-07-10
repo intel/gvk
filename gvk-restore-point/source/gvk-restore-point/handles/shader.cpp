@@ -24,26 +24,39 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "gvk-defines.hpp"
-#include "gvk-restore-info/generated/restore-info.h"
-#include "gvk-restore-info/generated/restore-info-enumerations-to-string.hpp"
-#include "gvk-restore-info/generated/restore-info-structure-to-string.hpp"
-#include "gvk-structures.hpp"
+#include "gvk-restore-point/layer.hpp"
 
 namespace gvk {
+namespace restore_point {
 
-template <>
-void print<GvkStateTrackedObject>(Printer& printer, const GvkStateTrackedObject& obj)
+VkResult Layer::pre_vkCreateShadersEXT(VkDevice device, uint32_t createInfoCount, const VkShaderCreateInfoEXT* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkShaderEXT* pShaders, VkResult gvkResult)
 {
-    printer.print_object(
-        [&]()
-        {
-            printer.print_field("type", obj.type);
-            // NOTE : Casting handles to VkInstance so they print hex values
-            printer.print_field("handle", (VkInstance)obj.handle);
-            printer.print_field("dispatchableHandle", (VkInstance)obj.dispatchableHandle);
-        }
-    );
+    (void)device;
+    (void)createInfoCount;
+    (void)pCreateInfos;
+    (void)pAllocator;
+    (void)pShaders;
+    // NOOP :
+    return gvkResult;
 }
 
+VkResult Layer::post_vkCreateShadersEXT(VkDevice device, uint32_t createInfoCount, const VkShaderCreateInfoEXT* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkShaderEXT* pShaders, VkResult gvkResult)
+{
+    (void)pCreateInfos;
+    (void)pAllocator;
+    for (auto gvkRestorePoint : get_restore_points()) {
+        assert(gvkRestorePoint);
+        assert(pShaders);
+        for (uint32_t i = 0; i < createInfoCount; ++i) {
+            auto stateTrackedShader = get_default<GvkStateTrackedObject>();
+            stateTrackedShader.type = VK_OBJECT_TYPE_SHADER_EXT;
+            stateTrackedShader.handle = (uint64_t)pShaders[i];
+            stateTrackedShader.dispatchableHandle = (uint64_t)device;
+            gvkRestorePoint->createdObjects.insert(stateTrackedShader);
+        }
+    }
+    return gvkResult;
+}
+
+} // namespace restore_point
 } // namespace gvk

@@ -24,26 +24,40 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
+#pragma once
+
 #include "gvk-defines.hpp"
-#include "gvk-restore-info/generated/restore-info.h"
-#include "gvk-restore-info/generated/restore-info-enumerations-to-string.hpp"
-#include "gvk-restore-info/generated/restore-info-structure-to-string.hpp"
 #include "gvk-structures.hpp"
+#include "gvk-restore-info.hpp"
+#include "gvk-command-structures.hpp"
+
+#include <map>
+#include <mutex>
 
 namespace gvk {
+namespace restore_point {
 
-template <>
-void print<GvkStateTrackedObject>(Printer& printer, const GvkStateTrackedObject& obj)
+using CapturedObject = GvkStateTrackedObject;
+using RestoredObject = GvkStateTrackedObject;
+
+class ObjectMap final
 {
-    printer.print_object(
-        [&]()
-        {
-            printer.print_field("type", obj.type);
-            // NOTE : Casting handles to VkInstance so they print hex values
-            printer.print_field("handle", (VkInstance)obj.handle);
-            printer.print_field("dispatchableHandle", (VkInstance)obj.dispatchableHandle);
-        }
-    );
-}
+public:
+    bool register_object_restoration(const CapturedObject& capturedObject, const RestoredObject& restoredObject);
+    void register_object_destruction(const RestoredObject& restoredObject);
+    bool set_object_mapping(const CapturedObject& capturedObject, const RestoredObject& restoredObject);
+    const std::map<CapturedObject, RestoredObject>& get_restored_objects() const;
+    const std::map<RestoredObject, RestoredObject>& get_captured_objects() const;
+    RestoredObject get_restored_object(const CapturedObject& capturedObject) const;
+    CapturedObject get_captured_object(const RestoredObject& restoredObject) const;
+    size_t size() const;
+    void clear();
 
+private:
+    mutable std::mutex mMutex;
+    std::map<CapturedObject, RestoredObject> mRestoredObjects;
+    std::map<RestoredObject, CapturedObject> mCapturedObjects;
+};
+
+} // namespace restore_point
 } // namespace gvk

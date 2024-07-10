@@ -26,11 +26,171 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-restore-point/applier.hpp"
 #include "gvk-restore-point/creator.hpp"
+#include "gvk-restore-point/layer.hpp"
 
 namespace gvk {
 namespace restore_point {
 
-VkResult Applier::process_GvkCommandStructureCreateComputePipelines(const GvkRestorePointObject& restorePointObject, const GvkPipelineRestoreInfo& restoreInfo, GvkCommandStructureCreateComputePipelines& commandStructure)
+VkResult Layer::pre_vkCreateComputePipelines(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkComputePipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines, VkResult gvkResult)
+{
+    (void)device;
+    (void)pipelineCache;
+    (void)createInfoCount;
+    (void)pCreateInfos;
+    (void)pAllocator;
+    (void)pPipelines;
+    // NOOP :
+    return gvkResult;
+}
+
+VkResult Layer::post_vkCreateComputePipelines(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkComputePipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines, VkResult gvkResult)
+{
+    (void)pipelineCache;
+    (void)pCreateInfos;
+    (void)pAllocator;
+    for (auto gvkRestorePoint : get_restore_points()) {
+        assert(gvkRestorePoint);
+        assert(pPipelines);
+        for (uint32_t i = 0; i < createInfoCount; ++i) {
+            auto stateTrackedPipeline = get_default<GvkStateTrackedObject>();
+            stateTrackedPipeline.type = VK_OBJECT_TYPE_PIPELINE;
+            stateTrackedPipeline.handle = (uint64_t)pPipelines[i];
+            stateTrackedPipeline.dispatchableHandle = (uint64_t)device;
+            gvkRestorePoint->createdObjects.insert(stateTrackedPipeline);
+        }
+    }
+    return gvkResult;
+}
+
+#ifdef VK_ENABLE_BETA_EXTENSIONS
+VkResult Layer::pre_vkCreateExecutionGraphPipelinesAMDX(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkExecutionGraphPipelineCreateInfoAMDX* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines, VkResult gvkResult)
+{
+    (void)device;
+    (void)pipelineCache;
+    (void)createInfoCount;
+    (void)pCreateInfos;
+    (void)pAllocator;
+    (void)pPipelines;
+    // NOOP :
+    return gvkResult;
+}
+
+VkResult Layer::post_vkCreateExecutionGraphPipelinesAMDX(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkExecutionGraphPipelineCreateInfoAMDX* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines, VkResult gvkResult)
+{
+    (void)pipelineCache;
+    (void)pCreateInfos;
+    (void)pAllocator;
+    for (auto gvkRestorePoint : get_restore_points()) {
+        assert(gvkRestorePoint);
+        assert(pPipelines);
+        for (uint32_t i = 0; i < createInfoCount; ++i) {
+            auto stateTrackedPipeline = get_default<GvkStateTrackedObject>();
+            stateTrackedPipeline.type = VK_OBJECT_TYPE_PIPELINE;
+            stateTrackedPipeline.handle = (uint64_t)pPipelines[i];
+            stateTrackedPipeline.dispatchableHandle = (uint64_t)device;
+            gvkRestorePoint->createdObjects.insert(stateTrackedPipeline);
+        }
+    }
+    return gvkResult;
+}
+#endif // VK_ENABLE_BETA_EXTENSIONS
+
+VkResult Layer::pre_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines, VkResult gvkResult)
+{
+    (void)device;
+    (void)pipelineCache;
+    (void)createInfoCount;
+    (void)pCreateInfos;
+    (void)pAllocator;
+    (void)pPipelines;
+    // NOOP :
+    return gvkResult;
+}
+
+VkResult Layer::post_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines, VkResult gvkResult)
+{
+    (void)pipelineCache;
+    (void)pCreateInfos;
+    (void)pAllocator;
+    for (auto gvkRestorePoint : get_restore_points()) {
+        assert(gvkRestorePoint);
+        assert(pPipelines);
+        for (uint32_t i = 0; i < createInfoCount; ++i) {
+            auto stateTrackedPipeline = get_default<GvkStateTrackedObject>();
+            stateTrackedPipeline.type = VK_OBJECT_TYPE_PIPELINE;
+            stateTrackedPipeline.handle = (uint64_t)pPipelines[i];
+            stateTrackedPipeline.dispatchableHandle = (uint64_t)device;
+            gvkRestorePoint->createdObjects.insert(stateTrackedPipeline);
+        }
+    }
+    return gvkResult;
+}
+
+VkResult Layer::pre_vkCreateRayTracingPipelinesKHR(VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkRayTracingPipelineCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines, VkResult gvkResult)
+{
+    (void)device;
+    (void)deferredOperation;
+    (void)pipelineCache;
+    (void)createInfoCount;
+    (void)pCreateInfos;
+    (void)pAllocator;
+    (void)pPipelines;
+    // NOOP :
+    return gvkResult;
+}
+
+VkResult Layer::post_vkCreateRayTracingPipelinesKHR(VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkRayTracingPipelineCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines, VkResult gvkResult)
+{
+    (void)deferredOperation;
+    (void)pipelineCache;
+    (void)pCreateInfos;
+    (void)pAllocator;
+    for (auto gvkRestorePoint : get_restore_points()) {
+        assert(gvkRestorePoint);
+        assert(pPipelines);
+        for (uint32_t i = 0; i < createInfoCount; ++i) {
+            auto stateTrackedPipeline = get_default<GvkStateTrackedObject>();
+            stateTrackedPipeline.type = VK_OBJECT_TYPE_PIPELINE;
+            stateTrackedPipeline.handle = (uint64_t)pPipelines[i];
+            stateTrackedPipeline.dispatchableHandle = (uint64_t)device;
+            gvkRestorePoint->createdObjects.insert(stateTrackedPipeline);
+        }
+    }
+    return gvkResult;
+}
+
+VkResult Layer::pre_vkCreateRayTracingPipelinesNV(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkRayTracingPipelineCreateInfoNV* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines, VkResult gvkResult)
+{
+    (void)device;
+    (void)pipelineCache;
+    (void)createInfoCount;
+    (void)pCreateInfos;
+    (void)pAllocator;
+    (void)pPipelines;
+    // NOOP :
+    return gvkResult;
+}
+
+VkResult Layer::post_vkCreateRayTracingPipelinesNV(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkRayTracingPipelineCreateInfoNV* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines, VkResult gvkResult)
+{
+    (void)pipelineCache;
+    (void)pCreateInfos;
+    (void)pAllocator;
+    for (auto gvkRestorePoint : get_restore_points()) {
+        assert(gvkRestorePoint);
+        assert(pPipelines);
+        for (uint32_t i = 0; i < createInfoCount; ++i) {
+            auto stateTrackedPipeline = get_default<GvkStateTrackedObject>();
+            stateTrackedPipeline.type = VK_OBJECT_TYPE_PIPELINE;
+            stateTrackedPipeline.handle = (uint64_t)pPipelines[i];
+            stateTrackedPipeline.dispatchableHandle = (uint64_t)device;
+            gvkRestorePoint->createdObjects.insert(stateTrackedPipeline);
+        }
+    }
+    return gvkResult;
+}
+
+VkResult Applier::process_GvkCommandStructureCreateComputePipelines(const GvkStateTrackedObject& restorePointObject, const GvkPipelineRestoreInfo& restoreInfo, GvkCommandStructureCreateComputePipelines& commandStructure)
 {
     // TODO : Reset after processing
     (void)restorePointObject;
@@ -40,7 +200,7 @@ VkResult Applier::process_GvkCommandStructureCreateComputePipelines(const GvkRes
     return VK_SUCCESS;
 }
 
-VkResult Applier::process_GvkCommandStructureCreateGraphicsPipelines(const GvkRestorePointObject& restorePointObject, const GvkPipelineRestoreInfo& restoreInfo, GvkCommandStructureCreateGraphicsPipelines& commandStructure)
+VkResult Applier::process_GvkCommandStructureCreateGraphicsPipelines(const GvkStateTrackedObject& restorePointObject, const GvkPipelineRestoreInfo& restoreInfo, GvkCommandStructureCreateGraphicsPipelines& commandStructure)
 {
     // TODO : Reset after processing
     (void)restorePointObject;
@@ -50,7 +210,7 @@ VkResult Applier::process_GvkCommandStructureCreateGraphicsPipelines(const GvkRe
     return VK_SUCCESS;
 }
 
-VkResult Applier::process_GvkCommandStructureCreateRayTracingPipelinesKHR(const GvkRestorePointObject& restorePointObject, const GvkPipelineRestoreInfo& restoreInfo, GvkCommandStructureCreateRayTracingPipelinesKHR& commandStructure)
+VkResult Applier::process_GvkCommandStructureCreateRayTracingPipelinesKHR(const GvkStateTrackedObject& restorePointObject, const GvkPipelineRestoreInfo& restoreInfo, GvkCommandStructureCreateRayTracingPipelinesKHR& commandStructure)
 {
     // TODO : Reset after processing
     (void)restorePointObject;

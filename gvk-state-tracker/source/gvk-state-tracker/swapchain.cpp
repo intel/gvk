@@ -124,11 +124,11 @@ VkResult StateTracker::post_vkAcquireNextImageKHR(VkDevice device, VkSwapchainKH
     Image gvkImage({ device, images[*pImageIndex] });
     assert(gvkImage);
 
-    gvkImage.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKER_OBJECT_STATUS_ACQUIRED_BIT;
+    gvkImage.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKED_OBJECT_STATUS_ACQUIRED_BIT;
     gvkImage.mReference.get_obj().mSwapchainAcquisitionFence = Fence({ device, fence });
     gvkImage.mReference.get_obj().mSwapchainAcquisitionSemaphore = Semaphore({ device, semaphore });
     if (gvkImage.mReference.get_obj().mSwapchainAcquisitionSemaphore) {
-        gvkImage.mReference.get_obj().mSwapchainAcquisitionSemaphore.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKER_OBJECT_STATUS_SIGNALED_BIT;
+        gvkImage.mReference.get_obj().mSwapchainAcquisitionSemaphore.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKED_OBJECT_STATUS_SIGNALED_BIT;
     }
     return gvkResult;
 }
@@ -153,11 +153,11 @@ VkResult StateTracker::post_vkAcquireNextImage2KHR(VkDevice device, const VkAcqu
     Image gvkImage({ device, images[*pImageIndex] });
     assert(gvkImage);
 
-    gvkImage.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKER_OBJECT_STATUS_ACQUIRED_BIT;
+    gvkImage.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKED_OBJECT_STATUS_ACQUIRED_BIT;
     gvkImage.mReference.get_obj().mSwapchainAcquisitionFence = Fence({ device, pAcquireInfo->fence });
     gvkImage.mReference.get_obj().mSwapchainAcquisitionSemaphore = Semaphore({ device, pAcquireInfo->semaphore });
     if (gvkImage.mReference.get_obj().mSwapchainAcquisitionSemaphore) {
-        gvkImage.mReference.get_obj().mSwapchainAcquisitionSemaphore.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKER_OBJECT_STATUS_SIGNALED_BIT;
+        gvkImage.mReference.get_obj().mSwapchainAcquisitionSemaphore.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKED_OBJECT_STATUS_SIGNALED_BIT;
     }
     return gvkResult;
 }

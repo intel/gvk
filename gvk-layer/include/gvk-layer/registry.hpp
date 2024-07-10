@@ -63,6 +63,12 @@ public:
     }
 
     template <typename DispatchableVkHandleType>
+    inline DispatchTable& get_physical_device_dispatch_table(DispatchableVkHandleType dispatchableVkHandle)
+    {
+        return get_instance_dispatch_table(dispatchableVkHandle);
+    }
+
+    template <typename DispatchableVkHandleType>
     inline DispatchTable& get_device_dispatch_table(DispatchableVkHandleType dispatchableVkHandle)
     {
         static DispatchTable sDispatchTable;

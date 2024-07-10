@@ -48,6 +48,26 @@ public:
     }
 
 private:
+    static const std::set<std::string>& get_pure_virtual_commands()
+    {
+        static std::set<std::string> sPureVirtualCommands{
+            "vkAllocateCommandBuffers",
+            "vkAllocateDescriptorSets",
+            "vkCreateComputePipelines",
+            "vkCreateExecutionGraphPipelinesAMDX",
+            "vkCreateGraphicsPipelines",
+            "vkCreateRayTracingPipelinesKHR",
+            "vkCreateRayTracingPipelinesNV",
+            "vkCreateShadersEXT",
+            "vkCreateSharedSwapchainsKHR",
+            "vkDestroyCommandPool",
+            "vkDestroyDescriptorPool",
+            "vkFreeCommandBuffers",
+            "vkFreeDescriptorSets",
+        };
+        return sPureVirtualCommands;
+    }
+
     static void generate_header(FileGenerator& file, const xml::Manifest& manifest)
     {
         file << "#include \"gvk-defines.hpp\"" << std::endl;
@@ -66,13 +86,13 @@ private:
             const auto& command = append_return_result_parameter(commandItr.second);
             if (command.type == xml::Command::Type::Create || command.type == xml::Command::Type::Destroy) {
                 CompileGuardGenerator compileGuardGenerator(file, command.compileGuards);
-                file << "    virtual " << command.returnType << " pre_" << command.name << "(" << get_parameter_list(command.parameters) << ") override;" << std::endl;
-                file << "    virtual " << command.returnType << " post_" << command.name << "(" << get_parameter_list(command.parameters) << ") override;" << std::endl;
+                auto pureVirtual = get_pure_virtual_commands().count(command.name);
+                file << "    virtual " << command.returnType << " pre_" << command.name << "(" << get_parameter_list(command.parameters) << ") override" << (pureVirtual ? " = 0;" : ";") << std::endl;
+                file << "    virtual " << command.returnType << " post_" << command.name << "(" << get_parameter_list(command.parameters) << ") override" << (pureVirtual ? " = 0;" : ";") << std::endl;
             }
         }
         file << "protected:" << std::endl;
-        file << "    static std::vector<GvkRestorePointObject>& get_restore_point_objects();" << std::endl;
-        file << "    LayerInfo mLayerInfo;" << std::endl;
+        file << "    static std::set<GvkRestorePoint>& get_restore_points();" << std::endl;
         file << "};" << std::endl;
         file << std::endl;
     }
@@ -89,29 +109,15 @@ private:
                 assert(targetItr != manifest.handles.end());
                 const auto& target = targetItr->second;
                 file << std::endl;
-                CompileGuardGenerator compileGuardGenerator(file, command.compileGuards);
+                auto compileGuards = command.compileGuards;
+                if (get_pure_virtual_commands().count(command.name)) {
+                    compileGuards.insert(command.name + "_PURE_VIRTUAL");
+                }
+                CompileGuardGenerator compileGuardGenerator(file, compileGuards);
                 file << command.returnType << " BasicLayer::pre_" << command.name << "(" << get_parameter_list(command.parameters) << ")" << std::endl;
                 file << "{" << std::endl;
                 for (const auto& parameter : command.parameters) {
                     file << "    (void)" << parameter.name << ";" << std::endl;
-                }
-                file << "    auto& restorePointObjects = get_restore_point_objects();" << std::endl;
-                if (targetParameter.flags & xml::Array) {
-                    file << "    restorePointObjects.resize(" << targetParameter.length << ");" << std::endl;
-                } else {
-                    file << "    restorePointObjects.resize(1);" << std::endl;
-                    file << "    auto& restorePointObject = restorePointObjects.back();" << std::endl;
-                    file << "    restorePointObject.type = " << target.vkObjectType << ";" << std::endl;
-                    file << "    restorePointObject.handle = (uint64_t)" << targetParameter.name << ";" << std::endl;
-                    if (target.name == "VkInstance" ||
-                        target.name == "VkPhysicalDevice" ||
-                        target.name == "VkDevice" ||
-                        target.name == "VkQueue" ||
-                        target.name == "VkCommandBuffer") {
-                        file << "    restorePointObject.dispatchableHandle = restorePointObject.handle;" << std::endl;
-                    } else {
-                        file << "    restorePointObject.dispatchableHandle = (uint64_t)" << command.parameters[0].name << ";" << std::endl;
-                    }
                 }
                 if (command.returnType != "void") {
                     file << "    return gvkResult;" << std::endl;
@@ -123,44 +129,12 @@ private:
                 for (const auto& parameter : command.parameters) {
                     file << "    (void)" << parameter.name << ";" << std::endl;
                 }
-                file << "    if (mLayerInfo.objectMap.get_manifest().objectCount) {" << std::endl;
-                if (targetParameter.flags & xml::Array) {
-                    file << "        for (uint32_t i = 0; i < " << targetParameter.length << "; ++i) {" << std::endl;
-                    file << "            GvkRestorePointObject restorePointObject { };" << std::endl;
-                    file << "            restorePointObject.type = " << target.vkObjectType << ";" << std::endl;
-                    if (targetParameter.flags & xml::Pointer) {
-                        file << "            restorePointObject.handle = (uint64_t)" << targetParameter.name << "[i];" << std::endl;
-                    } else {
-                        file << "            restorePointObject.handle = (uint64_t)" << targetParameter.name << ";" << std::endl;
-                    }
-                    if (target.name == "VkInstance" ||
-                        target.name == "VkPhysicalDevice" ||
-                        target.name == "VkDevice" ||
-                        target.name == "VkQueue" ||
-                        target.name == "VkCommandBuffer") {
-                        file << "            restorePointObject.dispatchableHandle = restorePointObject.handle;" << std::endl;
-                    } else {
-                        file << "            restorePointObject.dispatchableHandle = (uint64_t)" << command.parameters[0].name << ";" << std::endl;
-                    }
-                    switch (command.type) {
-                    case xml::Command::Type::Create: {
-                        file << "            mLayerInfo.register_object_creation(restorePointObject);" << std::endl;
-                    } break;
-                    case xml::Command::Type::Destroy: {
-                        file << "            mLayerInfo.register_object_destruction(restorePointObject);" << std::endl;
-                    } break;
-                    default: {
-                    } break;
-                    }
-                    file << "        }" << std::endl;
-                } else {
-                    file << "        GvkRestorePointObject restorePointObject { };" << std::endl;
+                if (command.type == xml::Command::Type::Create) {
+                    file << "    for (auto gvkRestorePoint : get_restore_points()) {" << std::endl;
+                    file << "        assert(gvkRestorePoint);" << std::endl;
+                    file << "        auto restorePointObject = get_default<GvkStateTrackedObject>();" << std::endl;
                     file << "        restorePointObject.type = " << target.vkObjectType << ";" << std::endl;
-                    if (targetParameter.flags & xml::Pointer) {
-                        file << "        restorePointObject.handle = (uint64_t)*" << targetParameter.name << ";" << std::endl;
-                    } else {
-                        file << "        restorePointObject.handle = (uint64_t)" << targetParameter.name << ";" << std::endl;
-                    }
+                    file << "        restorePointObject.handle = (uint64_t)*" << targetParameter.name << ";" << std::endl;
                     if (target.name == "VkInstance" ||
                         target.name == "VkPhysicalDevice" ||
                         target.name == "VkDevice" ||
@@ -170,28 +144,48 @@ private:
                     } else {
                         file << "        restorePointObject.dispatchableHandle = (uint64_t)" << command.parameters[0].name << ";" << std::endl;
                     }
-                    switch (command.type) {
-                    case xml::Command::Type::Create: {
-                        file << "        mLayerInfo.register_object_creation(restorePointObject);" << std::endl;
-                    } break;
-                    case xml::Command::Type::Destroy: {
-                        file << "        mLayerInfo.register_object_destruction(restorePointObject);" << std::endl;
-                    } break;
-                    default: {
-                    } break;
+                    if (targetParameter.flags & xml::Array) {
+                        file << "        static_assert(false, \"Manual implementation required\");" << std::endl;
+                    } else {
+                        file << "        gvkRestorePoint->createdObjects.insert(restorePointObject);" << std::endl;
                     }
+                    file << "    }" << std::endl;
+                } else if (command.type == xml::Command::Type::Destroy) {
+                    file << "    for (auto gvkRestorePoint : get_restore_points()) {" << std::endl;
+                    file << "        assert(gvkRestorePoint);" << std::endl;
+                    file << "        auto restorePointObject = get_default<GvkStateTrackedObject>();" << std::endl;
+                    file << "        restorePointObject.type = " << target.vkObjectType << ";" << std::endl;
+                    file << "        restorePointObject.handle = (uint64_t)" << targetParameter.name << ";" << std::endl;
+                    if (target.name == "VkInstance" ||
+                        target.name == "VkPhysicalDevice" ||
+                        target.name == "VkDevice" ||
+                        target.name == "VkQueue" ||
+                        target.name == "VkCommandBuffer") {
+                        file << "        restorePointObject.dispatchableHandle = restorePointObject.handle;" << std::endl;
+                    } else {
+                        file << "        restorePointObject.dispatchableHandle = (uint64_t)" << command.parameters[0].name << ";" << std::endl;
+                    }
+                    if (targetParameter.flags & xml::Array) {
+                        file << "        static_assert(false, \"Manual implementation required\");" << std::endl;
+                    } else {
+                        file << "        // TODO : Fire callback here to notify upper layers" << std::endl;
+                        file << "        // TODO : Wrap this fucntionality into GvkRestorePoint" << std::endl;
+                        file << "        gvkRestorePoint->objectMap.register_object_destruction(restorePointObject);" << std::endl;
+                        file << "        gvkRestorePoint->createdObjects.erase(restorePointObject);" << std::endl;
+                    }
+                    file << "    }" << std::endl;
                 }
-                file << "    }" << std::endl;
                 if (command.returnType != "void") {
                     file << "    return gvkResult;" << std::endl;
                 }
                 file << "}" << std::endl;
             }
         }
-        file << "std::vector<GvkRestorePointObject>& BasicLayer::get_restore_point_objects()" << std::endl;
+        file << std::endl;
+        file << "std::set<GvkRestorePoint>& BasicLayer::get_restore_points()" << std::endl;
         file << "{" << std::endl;
-        file << "    thread_local std::vector<GvkRestorePointObject> tlRestorePointObjects;" << std::endl;
-        file << "    return tlRestorePointObjects;" << std::endl;
+        file << "    static std::set<GvkRestorePoint> sRestorePoints;" << std::endl;
+        file << "    return sRestorePoints;" << std::endl;
         file << "}" << std::endl;
         file << std::endl;
     }

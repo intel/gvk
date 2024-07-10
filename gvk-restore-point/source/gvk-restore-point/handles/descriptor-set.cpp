@@ -26,10 +26,134 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-restore-point/applier.hpp"
 #include "gvk-restore-point/creator.hpp"
+#include "gvk-restore-point/layer.hpp"
+#include "gvk-restore-point/utilities.hpp"
 #include "gvk-command-structures/generated/execute-command-structure.hpp"
+#include "gvk-layer/registry.hpp"
 
 namespace gvk {
 namespace restore_point {
+
+void Layer::pre_vkDestroyDescriptorPool(VkDevice device, VkDescriptorPool descriptorPool, const VkAllocationCallbacks* pAllocator)
+{
+    (void)pAllocator;
+    auto stateTrackedDescriptorPool = get_default<GvkStateTrackedObject>();
+    stateTrackedDescriptorPool.type = VK_OBJECT_TYPE_DESCRIPTOR_POOL;
+    stateTrackedDescriptorPool.handle = (uint64_t)descriptorPool;
+    stateTrackedDescriptorPool.dispatchableHandle = (uint64_t)device;
+    GvkStateTrackedObjectEnumerateInfo enumerateInfo{ };
+    enumerateInfo.pfnCallback = [](const GvkStateTrackedObject* pStateTrackedDescriptorSet, const VkBaseInStructure*, void* pUserData)
+    {
+        assert(pStateTrackedDescriptorSet);
+        assert(pStateTrackedDescriptorSet->type == VK_OBJECT_TYPE_DESCRIPTOR_SET);
+        assert(pUserData);
+        for (auto gvkRestorePoint : *(std::set<GvkRestorePoint>*)pUserData) {
+            gvkRestorePoint->objectMap.register_object_destruction(*pStateTrackedDescriptorSet);
+            gvkRestorePoint->createdObjects.erase(*pStateTrackedDescriptorSet);
+        }
+    };
+    enumerateInfo.pUserData = &get_restore_points();
+    gvkEnumerateStateTrackedObjects(&stateTrackedDescriptorPool, &enumerateInfo);
+    for (auto gvkRestorePoint : get_restore_points()) {
+        gvkRestorePoint->objectMap.register_object_destruction(stateTrackedDescriptorPool);
+        gvkRestorePoint->createdObjects.erase(stateTrackedDescriptorPool);
+    }
+}
+
+void Layer::post_vkDestroyDescriptorPool(VkDevice device, VkDescriptorPool descriptorPool, const VkAllocationCallbacks* pAllocator)
+{
+    (void)device;
+    (void)descriptorPool;
+    (void)pAllocator;
+}
+
+VkResult Layer::pre_vkResetDescriptorPool(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorPoolResetFlags flags, VkResult gvkResult)
+{
+    (void)flags;
+    auto stateTrackedDescriptorPool = get_default<GvkStateTrackedObject>();
+    stateTrackedDescriptorPool.type = VK_OBJECT_TYPE_DESCRIPTOR_POOL;
+    stateTrackedDescriptorPool.handle = (uint64_t)descriptorPool;
+    stateTrackedDescriptorPool.dispatchableHandle = (uint64_t)device;
+    GvkStateTrackedObjectEnumerateInfo enumerateInfo{ };
+    enumerateInfo.pfnCallback = [](const GvkStateTrackedObject* pStateTrackedDescriptorSet, const VkBaseInStructure*, void* pUserData)
+    {
+        assert(pStateTrackedDescriptorSet);
+        assert(pStateTrackedDescriptorSet->type == VK_OBJECT_TYPE_DESCRIPTOR_SET);
+        assert(pUserData);
+        for (auto gvkRestorePoint : *(std::set<GvkRestorePoint>*)pUserData) {
+            gvkRestorePoint->objectMap.register_object_destruction(*pStateTrackedDescriptorSet);
+            gvkRestorePoint->createdObjects.erase(*pStateTrackedDescriptorSet);
+        }
+    };
+    enumerateInfo.pUserData = &get_restore_points();
+    gvkEnumerateStateTrackedObjects(&stateTrackedDescriptorPool, &enumerateInfo);
+    return gvkResult;
+}
+
+VkResult Layer::post_vkResetDescriptorPool(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorPoolResetFlags flags, VkResult gvkResult)
+{
+    (void)device;
+    (void)descriptorPool;
+    (void)flags;
+    return gvkResult;
+}
+
+VkResult Layer::pre_vkAllocateDescriptorSets(VkDevice device, const VkDescriptorSetAllocateInfo* pAllocateInfo, VkDescriptorSet* pDescriptorSets, VkResult gvkResult)
+{
+    (void)device;
+    (void)pAllocateInfo;
+    (void)pDescriptorSets;
+    // NOOP :
+    return gvkResult;
+}
+
+VkResult Layer::post_vkAllocateDescriptorSets(VkDevice device, const VkDescriptorSetAllocateInfo* pAllocateInfo, VkDescriptorSet* pDescriptorSets, VkResult gvkResult)
+{
+    if (gvkResult == VK_SUCCESS) {
+        for (auto gvkRestorePoint : get_restore_points()) {
+            assert(gvkRestorePoint);
+            assert(pAllocateInfo);
+            assert(pDescriptorSets);
+            for (uint32_t i = 0; i < pAllocateInfo->descriptorSetCount; ++i) {
+                auto stateTrackedDescriptorSet = get_default<GvkStateTrackedObject>();
+                stateTrackedDescriptorSet.type = VK_OBJECT_TYPE_DESCRIPTOR_SET;
+                stateTrackedDescriptorSet.handle = (uint64_t)pDescriptorSets[i];
+                stateTrackedDescriptorSet.dispatchableHandle = (uint64_t)device;
+                gvkRestorePoint->createdObjects.insert(stateTrackedDescriptorSet);
+            }
+        }
+    }
+    return gvkResult;
+}
+
+VkResult Layer::pre_vkFreeDescriptorSets(VkDevice device, VkDescriptorPool descriptorPool, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets, VkResult gvkResult)
+{
+    (void)descriptorPool;
+    for (auto gvkRestorePoint : get_restore_points()) {
+        assert(gvkRestorePoint);
+        for (uint32_t i = 0; i < descriptorSetCount; ++i) {
+            if (pDescriptorSets[i]) {
+                auto stateTrackedDescriptorSet = get_default<GvkStateTrackedObject>();
+                stateTrackedDescriptorSet.type = VK_OBJECT_TYPE_DESCRIPTOR_SET;
+                stateTrackedDescriptorSet.handle = (uint64_t)pDescriptorSets[i];
+                stateTrackedDescriptorSet.dispatchableHandle = (uint64_t)device;
+                gvkRestorePoint->objectMap.register_object_destruction(stateTrackedDescriptorSet);
+                gvkRestorePoint->createdObjects.erase(stateTrackedDescriptorSet);
+            }
+        }
+    }
+    return gvkResult;
+}
+
+VkResult Layer::post_vkFreeDescriptorSets(VkDevice device, VkDescriptorPool descriptorPool, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets, VkResult gvkResult)
+{
+    (void)device;
+    (void)descriptorPool;
+    (void)descriptorSetCount;
+    (void)pDescriptorSets;
+    (void)gvkResult;
+    return gvkResult;
+}
 
 VkResult Creator::process_VkDescriptorSet(GvkDescriptorSetRestoreInfo& restoreInfo)
 {
@@ -62,7 +186,7 @@ VkResult Creator::process_VkDescriptorSet(GvkDescriptorSetRestoreInfo& restoreIn
     return BasicCreator::process_VkDescriptorSet(restoreInfo);
 }
 
-VkResult Applier::restore_VkDescriptorSet(const GvkRestorePointObject& restorePointObject, const GvkDescriptorSetRestoreInfo& restoreInfo)
+VkResult Applier::restore_VkDescriptorSet(const GvkStateTrackedObject& restorePointObject, const GvkDescriptorSetRestoreInfo& restoreInfo)
 {
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         auto descriptorSetLayout = get_dependency<VkDescriptorSetLayout>(restoreInfo.dependencyCount, restoreInfo.pDependencies);
@@ -78,7 +202,7 @@ VkResult Applier::restore_VkDescriptorSet(const GvkRestorePointObject& restorePo
     return gvkResult;
 }
 
-void Applier::destroy_VkDescriptorSet(const GvkRestorePointObject& restorePointObject)
+void Applier::destroy_VkDescriptorSet(const GvkStateTrackedObject& restorePointObject)
 {
     // TODO : Gather descriptor sets for batch destruction...
     auto commandStructure = get_default<GvkCommandStructureFreeDescriptorSets>();
@@ -95,47 +219,25 @@ void Applier::destroy_VkDescriptorSet(const GvkRestorePointObject& restorePointO
         }
     };
     gvkEnumerateStateTrackedObjectDependencies((GvkStateTrackedObject*)&restorePointObject, &enumerateInfo);
-    detail::execute_command_structure(mApplyInfo.dispatchTable, commandStructure);
+    // TODO : Bettter to filter VkDescriptorSets destroyed via VkDescriptorPool
+    if (commandStructure.descriptorPool) {
+        detail::execute_command_structure(mApplyInfo.dispatchTable, commandStructure);
+    }
 }
 
-VkResult Applier::process_VkDescriptorSet(const GvkRestorePointObject& restorePointObject, const GvkDescriptorSetRestoreInfo& restoreInfo)
-{
-    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
-        auto descriptorSetLayout = get_dependency<VkDescriptorSetLayout>(restoreInfo.dependencyCount, restoreInfo.pDependencies);
-        auto pDescriptorSetAllocateInfo = const_cast<VkDescriptorSetAllocateInfo*>(restoreInfo.pDescriptorSetAllocateInfo);
-        auto descriptorSetCount = pDescriptorSetAllocateInfo->descriptorSetCount;
-        auto pSetLayouts = pDescriptorSetAllocateInfo->pSetLayouts;
-        pDescriptorSetAllocateInfo->descriptorSetCount = 1;
-        pDescriptorSetAllocateInfo->pSetLayouts = &descriptorSetLayout;
-        gvk_result(BasicApplier::process_VkDescriptorSet(restorePointObject, restoreInfo));
-        pDescriptorSetAllocateInfo->descriptorSetCount = descriptorSetCount;
-        pDescriptorSetAllocateInfo->pSetLayouts = pSetLayouts;
-    } gvk_result_scope_end;
-    return gvkResult;
-}
-
-#if 0
-VkResult Applier::process_GvkCommandStructureAllocateDescriptorSets(const GvkRestorePointObject& restorePointObject, const GvkDescriptorSetRestoreInfo& restoreInfo, GvkCommandStructureAllocateDescriptorSets& commandStructure)
-{
-    (void)restorePointObject;
-    (void)restoreInfo;
-    assert(commandStructure.pAllocateInfo);
-    const_cast<VkDescriptorSetAllocateInfo*>(commandStructure.pAllocateInfo)->descriptorSetCount = 1;
-    return VK_SUCCESS;
-}
-#endif
-
-VkResult Applier::process_VkDescriptorSet_bindings(const GvkRestorePointObject& capturedDescriptorSet)
+VkResult Applier::restore_VkDescriptorSet_bindings(const GvkStateTrackedObject& capturedDescriptorSet)
 {
     gvk_result_scope_begin(VK_SUCCESS) {
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         Auto<GvkDescriptorSetRestoreInfo> descriptorSetRestoreInfo;
         gvk_result(read_object_restore_info(mApplyInfo.path, "VkDescriptorSet", to_hex_string(capturedDescriptorSet.handle), descriptorSetRestoreInfo));
 
+#if 0
         auto pNext = get_pnext<VkDescriptorSetVariableDescriptorCountAllocateInfo>(*descriptorSetRestoreInfo->pDescriptorSetAllocateInfo);
         if (pNext) {
-            assert(false && "TODO : Documentation");
+            assert(false && "TODO : Does this need special handling?");
         }
+#endif
 
         auto device = get_dependency<VkDevice>(descriptorSetRestoreInfo->dependencyCount, descriptorSetRestoreInfo->pDependencies);
         for (uint32_t i = 0; i < descriptorSetRestoreInfo->descriptorWriteCount; ++i) {
@@ -146,21 +248,21 @@ VkResult Applier::process_VkDescriptorSet_bindings(const GvkRestorePointObject& 
                 [&](VkObjectType objectType, const uint64_t& handle)
                 {
                     if (handle) {
-                        GvkRestorePointObject handleRestorePointObject{ };
+                        GvkStateTrackedObject handleRestorePointObject{ };
                         handleRestorePointObject.type = objectType;
                         handleRestorePointObject.handle = handle;
                         handleRestorePointObject.dispatchableHandle = (uint64_t)device;
-                        auto itr = mRestorePointObjects.find(handleRestorePointObject);
-                        if (itr != mRestorePointObjects.end()) {
+                        handleRestorePointObject = mApplyInfo.gvkRestorePoint->objectMap.get_restored_object(handleRestorePointObject);
+                        if (is_valid(handleRestorePointObject)) {
                             activeDescriptor |= handle != (uint64_t)descriptorSetRestoreInfo->handle;
-                            const_cast<uint64_t&>(handle) = itr->second.handle;
+                            const_cast<uint64_t&>(handle) = handleRestorePointObject.handle;
                         } else {
                             auto printerFlags = gvk::Printer::Default & ~gvk::Printer::EnumValue;
                             mLog << VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
                             mLog << "gvk::restore_point::Applier; ";
                             mLog << to_string(VK_OBJECT_TYPE_DESCRIPTOR_SET, printerFlags) << " " << descriptorSetRestoreInfo->handle << " ";
                             mLog << "skipping invalid " << to_string(objectType, printerFlags) << " " << to_hex_string(handle);
-                            mLog << Log::Flush;
+                            mLog << layer::Log::Flush;
                         }
                     }
                 }

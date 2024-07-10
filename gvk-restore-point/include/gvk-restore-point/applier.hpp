@@ -29,7 +29,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-defines.hpp"
 #include "gvk-restore-point/generated/basic-applier.hpp"
 #include "gvk-restore-point/copy-engine.hpp"
-#include "gvk-restore-point/logger.hpp"
+#include "gvk-layer/log.hpp"
 
 #include <map>
 #include <set>
@@ -43,64 +43,106 @@ class Applier final
 {
 public:
     VkResult apply_restore_point(const ApplyInfo& applyInfo) override final;
-    void apply_VkAccelerationStructure_restore_point(const std::vector<GvkRestorePointObject>& capturedAccelerationStructures);
-    VkResult register_restored_object_ex(const GvkRestorePointObject& capturedObject, const GvkRestorePointObject& restoredObject) override final;
+    VkResult register_restored_object(const GvkStateTrackedObject& capturedObject, const GvkStateTrackedObject& restoredObject) override final;
+    void register_restored_object_destruction(const GvkStateTrackedObject& restoredObject) override final;
+    GvkStateTrackedObject get_restored_object(const GvkStateTrackedObject& restorePointObject) override final;
 
 protected:
-    VkResult restore_object(const GvkRestorePointObject& restorePointObject) override final;
-    VkResult restore_object_state(const GvkRestorePointObject& restorePointObject) override final;
-    VkResult restore_object_name(const GvkRestorePointObject& restoredObject, uint32_t dependencyCount, const GvkRestorePointObject* pDependencies, const char* pName) override final;
-    VkResult restore_VkInstance(const GvkRestorePointObject& restorePointObject, const GvkInstanceRestoreInfo& restoreInfo) override final;
-    VkResult restore_VkInstance_state(const GvkRestorePointObject& restorePointObject, const GvkInstanceRestoreInfo& restoreInfo) override final;
-    VkResult restore_VkDevice(const GvkRestorePointObject& restorePointObject, const GvkDeviceRestoreInfo& restoreInfo) override final;
-    VkResult restore_VkDevice_state(const GvkRestorePointObject& restorePointObject, const GvkDeviceRestoreInfo& restoreInfo) override final;
-    VkResult restore_VkDescriptorSet(const GvkRestorePointObject& restorePointObject, const GvkDescriptorSetRestoreInfo& restoreInfo) override final;
-    void destroy_VkDescriptorSet(const GvkRestorePointObject& restorePointObject) override final;
-    VkResult restore_VkEvent_state(const GvkRestorePointObject& restorePointObject, const GvkEventRestoreInfo& restoreInfo) override final;
-    VkResult restore_VkFence_state(const GvkRestorePointObject& restorePointObject, const GvkFenceRestoreInfo& restoreInfo) override final;
-    VkResult restore_VkSemaphore_state(const GvkRestorePointObject& restorePointObject, const GvkSemaphoreRestoreInfo& restoreInfo) override final;
-    VkResult restore_VkSwapchainKHR(const GvkRestorePointObject& restorePointObject, const GvkSwapchainRestoreInfoKHR& restoreInfo) override final;
-    VkResult restore_VkSwapchainKHR_state(const GvkRestorePointObject& restorePointObject, const GvkSwapchainRestoreInfoKHR& restoreInfo) override final;
-    void destroy_VkSwapchainKHR(const GvkRestorePointObject& restorePointObject) override final;
-    VkResult process_VkInstance(const GvkRestorePointObject& restorePointObject, const GvkInstanceRestoreInfo& restoreInfo) override final;
-    VkResult process_VkPhysicalDevice(const GvkRestorePointObject& restorePointObject, const GvkPhysicalDeviceRestoreInfo& restoreInfo) override final;
-    VkResult process_VkDevice(const GvkRestorePointObject& restorePointObject, const GvkDeviceRestoreInfo& restoreInfo) override final;
-    VkResult process_VkDeviceMemory(const GvkRestorePointObject& restorePointObject, const GvkDeviceMemoryRestoreInfo& restoreInfo) override final;
-    VkResult process_VkAccelerationStructureKHR(const GvkRestorePointObject& restorePointObject, const GvkAccelerationStructureRestoreInfoKHR& restoreInfo) override final;
-    VkResult process_VkBuffer(const GvkRestorePointObject& restorePointObject, const GvkBufferRestoreInfo& restoreInfo) override final;
-    VkResult process_VkImage(const GvkRestorePointObject& restorePointObject, const GvkImageRestoreInfo& restoreInfo) override final;
-    VkResult process_VkDescriptorSet(const GvkRestorePointObject& restorePointObject, const GvkDescriptorSetRestoreInfo& restoreInfo) override final;
-    VkResult process_VkEvent(const GvkRestorePointObject& restorePointObject, const GvkEventRestoreInfo& restoreInfo) override final;
-    VkResult process_VkFence(const GvkRestorePointObject& restorePointObject, const GvkFenceRestoreInfo& restoreInfo) override final;
-    VkResult process_VkSemaphore(const GvkRestorePointObject& restorePointObject, const GvkSemaphoreRestoreInfo& restoreInfo) override final;
-    VkResult process_VkSwapchainKHR(const GvkRestorePointObject& restorePointObject, const GvkSwapchainRestoreInfoKHR& restoreInfo) override final;
-    VkResult process_GvkCommandStructureAllocateCommandBuffers(const GvkRestorePointObject& restorePointObject, const GvkCommandBufferRestoreInfo& restoreInfo, GvkCommandStructureAllocateCommandBuffers& commandStructure) override final;
-    VkResult process_GvkCommandStructureCreateComputePipelines(const GvkRestorePointObject& restorePointObject, const GvkPipelineRestoreInfo& restoreInfo, GvkCommandStructureCreateComputePipelines& commandStructure) override final;
-    VkResult process_GvkCommandStructureCreateGraphicsPipelines(const GvkRestorePointObject& restorePointObject, const GvkPipelineRestoreInfo& restoreInfo, GvkCommandStructureCreateGraphicsPipelines& commandStructure) override final;
-    VkResult process_GvkCommandStructureCreateRayTracingPipelinesKHR(const GvkRestorePointObject& restorePointObject, const GvkPipelineRestoreInfo& restoreInfo, GvkCommandStructureCreateRayTracingPipelinesKHR& commandStructure) override final;
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-    VkResult process_GvkCommandStructureCreateWin32SurfaceKHR(const GvkRestorePointObject& restorePointObject, const GvkSurfaceRestoreInfoKHR& restoreInfo, GvkCommandStructureCreateWin32SurfaceKHR& commandStructure) override final;
-#endif // VK_USE_PLATFORM_WIN32_KHR
-    VkResult restore_VkImage_layouts(const GvkRestorePointObject& restorePointObject);
-    VkResult process_VkDeviceMemory_data(const GvkRestorePointObject& restorePointObject);
+    class AccelerationStructureSerializationResources final
+    {
+    public:
+        ~AccelerationStructureSerializationResources();
+        VkResult validate(const DispatchTable& dispatchTable, VkDevice vkDevice, const GvkAccelerationStructureSerilizationInfoKHR& serializationInfo);
+        VkBuffer get_buffer() const;
+        VkDeviceMemory get_device_memory() const;
+        void reset();
+
+    private:
+        DispatchTable mDispatchTable;
+        VkDevice mVkDevice{ };
+        VkBuffer mVkBuffer{ };
+        VkDeviceMemory mVkDeviceMemory{ };
+    };
+
+    VkResult restore_object(const GvkStateTrackedObject& restorePointObject) override final;
+    VkResult restore_object_state(const GvkStateTrackedObject& restorePointObject) override final;
+    VkResult restore_object_name(const GvkStateTrackedObject& restoredObject, uint32_t dependencyCount, const GvkStateTrackedObject* pDependencies, const char* pName) override final;
+    VkResult restore_object_data(const GvkStateTrackedObject& capturedObject);
+    void destroy_object(const GvkStateTrackedObject& restorePointObject) override final;
+
+    // VkInstance
+    VkResult restore_VkInstance(const GvkStateTrackedObject& restorePointObject, const GvkInstanceRestoreInfo& restoreInfo) override final;
+    VkResult restore_VkInstance_state(const GvkStateTrackedObject& restorePointObject, const GvkInstanceRestoreInfo& restoreInfo) override final;
+
+    // VkPhysicalDevice
+    VkResult restore_VkPhysicalDevice(const GvkStateTrackedObject& restorePointObject, const GvkPhysicalDeviceRestoreInfo& restoreInfo) override final;
+
+    // VkDevice
+    VkResult restore_VkDevice(const GvkStateTrackedObject& restorePointObject, const GvkDeviceRestoreInfo& restoreInfo) override final;
+    VkResult restore_VkDevice_state(const GvkStateTrackedObject& restorePointObject, const GvkDeviceRestoreInfo& restoreInfo) override final;
+
+    // VkCommandBuffer
+#if 0
+    VkResult restore_VkCommandBuffer(const GvkStateTrackedObject& restorePointObject, const GvkCommandBufferRestoreInfo& restoreInfo) override final;
+    void destroy_VkCommandBuffer(const GvkStateTrackedObject& restorePointObject) override final;
+#endif
+    VkResult restore_VkCommandBuffer_cmds(const GvkStateTrackedObject& restorePointObject);
+
+    // VkDescriptorSet
+    VkResult restore_VkDescriptorSet(const GvkStateTrackedObject& restorePointObject, const GvkDescriptorSetRestoreInfo& restoreInfo) override final;
+    void destroy_VkDescriptorSet(const GvkStateTrackedObject& restorePointObject) override final;
+    VkResult restore_VkDescriptorSet_bindings(const GvkStateTrackedObject& restorePointObject);
+
+    // VkEvent
+    VkResult restore_VkEvent_state(const GvkStateTrackedObject& restorePointObject, const GvkEventRestoreInfo& restoreInfo) override final;
+
+    // VkFence
+    VkResult restore_VkFence_state(const GvkStateTrackedObject& restorePointObject, const GvkFenceRestoreInfo& restoreInfo) override final;
+
+    // VkSemaphore
+    VkResult restore_VkSemaphore_state(const GvkStateTrackedObject& restorePointObject, const GvkSemaphoreRestoreInfo& restoreInfo) override final;
+
+    // VkSwapchainKHR
+    VkResult restore_VkSwapchainKHR(const GvkStateTrackedObject& restorePointObject, const GvkSwapchainRestoreInfoKHR& restoreInfo) override final;
+    VkResult restore_VkSwapchainKHR_state(const GvkStateTrackedObject& restorePointObject, const GvkSwapchainRestoreInfoKHR& restoreInfo) override final;
+    void destroy_VkSwapchainKHR(const GvkStateTrackedObject& restorePointObject) override final;
+
+    // VkDeviceMemory
+    VkResult restore_VkDeviceMemory(const GvkStateTrackedObject& restorePointObject, const GvkDeviceMemoryRestoreInfo& restoreInfo) override final;
+    VkResult restore_VkDeviceMemory_data(const GvkStateTrackedObject& restorePointObject);
     static void process_VkDeviceMemory_data_upload(const CopyEngine::UploadDeviceMemoryInfo& uploadInfo, const VkBindBufferMemoryInfo& bindBufferMemoryInfo, uint8_t* pData);
-    VkResult process_VkAccelerationStructureKHR_data(const GvkRestorePointObject& restorePointObject);
+    VkResult restore_VkDeviceMemory_mapping(const GvkStateTrackedObject& restorePointObject);
+
+    // VkAccelerationStructureKHR
+    VkResult restore_VkAccelerationStructureKHR_data();
+    VkResult restore_VkAccelerationStructureKHR_data(const GvkStateTrackedObject& restorePointObject, AccelerationStructureSerializationResources& accelerationStructureSerializationResources);
     static void process_VkAccelerationStructureKHR_data_upload(const CopyEngine::UploadAccelerationStructureInfo& uploadInfo, const VkBindBufferMemoryInfo& bindBufferMemoryInfo, uint8_t* pData);
-    VkResult process_VkBuffer_data(const GvkRestorePointObject& restorePointObject);
+    VkResult process_VkAccelerationStructureKHR_builds(const GvkStateTrackedObject& restorePointObject);
+    void apply_VkAccelerationStructure_restore_point(const std::vector<GvkStateTrackedObject>& capturedAccelerationStructures);
+
+    // VkBuffer
+    VkResult restore_VkBuffer(const GvkStateTrackedObject& restorePointObject, const GvkBufferRestoreInfo& restoreInfo) override final;
+    VkResult restore_VkBuffer_data(const GvkStateTrackedObject& restorePointObject);
     static void process_VkBuffer_data_upload(const CopyEngine::UploadBufferInfo& uploadInfo, const VkBindBufferMemoryInfo& bindBufferMemoryInfo, uint8_t* pData);
-    VkResult process_VkImage_data(const GvkRestorePointObject& restorePointObject);
+
+    // VkImage
+    VkResult restore_VkImage(const GvkStateTrackedObject& restorePointObject, const GvkImageRestoreInfo& restoreInfo) override final;
+    VkResult restore_VkImage_layouts(const GvkStateTrackedObject& restorePointObject);
+    VkResult restore_VkImage_data(const GvkStateTrackedObject& restorePointObject);
     static void process_VkImage_data_upload(const CopyEngine::UploadImageInfo& uploadInfo, const VkBindBufferMemoryInfo& bindBufferMemoryInfo, uint8_t* pData);
-    VkResult process_VkImage_layouts(const GvkRestorePointObject& restorePointObject);
-    VkResult process_VkAccelerationStructureKHR_builds(const GvkRestorePointObject& restorePointObject);
-    VkResult process_VkDeviceMemory_mapping(const GvkRestorePointObject& restorePointObject);
-    VkResult process_VkDescriptorSet_bindings(const GvkRestorePointObject& restorePointObject);
-    VkResult process_VkCommandBuffer_cmds(const GvkRestorePointObject& restorePointObject);
-    VkResult process_transient_objects();
+    VkResult process_VkImage_layouts(const GvkStateTrackedObject& restorePointObject);
+
+    VkResult process_GvkCommandStructureAllocateCommandBuffers(const GvkStateTrackedObject& restorePointObject, const GvkCommandBufferRestoreInfo& restoreInfo, GvkCommandStructureAllocateCommandBuffers& commandStructure) override final;
+    VkResult process_GvkCommandStructureCreateComputePipelines(const GvkStateTrackedObject& restorePointObject, const GvkPipelineRestoreInfo& restoreInfo, GvkCommandStructureCreateComputePipelines& commandStructure) override final;
+    VkResult process_GvkCommandStructureCreateGraphicsPipelines(const GvkStateTrackedObject& restorePointObject, const GvkPipelineRestoreInfo& restoreInfo, GvkCommandStructureCreateGraphicsPipelines& commandStructure) override final;
+    VkResult process_GvkCommandStructureCreateRayTracingPipelinesKHR(const GvkStateTrackedObject& restorePointObject, const GvkPipelineRestoreInfo& restoreInfo, GvkCommandStructureCreateRayTracingPipelinesKHR& commandStructure) override final;
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+    VkResult process_GvkCommandStructureCreateWin32SurfaceKHR(const GvkStateTrackedObject& restorePointObject, const GvkSurfaceRestoreInfoKHR& restoreInfo, GvkCommandStructureCreateWin32SurfaceKHR& commandStructure) override final;
+#endif // VK_USE_PLATFORM_WIN32_KHR
 
 private:
     Instance mInstance;
     std::set<Device> mDevices;
-    VkBuffer mAccelerationStructureSerializationBuffer{ };
     VkDeviceMemory mAccelerationStructureSerializationMemory{ };
     DispatchTable mApplicationDispatchTable{ };
     std::map<VkPhysicalDeviceProperties, std::vector<VkPhysicalDevice>> mUnrestoredPhysicalDevices;
@@ -108,7 +150,8 @@ private:
     std::map<VkDevice, CommandPool> mCommandPools;
     std::map<VkDevice, VkCommandBuffer> mVkCommandBuffers;
     std::map<VkDevice, Fence> mFences;
-    Log mLog;
+    std::map<VkDevice, Auto<GvkDeviceRestoreInfo>> mDeviceRestoreInfos;
+    layer::Log mLog;
 };
 
 } // namespace state_tracker

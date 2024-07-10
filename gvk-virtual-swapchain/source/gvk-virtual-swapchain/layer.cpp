@@ -49,7 +49,7 @@ Swapchain& Swapchain::operator=(Swapchain&& other)
         mVirtualVkImages = std::move(other.mVirtualVkImages);
         mAvailableVkImages = std::move(other.mAvailableVkImages);
         mAcquiredVkImages = std::move(other.mAcquiredVkImages);
-        mPendingAcquisition = std::exchange(other.mPendingAcquisition, UINT32_MAX);
+        mPendingAcquisitionImageIndex = std::exchange(other.mPendingAcquisitionImageIndex, UINT32_MAX);
     }
     return *this;
 }
@@ -100,7 +100,10 @@ VkResult Swapchain::post_vkCreateSwapchainKHR(VkDevice device, const VkSwapchain
         get_compatible_memory_type_indices(mGvkDevice.get<PhysicalDevice>(), memoryRequirements.memoryTypeBits, memoryPropertyFlags, &memoryTypeCount, &memoryTypeIndex);
 
         auto memoryAllocateInfo = get_default<VkMemoryAllocateInfo>();
-        auto padding = memoryRequirements.size % (memoryRequirements.alignment ? memoryRequirements.alignment : 1);
+        auto padding = memoryRequirements.alignment ? memoryRequirements.size % memoryRequirements.alignment : 0;
+        if (padding) {
+            padding = memoryRequirements.alignment - padding;
+        }
         memoryAllocateInfo.allocationSize = memoryRequirements.size * imageCount + padding * (imageCount - 1);
         memoryAllocateInfo.memoryTypeIndex = memoryTypeIndex;
         gvk_result(DeviceMemory::allocate(mGvkDevice, &memoryAllocateInfo, nullptr, &mGvkDeviceMemory));
@@ -131,7 +134,7 @@ void Swapchain::pre_vkDestroySwapchainKHR(VkDevice device, VkSwapchainKHR swapch
         mVirtualVkImages.clear();
         mAvailableVkImages.clear();
         mAcquiredVkImages.clear();
-        mPendingAcquisition = UINT32_MAX;
+        mPendingAcquisitionImageIndex = UINT32_MAX;
     }
 }
 
@@ -154,7 +157,7 @@ VkResult Swapchain::pre_vkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR sw
     (void)fence;
     assert(pImageIndex);
     assert(*pImageIndex < mVirtualVkImages.size());
-    mPendingAcquisition = *pImageIndex;
+    mPendingAcquisitionImageIndex = *pImageIndex;
     return VK_SUCCESS;
 }
 
@@ -167,14 +170,14 @@ VkResult Swapchain::post_vkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR s
     (void)fence;
     assert(pImageIndex);
     assert(*pImageIndex < mActualImages.size());
-    auto erased = mAvailableVkImages.erase(mPendingAcquisition);
+    auto erased = mAvailableVkImages.erase(mPendingAcquisitionImageIndex);
     (void)erased;
     assert(erased);
-    auto inserted = mAcquiredVkImages.insert({ mPendingAcquisition, *pImageIndex }).second;
+    auto inserted = mAcquiredVkImages.insert({ mPendingAcquisitionImageIndex, *pImageIndex }).second;
     (void)inserted;
     assert(inserted);
-    *pImageIndex = mPendingAcquisition;
-    mPendingAcquisition = UINT32_MAX;
+    *pImageIndex = mPendingAcquisitionImageIndex;
+    mPendingAcquisitionImageIndex = UINT32_MAX;
     return VK_SUCCESS;
 }
 
@@ -284,6 +287,7 @@ VkResult Layer::post_vkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, c
 {
     (void)pAllocator;
     if (gvkResult == VK_SUCCESS) {
+        mLog.set_instance(*pInstance);
         const auto& dispatchTableItr = layer::Registry::get().VkInstanceDispatchTables.find(layer::get_dispatch_key(*pInstance));
         assert(dispatchTableItr != layer::Registry::get().VkInstanceDispatchTables.end() && "Failed to get gvk::layer::Registry VkInstance gvk::DispatchTable; are the Vulkan SDK, runtime, and layers configured correctly?");
         gvkResult = Instance::create_unmanaged(pCreateInfo, nullptr, &dispatchTableItr->second, *pInstance, &mGvkInstance);
@@ -737,6 +741,7 @@ VkResult Layer::pre_vkQueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPr
             submitInfo.pCommandBuffers = &commandBuffer;
             gvk_result(gvkDevice.get<DispatchTable>().gvkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
         } gvk_result_scope_end;
+        vkResult = gvkResult;
     }
     return vkResult;
 }

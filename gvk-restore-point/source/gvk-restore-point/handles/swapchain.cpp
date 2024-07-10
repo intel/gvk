@@ -26,12 +26,55 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-restore-point/applier.hpp"
 #include "gvk-restore-point/creator.hpp"
+#include "gvk-restore-point/layer.hpp"
 #include "gvk-command-structures/generated/execute-command-structure.hpp"
 #include "gvk-layer/registry.hpp"
 #include "gvk-restore-point/generated/update-structure-handles.hpp"
 
 namespace gvk {
 namespace restore_point {
+
+VkResult Layer::pre_vkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain, VkResult gvkResult)
+{
+    (void)device;
+    (void)pAllocator;
+    (void)pSwapchain;
+    if (gvkResult == VK_SUCCESS) {
+        assert(pCreateInfo);
+        const_cast<VkSwapchainCreateInfoKHR*>(pCreateInfo)->imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    }
+    return gvkResult;
+}
+
+VkResult Layer::pre_vkCreateSharedSwapchainsKHR(VkDevice device, uint32_t swapchainCount, const VkSwapchainCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchains, VkResult gvkResult)
+{
+    (void)device;
+    (void)swapchainCount;
+    (void)pCreateInfos;
+    (void)pAllocator;
+    (void)pSwapchains;
+    for (auto gvkRestorePoint : get_restore_points()) {
+        (void)gvkRestorePoint;
+        assert(gvkRestorePoint);
+        assert(false && "gvk::restore_point::vkCreateSharedSwapchainsKHR() unserviced; gvk maintenance required");
+    }
+    return gvkResult;
+}
+
+VkResult Layer::post_vkCreateSharedSwapchainsKHR(VkDevice device, uint32_t swapchainCount, const VkSwapchainCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchains, VkResult gvkResult)
+{
+    (void)device;
+    (void)swapchainCount;
+    (void)pCreateInfos;
+    (void)pAllocator;
+    (void)pSwapchains;
+    for (auto gvkRestorePoint : get_restore_points()) {
+        (void)gvkRestorePoint;
+        assert(gvkRestorePoint);
+        assert(false && "gvk::restore_point::vkCreateSharedSwapchainsKHR() unserviced; gvk maintenance required");
+    }
+    return gvkResult;
+}
 
 VkResult Creator::process_VkSwapchainKHR(GvkSwapchainRestoreInfoKHR& restoreInfo)
 {
@@ -54,104 +97,95 @@ VkResult Creator::process_VkSwapchainKHR(GvkSwapchainRestoreInfoKHR& restoreInfo
     return gvkResult;
 }
 
-VkResult Applier::restore_VkSwapchainKHR(const GvkRestorePointObject& restorePointObject, const GvkSwapchainRestoreInfoKHR& restoreInfo)
-{
-    (void)restorePointObject;
-    (void)restoreInfo;
-    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
-        gvk_result(VK_SUCCESS);
-    } gvk_result_scope_end;
-    return gvkResult;
-}
-
-VkResult Applier::process_VkSwapchainKHR(const GvkRestorePointObject& restorePointObject, const GvkSwapchainRestoreInfoKHR& restoreInfo)
+VkResult Applier::restore_VkSwapchainKHR(const GvkStateTrackedObject& restorePointObject, const GvkSwapchainRestoreInfoKHR& restoreInfo)
 {
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
-        if (restoreInfo.pSwapchainCreateInfoKHR) {
-            auto surface = restoreInfo.pSwapchainCreateInfoKHR->surface;
+        gvk_result(restoreInfo.pSwapchainCreateInfoKHR ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        VkSurfaceCapabilitiesKHR surfaceCapabilities{ };
+        gvk_result(mApplyInfo.dispatchTable.gvkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+            (VkPhysicalDevice)get_restored_object(get_restore_point_object_dependency<VkPhysicalDevice>(restoreInfo.dependencyCount, restoreInfo.pDependencies)).handle,
+            (VkSurfaceKHR)get_restored_object(get_restore_point_object_dependency<VkSurfaceKHR>(restoreInfo.dependencyCount, restoreInfo.pDependencies)).handle,
+            &surfaceCapabilities
+        ));
 
-            VkSurfaceCapabilitiesKHR surfaceCapabilities{ };
-            gvk_result(mApplyInfo.dispatchTable.gvkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-                (VkPhysicalDevice)get_restored_object(get_restore_point_object_dependency<VkPhysicalDevice>(restoreInfo.dependencyCount, restoreInfo.pDependencies)).handle,
-                (VkSurfaceKHR)get_restored_object(get_restore_point_object_dependency<VkSurfaceKHR>(restoreInfo.dependencyCount, restoreInfo.pDependencies)).handle,
-                &surfaceCapabilities
-            ));
+        // TODO : Are there situations where the oldSwapchain is necessary for correct
+        //  restoration?
+        // FROM : https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkSwapchainCreateInfoKHR.html
+        //  "allows the application to still present any images that are already acquired from it"
+        //  If the restore point is created while oldSwapchain has outstanding image
+        //  acquisitions that will be presented, it may be necessary...
+        // TODO : State tracker needs updating to manage the dependency on oldSwapchain
+        const_cast<VkSwapchainCreateInfoKHR*>(restoreInfo.pSwapchainCreateInfoKHR)->oldSwapchain = VK_NULL_HANDLE;
 
-            // TODO : Are there situations where the oldSwapchain is necessary for correct
-            //  restoration?
-            // FROM : https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkSwapchainCreateInfoKHR.html
-            //  "allows the application to still present any images that are already acquired from it"
-            //  If the restore point is created while oldSwapchain has outstanding image
-            //  acquisitions that will be presented, it may be necessary...
-            // TODO : State tracker needs updating to manage the dependency on oldSwapchain
-            const_cast<VkSwapchainCreateInfoKHR*>(restoreInfo.pSwapchainCreateInfoKHR)->oldSwapchain = VK_NULL_HANDLE;
+        // Update command structure handles to current restore point objects
+        auto commandStructure = get_default<GvkCommandStructureCreateSwapchainKHR>();
+        commandStructure.device = get_dependency<VkDevice>(restoreInfo.dependencyCount, restoreInfo.pDependencies);
+        commandStructure.pCreateInfo = restoreInfo.pSwapchainCreateInfoKHR;
+        auto surface = restoreInfo.pSwapchainCreateInfoKHR->surface;
+        const_cast<VkSwapchainCreateInfoKHR*>(commandStructure.pCreateInfo)->surface = VK_NULL_HANDLE;
+        update_command_structure_handles(mApplyInfo.gvkRestorePoint->objectMap.get_restored_objects(), commandStructure);
 
+        auto surfaceRestorePointObject = restorePointObject;
+        surfaceRestorePointObject.type = VK_OBJECT_TYPE_SURFACE_KHR;
+        surfaceRestorePointObject.handle = (uint64_t)surface;
+        surfaceRestorePointObject.dispatchableHandle = (uint64_t)get_dependency<VkInstance>(restoreInfo.dependencyCount, restoreInfo.pDependencies);
+        const_cast<VkSwapchainCreateInfoKHR*>(commandStructure.pCreateInfo)->surface = (VkSurfaceKHR)get_restored_object(surfaceRestorePointObject).handle;
 
-            auto commandStructure = get_default<GvkCommandStructureCreateSwapchainKHR>();
-            commandStructure.device = get_dependency<VkDevice>(restoreInfo.dependencyCount, restoreInfo.pDependencies);
-            commandStructure.pCreateInfo = restoreInfo.pSwapchainCreateInfoKHR;
-            const_cast<VkSwapchainCreateInfoKHR*>(commandStructure.pCreateInfo)->surface = VK_NULL_HANDLE;
-            update_command_structure_handles(mRestorePointObjects, commandStructure);
-            auto surfaceRestorePointObject = restorePointObject;
-            surfaceRestorePointObject.type = VK_OBJECT_TYPE_SURFACE_KHR;
-            surfaceRestorePointObject.handle = (uint64_t)surface;
-            surfaceRestorePointObject.dispatchableHandle = (uint64_t)get_dependency<VkInstance>(restoreInfo.dependencyCount, restoreInfo.pDependencies);
-            const_cast<VkSwapchainCreateInfoKHR*>(commandStructure.pCreateInfo)->surface = (VkSurfaceKHR)get_restored_object(surfaceRestorePointObject).handle;;
-            VkSwapchainKHR handle = restoreInfo.handle;
-            commandStructure.pSwapchain = &handle;
-            gvk_result(process_GvkCommandStructureCreateSwapchainKHR(restorePointObject, restoreInfo, commandStructure));
-            gvk_result(detail::execute_command_structure(mApplyInfo.dispatchTable, commandStructure));
-            auto restoredObject = restorePointObject;
-            restoredObject.handle = (uint64_t)handle;
-            restoredObject.dispatchableHandle = (uint64_t)commandStructure.device;
-            gvk_result(register_restored_object(restorePointObject, restoredObject));
-            auto device = (VkDevice)get_restored_object(get_restore_point_object_dependency<VkDevice>(restoreInfo.dependencyCount, restoreInfo.pDependencies)).handle;
-            auto swapchain = (VkSwapchainKHR)get_restored_object(restorePointObject).handle;
-            uint32_t swapchainImageCount = 0;
+        VkSwapchainKHR handle = restoreInfo.handle;
+        commandStructure.pSwapchain = &handle;
+        gvk_result(process_GvkCommandStructureCreateSwapchainKHR(restorePointObject, restoreInfo, commandStructure));
+        gvk_result(detail::execute_command_structure(mApplyInfo.dispatchTable, commandStructure));
 
-            auto layerDispatchTableItr = layer::Registry::get().VkDeviceDispatchTables.find(layer::get_dispatch_key(device));
-            gvk_result(layerDispatchTableItr != layer::Registry::get().VkDeviceDispatchTables.end() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-            const auto& layerDispatchTable = layerDispatchTableItr->second;
-            gvk_result(layerDispatchTable.gvkGetSwapchainImagesKHR(device, swapchain, &swapchainImageCount, nullptr));
+        auto restoredObject = restorePointObject;
+        restoredObject.handle = (uint64_t)handle;
+        restoredObject.dispatchableHandle = (uint64_t)commandStructure.device;
+        gvk_result(register_restored_object(restorePointObject, restoredObject));
+        auto device = (VkDevice)get_restored_object(get_restore_point_object_dependency<VkDevice>(restoreInfo.dependencyCount, restoreInfo.pDependencies)).handle;
+        auto swapchain = (VkSwapchainKHR)get_restored_object(restorePointObject).handle;
+        uint32_t swapchainImageCount = 0;
 
-            gvk_result(restoreInfo.imageCount == swapchainImageCount ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-            std::vector<VkImage> swapchainImages(swapchainImageCount);
-            gvk_result(layerDispatchTable.gvkGetSwapchainImagesKHR(device, swapchain, &swapchainImageCount, swapchainImages.data()));
+        auto layerDispatchTableItr = layer::Registry::get().VkDeviceDispatchTables.find(layer::get_dispatch_key(device));
+        gvk_result(layerDispatchTableItr != layer::Registry::get().VkDeviceDispatchTables.end() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        const auto& layerDispatchTable = layerDispatchTableItr->second;
+        gvk_result(layerDispatchTable.gvkGetSwapchainImagesKHR(device, swapchain, &swapchainImageCount, nullptr));
 
-            ///////////////////////////////////////////////////////////////////////////////
-            // TODO : Figure out why this is necessary...this call is triggering GPA FW's
-            //  object mapping logic, but the RestorePointOperation created by the call to
-            //  register_restored_object() _should_ be enough.
-            gvk_result(mApplyInfo.dispatchTable.gvkGetSwapchainImagesKHR(device, swapchain, &swapchainImageCount, nullptr));
-            gvk_result(mApplyInfo.dispatchTable.gvkGetSwapchainImagesKHR(device, swapchain, &swapchainImageCount, swapchainImages.data()));
-            ///////////////////////////////////////////////////////////////////////////////
+        gvk_result(restoreInfo.imageCount == swapchainImageCount ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        std::vector<VkImage> swapchainImages(swapchainImageCount);
+        gvk_result(layerDispatchTable.gvkGetSwapchainImagesKHR(device, swapchain, &swapchainImageCount, swapchainImages.data()));
 
-            for (uint32_t i = 0; i < swapchainImageCount; ++i) {
-                auto swapchainImageRestorePointObject = restorePointObject;
-                swapchainImageRestorePointObject.type = VK_OBJECT_TYPE_IMAGE;
-                swapchainImageRestorePointObject.handle = (uint64_t)restoreInfo.pImages[i].image;
-                restoredObject = swapchainImageRestorePointObject;
-                restoredObject.handle = (uint64_t)swapchainImages[i];
-                gvk_result(register_restored_object(swapchainImageRestorePointObject, restoredObject));
-            }
-            // Acquire image(s)
-            // Reset semaphores
+        ///////////////////////////////////////////////////////////////////////////////
+        // TODO : Figure out why this is necessary...this call is triggering GPA FW's
+        //  object mapping logic, but the RestorePointOperation created by the call to
+        //  register_restored_object() _should_ be enough.
+        gvk_result(mApplyInfo.dispatchTable.gvkGetSwapchainImagesKHR(device, swapchain, &swapchainImageCount, nullptr));
+        gvk_result(mApplyInfo.dispatchTable.gvkGetSwapchainImagesKHR(device, swapchain, &swapchainImageCount, swapchainImages.data()));
+        ///////////////////////////////////////////////////////////////////////////////
+
+        for (uint32_t i = 0; i < swapchainImageCount; ++i) {
+            auto swapchainImageRestorePointObject = restorePointObject;
+            swapchainImageRestorePointObject.type = VK_OBJECT_TYPE_IMAGE;
+            swapchainImageRestorePointObject.handle = (uint64_t)restoreInfo.pImages[i].image;
+            restoredObject = swapchainImageRestorePointObject;
+            restoredObject.handle = (uint64_t)swapchainImages[i];
+            gvk_result(register_restored_object(swapchainImageRestorePointObject, restoredObject));
         }
     } gvk_result_scope_end;
     return gvkResult;
 }
 
-VkResult Applier::restore_VkSwapchainKHR_state(const GvkRestorePointObject& restorePointObject, const GvkSwapchainRestoreInfoKHR& restoreInfo)
+VkResult Applier::restore_VkSwapchainKHR_state(const GvkStateTrackedObject& restorePointObject, const GvkSwapchainRestoreInfoKHR& restoreInfo)
 {
     (void)restorePointObject;
     (void)restoreInfo;
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         gvk_result(VK_SUCCESS);
+        // Acquire image(s)
+        // Reset semaphores
     } gvk_result_scope_end;
     return gvkResult;
 }
 
-void Applier::destroy_VkSwapchainKHR(const GvkRestorePointObject& restorePointObject)
+void Applier::destroy_VkSwapchainKHR(const GvkStateTrackedObject& restorePointObject)
 {
     auto commandStructure = get_default<GvkCommandStructureDestroySwapchainKHR>();
     commandStructure.device = (VkDevice)restorePointObject.dispatchableHandle;

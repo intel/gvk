@@ -109,7 +109,7 @@ NOTE : Best practices for loading dll/so libraries (ie. full paths instead of re
         return gvkResult;
     }
 */
-#define gvk_result_scope_begin(GVK_RESULT) VkResult gvkResult = GVK_RESULT; {
+#define gvk_result_scope_begin(GVK_RESULT) VkResult gvkResult = GVK_RESULT; (void)gvkResult; {
 #define gvk_result_scope_end } GVK_FAIL:
 #define gvk_result(GVK_CALL) \
 gvkResult = (GVK_CALL); \

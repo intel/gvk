@@ -50,11 +50,11 @@ VkResult StateTracker::post_vkAllocateMemory(VkDevice device, const VkMemoryAllo
     if (gvkResult == VK_SUCCESS) {
         DeviceMemory gvkDeviceMemory({ device, *pMemory });
         assert(gvkDeviceMemory);
-        auto& allocateInfo = const_cast<VkMemoryAllocateInfo&>(*gvkDeviceMemory.mReference.get_obj().mMemoryAllocateInfo);
+        auto& memoryAllocateInfo = const_cast<VkMemoryAllocateInfo&>(*gvkDeviceMemory.mReference.get_obj().mMemoryAllocateInfo);
 
         VkMemoryAllocateFlagsInfo* pMemoryAllocateFlagsInfo = nullptr;
         VkMemoryOpaqueCaptureAddressAllocateInfo* pMemoryOpaqueCaptureAddressAllocateInfo = nullptr;
-        auto pNext = (const VkBaseInStructure*)allocateInfo.pNext;
+        auto pNext = (const VkBaseInStructure*)memoryAllocateInfo.pNext;
         while (pNext) {
             switch (pNext->sType) {
             case get_stype<VkMemoryAllocateFlagsInfo>(): {
@@ -83,20 +83,19 @@ VkResult StateTracker::post_vkAllocateMemory(VkDevice device, const VkMemoryAllo
             assert(dispatchTableItr != layer::Registry::get().VkDeviceDispatchTables.end());
             const auto& dispatchTable = dispatchTableItr->second;
 
-            auto deviceMemoryCaptureAddressInfo = get_default<VkDeviceMemoryOpaqueCaptureAddressInfo>();
-            deviceMemoryCaptureAddressInfo.memory = *pMemory;
-
             if (!pMemoryOpaqueCaptureAddressAllocateInfo) {
                 pMemoryOpaqueCaptureAddressAllocateInfo = (VkMemoryOpaqueCaptureAddressAllocateInfo*)detail::create_pnext_copy(&get_default<VkMemoryOpaqueCaptureAddressAllocateInfo>(), nullptr);
-                pMemoryOpaqueCaptureAddressAllocateInfo->pNext = allocateInfo.pNext;
-                allocateInfo.pNext = pMemoryOpaqueCaptureAddressAllocateInfo;
+                pMemoryOpaqueCaptureAddressAllocateInfo->pNext = memoryAllocateInfo.pNext;
+                memoryAllocateInfo.pNext = pMemoryOpaqueCaptureAddressAllocateInfo;
             }
 
+            auto deviceMemoryOpaqueCaptureAddressInfo = get_default<VkDeviceMemoryOpaqueCaptureAddressInfo>();
+            deviceMemoryOpaqueCaptureAddressInfo.memory = *pMemory;
             uint64_t opaqueCaptureAddress = 0;
             if (layer::Registry::get().apiVersion < VK_API_VERSION_1_2) {
-                opaqueCaptureAddress = dispatchTable.gvkGetDeviceMemoryOpaqueCaptureAddressKHR(device, &deviceMemoryCaptureAddressInfo);
+                opaqueCaptureAddress = dispatchTable.gvkGetDeviceMemoryOpaqueCaptureAddressKHR(device, &deviceMemoryOpaqueCaptureAddressInfo);
             } else {
-                opaqueCaptureAddress = dispatchTable.gvkGetDeviceMemoryOpaqueCaptureAddress(device, &deviceMemoryCaptureAddressInfo);
+                opaqueCaptureAddress = dispatchTable.gvkGetDeviceMemoryOpaqueCaptureAddress(device, &deviceMemoryOpaqueCaptureAddressInfo);
             }
             assert(!pMemoryOpaqueCaptureAddressAllocateInfo->opaqueCaptureAddress || pMemoryOpaqueCaptureAddressAllocateInfo->opaqueCaptureAddress == opaqueCaptureAddress);
             pMemoryOpaqueCaptureAddressAllocateInfo->opaqueCaptureAddress = opaqueCaptureAddress;
@@ -108,29 +107,31 @@ VkResult StateTracker::post_vkAllocateMemory(VkDevice device, const VkMemoryAllo
 
 void StateTracker::post_vkFreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator)
 {
-    DeviceMemory gvkDeviceMemory({ device, memory });
-    assert(gvkDeviceMemory);
-    auto& deviceMemoryControlBlock = gvkDeviceMemory.mReference.get_obj();
-    for (auto vkBuffer : deviceMemoryControlBlock.mVkBufferBindings) {
-        Buffer gvkBuffer({ device, vkBuffer });
-        assert(gvkBuffer);
-        gvkBuffer.mReference.get_obj().mVkDeviceMemoryBindings.erase(memory);
+    if (memory) {
+        DeviceMemory gvkDeviceMemory({ device, memory });
+        assert(gvkDeviceMemory);
+        auto& deviceMemoryControlBlock = gvkDeviceMemory.mReference.get_obj();
+        for (auto vkBuffer : deviceMemoryControlBlock.mVkBufferBindings) {
+            Buffer gvkBuffer({ device, vkBuffer });
+            assert(gvkBuffer);
+            gvkBuffer.mReference.get_obj().mVkDeviceMemoryBindings.erase(memory);
 
-        // TODO : Double check this logic
-        if (!deviceMemoryControlBlock.mDedicatedBuffer) {
-            gvkBuffer.mReference.get_obj().mDeviceMemoryRecord = gvkDeviceMemory;
+            // TODO : Double check this logic
+            if (!deviceMemoryControlBlock.mDedicatedBuffer) {
+                gvkBuffer.mReference.get_obj().mDeviceMemoryRecord = gvkDeviceMemory;
+            }
         }
+        // TODO : Treat Images the same as Buffers wrt binding tracking
+        for (auto vkImage : deviceMemoryControlBlock.mVkImageBindings) {
+            Image gvkImage({ device, vkImage });
+            assert(gvkImage);
+            gvkImage.mReference.get_obj().mVkDeviceMemoryBindings.erase(memory);
+        }
+        deviceMemoryControlBlock.mVkBufferBindings.clear();
+        deviceMemoryControlBlock.mVkImageBindings.clear();
+        deviceMemoryControlBlock.mDedicatedBuffer.reset();
+        deviceMemoryControlBlock.mDedicatedImage.reset();
     }
-    // TODO : Treat Images the same as Buffers wrt binding tracking
-    for (auto vkImage : deviceMemoryControlBlock.mVkImageBindings) {
-        Image gvkImage({ device, vkImage });
-        assert(gvkImage);
-        gvkImage.mReference.get_obj().mVkDeviceMemoryBindings.erase(memory);
-    }
-    deviceMemoryControlBlock.mVkBufferBindings.clear();
-    deviceMemoryControlBlock.mVkImageBindings.clear();
-    deviceMemoryControlBlock.mDedicatedBuffer.reset();
-    deviceMemoryControlBlock.mDedicatedImage.reset();
     BasicStateTracker::post_vkFreeMemory(device, memory, pAllocator);
 }
 
@@ -186,43 +187,30 @@ VkResult StateTracker::post_vkBindBufferMemory2(VkDevice device, uint32_t bindIn
             gvkBuffer.mReference.get_obj().mVkDeviceMemoryBindings.insert(gvkDeviceMemory);
             gvkDeviceMemory.mReference.get_obj().mVkBufferBindings.insert(gvkBuffer);
 
-            const auto& bufferCreateInfo = *gvkBuffer.mReference.get_obj().mBufferCreateInfo;
+            auto& bufferCreateInfo = const_cast<VkBufferCreateInfo&>(*gvkBuffer.mReference.get_obj().mBufferCreateInfo);
             if (bufferCreateInfo.flags & VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT) {
                 const auto& dispatchTableItr = layer::Registry::get().VkDeviceDispatchTables.find(layer::get_dispatch_key(device));
                 assert(dispatchTableItr != layer::Registry::get().VkDeviceDispatchTables.end());
                 const auto& dispatchTable = dispatchTableItr->second;
-                (void)dispatchTable;
 
-#if 0 // TODO : Sort out buffer opaque capture addresses
-                // TODO : Documentation
-                auto pBufferOpaqueCaptureAddressCreateInfo = const_cast<VkBufferOpaqueCaptureAddressCreateInfo*>(get_pnext<VkBufferOpaqueCaptureAddressCreateInfo>(bufferCreateInfo));
-                if (!pBufferOpaqueCaptureAddressCreateInfo) {
-                    pBufferOpaqueCaptureAddressCreateInfo = (VkBufferOpaqueCaptureAddressCreateInfo*)detail::create_pnext_copy(&get_default<VkBufferOpaqueCaptureAddressCreateInfo>(), nullptr);
-                    pBufferOpaqueCaptureAddressCreateInfo->pNext = bufferCreateInfo.pNext;
-                    const_cast<VkBufferCreateInfo&>(bufferCreateInfo).pNext = pBufferOpaqueCaptureAddressCreateInfo;
+                auto pBufferOpaqueCaptureAddressCreateInfo = detail::get_pnext_structure<VkBufferOpaqueCaptureAddressCreateInfo>(bufferCreateInfo.pNext);
+                auto pMutableBufferOpaqueCaptureAddressCreateInfo = const_cast<VkBufferOpaqueCaptureAddressCreateInfo*>(pBufferOpaqueCaptureAddressCreateInfo);
+                if (!pMutableBufferOpaqueCaptureAddressCreateInfo) {
+                    pMutableBufferOpaqueCaptureAddressCreateInfo = (VkBufferOpaqueCaptureAddressCreateInfo*)detail::create_pnext_copy(&get_default<VkBufferOpaqueCaptureAddressCreateInfo>(), nullptr);
+                    pMutableBufferOpaqueCaptureAddressCreateInfo->pNext = bufferCreateInfo.pNext;
+                    bufferCreateInfo.pNext = pMutableBufferOpaqueCaptureAddressCreateInfo;
                 }
 
-                // TODO : Documentation
                 auto bufferDeviceAddressInfo = get_default<VkBufferDeviceAddressInfo>();
                 bufferDeviceAddressInfo.buffer = gvkBuffer;
-
-                // TODO : Documentation
                 uint64_t opaqueCaptureAddress = 0;
                 if (layer::Registry::get().apiVersion < VK_API_VERSION_1_2) {
                     opaqueCaptureAddress = dispatchTable.gvkGetBufferOpaqueCaptureAddressKHR(device, &bufferDeviceAddressInfo);
                 } else {
                     opaqueCaptureAddress = dispatchTable.gvkGetBufferOpaqueCaptureAddress(device, &bufferDeviceAddressInfo);
                 }
-
-                assert(
-                    !pBufferOpaqueCaptureAddressCreateInfo->opaqueCaptureAddress ||
-                    pBufferOpaqueCaptureAddressCreateInfo->opaqueCaptureAddress == opaqueCaptureAddress &&
-                    "TODO : Documentation"
-                );
-
-                // TODO : Documentation
-                pBufferOpaqueCaptureAddressCreateInfo->opaqueCaptureAddress = opaqueCaptureAddress;
-#endif
+                assert(!pMutableBufferOpaqueCaptureAddressCreateInfo->opaqueCaptureAddress || pMutableBufferOpaqueCaptureAddressCreateInfo->opaqueCaptureAddress == opaqueCaptureAddress);
+                pMutableBufferOpaqueCaptureAddressCreateInfo->opaqueCaptureAddress = opaqueCaptureAddress;
             }
         }
     }

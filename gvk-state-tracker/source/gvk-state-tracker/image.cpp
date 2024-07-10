@@ -57,15 +57,17 @@ VkResult StateTracker::post_vkCreateImage(VkDevice device, const VkImageCreateIn
 
 void StateTracker::post_vkDestroyImage(VkDevice device, VkImage image, const VkAllocationCallbacks* pAllocator)
 {
-    Image gvkImage({ device, image });
-    assert(gvkImage);
-    auto& gvkImageControlBlock = gvkImage.mReference.get_obj();
-    if (gvkImageControlBlock.mBindImageMemoryInfo->sType == VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO) {
-        if (!gvkImageControlBlock.mVkDeviceMemoryBindings.empty()) {
-            assert(gvkImageControlBlock.mVkDeviceMemoryBindings.size() == 1);
-            DeviceMemory gvkDeviceMemory({ device, *gvkImageControlBlock.mVkDeviceMemoryBindings.begin() });
-            assert(gvkDeviceMemory);
-            gvkDeviceMemory.mReference.get_obj().mVkImageBindings.erase(image);
+    if (image) {
+        Image gvkImage({ device, image });
+        assert(gvkImage);
+        auto& gvkImageControlBlock = gvkImage.mReference.get_obj();
+        if (gvkImageControlBlock.mBindImageMemoryInfo->sType == VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO) {
+            if (!gvkImageControlBlock.mVkDeviceMemoryBindings.empty()) {
+                assert(gvkImageControlBlock.mVkDeviceMemoryBindings.size() == 1);
+                DeviceMemory gvkDeviceMemory({ device, *gvkImageControlBlock.mVkDeviceMemoryBindings.begin() });
+                assert(gvkDeviceMemory);
+                gvkDeviceMemory.mReference.get_obj().mVkImageBindings.erase(image);
+            }
         }
     }
     BasicStateTracker::post_vkDestroyImage(device, image, pAllocator);

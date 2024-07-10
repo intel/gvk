@@ -38,11 +38,17 @@ void CmdTracker::reset()
     mImageLayoutTrackers.clear();
     mBeginRenderPass.reset();
     mBeginRenderPass2.reset();
+    mBoundObjects.clear();
 }
 
 const std::vector<const GvkCommandBaseStructure*>& CmdTracker::get_cmds() const
 {
     return mCmds;
+}
+
+const std::set<GvkStateTrackedObject>& CmdTracker::get_bound_objects() const
+{
+    return mBoundObjects;
 }
 
 const std::unordered_map<VkImage, ImageLayoutTracker>& CmdTracker::get_image_layout_trackers() const

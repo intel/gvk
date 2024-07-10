@@ -39,6 +39,9 @@ VkResult StateTracker::pre_vkCreateBuffer(VkDevice device, const VkBufferCreateI
 {
     assert(pCreateInfo);
     tlApplicationBufferCreateInfo = *pCreateInfo;
+    if (pCreateInfo->usage & VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR) {
+        const_cast<VkBufferCreateInfo*>(pCreateInfo)->usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    }
     return BasicStateTracker::pre_vkCreateBuffer(device, pCreateInfo, pAllocator, pBuffer, gvkResult);
 }
 
@@ -67,18 +70,20 @@ VkDeviceAddress StateTracker::post_vkGetBufferDeviceAddressKHR(VkDevice device, 
 
 void StateTracker::post_vkDestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllocationCallbacks* pAllocator)
 {
-    Buffer gvkBuffer({ device, buffer });
-    assert(gvkBuffer);
-    auto& bufferControlBlock = gvkBuffer.mReference.get_obj();
-    if (bufferControlBlock.mBindBufferMemoryInfo->sType == VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO) {
-        if (!bufferControlBlock.mVkDeviceMemoryBindings.empty()) {
-            assert(bufferControlBlock.mVkDeviceMemoryBindings.size() == 1);
-            DeviceMemory gvkDeviceMemory({ device, *bufferControlBlock.mVkDeviceMemoryBindings.begin() });
-            assert(gvkDeviceMemory);
-            gvkDeviceMemory.mReference.get_obj().mVkBufferBindings.erase(buffer);
-            assert(!bufferControlBlock.mDeviceMemoryRecord || bufferControlBlock.mDeviceMemoryRecord == gvkDeviceMemory);
-            if (!gvkDeviceMemory.mReference.get_obj().mDedicatedBuffer) {
-                bufferControlBlock.mDeviceMemoryRecord = gvkDeviceMemory;
+    if (buffer) {
+        Buffer stateTrackedBuffer({ device, buffer });
+        assert(stateTrackedBuffer);
+        auto& bufferControlBlock = stateTrackedBuffer.mReference.get_obj();
+        if (bufferControlBlock.mBindBufferMemoryInfo->sType == VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO) {
+            if (!bufferControlBlock.mVkDeviceMemoryBindings.empty()) {
+                assert(bufferControlBlock.mVkDeviceMemoryBindings.size() == 1);
+                state_tracker::DeviceMemory stateTrackedDeviceMemory({ device, *bufferControlBlock.mVkDeviceMemoryBindings.begin() });
+                assert(stateTrackedDeviceMemory);
+                stateTrackedDeviceMemory.mReference.get_obj().mVkBufferBindings.erase(buffer);
+                assert(!bufferControlBlock.mDeviceMemoryRecord || bufferControlBlock.mDeviceMemoryRecord == stateTrackedDeviceMemory);
+                if (!stateTrackedDeviceMemory.mReference.get_obj().mDedicatedBuffer) {
+                    bufferControlBlock.mDeviceMemoryRecord = stateTrackedDeviceMemory;
+                }
             }
         }
     }

@@ -26,12 +26,28 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-restore-point/applier.hpp"
 #include "gvk-restore-point/creator.hpp"
+#include "gvk-restore-point/layer.hpp"
+#include "gvk-layer/registry.hpp"
 #include "gvk-format-info.hpp"
 
 #include "stb/stb_image_write.h"
 
 namespace gvk {
 namespace restore_point {
+
+VkResult Layer::pre_vkCreateImage(VkDevice device, const VkImageCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImage* pImage, VkResult gvkResult)
+{
+    (void)device;
+    (void)pAllocator;
+    (void)pImage;
+    if (gvkResult == VK_SUCCESS) {
+        assert(pCreateInfo);
+        if (!(pCreateInfo->usage & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT)) {
+            const_cast<VkImageCreateInfo*>(pCreateInfo)->usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        }
+    }
+    return gvkResult;
+}
 
 VkResult Creator::process_VkImage(GvkImageRestoreInfo& restoreInfo)
 {
@@ -78,7 +94,7 @@ VkResult Creator::process_VkImage(GvkImageRestoreInfo& restoreInfo)
         Device(device).get<DispatchTable>().gvkGetImageMemoryRequirements(device, restoreInfo.handle, &restoreInfo.memoryRequirements.memoryRequirements);
 
         // Submit for download
-        if (mCreateInfo.flags & (GVK_RESTORE_POINT_CREATE_IMAGE_DATA_BIT | GVK_RESTORE_POINT_CREATE_IMAGE_PNG_BIT)) {
+        if (mCreateInfo.gvkRestorePoint->createFlags & (GVK_RESTORE_POINT_CREATE_IMAGE_DATA_BIT | GVK_RESTORE_POINT_CREATE_IMAGE_PNG_BIT)) {
             // TODO : Option for downloading swapchain images...
             if (!get_dependency<VkSwapchainKHR>(restoreInfo.dependencyCount, restoreInfo.pDependencies)) {
                 auto downloadInfo = get_default<CopyEngine::DownloadImageInfo>();
@@ -111,14 +127,14 @@ void Creator::process_downloaded_VkImage(const CopyEngine::DownloadImageInfo& do
 
     // TODO : Documentation
     // TODO : General cleanup
-    if (creator.mCreateInfo.flags & (GVK_RESTORE_POINT_CREATE_IMAGE_DATA_BIT | GVK_RESTORE_POINT_CREATE_IMAGE_PNG_BIT)) {
+    if (creator.mCreateInfo.gvkRestorePoint->createFlags & (GVK_RESTORE_POINT_CREATE_IMAGE_DATA_BIT | GVK_RESTORE_POINT_CREATE_IMAGE_PNG_BIT)) {
         std::filesystem::create_directories(path);
         path /= to_hex_string(downloadInfo.image);
     }
 
     // TODO : Documentation
     // TODO : General cleanup
-    if (creator.mCreateInfo.flags & GVK_RESTORE_POINT_CREATE_IMAGE_PNG_BIT) {
+    if (creator.mCreateInfo.gvkRestorePoint->createFlags & GVK_RESTORE_POINT_CREATE_IMAGE_PNG_BIT) {
         GvkFormatInfo formatInfo { };
         get_format_info(imageCreateInfo.format, &formatInfo);
         bool pngAble = imageCreateInfo.imageType == VK_IMAGE_TYPE_2D && formatInfo.compressionType == GVK_FORMAT_COMPRESSION_TYPE_NONE;
@@ -166,7 +182,7 @@ void Creator::process_downloaded_VkImage(const CopyEngine::DownloadImageInfo& do
         }
     }
 
-    if (creator.mCreateInfo.flags & GVK_RESTORE_POINT_CREATE_IMAGE_DATA_BIT) {
+    if (creator.mCreateInfo.gvkRestorePoint->createFlags & GVK_RESTORE_POINT_CREATE_IMAGE_DATA_BIT) {
         auto imageDataSize = get_image_data_size(imageCreateInfo, downloadInfo.imageSubresourceRange);
         if (creator.mCreateInfo.pfnProcessResourceDataCallback) {
             GvkStateTrackedObject restorePointObject{ };
@@ -181,24 +197,27 @@ void Creator::process_downloaded_VkImage(const CopyEngine::DownloadImageInfo& do
     }
 }
 
-VkResult Applier::process_VkImage(const GvkRestorePointObject& restorePointObject, const GvkImageRestoreInfo& restoreInfo)
+VkResult Applier::restore_VkImage(const GvkStateTrackedObject& restorePointObject, const GvkImageRestoreInfo& restoreInfo)
 {
     gvk_result_scope_begin(VK_SUCCESS) {
         if (!get_dependency<VkSwapchainKHR>(restoreInfo.dependencyCount, restoreInfo.pDependencies)) {
-            const_cast<VkImageCreateInfo*>(restoreInfo.pImageCreateInfo)->usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-            gvk_result(BasicApplier::process_VkImage(restorePointObject, restoreInfo));
+            gvk_result(restoreInfo.pImageCreateInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            if (!(restoreInfo.pImageCreateInfo->usage & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT)) {
+                const_cast<VkImageCreateInfo*>(restoreInfo.pImageCreateInfo)->usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+            }
+            gvk_result(BasicApplier::restore_VkImage(restorePointObject, restoreInfo));
             for (uint32_t i = 0; i < restoreInfo.memoryBindInfoCount; ++i) {
                 auto deviceMemoryRestorePointObject = restorePointObject;
                 deviceMemoryRestorePointObject.type = VK_OBJECT_TYPE_DEVICE_MEMORY;
                 deviceMemoryRestorePointObject.handle = (uint64_t)restoreInfo.pMemoryBindInfos[i].memory;
-                gvk_result(process_object(deviceMemoryRestorePointObject));
+                gvk_result(restore_object(deviceMemoryRestorePointObject));
             }
         }
     } gvk_result_scope_end;
     return gvkResult;
 }
 
-VkResult Applier::restore_VkImage_layouts(const GvkRestorePointObject& restorePointObject)
+VkResult Applier::restore_VkImage_layouts(const GvkStateTrackedObject& restorePointObject)
 {
     gvk_result_scope_begin(VK_SUCCESS) {
         Auto<GvkImageRestoreInfo> restoreInfo;
@@ -212,13 +231,15 @@ VkResult Applier::restore_VkImage_layouts(const GvkRestorePointObject& restorePo
         imageSubresourceRange.aspectMask = get_image_aspect_flags(imageCreateInfo.format);
         imageSubresourceRange.levelCount = imageCreateInfo.mipLevels;
         imageSubresourceRange.layerCount = imageCreateInfo.arrayLayers;
-        auto imageSubresourceCount = imageSubresourceRange.levelCount * imageSubresourceRange.layerCount;
-        std::vector<VkImageLayout> oldImageLayouts(imageSubresourceCount);
-        GvkStateTrackedObject stateTrackedImage{ };
-        stateTrackedImage.type = VK_OBJECT_TYPE_IMAGE;
-        stateTrackedImage.handle = (uint64_t)vkImage;
-        stateTrackedImage.dispatchableHandle = (uint64_t)vkDevice;
-        gvkGetStateTrackedImageLayouts(&stateTrackedImage, &imageSubresourceRange, oldImageLayouts.data());
+
+        std::vector<VkImageLayout> oldImageLayouts(restoreInfo->imageSubresourceCount, imageCreateInfo.initialLayout);
+        if (!(mApplyInfo.flags & GVK_RESTORE_POINT_APPLY_SYNTHETIC_BIT)) {
+            GvkStateTrackedObject stateTrackedImage{ };
+            stateTrackedImage.type = VK_OBJECT_TYPE_IMAGE;
+            stateTrackedImage.handle = (uint64_t)vkImage;
+            stateTrackedImage.dispatchableHandle = (uint64_t)vkDevice;
+            gvkGetStateTrackedImageLayouts(&stateTrackedImage, &imageSubresourceRange, oldImageLayouts.data());
+        }
 
         CopyEngine::TransitionImageLayoutInfo transitionInfo{ };
         transitionInfo.device = vkDevice;
@@ -227,7 +248,7 @@ VkResult Applier::restore_VkImage_layouts(const GvkRestorePointObject& restorePo
         transitionInfo.imageSubresourceRange.aspectMask = get_image_aspect_flags(restoreInfo->pImageCreateInfo->format);
         transitionInfo.imageSubresourceRange.levelCount = imageCreateInfo.mipLevels;
         transitionInfo.imageSubresourceRange.layerCount = imageCreateInfo.arrayLayers;
-        std::vector<VkImageLayout> newImageLayouts(restoreInfo->pImageLayouts, restoreInfo->pImageLayouts + imageSubresourceCount);
+        std::vector<VkImageLayout> newImageLayouts(restoreInfo->pImageLayouts, restoreInfo->pImageLayouts + restoreInfo->imageSubresourceCount);
         transitionInfo.pOldImageLayouts = oldImageLayouts.data();
         transitionInfo.pNewImageLayouts = newImageLayouts.data();
         mCopyEngines[vkDevice].transition_image_layouts(transitionInfo);
@@ -235,30 +256,38 @@ VkResult Applier::restore_VkImage_layouts(const GvkRestorePointObject& restorePo
     return gvkResult;
 }
 
-VkResult Applier::process_VkImage_data(const GvkRestorePointObject& restorePointObject)
+VkResult Applier::restore_VkImage_data(const GvkStateTrackedObject& restorePointObject)
 {
     gvk_result_scope_begin(VK_SUCCESS) {
         Auto<GvkImageRestoreInfo> restoreInfo;
         gvk_result(read_object_restore_info(mApplyInfo.path, "VkImage", to_hex_string(restorePointObject.handle), restoreInfo));
         if (!get_dependency<VkSwapchainKHR>(restoreInfo->dependencyCount, restoreInfo->pDependencies)) {
-            auto device = get_dependency<VkDevice>(restoreInfo->dependencyCount, restoreInfo->pDependencies);
-            device = (VkDevice)get_restored_object({ VK_OBJECT_TYPE_DEVICE, (uint64_t)device, (uint64_t)device }).handle;
+            auto vkDevice = get_dependency<VkDevice>(restoreInfo->dependencyCount, restoreInfo->pDependencies);
+            vkDevice = (VkDevice)get_restored_object({ VK_OBJECT_TYPE_DEVICE, (uint64_t)vkDevice, (uint64_t)vkDevice }).handle;
             CopyEngine::UploadImageInfo uploadInfo{ };
             uploadInfo.path = (mApplyInfo.path / "VkImage" / to_hex_string(restorePointObject.handle)).replace_extension(".data");
-            uploadInfo.device = device;
+            uploadInfo.device = vkDevice;
             uploadInfo.image = (VkImage)get_restored_object(restorePointObject).handle;
             uploadInfo.imageCreateInfo = *restoreInfo->pImageCreateInfo;
             uploadInfo.imageSubresourceRange.aspectMask = get_image_aspect_flags(restoreInfo->pImageCreateInfo->format);
             uploadInfo.imageSubresourceRange.levelCount = restoreInfo->pImageCreateInfo->mipLevels;
             uploadInfo.imageSubresourceRange.layerCount = restoreInfo->pImageCreateInfo->arrayLayers;
-            auto imageSubresourceCount = uploadInfo.imageSubresourceRange.levelCount * uploadInfo.imageSubresourceRange.layerCount;
-            std::vector<VkImageLayout> oldImageLayouts(imageSubresourceCount, VK_IMAGE_LAYOUT_UNDEFINED);
-            std::vector<VkImageLayout> newImageLayouts(restoreInfo->pImageLayouts, restoreInfo->pImageLayouts + imageSubresourceCount);
+            
+            std::vector<VkImageLayout> oldImageLayouts(restoreInfo->imageSubresourceCount, restoreInfo->pImageCreateInfo->initialLayout);
+            if (!(mApplyInfo.flags & GVK_RESTORE_POINT_APPLY_SYNTHETIC_BIT)) {
+                GvkStateTrackedObject stateTrackedImage{ };
+                stateTrackedImage.type = VK_OBJECT_TYPE_IMAGE;
+                stateTrackedImage.handle = (uint64_t)uploadInfo.image;
+                stateTrackedImage.dispatchableHandle = (uint64_t)vkDevice;
+                gvkGetStateTrackedImageLayouts(&stateTrackedImage, &uploadInfo.imageSubresourceRange, oldImageLayouts.data());
+            }
+
+            std::vector<VkImageLayout> newImageLayouts(restoreInfo->pImageLayouts, restoreInfo->pImageLayouts + restoreInfo->imageSubresourceCount);
             uploadInfo.pOldImageLayouts = oldImageLayouts.data();
             uploadInfo.pNewImageLayouts = newImageLayouts.data();
             uploadInfo.pUserData = this;
             uploadInfo.pfnCallback = process_VkImage_data_upload;
-            mCopyEngines[device].upload(uploadInfo);
+            mCopyEngines[vkDevice].upload(uploadInfo);
         } else {
             // TODO : Make the layout transition codepath modular...shouldn't need to check
             //  if we're working a swapchain image here...
@@ -292,7 +321,7 @@ void Applier::process_VkImage_data_upload(const CopyEngine::UploadImageInfo& upl
     assert(gvkResult == VK_SUCCESS);
 }
 
-VkResult Applier::process_VkImage_layouts(const GvkRestorePointObject& restorePointObject)
+VkResult Applier::process_VkImage_layouts(const GvkStateTrackedObject& restorePointObject)
 {
     gvk_result_scope_begin(VK_SUCCESS) {
         Auto<GvkImageRestoreInfo> restoreInfo;

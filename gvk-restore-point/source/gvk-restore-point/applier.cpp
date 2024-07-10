@@ -43,278 +43,308 @@ namespace restore_point {
 
 VkResult Applier::apply_restore_point(const ApplyInfo& applyInfo)
 {
-    mLog.set_instance(applyInfo.instance);
+    mLog.set_instance(applyInfo.vkInstance);
     mLog << VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
-    mLog << "Entered gvk::restore_point::Applier::apply_restore_point()" << Log::Flush;
-    mRestorePointObjects.clear();
+    mLog << "Entered gvk::restore_point::Applier::apply_restore_point()" << layer::Log::Flush;
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         mApplyInfo = applyInfo;
         std::ifstream infoFile(mApplyInfo.path / "GvkRestorePointManifest.info", std::ios::binary);
         gvk_result(infoFile.is_open() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-        Auto<GvkRestorePointManifest> manifest;
-        deserialize(infoFile, nullptr, manifest);
+        deserialize(infoFile, nullptr, mApplyInfo.gvkRestorePoint->manifest);
+        const auto& manifest = mApplyInfo.gvkRestorePoint->manifest;
 
-        ///////////////////////////////////////////////////////////////////////////////
-        if (mApplyInfo.repeating_HACK) {
-            assert(mApplyInfo.pLayerInfo);
-            auto& layerInfo = *mApplyInfo.pLayerInfo;
-            (void)layerInfo;
-            mRestoredObjects.clear();
-            mRestoredObjectStates.clear();
-            mProcessedObjects.clear();
-            mRestorePointObjects.clear();
+        // Get the application dispatch table.  Its useful for VkPhysicalDevice calls
+        //  using application VkPhysicalDevice handles (see gvk-layer/registry.cpp
+        //  create_physical_device_mappings() for more info).
+        // NOTE : Any Calls made against this disptach table will go through all loaded
+        //  layers, including the state tracker and this layer.
+        DispatchTable::load_global_entry_points(&mApplicationDispatchTable);
+        DispatchTable::load_instance_entry_points(mApplyInfo.vkInstance, &mApplicationDispatchTable);
 
-            std::vector<GvkRestorePointObject> restorePointImages;
-            for (uint32_t i = 0; i < manifest->objectCount; ++i) {
-                const auto& object = manifest->pObjects[i];
-                switch (object.type) {
-                case VK_OBJECT_TYPE_DEVICE: {
+        // If GVK_RESTORE_POINT_APPLY_SYNTHETIC_BIT is set all restoration calls should
+        //  be emitted, so clear the objectMap so every object is restored.
+        if (mApplyInfo.flags & GVK_RESTORE_POINT_APPLY_SYNTHETIC_BIT) {
+            // TODO : Stash and unstash the object map so it's in the correct state after
+            //  all synthetic calls are emitted.
+            mApplyInfo.gvkRestorePoint->objectMap.clear();
+        }
+
+        // Clear the objectRestorationSubmitted set
+        mApplyInfo.gvkRestorePoint->objectRestorationSubmitted.clear();
+
+        // Prepare index arrays to look up objects that need specialized restoration
+        uint32_t instanceIndex = 0;
+        std::vector<uint32_t> deviceIndices;
+        std::vector<uint32_t> commandBufferIndices;
+        std::vector<uint32_t> deviceMemoryIndices;
+        std::vector<uint32_t> bufferIndices;
+        std::vector<uint32_t> imageIndices;
+        std::vector<uint32_t> descriptorSetIndices;
+        std::vector<uint32_t> accelerationStructureIndices;
+        for (uint32_t i = 0; i < manifest->objectCount; ++i) {
+            const auto& object = manifest->pObjects[i];
+            if (mApplyInfo.flags & GVK_RESTORE_POINT_APPLY_SYNTHETIC_BIT) {
+                mApplyInfo.gvkRestorePoint->stateRestorationRequired.insert(object);
+            }
+            switch (object.type) {
+            case VK_OBJECT_TYPE_INSTANCE: {
+                gvk_result(!instanceIndex ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+                instanceIndex = i;
+                mApplyInfo.gvkRestorePoint->stateRestorationRequired.insert(object);
+            } break;
+            case VK_OBJECT_TYPE_PHYSICAL_DEVICE: {
+                mApplyInfo.gvkRestorePoint->stateRestorationRequired.insert(object);
+            } break;
+            case VK_OBJECT_TYPE_DEVICE: {
+                deviceIndices.push_back(i);
+                mApplyInfo.gvkRestorePoint->stateRestorationRequired.insert(object);
+                if (!(mApplyInfo.flags & GVK_RESTORE_POINT_APPLY_SYNTHETIC_BIT)) {
                     gvk_result(mApplyInfo.dispatchTable.gvkDeviceWaitIdle((VkDevice)object.handle));
-                } break;
-                case VK_OBJECT_TYPE_IMAGE: {
-                    restorePointImages.push_back(object);
-                } break;
-                default: {
-                } break;
                 }
-            }
-            #if 0 // TODO : Need to figure out how upper layers should create persistent objects
-            // Destroy created objects not present in manifest
-            std::vector<GvkRestorePointObject> createdDescriptorSets;
-            for (const auto& createdObject : layerInfo.createdObjects) {
-                // TODO : Object destruction should happen in reverse dependency order
-                // switch (createdObject.type) {
-                // // case VK_OBJECT_TYPE_DESCRIPTOR_SET: {
-                // //     createdDescriptorSets.push_back(createdObject);
-                // // } break;
-                // default: {
-                    destroy_object(createdObject);
-                // } break;
-                // }
-            }
-            #endif
-            // destroy_VkDescriptorSets(createdDescriptorSets);
-            // Restore objects
-            for (uint32_t i = 0; i < manifest->objectCount; ++i) {
-                const auto& object = (const GvkStateTrackedObject&)manifest->pObjects[i];
-                if (!mApplyInfo.excludedObjects.count(object)) {
-                    gvk_result(restore_object(manifest->pObjects[i]));
+                Auto<GvkDeviceRestoreInfo> restoreInfo;
+                gvk_result(read_object_restore_info(mApplyInfo.path, "VkDevice", to_hex_string(object.handle), restoreInfo));
+                mDeviceRestoreInfos[(VkDevice)object.handle] = restoreInfo;
+            } break;
+            case VK_OBJECT_TYPE_DEVICE_MEMORY: {
+                deviceMemoryIndices.push_back(i);
+                if (mApplyInfo.flags & GVK_RESTORE_POINT_APPLY_SYNTHETIC_BIT) {
+                    mApplyInfo.gvkRestorePoint->mappingRestorationRequired.insert(object);
+                    if (mApplyInfo.gvkRestorePoint->createFlags & GVK_RESTORE_POINT_CREATE_DEVICE_MEMORY_DATA_BIT) {
+                        mApplyInfo.gvkRestorePoint->dataRestorationRequired.insert(object);
+                    }
                 }
-            }
-            // Restore object states
-            for (uint32_t i = 0; i < manifest->objectCount; ++i) {
-                const auto& object = (const GvkStateTrackedObject&)manifest->pObjects[i];
-                if (!mApplyInfo.excludedObjects.count(object)) {
-                    gvk_result(restore_object_state(manifest->pObjects[i]));
-                    gvk_result(BasicApplier::restore_object_name(manifest->pObjects[i]));
+            } break;
+            case VK_OBJECT_TYPE_BUFFER: {
+                bufferIndices.push_back(i);
+                if ((mApplyInfo.flags & GVK_RESTORE_POINT_APPLY_SYNTHETIC_BIT) && (mApplyInfo.gvkRestorePoint->createFlags & GVK_RESTORE_POINT_CREATE_BUFFER_DATA_BIT)) {
+                    mApplyInfo.gvkRestorePoint->dataRestorationRequired.insert(object);
                 }
+            } break;
+            case VK_OBJECT_TYPE_IMAGE: {
+                imageIndices.push_back(i);
+#if 0
+                // TODO : Really need to seperate data and layout
+                if ((mApplyInfo.flags & GVK_RESTORE_POINT_APPLY_SYNTHETIC_BIT) && (mApplyInfo.gvkRestorePoint->createFlags & GVK_RESTORE_POINT_CREATE_IMAGE_DATA_BIT)) {
+                    mApplyInfo.gvkRestorePoint->dataRestorationRequired.insert(object);
+                }
+#else
+                if ((mApplyInfo.flags & GVK_RESTORE_POINT_APPLY_SYNTHETIC_BIT)) {
+                    mApplyInfo.gvkRestorePoint->dataRestorationRequired.insert(object);
+                }
+#endif
+            } break;
+            case VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR: {
+                accelerationStructureIndices.push_back(i);
+                if ((mApplyInfo.flags & GVK_RESTORE_POINT_APPLY_SYNTHETIC_BIT) && (mApplyInfo.gvkRestorePoint->createFlags & GVK_RESTORE_POINT_CREATE_ACCELERATION_STRUCTURE_DATA_BIT)) {
+                    mApplyInfo.gvkRestorePoint->dataRestorationRequired.insert(object);
+                }
+            } break;
+            case VK_OBJECT_TYPE_DESCRIPTOR_SET: {
+                descriptorSetIndices.push_back(i);
+                if (mApplyInfo.flags & GVK_RESTORE_POINT_APPLY_SYNTHETIC_BIT) {
+                    mApplyInfo.gvkRestorePoint->dataRestorationRequired.insert(object);
+                }
+            } break;
+            case VK_OBJECT_TYPE_COMMAND_BUFFER: {
+                commandBufferIndices.push_back(i);
+                if (mApplyInfo.flags & GVK_RESTORE_POINT_APPLY_SYNTHETIC_BIT) {
+                    mApplyInfo.gvkRestorePoint->dataRestorationRequired.insert(object);
+                }
+            } break;
+            case VK_OBJECT_TYPE_EVENT:
+            case VK_OBJECT_TYPE_FENCE:
+            case VK_OBJECT_TYPE_SEMAPHORE: {
+                mApplyInfo.gvkRestorePoint->stateRestorationRequired.insert(object);
+            } break;
+            default: {
+            } break;
             }
-            // Restore Buffer data
-            // Restore Image data
-            // Restore Image layouts
-            for (const auto& restorePointImage : restorePointImages) {
-                gvk_result(restore_VkImage_layouts(restorePointImage));
-            }
-            for (auto& copyEngineItr : mCopyEngines) {
-                copyEngineItr.second.wait();
-            }
-            // Restore DeviceMemory data
-            // Restore DeviceMemory mapping
-            // Restore DescriptorSet bindings
-            // Restore CommandBuffer cmds
-            ///////////////////////////////////////////////////////////////////////////////
-            // Destroy transient objects
-            ///////////////////////////////////////////////////////////////////////////////
-        } else
-        ///////////////////////////////////////////////////////////////////////////////
+        }
 
-        ///////////////////////////////////////////////////////////////////////////////
         // Restore objects
-        // Restore Buffer data
-        // Restore Image data
-        // Restore Image layouts
-        // Restore DeviceMemory data
-        // Restore DeviceMemory mapping
-        // Restore DescriptorSet bindings
-        // Restore CommandBuffer cmds
-        // Process transient objects
-        ///////////////////////////////////////////////////////////////////////////////
-        // Restore objects
-        // Restore Buffer data*
-        // Restore Image data*
-        // Restore Image layouts
-        // Restore DeviceMemory data
-        // Restore DeviceMemory mappings
-        // Restore DescriptorSet bindings
-        // Restore CommandBuffer cmds
-        // Process transient objects
-        ///////////////////////////////////////////////////////////////////////////////
-        if (string::to_lower(get_env_var("DIRECT_MEMORY")) == "true") {
-            ///////////////////////////////////////////////////////////////////////////////
-            std::vector<GvkRestorePointObject> capturedCommandBuffers;
-            std::vector<GvkRestorePointObject> capturedDeviceMemories;
-            std::vector<GvkRestorePointObject> capturedBuffers;
-            std::vector<GvkRestorePointObject> capturedImages;
-            std::vector<GvkRestorePointObject> capturedDescriptorSets;
-            for (uint32_t i = 0; i < manifest->objectCount; ++i) {
-                const auto& capturedObject = manifest->pObjects[i];
-                gvk_result(process_object(capturedObject));
-                switch (capturedObject.type) {
-                case VK_OBJECT_TYPE_COMMAND_BUFFER: {
-                    capturedCommandBuffers.push_back(capturedObject);
-                } break;
-                case VK_OBJECT_TYPE_DEVICE_MEMORY: {
-                    capturedDeviceMemories.push_back(capturedObject);
-                } break;
-                case VK_OBJECT_TYPE_BUFFER: {
-                    capturedBuffers.push_back(capturedObject);
-                } break;
-                case VK_OBJECT_TYPE_IMAGE: {
-                    capturedImages.push_back(capturedObject);
-                } break;
-                case VK_OBJECT_TYPE_DESCRIPTOR_SET: {
-                    capturedDescriptorSets.push_back(capturedObject);
-                } break;
-                default: {
-                } break;
-                }
+        for (uint32_t i = 0; i < manifest->objectCount; ++i) {
+            const auto& object = manifest->pObjects[i];
+            if (!mApplyInfo.excluded(object)) {
+                gvk_result(restore_object(object));
             }
-            for (uint32_t i = 0; i < manifest->objectCount; ++i) {
+        }
+
+        // Restore object states
+        for (uint32_t i = 0; i < manifest->objectCount; ++i) {
+            const auto& object = manifest->pObjects[i];
+            if (!mApplyInfo.excluded(object)) {
+                gvk_result(restore_object_state(manifest->pObjects[i]));
                 gvk_result(BasicApplier::restore_object_name(manifest->pObjects[i]));
             }
-            // TODO : Minize copies on repeat restore...VkBuffer, VkImage, VkAccelerationStructure
-            for (const auto& capturedImage : capturedImages) {
-                // TODO : Need to be able to call process_VkImage_data() for repeat, but it's
-                //  a doing a bit too much at the moment...it also transitions layouts for
-                //  swapchain images...this is because the data transfer codepath uses the
-                //  copy engine barriers to do the transition.  These bits of logic should be
-                //  untangled from each other.
-                // process_VkImage_data(capturedImage);
-                process_VkImage_layouts(capturedImage);
+        }
+
+        if (mApplyInfo.gvkRestorePoint->createFlags & GVK_RESTORE_POINT_CREATE_BUFFER_DATA_BIT) {
+            // Restore buffer data
+            for (const auto& i : bufferIndices) {
+                const auto& object = manifest->pObjects[i];
+                auto itr = mApplyInfo.gvkRestorePoint->dataRestorationRequired.find(object);
+                if (itr != mApplyInfo.gvkRestorePoint->dataRestorationRequired.end()) {
+                    mApplyInfo.gvkRestorePoint->dataRestorationRequired.erase(itr);
+                    gvk_result(restore_VkBuffer_data(object));
+                }
             }
-            for (const auto& capturedDeviceMemory : capturedDeviceMemories) {
-                process_VkDeviceMemory_data(capturedDeviceMemory);
-                process_VkDeviceMemory_mapping(capturedDeviceMemory);
+        }
+
+        if (mApplyInfo.gvkRestorePoint->createFlags & GVK_RESTORE_POINT_CREATE_IMAGE_DATA_BIT) {
+            // Restore image data
+            for (const auto& i : imageIndices) {
+#if 0
+                // TODO : restore_VkImage_data() is also updating layouts...need to break that logic apart
+                restore_VkImage_data(manifest->pObjects[i]);
+                // restore_VkImage_layouts(manifest->pObjects[i]);
+                // restore_VkImage_data_and_layouts(manifest->pObjects[i]);?
+#else
+                const auto& object = manifest->pObjects[i];
+                auto itr = mApplyInfo.gvkRestorePoint->dataRestorationRequired.find(object);
+                if (itr != mApplyInfo.gvkRestorePoint->dataRestorationRequired.end()) {
+                    mApplyInfo.gvkRestorePoint->dataRestorationRequired.erase(itr);
+                    gvk_result(restore_VkImage_data(object));
+                }
+#endif
             }
-            for (const auto& capturedDescriptorSet : capturedDescriptorSets) {
-                process_VkDescriptorSet_bindings(capturedDescriptorSet);
-            }
-            for (const auto& capturedCommandBuffer : capturedCommandBuffers) {
-                process_VkCommandBuffer_cmds(capturedCommandBuffer);
-            }
-            process_transient_objects();
-            ///////////////////////////////////////////////////////////////////////////////
         } else {
-            ///////////////////////////////////////////////////////////////////////////////
-            std::vector<GvkRestorePointObject> capturedCommandBuffers;
-            std::vector<GvkRestorePointObject> capturedDeviceMemories;
-            std::vector<GvkRestorePointObject> capturedBuffers;
-            std::vector<GvkRestorePointObject> capturedImages;
-            std::vector<GvkRestorePointObject> capturedAccelerationStructures;
-            std::vector<GvkRestorePointObject> capturedDescriptorSets;
-            for (uint32_t i = 0; i < manifest->objectCount; ++i) {
-                const auto& capturedObject = manifest->pObjects[i];
-                gvk_result(process_object(capturedObject));
-                switch (capturedObject.type) {
-                case VK_OBJECT_TYPE_COMMAND_BUFFER: {
-                    capturedCommandBuffers.push_back(capturedObject);
-                } break;
-                case VK_OBJECT_TYPE_DEVICE_MEMORY: {
-                    capturedDeviceMemories.push_back(capturedObject);
-                } break;
-                case VK_OBJECT_TYPE_BUFFER: {
-                    capturedBuffers.push_back(capturedObject);
-                } break;
-                case VK_OBJECT_TYPE_IMAGE: {
-                    capturedImages.push_back(capturedObject);
-                } break;
-                case VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR: {
-                    capturedAccelerationStructures.push_back(capturedObject);
-                } break;
-                case VK_OBJECT_TYPE_DESCRIPTOR_SET: {
-                    capturedDescriptorSets.push_back(capturedObject);
-                } break;
-                default: {
-                } break;
+            for (const auto& i : imageIndices) {
+                const auto& object = manifest->pObjects[i];
+                auto itr = mApplyInfo.gvkRestorePoint->dataRestorationRequired.find(object);
+                if (itr != mApplyInfo.gvkRestorePoint->dataRestorationRequired.end()) {
+                    mApplyInfo.gvkRestorePoint->dataRestorationRequired.erase(itr);
+                    gvk_result(restore_VkImage_layouts(object));
                 }
             }
-            for (uint32_t i = 0; i < manifest->objectCount; ++i) {
-                gvk_result(BasicApplier::restore_object_name(manifest->pObjects[i]));
-            }
-            for (const auto& capturedBuffer : capturedBuffers) {
-                process_VkBuffer_data(capturedBuffer);
-            }
-            for (const auto& capturedImage : capturedImages) {
-                // TODO : Layout transition is bundled with data upload logic...this is "okish"
-                //  but the codepath to transition layout without a data transfer (ie for
-                //  swapchain images or the direct memory codepath) should be modular.
-                process_VkImage_data(capturedImage);
-                // process_VkImage_layouts(capturedImage);
-            }
-            for (const auto& capturedDeviceMemory : capturedDeviceMemories) {
-                process_VkDeviceMemory_mapping(capturedDeviceMemory);
-            }
-
-            apply_VkAccelerationStructure_restore_point(capturedAccelerationStructures);
-
-            for (const auto& capturedDescriptorSet : capturedDescriptorSets) {
-                process_VkDescriptorSet_bindings(capturedDescriptorSet);
-            }
-            for (const auto& capturedCommandBuffer : capturedCommandBuffers) {
-                process_VkCommandBuffer_cmds(capturedCommandBuffer);
-            }
-            process_transient_objects();
-            ///////////////////////////////////////////////////////////////////////////////
         }
+
+        if (mApplyInfo.gvkRestorePoint->createFlags & GVK_RESTORE_POINT_CREATE_ACCELERATION_STRUCTURE_DATA_BIT) {
+            // Restore acceleration structure data
+            AccelerationStructureSerializationResources accelerationStructureSerializationResources;
+            for (const auto& i : accelerationStructureIndices) {
+                const auto& object = manifest->pObjects[i];
+                auto itr = mApplyInfo.gvkRestorePoint->dataRestorationRequired.find(object);
+                if (itr != mApplyInfo.gvkRestorePoint->dataRestorationRequired.end()) {
+                    mApplyInfo.gvkRestorePoint->dataRestorationRequired.erase(itr);
+                    gvk_result(restore_VkAccelerationStructureKHR_data(object, accelerationStructureSerializationResources));
+                }
+            }
+            accelerationStructureSerializationResources.reset();
+        }
+
+        if (mApplyInfo.gvkRestorePoint->createFlags & GVK_RESTORE_POINT_CREATE_DEVICE_MEMORY_DATA_BIT) {
+            // Restore device memory data
+            for (const auto& i : deviceMemoryIndices) {
+                const auto& object = manifest->pObjects[i];
+                auto itr = mApplyInfo.gvkRestorePoint->dataRestorationRequired.find(object);
+                if (itr != mApplyInfo.gvkRestorePoint->dataRestorationRequired.end()) {
+                    mApplyInfo.gvkRestorePoint->dataRestorationRequired.erase(itr);
+                    gvk_result(restore_VkDeviceMemory_data(object));
+                }
+            }
+        }
+
+        // Make sure all transfers are complete before moving on to the next steps
+        for (auto itr : mDeviceRestoreInfos) {
+            gvk_result(mApplyInfo.dispatchTable.gvkDeviceWaitIdle(itr.first));
+        }
+
+        // Restore device memory mappings
+        for (const auto& i : deviceMemoryIndices) {
+            const auto& object = manifest->pObjects[i];
+            auto itr = mApplyInfo.gvkRestorePoint->mappingRestorationRequired.find(object);
+            if (itr != mApplyInfo.gvkRestorePoint->mappingRestorationRequired.end()) {
+                mApplyInfo.gvkRestorePoint->mappingRestorationRequired.erase(itr);
+                gvk_result(restore_VkDeviceMemory_mapping(object));
+            }
+        }
+
+        // Restore descriptor set bindings
+        for (const auto& i : descriptorSetIndices) {
+            const auto& object = manifest->pObjects[i];
+            auto itr = mApplyInfo.gvkRestorePoint->dataRestorationRequired.find(object);
+            if (itr != mApplyInfo.gvkRestorePoint->dataRestorationRequired.end()) {
+                mApplyInfo.gvkRestorePoint->dataRestorationRequired.erase(itr);
+                gvk_result(restore_VkDescriptorSet_bindings(object));
+            }
+        }
+
+        // Restore command buffer cmds
+        for (const auto& i : commandBufferIndices) {
+            const auto& object = manifest->pObjects[i];
+            if (!mApplyInfo.excluded(object)) {
+                auto itr = mApplyInfo.gvkRestorePoint->dataRestorationRequired.find(object);
+                if (itr != mApplyInfo.gvkRestorePoint->dataRestorationRequired.end()) {
+                    mApplyInfo.gvkRestorePoint->dataRestorationRequired.erase(itr);
+                    gvk_result(restore_VkCommandBuffer_cmds(object));
+                }
+            }
+        }
+
+        // Destroy transient objects
+        // TODO : Object destruction should happen in reverse dependency order
+        // TODO : Should mApplyInfo.destroyObjects be destroyed at the start?
+        mApplyInfo.gvkRestorePoint->objectDestructionRequired.insert(mApplyInfo.destroyObjects.begin(), mApplyInfo.destroyObjects.end());
+        for (const auto& object : mApplyInfo.gvkRestorePoint->objectDestructionRequired) {
+            if (!mApplyInfo.excluded(object)) {
+                // TODO : vkDeviceWaitIdle before VkFence, VkSemaphore, VkEvent
+                destroy_object(object);
+            }
+        }
+        mApplyInfo.gvkRestorePoint->objectDestructionRequired.clear();
+        mApplyInfo.gvkRestorePoint->objectDestructionSubmitted.clear();
+        mApplyInfo.gvkRestorePoint->createdObjects.clear();
     } gvk_result_scope_end;
-    if (mApplyInfo.pLayerInfo) {
-        mApplyInfo.pLayerInfo->createdObjects.clear();
-    }
-    // mApplyInfo.pLayerInfo->destroyedObjects.clear();
-    mRestorePointObjects.clear();
+    mResult = gvkResult;
     mLog << VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
-    mLog << "Leaving gvk::restore_point::Applier::apply_restore_point() " << gvk::to_string(mResult, Printer::Default & ~Printer::EnumValue) << Log::Flush;
+    mLog << "Leaving gvk::restore_point::Applier::apply_restore_point() " << gvk::to_string(mResult, Printer::Default & ~Printer::EnumValue) << layer::Log::Flush;
     return gvkResult;
 }
 
-VkResult Applier::register_restored_object_ex(const GvkRestorePointObject& capturedObject, const GvkRestorePointObject& restoredObject)
+VkResult Applier::register_restored_object(const GvkStateTrackedObject& capturedObject, const GvkStateTrackedObject& restoredObject)
 {
-    auto inserted = mRestorePointObjects.insert({ capturedObject, restoredObject }).second;
+    auto inserted = mApplyInfo.gvkRestorePoint->objectMap.register_object_restoration(capturedObject, restoredObject);
     if (inserted && mApplyInfo.pfnProcessRestoredObjectCallback) {
-        mApplyInfo.pfnProcessRestoredObjectCallback((const GvkStateTrackedObject*)&capturedObject, (const GvkStateTrackedObject*)&restoredObject);
+        mApplyInfo.pfnProcessRestoredObjectCallback(&capturedObject, &restoredObject);
     }
-    return inserted ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED;
+    return inserted ? VK_SUCCESS : VK_ERROR_UNKNOWN;
 }
 
-VkResult Applier::restore_object(const GvkRestorePointObject& restorePointObject)
+void Applier::register_restored_object_destruction(const GvkStateTrackedObject& restoredObject)
+{
+    // TODO : Fire callback here to notify upper layers?
+    mApplyInfo.gvkRestorePoint->objectMap.register_object_destruction(restoredObject);
+}
+
+GvkStateTrackedObject Applier::get_restored_object(const GvkStateTrackedObject& restorePointObject)
+{
+    return mApplyInfo.gvkRestorePoint->objectMap.get_restored_object(restorePointObject);
+}
+
+VkResult Applier::restore_object(const GvkStateTrackedObject& restorePointObject)
 {
     gvk_result_scope_begin(VK_SUCCESS) {
-        if (mRestoredObjects.insert(restorePointObject).second) {
-            assert(!mRestorePointObjects.count(restorePointObject));
-            // TODO : Deferred application needs to treat everything as "restore required"
-            GvkStateTrackedObjectInfo stateTrackedObjectInfo{ };
-            gvkGetStateTrackedObjectInfo((GvkStateTrackedObject*)&restorePointObject, &stateTrackedObjectInfo);
-            if (stateTrackedObjectInfo.flags & GVK_STATE_TRACKED_OBJECT_STATUS_ACTIVE_BIT) {
-                mRestorePointObjects.insert({ restorePointObject, restorePointObject });
-            } else {
-                gvk_result(BasicApplier::restore_object(restorePointObject));
-            }
+        if (!is_valid(mApplyInfo.gvkRestorePoint->objectMap.get_restored_object(restorePointObject)) &&
+            mApplyInfo.gvkRestorePoint->objectRestorationSubmitted.insert(restorePointObject).second) {
+            gvk_result(BasicApplier::restore_object(restorePointObject));
         }
     } gvk_result_scope_end;
     return gvkResult;
 }
 
-VkResult Applier::restore_object_state(const GvkRestorePointObject& restorePointObject)
+VkResult Applier::restore_object_state(const GvkStateTrackedObject& restorePointObject)
 {
     gvk_result_scope_begin(VK_SUCCESS) {
-        if (mRestoredObjectStates.insert(restorePointObject).second) {
+        auto itr = mApplyInfo.gvkRestorePoint->stateRestorationRequired.find(restorePointObject);
+        if (itr != mApplyInfo.gvkRestorePoint->stateRestorationRequired.end()) {
+            mApplyInfo.gvkRestorePoint->stateRestorationRequired.erase(itr);
             gvk_result(BasicApplier::restore_object_state(restorePointObject));
         }
     } gvk_result_scope_end;
     return gvkResult;
 }
 
-VkResult Applier::restore_object_name(const GvkRestorePointObject& restorePointObject, uint32_t dependencyCount, const GvkRestorePointObject* pDependencies, const char* pName)
+VkResult Applier::restore_object_name(const GvkStateTrackedObject& restorePointObject, uint32_t dependencyCount, const GvkStateTrackedObject* pDependencies, const char* pName)
 {
     gvk_result_scope_begin(VK_SUCCESS) {
         VkPhysicalDevice vkPhysicalDevice = VK_NULL_HANDLE;
@@ -324,8 +354,11 @@ VkResult Applier::restore_object_name(const GvkRestorePointObject& restorePointO
         case VK_OBJECT_TYPE_DEBUG_UTILS_MESSENGER_EXT:
         case VK_OBJECT_TYPE_SURFACE_KHR:
         case VK_OBJECT_TYPE_INSTANCE: {
-            // TODO : restore_VkDevice() is empty...need to setup unmanaged Device.
-            //  Really need to collapse deferred vs repeat codepaths.
+        // NOTE : vkSetDebugUtilsObjectNameEXT() always takes a VkDevice, even when the
+        //  object having its name set is not a VkDevice child.  Need some logic to
+        //  deal with this, but it's super low priority...in FA, debug names are very
+        //  useful for knowing what resources are being inspected, which isn't really
+        //  necessary for keeping track of VkInstance or Vl=kPhysicalDevice
 #if 0
             vkDevice = *mDevices.begin();
 #else
@@ -378,12 +411,18 @@ VkResult Applier::restore_object_name(const GvkRestorePointObject& restorePointO
     return gvkResult;
 }
 
-VkResult Applier::process_transient_objects()
+VkResult Applier::restore_object_data(const GvkStateTrackedObject& capturedObject)
 {
-    gvk_result_scope_begin(VK_SUCCESS) {
-        gvk_result(VK_SUCCESS);
-    } gvk_result_scope_end;
-    return gvkResult;
+    (void)capturedObject;
+    return VK_ERROR_FEATURE_NOT_PRESENT;
+}
+
+void Applier::destroy_object(const GvkStateTrackedObject& restorePointObject)
+{
+    assert(is_valid(restorePointObject));
+    if (mApplyInfo.gvkRestorePoint->objectDestructionSubmitted.insert(restorePointObject).second) {
+        BasicApplier::destroy_object(restorePointObject);
+    }
 }
 
 } // namespace state_tracker

@@ -63,8 +63,8 @@ private:
             const auto& command = commandItr.second;
             CompileGuardGenerator compileGuardGenerator(file, command.compileGuards);
             auto commandStructureName = "GvkCommandStructure" + string::strip_vk(command.name);
-            file << "void update_command_structure_handles(const std::map<GvkRestorePointObject, GvkRestorePointObject>& restorePointObjects, const " << commandStructureName << "& commandStructure);" << std::endl;
-            file << "void update_command_structure_handles(const std::map<GvkRestorePointObject, GvkRestorePointObject>& restorePointObjects, uint64_t parentHandle, const " << commandStructureName << "& commandStructure);" << std::endl;
+            file << "void update_command_structure_handles(const std::map<GvkStateTrackedObject, GvkStateTrackedObject>& restorePointObjects, const " << commandStructureName << "& commandStructure);" << std::endl;
+            file << "void update_command_structure_handles(const std::map<GvkStateTrackedObject, GvkStateTrackedObject>& restorePointObjects, uint64_t parentHandle, const " << commandStructureName << "& commandStructure);" << std::endl;
         }
         file << std::endl;
     }
@@ -85,12 +85,12 @@ private:
             }
             CompileGuardGenerator compileGuardGenerator(file, command.compileGuards);
             auto commandStructureName = "GvkCommandStructure" + string::strip_vk(command.name);
-            file << "void update_command_structure_handles(const std::map<GvkRestorePointObject, GvkRestorePointObject>& restorePointObjects, const " << commandStructureName << "& commandStructure)" << std::endl;
+            file << "void update_command_structure_handles(const std::map<GvkStateTrackedObject, GvkStateTrackedObject>& restorePointObjects, const " << commandStructureName << "& commandStructure)" << std::endl;
             file << "{" << std::endl;
             const auto& dispatchableHandleItr = manifest.handles.find(command.parameters[0].unqualifiedType);
             if (dispatchableHandleItr != manifest.handles.end()) {
                 const auto& dispatchableHandle = dispatchableHandleItr->second;
-                file << "    GvkRestorePointObject dispatchableRestorePointObject{ };" << std::endl;
+                file << "    GvkStateTrackedObject dispatchableRestorePointObject{ };" << std::endl;
                 file << "    dispatchableRestorePointObject.type = " << dispatchableHandle.vkObjectType << ";" << std::endl;
                 file << "    dispatchableRestorePointObject.handle = (uint64_t)commandStructure." << command.parameters[0].name << ";" << std::endl;
                 file << "    dispatchableRestorePointObject.dispatchableHandle = (uint64_t)commandStructure." << command.parameters[0].name << ";" << std::endl;
@@ -99,7 +99,7 @@ private:
                 file << "        [&](VkObjectType objectType, const uint64_t& handle)" << std::endl;
                 file << "        {" << std::endl;
                 file << "            if (handle) {" << std::endl;
-                file << "                GvkRestorePointObject restorePointObject{ };" << std::endl;
+                file << "                GvkStateTrackedObject restorePointObject{ };" << std::endl;
                 file << "                restorePointObject.type = objectType;" << std::endl;
                 file << "                restorePointObject.handle = handle;" << std::endl;
                 file << "                restorePointObject.dispatchableHandle = dispatchableRestorePointObject.handle;" << std::endl;
@@ -115,7 +115,7 @@ private:
             }
             file << "}" << std::endl;
             file << std::endl;
-            file << "void update_command_structure_handles(const std::map<GvkRestorePointObject, GvkRestorePointObject>& restorePointObjects, uint64_t parentHandle, const " << commandStructureName << "& commandStructure)" << std::endl;
+            file << "void update_command_structure_handles(const std::map<GvkStateTrackedObject, GvkStateTrackedObject>& restorePointObjects, uint64_t parentHandle, const " << commandStructureName << "& commandStructure)" << std::endl;
             file << "{" << std::endl;
             if (dispatchableHandleItr != manifest.handles.end()) {
                 file << "    detail::enumerate_structure_handles(" << std::endl;
@@ -123,7 +123,7 @@ private:
                 file << "        [&](VkObjectType objectType, const uint64_t& handle)" << std::endl;
                 file << "        {" << std::endl;
                 file << "            if (handle) {" << std::endl;
-                file << "                GvkRestorePointObject restorePointObject{ };" << std::endl;
+                file << "                GvkStateTrackedObject restorePointObject{ };" << std::endl;
                 file << "                restorePointObject.type = objectType;" << std::endl;
                 file << "                restorePointObject.handle = handle;" << std::endl;
                 file << "                restorePointObject.dispatchableHandle = parentHandle;" << std::endl;

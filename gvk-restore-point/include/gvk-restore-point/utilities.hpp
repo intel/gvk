@@ -27,77 +27,62 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 #include "gvk-defines.hpp"
+#include "gvk-structures.hpp"
+#include "gvk-restore-info.hpp"
+#include "gvk-command-structures.hpp"
+
+#include "gvk-restore-point/restore-point.hpp"
+
 #include "gvk-dispatch-table.hpp"
 #include "gvk-restore-info.hpp"
 #include "gvk-runtime.hpp"
-#include "gvk-structures.hpp"
 #include "VK_LAYER_INTEL_gvk_restore_point.h"
 
 #include <filesystem>
 #include <fstream>
 #include <map>
 #include <set>
+#include <unordered_set>
 
 namespace gvk {
 namespace restore_point {
 
-using CapturedObject = GvkRestorePointObject;
-using RestoredObject = GvkRestorePointObject;
-
-class ObjectMap final
+inline bool is_valid(const GvkStateTrackedObject& stateTrackedObject)
 {
-public:
-    ObjectMap() = default;
-    ObjectMap(const GvkRestorePointManifest& manifest);
-    ObjectMap(ObjectMap&& other) = default;
-    ObjectMap& operator=(ObjectMap&& other) = default;
-    const GvkRestorePointManifest& get_manifest() const;
-    void register_object_restoration(const CapturedObject& capturedObject, const RestoredObject& restoredObject);
-    void register_object_destruction(const GvkRestorePointObject& object);
-
-    void set_object_mapping(const CapturedObject& capturedObject, const RestoredObject& restoredObject);
-    const std::map<CapturedObject, RestoredObject>& get_restored_objects() const;
-    RestoredObject get_restored_object(const CapturedObject& capturedObject) const;
-    CapturedObject get_captured_object(const RestoredObject& restoredObject) const;
-private:
-    Auto<GvkRestorePointManifest> mManifest;
-    std::map<CapturedObject, RestoredObject> mRestoredObjects;
-    std::map<RestoredObject, CapturedObject> mCapturedObjects;
-    ObjectMap(const ObjectMap&) = delete;
-    ObjectMap& operator=(const ObjectMap&) = delete;
-};
-
-class LayerInfo final
-{
-public:
-    void register_object_creation(const GvkRestorePointObject& restorePointObject);
-    void register_object_destruction(const GvkRestorePointObject& restorePointObject);
-    ObjectMap objectMap;
-    std::set<GvkRestorePointObject> createdObjects;
-    std::set<GvkRestorePointObject> destroyedObjects;
-};
+    assert(!stateTrackedObject.type == !stateTrackedObject.handle);
+    assert(!stateTrackedObject.type == !stateTrackedObject.dispatchableHandle);
+    return stateTrackedObject.type && stateTrackedObject.handle && stateTrackedObject.dispatchableHandle;
+}
 
 class CreateInfo final
 {
 public:
-    GvkRestorePointCreateFlags flags{ };
     VkInstance instance{ };
+    GvkRestorePoint gvkRestorePoint{ };
     std::filesystem::path path;
     uint32_t threadCount{ };
     PFN_gvkInitializeThreadCallback pfnInitializeThreadCallback{ };
+    PFN_gvkAllocateResoourceDataCallaback pfnAllocateResourceDataCallback{ };
     PFN_gvkProcessResourceDataCallback pfnProcessResourceDataCallback{ };
-    VkBool32 repeating_HACK{ };
+    std::vector<const GvkCommandBaseStructure*> deviceAddressApiCallCache;
 };
 
 class ApplyInfo final
 {
 public:
+    bool excluded(const GvkStateTrackedObject& object) const
+    {
+        return excludeObjectTypes.count(object.type) || excludeObjects.count(object);
+    }
+    
     GvkRestorePointApplyFlags flags{ };
-    bool restoreInstance_HACK{ };
-    VkInstance instance{ };
-    std::filesystem::path path;
+    VkInstance vkInstance{ };
+    GvkRestorePoint gvkRestorePoint{ };
     uint32_t threadCount{ };
-    std::set<GvkStateTrackedObject> excludedObjects;
+    std::filesystem::path path;
+    std::set<GvkStateTrackedObject> excludeObjects;
+    std::unordered_set<VkObjectType> excludeObjectTypes;
+    std::set<GvkStateTrackedObject> destroyObjects;
     PFN_gvkInitializeThreadCallback pfnInitializeThreadCallback{ };
     PFN_gvkProcessRestoredObjectCallback pfnProcessRestoredObjectCallback{ };
     PFN_gvkProcessResourceDataCallback pfnProcessResourceDataCallback{ };
@@ -105,8 +90,6 @@ public:
     PFN_gvkProcessWin32SurfaceCreateInfoCallback pfnProcessWin32SurfaceCreateInfoCallback{ };
 #endif
     DispatchTable dispatchTable{ };
-    VkBool32 repeating_HACK{ };
-    LayerInfo* pLayerInfo{ };
 };
 
 class CmdEnumerationUserData final
@@ -120,7 +103,7 @@ public:
 };
 
 template <typename ObjectType>
-inline GvkRestorePointObject get_restore_point_object_dependency(uint32_t dependencyCount, const GvkRestorePointObject* pDependencies)
+inline GvkStateTrackedObject get_restore_point_object_dependency(uint32_t dependencyCount, const GvkStateTrackedObject* pDependencies)
 {
     for (uint32_t i = 0; i < dependencyCount; ++i) {
         const auto& dependency = pDependencies[i];
@@ -132,7 +115,7 @@ inline GvkRestorePointObject get_restore_point_object_dependency(uint32_t depend
 }
 
 template <typename ObjectType>
-inline ObjectType get_dependency(uint32_t dependencyCount, const GvkRestorePointObject* pDependencies)
+inline ObjectType get_dependency(uint32_t dependencyCount, const GvkStateTrackedObject* pDependencies)
 {
     return (ObjectType)get_restore_point_object_dependency<ObjectType>(dependencyCount, pDependencies).handle;
 }
@@ -143,13 +126,13 @@ inline VkResult write_object_restore_info(const CreateInfo& restorePointCreateIn
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         auto path = restorePointCreateInfo.path / type;
         std::filesystem::create_directories(path);
-        if (restorePointCreateInfo.flags & GVK_RESTORE_POINT_CREATE_OBJECT_INFO_BIT) {
+        if (restorePointCreateInfo.gvkRestorePoint->createFlags & GVK_RESTORE_POINT_CREATE_OBJECT_INFO_BIT) {
             auto infoPath = (path / name).replace_extension("info");
             std::ofstream infoFile(infoPath, std::ios::binary);
             gvk_result(infoFile.is_open() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
             serialize(infoFile, objectRestoreInfo);
         }
-        if (restorePointCreateInfo.flags & GVK_RESTORE_POINT_CREATE_OBJECT_JSON_BIT) {
+        if (restorePointCreateInfo.gvkRestorePoint->createFlags & GVK_RESTORE_POINT_CREATE_OBJECT_JSON_BIT) {
             auto jsonPath = (path / name).replace_extension("json");
             std::ofstream jsonFile(jsonPath);
             gvk_result(jsonFile.is_open() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);

@@ -404,6 +404,165 @@ void CopyEngine::download(DownloadImageInfo downloadInfo)
     }
 }
 
+void CopyEngine::download_to_host_mapped_memory(DownloadDeviceMemoryInfo downloadInfo)
+{
+    assert(mDevice);
+    assert(mQueue);
+    assert(downloadInfo.memory);
+    assert(downloadInfo.pfnAllocateResourceDataCallaback);
+    std::vector<VkBufferCopy> copyRegions;
+    if (downloadInfo.regionCount && downloadInfo.pRegions) {
+        copyRegions.insert(copyRegions.end(), downloadInfo.pRegions, downloadInfo.pRegions + downloadInfo.regionCount);
+    } else {
+        auto copyRegion = get_default<VkBufferCopy>();
+        copyRegion.size = downloadInfo.memoryAllocateInfo.allocationSize;
+        copyRegions.push_back(copyRegion);
+    }
+    auto downloadMemory = [=]() mutable
+    {
+        gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+            // TODO : Documentation
+            const auto& layerInstanceDispatchTableItr = layer::Registry::get().VkInstanceDispatchTables.find(layer::get_dispatch_key(mDevice.get<PhysicalDevice>().get<VkInstance>()));
+            assert(layerInstanceDispatchTableItr != layer::Registry::get().VkInstanceDispatchTables.end() && "Failed to get gvk::layer::Registry VkInstance gvk::DispatchTable; are the Vulkan SDK, runtime, and layers configured correctly?");
+            const auto& layerInstanceDispatchTable = layerInstanceDispatchTableItr->second;
+            const auto& layerDeviceDispatchTableItr = layer::Registry::get().VkDeviceDispatchTables.find(layer::get_dispatch_key(mDevice.get<VkDevice>()));
+            assert(layerDeviceDispatchTableItr != layer::Registry::get().VkDeviceDispatchTables.end() && "Failed to get gvk::layer::Registry VkDevice gvk::DispatchTable; are the Vulkan SDK, runtime, and layers configured correctly?");
+            const auto& layerDeviceDispatchTable = layerDeviceDispatchTableItr->second;
+
+            // Calculate total size and set dstOffsets
+            VkDeviceSize dstSize = 0;
+            for (auto& copyRegion : copyRegions) {
+                copyRegion.dstOffset = dstSize;
+                dstSize += copyRegion.size;
+            }
+
+            // TODO : Documentation
+            thread_local auto physicalDeviceMemoryHostProperties = gvk::get_default<VkPhysicalDeviceExternalMemoryHostPropertiesEXT>();
+            if (!physicalDeviceMemoryHostProperties.minImportedHostPointerAlignment) {
+                auto physicalDeviceProperties = gvk::get_default<VkPhysicalDeviceProperties2>();
+                physicalDeviceProperties.pNext = &physicalDeviceMemoryHostProperties;
+                if (mDevice.get<Instance>().get<VkInstanceCreateInfo>().pApplicationInfo->apiVersion < VK_API_VERSION_1_1) {
+                    layerInstanceDispatchTable.gvkGetPhysicalDeviceProperties2KHR(mDevice.get<PhysicalDevice>(), &physicalDeviceProperties);
+                } else {
+                    layerInstanceDispatchTable.gvkGetPhysicalDeviceProperties2(mDevice.get<PhysicalDevice>(), &physicalDeviceProperties);
+                }
+            }
+
+            // TODO : Documentation
+            while (dstSize % physicalDeviceMemoryHostProperties.minImportedHostPointerAlignment) {
+                dstSize += physicalDeviceMemoryHostProperties.minImportedHostPointerAlignment - (dstSize % physicalDeviceMemoryHostProperties.minImportedHostPointerAlignment);
+            }
+
+            // Get TaskResources
+            TaskResources taskResources{ };
+            gvk_result(get_task_resources(dstSize, &taskResources));
+
+            // Create Buffer and bind to target VkDeviceMemory
+            auto srcBufferCreateInfo = get_default<VkBufferCreateInfo>();
+            srcBufferCreateInfo.size = downloadInfo.memoryAllocateInfo.allocationSize;
+            srcBufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            Buffer srcBuffer;
+            gvk_result(Buffer::create(mDevice, &srcBufferCreateInfo, (VkAllocationCallbacks*)nullptr, &srcBuffer));
+            const auto& dispatchTable = mDevice.get<DispatchTable>();
+            gvk_result(dispatchTable.gvkBindBufferMemory(mDevice, srcBuffer, downloadInfo.memory, 0));
+
+            // TODO : Documentation
+            auto externalMemoryHandleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT;
+            auto externalMemoryBufferCreateInfo = get_default<VkExternalMemoryBufferCreateInfo>();
+            externalMemoryBufferCreateInfo.handleTypes = externalMemoryHandleType;
+            auto dstBufferCreateInfo = get_default<VkBufferCreateInfo>();
+            dstBufferCreateInfo.pNext = &externalMemoryBufferCreateInfo;
+            dstBufferCreateInfo.size = dstSize;
+            dstBufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+            Buffer dstBuffer;
+            gvk_result(Buffer::create(mDevice, &dstBufferCreateInfo, (VkAllocationCallbacks*)nullptr, &dstBuffer));
+
+            // TODO : Documentation
+            VkBuffer proxyBuffer = VK_NULL_HANDLE;
+            gvk_result(layerDeviceDispatchTable.gvkCreateBuffer(mDevice, &dstBufferCreateInfo, nullptr, &proxyBuffer));
+            VkMemoryRequirements memoryRequirements{ };
+            layerDeviceDispatchTable.gvkGetBufferMemoryRequirements(mDevice, proxyBuffer, &memoryRequirements);
+            VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties{ };
+            VkPhysicalDevice stateTrackerPhysicalDevice = VK_NULL_HANDLE;
+            gvkGetStateTrackerPhysicalDevice(mDevice.get<PhysicalDevice>().get<VkInstance>(), mDevice.get<PhysicalDevice>(), &stateTrackerPhysicalDevice);
+            auto physicalDevice = stateTrackerPhysicalDevice ? stateTrackerPhysicalDevice : mDevice.get<PhysicalDevice>().get<VkPhysicalDevice>();
+            layerInstanceDispatchTable.gvkGetPhysicalDeviceMemoryProperties(physicalDevice, &physicalDeviceMemoryProperties);
+            layerDeviceDispatchTable.gvkDestroyBuffer(mDevice, proxyBuffer, nullptr);
+
+            // Fire callback to get address to host mapped memory
+            GvkStateTrackedObject restorePointObject{ };
+            restorePointObject.type = VK_OBJECT_TYPE_DEVICE_MEMORY;
+            restorePointObject.handle = (uint64_t)downloadInfo.memory;
+            restorePointObject.dispatchableHandle = (uint64_t)downloadInfo.device;
+            void* pHostPointer = nullptr;
+            downloadInfo.pfnAllocateResourceDataCallaback(&restorePointObject, dstSize, &pHostPointer);
+
+            // TODO : Documentation
+            auto memoryHostPointerProperties = get_default<VkMemoryHostPointerPropertiesEXT>();
+            gvk_result(mDevice.get<DispatchTable>().gvkGetMemoryHostPointerPropertiesEXT(mDevice, externalMemoryHandleType, pHostPointer, &memoryHostPointerProperties));
+            assert(!memoryHostPointerProperties.pNext && "TODO : Documentation");
+
+            // TODO : Documentation
+            auto memoryTypeBits = memoryRequirements.memoryTypeBits; // &memoryHostPointerProperties.memoryTypeBits;
+            assert(memoryTypeBits);
+
+            // Allocate memory with imported host pointer
+            auto importMemoryHostPointerInfo = get_default<VkImportMemoryHostPointerInfoEXT>();
+            importMemoryHostPointerInfo.handleType = externalMemoryHandleType;
+            importMemoryHostPointerInfo.pHostPointer = pHostPointer;
+            auto dstMemoryAllocateInfo = get_default<VkMemoryAllocateInfo>();
+            dstMemoryAllocateInfo.pNext = &importMemoryHostPointerInfo;
+            dstMemoryAllocateInfo.allocationSize = dstSize;
+            uint32_t memoryTypeCount = 0;
+            auto memoryPropertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            get_compatible_memory_type_indices(&physicalDeviceMemoryProperties, memoryTypeBits, memoryPropertyFlags, &memoryTypeCount, nullptr);
+            gvk_result(memoryTypeCount ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            memoryTypeCount = 1;
+            get_compatible_memory_type_indices(&physicalDeviceMemoryProperties, memoryTypeBits, memoryPropertyFlags, &memoryTypeCount, &dstMemoryAllocateInfo.memoryTypeIndex);
+            DeviceMemory dstDeviceMemory;
+            gvk_result(DeviceMemory::allocate(mDevice, &dstMemoryAllocateInfo, nullptr, &dstDeviceMemory));
+            gvk_result(mDevice.get<DispatchTable>().gvkBindBufferMemory(mDevice, dstBuffer, dstDeviceMemory, 0));
+
+            // Begin CommandBuffer
+            auto commandBufferBeginInfo = get_default<VkCommandBufferBeginInfo>();
+            commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+            gvk_result(dispatchTable.gvkBeginCommandBuffer(taskResources.vkCommandBuffer, &commandBufferBeginInfo));
+
+            // Copy
+            dispatchTable.gvkCmdCopyBuffer(taskResources.vkCommandBuffer, srcBuffer, dstBuffer, (uint32_t)copyRegions.size(), copyRegions.data());
+
+            // End CommandBuffer
+            gvk_result(dispatchTable.gvkEndCommandBuffer(taskResources.vkCommandBuffer));
+
+            // Submit CommandBuffer
+            {
+                auto submitInfo = get_default<VkSubmitInfo>();
+                submitInfo.commandBufferCount = 1;
+                submitInfo.pCommandBuffers = &taskResources.vkCommandBuffer;
+                std::lock_guard<std::mutex> lock(mQueueMutex);
+                gvk_result(dispatchTable.gvkQueueSubmit(mQueue, 1, &submitInfo, taskResources.fence));
+            }
+
+            // Hold this thread's execution until transfer is complete
+            gvk_result(dispatchTable.gvkWaitForFences(mDevice, 1, &taskResources.fence.get<VkFence>(), VK_TRUE, UINT64_MAX));
+            gvk_result(dispatchTable.gvkResetFences(mDevice, 1, &taskResources.fence.get<VkFence>()));
+
+            // TODO : Documentation
+            auto bindBufferMemoryInfo = get_default<VkBindBufferMemoryInfo>();
+            bindBufferMemoryInfo.buffer = taskResources.buffer;
+            bindBufferMemoryInfo.memory = taskResources.memory;
+            downloadInfo.pfnCallback(downloadInfo, bindBufferMemoryInfo, (uint8_t*)pHostPointer);
+        } gvk_result_scope_end;
+        // TODO : Report errors
+        assert(gvkResult == VK_SUCCESS);
+    };
+    if (mupThreadPool) {
+        asio::post(*mupThreadPool, [downloadMemory]() mutable { downloadMemory(); });
+    } else {
+        downloadMemory();
+    }
+}
+
 void CopyEngine::download(DownloadAccelerationStructureInfo downloadInfo)
 {
     assert(mDevice);
@@ -1004,7 +1163,7 @@ void CopyEngine::transition_image_layouts(TransitionImageLayoutInfo transitionIn
                     if (newImageLayouts[subresource]) {
                         auto imageMemoryBarrier = get_default<VkImageMemoryBarrier>();
                         imageMemoryBarrier.srcAccessMask = 0;
-                        imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+                        imageMemoryBarrier.dstAccessMask = 0; // VK_ACCESS_TRANSFER_WRITE_BIT;
                         imageMemoryBarrier.oldLayout = oldImageLayouts[subresource];
                         imageMemoryBarrier.newLayout = newImageLayouts[subresource];
                         imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -1233,11 +1392,7 @@ VkResult CopyEngine::get_task_resources(VkDeviceSize taskSize, TaskResources* pT
     }
     lock.unlock();
     gvk_result_scope_begin(VK_SUCCESS) {
-        // HACK : TODO : Documentation
-        DispatchTable applicationDispatchTable{ };
-        DispatchTable::load_global_entry_points(&applicationDispatchTable);
-        DispatchTable::load_instance_entry_points(mDevice.get<PhysicalDevice>().get<VkInstance>(), &applicationDispatchTable);
-        DispatchTable::load_device_entry_points(mDevice, &applicationDispatchTable);
+        // HACK : Getting both the application and layer dispatch tables
         const auto& layerDeviceDispatchTableItr = layer::Registry::get().VkDeviceDispatchTables.find(layer::get_dispatch_key(mDevice.get<VkDevice>()));
         assert(layerDeviceDispatchTableItr != layer::Registry::get().VkDeviceDispatchTables.end() && "Failed to get gvk::layer::Registry VkDevice gvk::DispatchTable; are the Vulkan SDK, runtime, and layers configured correctly?");
         const auto& layerDeviceDispatchTable = layerDeviceDispatchTableItr->second;
@@ -1261,7 +1416,6 @@ VkResult CopyEngine::get_task_resources(VkDeviceSize taskSize, TaskResources* pT
             gvkGetStateTrackerPhysicalDevice(mDevice.get<PhysicalDevice>().get<VkInstance>(), mDevice.get<PhysicalDevice>(), &stateTrackerPhysicalDevice);
             auto physicalDevice = stateTrackerPhysicalDevice ? stateTrackerPhysicalDevice : mDevice.get<PhysicalDevice>().get<VkPhysicalDevice>();
             layerInstanceDispatchTable.gvkGetPhysicalDeviceMemoryProperties(physicalDevice, &physicalDeviceMemoryProperties);
-            // mDevice.get<DispatchTable>().gvkGetBufferMemoryRequirements(mDevice, proxyBuffer, &memoryRequirements);
             layerDeviceDispatchTable.gvkDestroyBuffer(mDevice, proxyBuffer, nullptr);
 
             // TODO : Documentation
@@ -1288,7 +1442,14 @@ VkResult CopyEngine::get_task_resources(VkDeviceSize taskSize, TaskResources* pT
             commandBufferAllocateInfo.commandPool = taskResourcesItr->second.commandPool;
             commandBufferAllocateInfo.commandBufferCount = 1;
             gvk_result(mDevice.get<DispatchTable>().gvkAllocateCommandBuffers(mDevice, &commandBufferAllocateInfo, &taskResourcesItr->second.vkCommandBuffer));
-            // HACK : TODO : Documentation
+
+            // HACK : If the dispatch table is live (ie. not synthetic) the vkCommandBuffer
+            //  needs to have its dispatch table set to the VkDevice dispatch table.
+            // TODO : Figure out how to automate this...maybe in layer::Registry
+            DispatchTable applicationDispatchTable{ };
+            DispatchTable::load_global_entry_points(&applicationDispatchTable);
+            DispatchTable::load_instance_entry_points(mDevice.get<PhysicalDevice>().get<VkInstance>(), &applicationDispatchTable);
+            DispatchTable::load_device_entry_points(mDevice, &applicationDispatchTable);
             if (mDevice.get<DispatchTable>().gvkAllocateCommandBuffers == applicationDispatchTable.gvkAllocateCommandBuffers ||
                 mDevice.get<DispatchTable>().gvkAllocateCommandBuffers == layerDeviceDispatchTable.gvkAllocateCommandBuffers) {
                 *(void**)taskResourcesItr->second.vkCommandBuffer = *(void**)mDevice.get<VkDevice>();

@@ -26,10 +26,71 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-restore-point/applier.hpp"
 #include "gvk-restore-point/creator.hpp"
+#include "gvk-restore-point/layer.hpp"
 #include "gvk-layer/registry.hpp"
 
 namespace gvk {
 namespace restore_point {
+
+thread_local VkDeviceCreateInfo tlApplicationDeviceCreateInfo;
+thread_local VkDeviceCreateInfo tlRestorePointDeviceCreateInfo;
+VkResult Layer::pre_vkCreateDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice, VkResult gvkResult)
+{
+    (void)physicalDevice;
+    (void)pAllocator;
+    (void)pDevice;
+    if (gvkResult == VK_SUCCESS) {
+        assert(pCreateInfo);
+        tlApplicationDeviceCreateInfo = *pCreateInfo;
+        tlRestorePointDeviceCreateInfo = tlApplicationDeviceCreateInfo;
+        auto pNext = (VkBaseOutStructure*)pCreateInfo->pNext;
+        while (pNext) {
+            switch (pNext->sType) {
+            case get_stype<VkPhysicalDeviceAccelerationStructureFeaturesKHR>(): {
+                ((VkPhysicalDeviceAccelerationStructureFeaturesKHR*)pNext)->accelerationStructureCaptureReplay = ((VkPhysicalDeviceAccelerationStructureFeaturesKHR*)pNext)->accelerationStructure;
+            } break;
+            case get_stype<VkPhysicalDeviceBufferDeviceAddressFeatures>(): {
+                ((VkPhysicalDeviceBufferDeviceAddressFeatures*)pNext)->bufferDeviceAddressCaptureReplay = ((VkPhysicalDeviceBufferDeviceAddressFeatures*)pNext)->bufferDeviceAddress;
+            } break;
+            case get_stype<VkPhysicalDeviceBufferDeviceAddressFeaturesEXT>(): {
+                ((VkPhysicalDeviceBufferDeviceAddressFeaturesEXT*)pNext)->bufferDeviceAddressCaptureReplay = ((VkPhysicalDeviceBufferDeviceAddressFeaturesEXT*)pNext)->bufferDeviceAddress;
+            } break;
+            case get_stype<VkPhysicalDeviceDescriptorBufferFeaturesEXT>(): {
+                ((VkPhysicalDeviceDescriptorBufferFeaturesEXT*)pNext)->descriptorBufferCaptureReplay = ((VkPhysicalDeviceDescriptorBufferFeaturesEXT*)pNext)->descriptorBuffer;
+            } break;
+            case get_stype<VkPhysicalDeviceOpacityMicromapFeaturesEXT>(): {
+                ((VkPhysicalDeviceOpacityMicromapFeaturesEXT*)pNext)->micromapCaptureReplay = ((VkPhysicalDeviceOpacityMicromapFeaturesEXT*)pNext)->micromap;
+            } break;
+            case get_stype<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>(): {
+                #if 0 // NOTE : Unsupported pretty much everywhere...hopefully it doesn't bite
+                ((VkPhysicalDeviceRayTracingPipelineFeaturesKHR*)pNext)->rayTracingPipelineShaderGroupHandleCaptureReplay = ((VkPhysicalDeviceRayTracingPipelineFeaturesKHR*)pNext)->rayTracingPipeline;
+                ((VkPhysicalDeviceRayTracingPipelineFeaturesKHR*)pNext)->rayTracingPipelineShaderGroupHandleCaptureReplayMixed = ((VkPhysicalDeviceRayTracingPipelineFeaturesKHR*)pNext)->rayTracingPipeline;
+                #endif
+            } break;
+            case get_stype<VkPhysicalDeviceVulkan12Features>(): {
+                ((VkPhysicalDeviceVulkan12Features*)pNext)->bufferDeviceAddressCaptureReplay = ((VkPhysicalDeviceVulkan12Features*)pNext)->bufferDeviceAddress;
+            } break;
+            default: {
+            } break;
+            }
+            pNext = pNext->pNext;
+        }
+        *const_cast<VkDeviceCreateInfo*>(pCreateInfo) = tlRestorePointDeviceCreateInfo;
+    }
+    return gvkResult;
+}
+
+VkResult Layer::post_vkCreateDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice, VkResult gvkResult)
+{
+    (void)physicalDevice;
+    (void)pAllocator;
+    (void)pDevice;
+    if (gvkResult == VK_SUCCESS) {
+        assert(pCreateInfo);
+        *const_cast<VkDeviceCreateInfo*>(pCreateInfo) = tlApplicationDeviceCreateInfo;
+    }
+    return gvkResult;
+}
 
 VkResult Creator::process_VkDevice(GvkDeviceRestoreInfo& restoreInfo)
 {
@@ -70,28 +131,54 @@ VkResult Creator::process_VkDevice(GvkDeviceRestoreInfo& restoreInfo)
     return gvkResult;
 }
 
-VkResult Applier::restore_VkDevice(const GvkRestorePointObject& restorePointObject, const GvkDeviceRestoreInfo& restoreInfo)
+VkResult Applier::restore_VkDevice(const GvkStateTrackedObject& restorePointObject, const GvkDeviceRestoreInfo& restoreInfo)
 {
-    (void)restorePointObject;
-    (void)restoreInfo;
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
-        gvk_result(VK_SUCCESS);
+        gvk_result(BasicApplier::restore_VkDevice(restorePointObject, restoreInfo));
+        auto vkDevice = (VkDevice)get_restored_object(restorePointObject).handle;
+        uint32_t capturedQueue_i = 0;
+        for (uint32_t queueCreateInfo_i = 0; queueCreateInfo_i < restoreInfo.pDeviceCreateInfo->queueCreateInfoCount; ++queueCreateInfo_i) {
+            const auto& deviceQueueCreateInfo = restoreInfo.pDeviceCreateInfo->pQueueCreateInfos[queueCreateInfo_i];
+            for (uint32_t restoredQueue_i = 0; restoredQueue_i < deviceQueueCreateInfo.queueCount; ++restoredQueue_i) {
+                auto capturedQueue = restoreInfo.pQueues[capturedQueue_i++];
+                VkQueue restoredQueue = VK_NULL_HANDLE;
+                mApplicationDispatchTable.gvkGetDeviceQueue(vkDevice, deviceQueueCreateInfo.queueFamilyIndex, restoredQueue_i, &restoredQueue);
+                mApplyInfo.dispatchTable.gvkGetDeviceQueue(vkDevice, deviceQueueCreateInfo.queueFamilyIndex, restoredQueue_i, &restoredQueue);
+                // ///////////////////////////////////////////////////////////////////////////////
+                // ^
+                // // TODO : Figure out why this is necessary...this call is triggering GPA FW's
+                // //  object mapping logic, but the RestorePointOperation created by the call to
+                // //  register_restored_object() _should_ be enough.
+                // ///////////////////////////////////////////////////////////////////////////////
+
+                auto capturedQueueRestorePointObject = get_default<GvkStateTrackedObject>();
+                capturedQueueRestorePointObject.type = VK_OBJECT_TYPE_QUEUE;
+                capturedQueueRestorePointObject.handle = (uint64_t)capturedQueue;
+                capturedQueueRestorePointObject.dispatchableHandle = (uint64_t)capturedQueue;
+                auto restoredQueueRestorePointObject = capturedQueueRestorePointObject;
+                restoredQueueRestorePointObject.handle = (uint64_t)restoredQueue;
+                restoredQueueRestorePointObject.dispatchableHandle = (uint64_t)restoredQueue;
+                gvk_result(register_restored_object(capturedQueueRestorePointObject, restoredQueueRestorePointObject));
+            }
+        }
     } gvk_result_scope_end;
     return gvkResult;
 }
 
-VkResult Applier::restore_VkDevice_state(const GvkRestorePointObject& restorePointObject, const GvkDeviceRestoreInfo& restoreInfo)
+VkResult Applier::restore_VkDevice_state(const GvkStateTrackedObject& restorePointObject, const GvkDeviceRestoreInfo& restoreInfo)
 {
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
-        const auto& dispatchTableItr = layer::Registry::get().VkDeviceDispatchTables.find(layer::get_dispatch_key(restoreInfo.handle));
-        assert(dispatchTableItr != layer::Registry::get().VkDeviceDispatchTables.end() && "Failed to get gvk::layer::Registry VkDevice gvk::DispatchTable; are the Vulkan SDK, runtime, and layers configured correctly?");
-        const auto& dispatchTable = dispatchTableItr->second;
+        // TODO : Documentation
+        const auto& layerDispatchTable = layer::Registry::get().get_device_dispatch_table(restoreInfo.handle);
+        auto dispatchTable = mApplyInfo.flags & GVK_RESTORE_POINT_APPLY_SYNTHETIC_BIT ? mApplyInfo.dispatchTable : layerDispatchTable;
 
-        auto vkInstance = get_dependency<VkInstance>(restoreInfo.dependencyCount, restoreInfo.pDependencies);
+        // TODO : Documentation
         auto vkPhysicalDevice = get_dependency<VkPhysicalDevice>(restoreInfo.dependencyCount, restoreInfo.pDependencies);
-        VkPhysicalDevice stateTrackerPhysicalDevice = VK_NULL_HANDLE;
-        gvkGetStateTrackerPhysicalDevice(vkInstance, vkPhysicalDevice, &stateTrackerPhysicalDevice);
+        const auto& vkPhysicalDevices = layer::Registry::get().VkPhysicalDevices;
+        auto itr = vkPhysicalDevices.find(vkPhysicalDevice);
+        VkPhysicalDevice stateTrackerPhysicalDevice = itr != vkPhysicalDevices.end() ? itr->second : VK_NULL_HANDLE;
 
+        // TODO : Documentation
         auto vkDevice = (VkDevice)get_restored_object(restorePointObject).handle;
         Device gvkDevice;
         gvk_result(Device::create_unmanaged(stateTrackerPhysicalDevice, restoreInfo.pDeviceCreateInfo, nullptr, &dispatchTable, vkDevice, &gvkDevice));
@@ -104,64 +191,9 @@ VkResult Applier::restore_VkDevice_state(const GvkRestorePointObject& restorePoi
         copyEngineCreateInfo.threadCount = mApplyInfo.threadCount;
         copyEngineCreateInfo.pfnInitializeThreadCallback = mApplyInfo.pfnInitializeThreadCallback;
         gvk_result(CopyEngine::create(gvkDevice, &copyEngineCreateInfo, &copyEngine));
-    } gvk_result_scope_end;
-    return gvkResult;
-}
-
-VkResult Applier::process_VkDevice(const GvkRestorePointObject& restorePointObject, const GvkDeviceRestoreInfo& restoreInfo)
-{
-    // auto recorderGetDeviceQueue = mApplyInfo.dispatchTable.gvkGetDeviceQueue;
-    // (void)recorderGetDeviceQueue;
-    // dispatchTable.gvkGetDeviceQueue = mApplicationDispatchTable.gvkGetDeviceQueue;
-    gvk_result_scope_begin(VK_SUCCESS) {
-        auto physicalDevice = (VkPhysicalDevice)get_restored_object(get_restore_point_object_dependency<VkPhysicalDevice>(restoreInfo.dependencyCount, restoreInfo.pDependencies)).handle;
-        uint32_t queueFamilyProptyCount = 0;
-        mApplyInfo.dispatchTable.gvkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyProptyCount, nullptr);
-        gvk_result(BasicApplier::process_VkDevice(restorePointObject, restoreInfo));
-        auto device = (VkDevice)get_restored_object(restorePointObject).handle;
-        // TODO : Logic to select mApplicationDispatchTable vs layer DispatchTable
-
-        auto dispatchTable = mApplyInfo.dispatchTable;
-        dispatchTable.gvkGetDeviceQueue = mApplicationDispatchTable.gvkGetDeviceQueue;
-        Device gvkDevice;
-        gvk_result(Device::create_unmanaged(physicalDevice, restoreInfo.pDeviceCreateInfo, nullptr, &dispatchTable, device, &gvkDevice));
-
-        uint32_t capturedQueue_i = 0;
-        for (uint32_t queueCreateInfo_i = 0; queueCreateInfo_i < restoreInfo.pDeviceCreateInfo->queueCreateInfoCount; ++queueCreateInfo_i) {
-            const auto& deviceQueueCreateInfo = restoreInfo.pDeviceCreateInfo->pQueueCreateInfos[queueCreateInfo_i];
-            for (uint32_t restoredQueue_i = 0; restoredQueue_i < deviceQueueCreateInfo.queueCount; ++restoredQueue_i) {
-                auto capturedQueue = restoreInfo.pQueues[capturedQueue_i++];
-                VkQueue restoredQueue = VK_NULL_HANDLE;
-                mApplicationDispatchTable.gvkGetDeviceQueue(device, deviceQueueCreateInfo.queueFamilyIndex, restoredQueue_i, &restoredQueue);
-                mApplyInfo.dispatchTable.gvkGetDeviceQueue(device, deviceQueueCreateInfo.queueFamilyIndex, restoredQueue_i, &restoredQueue);
-                // ///////////////////////////////////////////////////////////////////////////////
-                // ^
-                // // TODO : Figure out why this is necessary...this call is triggering GPA FW's
-                // //  object mapping logic, but the RestorePointOperation created by the call to
-                // //  register_restored_object() _should_ be enough.
-                // ///////////////////////////////////////////////////////////////////////////////
-
-                GvkRestorePointObject capturedQueueRestorePointObject{ };
-                capturedQueueRestorePointObject.type = VK_OBJECT_TYPE_QUEUE;
-                capturedQueueRestorePointObject.handle = (uint64_t)capturedQueue;
-                capturedQueueRestorePointObject.dispatchableHandle = (uint64_t)capturedQueue;
-                auto restoredQueueRestorePointObject = capturedQueueRestorePointObject;
-                restoredQueueRestorePointObject.handle = (uint64_t)restoredQueue;
-                restoredQueueRestorePointObject.dispatchableHandle = (uint64_t)restoredQueue;
-                gvk_result(register_restored_object(capturedQueueRestorePointObject, restoredQueueRestorePointObject));
-            }
-        }
 
         // TODO : Documentation
-        auto& copyEngine = mCopyEngines[device];
-        assert(!copyEngine);
-        auto copyEngineCreateInfo = get_default<CopyEngine::CreateInfo>();
-        copyEngineCreateInfo.threadCount = mApplyInfo.threadCount;
-        copyEngineCreateInfo.pfnInitializeThreadCallback = mApplyInfo.pfnInitializeThreadCallback;
-        gvk_result(CopyEngine::create(gvkDevice, &copyEngineCreateInfo, &copyEngine));
-
-        // TODO : Documentation
-        auto& commandPool = mCommandPools[device];
+        auto& commandPool = mCommandPools[vkDevice];
         assert(!commandPool);
         auto commandPoolCreateInfo = get_default<VkCommandPoolCreateInfo>();
         commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
@@ -170,22 +202,17 @@ VkResult Applier::process_VkDevice(const GvkRestorePointObject& restorePointObje
         auto commandBufferAllocateInfo = get_default<VkCommandBufferAllocateInfo>();
         commandBufferAllocateInfo.commandPool = commandPool;
         commandBufferAllocateInfo.commandBufferCount = 1;
-#if 0
-        gvk_result(CommandBuffer::allocate(gvkDevice, &commandBufferAllocateInfo, &commandBuffer));
-#else
-        gvk_result(gvkDevice.get<DispatchTable>().gvkAllocateCommandBuffers(gvkDevice, &commandBufferAllocateInfo, &mVkCommandBuffers[device]));
-        // HACK : TODO : Documentation
-        const auto& layerDispatchTableItr = layer::Registry::get().VkDeviceDispatchTables.find(layer::get_dispatch_key(restoreInfo.handle));
-        assert(layerDispatchTableItr != layer::Registry::get().VkDeviceDispatchTables.end() && "Failed to get gvk::layer::Registry VkDevice gvk::DispatchTable; are the Vulkan SDK, runtime, and layers configured correctly?");
-        const auto& layerDisatchTable = layerDispatchTableItr->second;
-        if (gvkDevice.get<DispatchTable>().gvkAllocateCommandBuffers == mApplicationDispatchTable.gvkAllocateCommandBuffers ||
-            gvkDevice.get<DispatchTable>().gvkAllocateCommandBuffers == layerDisatchTable.gvkAllocateCommandBuffers) {
-            *(void**)mVkCommandBuffers[device] = *(void**)gvkDevice.get<VkDevice>();
-        }
-#endif
 
         // TODO : Documentation
-        gvk_result(Fence::create(gvkDevice, &get_default<VkFenceCreateInfo>(), nullptr, &mFences[device]));
+        gvk_result(gvkDevice.get<DispatchTable>().gvkAllocateCommandBuffers(gvkDevice, &commandBufferAllocateInfo, &mVkCommandBuffers[vkDevice]));
+        // HACK : TODO : Documentation
+        if (gvkDevice.get<DispatchTable>().gvkAllocateCommandBuffers == mApplicationDispatchTable.gvkAllocateCommandBuffers ||
+            gvkDevice.get<DispatchTable>().gvkAllocateCommandBuffers == layerDispatchTable.gvkAllocateCommandBuffers) {
+            *(void**)mVkCommandBuffers[vkDevice] = *(void**)gvkDevice.get<VkDevice>();
+        }
+
+        // TODO : Documentation
+        gvk_result(Fence::create(gvkDevice, &get_default<VkFenceCreateInfo>(), nullptr, &mFences[vkDevice]));
     } gvk_result_scope_end;
     return gvkResult;
 }

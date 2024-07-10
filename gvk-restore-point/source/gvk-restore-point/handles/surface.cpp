@@ -47,7 +47,7 @@ VkResult Creator::process_VkSurfaceKHR(GvkSurfaceRestoreInfoKHR& restoreInfo)
 }
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-VkResult Applier::process_GvkCommandStructureCreateWin32SurfaceKHR(const GvkRestorePointObject& restorePointObject, const GvkSurfaceRestoreInfoKHR& restoreInfo, GvkCommandStructureCreateWin32SurfaceKHR& commandStructure)
+VkResult Applier::process_GvkCommandStructureCreateWin32SurfaceKHR(const GvkStateTrackedObject& restorePointObject, const GvkSurfaceRestoreInfoKHR& restoreInfo, GvkCommandStructureCreateWin32SurfaceKHR& commandStructure)
 {
     (void)restorePointObject;
     if (mApplyInfo.pfnProcessWin32SurfaceCreateInfoCallback) {

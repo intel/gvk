@@ -26,6 +26,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-restore-point/applier.hpp"
 #include "gvk-restore-point/creator.hpp"
+#include "gvk-restore-point/layer.hpp"
+#include "gvk-layer/registry.hpp"
 
 namespace gvk {
 namespace restore_point {
@@ -90,7 +92,7 @@ VkResult Creator::process_VkDeviceMemory(GvkDeviceMemoryRestoreInfo& restoreInfo
         }
 
         // HACK :
-        if (restoreInfo.flags & GVK_RESTORE_POINT_OBJECT_STATUS_ACTIVE_BIT) {
+        if (restoreInfo.flags & GVK_STATE_TRACKED_OBJECT_STATUS_ACTIVE_BIT) {
             // Get mapped memory
             auto mappedMemoryInfo = get_default<GvkMappedMemoryInfo>();
             gvkGetStateTrackedMappedMemory(&stateTrackedObject, &mappedMemoryInfo.offset, &mappedMemoryInfo.size, &mappedMemoryInfo.flags, (void**)&mappedMemoryInfo.dataHandle);
@@ -99,9 +101,9 @@ VkResult Creator::process_VkDeviceMemory(GvkDeviceMemoryRestoreInfo& restoreInfo
 
         const auto& memoryAllocateInfo = restoreInfo.pMemoryAllocateInfo ? *restoreInfo.pMemoryAllocateInfo : VkMemoryAllocateInfo{ };
 
-        if (restoreInfo.flags & GVK_RESTORE_POINT_OBJECT_STATUS_ACTIVE_BIT) {
+        if (restoreInfo.flags & GVK_STATE_TRACKED_OBJECT_STATUS_ACTIVE_BIT) {
             // Submit for download
-            if (mCreateInfo.flags & GVK_RESTORE_POINT_CREATE_DEVICE_MEMORY_DATA_BIT) {
+            if (mCreateInfo.gvkRestorePoint->createFlags & GVK_RESTORE_POINT_CREATE_DEVICE_MEMORY_DATA_BIT) {
                 auto downloadInfo = get_default<CopyEngine::DownloadDeviceMemoryInfo>();
                 downloadInfo.device = device;
                 downloadInfo.memory = restoreInfo.handle;
@@ -109,8 +111,13 @@ VkResult Creator::process_VkDeviceMemory(GvkDeviceMemoryRestoreInfo& restoreInfo
                 downloadInfo.regionCount = 0;
                 downloadInfo.pRegions = nullptr;
                 downloadInfo.pUserData = this;
+                downloadInfo.pfnAllocateResourceDataCallaback = mCreateInfo.pfnAllocateResourceDataCallback;
                 downloadInfo.pfnCallback = process_downloaded_VkDeviceMemory;
-                mCopyEngines[device].download(downloadInfo);
+                if (downloadInfo.pfnAllocateResourceDataCallaback) {
+                    mCopyEngines[device].download_to_host_mapped_memory(downloadInfo);
+                } else {
+                    mCopyEngines[device].download(downloadInfo);
+                }
             }
         }
 
@@ -151,7 +158,7 @@ void Creator::process_downloaded_VkDeviceMemory(const CopyEngine::DownloadDevice
     assert(downloadInfo.pUserData);
     assert(pData);
     const auto& creator = *(const Creator*)downloadInfo.pUserData;
-    if (creator.mCreateInfo.flags & GVK_RESTORE_POINT_CREATE_DEVICE_MEMORY_DATA_BIT) {
+    if (creator.mCreateInfo.gvkRestorePoint->createFlags & GVK_RESTORE_POINT_CREATE_DEVICE_MEMORY_DATA_BIT) {
         if (creator.mCreateInfo.pfnProcessResourceDataCallback) {
             GvkStateTrackedObject restorePointObject{ };
             restorePointObject.type = VK_OBJECT_TYPE_DEVICE_MEMORY;
@@ -168,7 +175,86 @@ void Creator::process_downloaded_VkDeviceMemory(const CopyEngine::DownloadDevice
     }
 }
 
-VkResult Applier::process_VkDeviceMemory(const GvkRestorePointObject& restorePointObject, const GvkDeviceMemoryRestoreInfo& restoreInfo)
+VkResult Layer::pre_vkAllocateMemory(VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory, VkResult gvkResult)
+{
+    (void)device;
+    (void)pAllocator;
+    (void)pMemory;
+    if (gvkResult == VK_SUCCESS) {
+        assert(pAllocateInfo);
+        auto pMemoryAllocateFlagsInfo = const_cast<VkMemoryAllocateFlagsInfo*>(get_pnext<VkMemoryAllocateFlagsInfo>(*pAllocateInfo));
+        if (pMemoryAllocateFlagsInfo && pMemoryAllocateFlagsInfo->flags & VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT) {
+            pMemoryAllocateFlagsInfo->flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT;
+        }
+    }
+    return gvkResult;
+}
+
+VkResult Layer::pre_vkMapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData, VkResult gvkResult)
+{
+    (void)device;
+    (void)memory;
+    (void)offset;
+    (void)size;
+    (void)flags;
+    (void)ppData;
+    return gvkResult;
+}
+
+VkResult Layer::post_vkMapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData, VkResult gvkResult)
+{
+    (void)device;
+    (void)memory;
+    (void)offset;
+    (void)size;
+    (void)flags;
+    (void)ppData;
+    return gvkResult;
+}
+
+VkResult Layer::pre_vkMapMemory2KHR(VkDevice device, const VkMemoryMapInfoKHR* pMemoryMapInfo, void** ppData, VkResult gvkResult)
+{
+    (void)device;
+    (void)pMemoryMapInfo;
+    (void)ppData;
+    return gvkResult;
+}
+
+VkResult Layer::post_vkMapMemory2KHR(VkDevice device, const VkMemoryMapInfoKHR* pMemoryMapInfo, void** ppData, VkResult gvkResult)
+{
+    (void)device;
+    (void)pMemoryMapInfo;
+    (void)ppData;
+    return gvkResult;
+}
+
+void Layer::pre_vkUnmapMemory(VkDevice device, VkDeviceMemory memory)
+{
+    (void)device;
+    (void)memory;
+}
+
+void Layer::post_vkUnmapMemory(VkDevice device, VkDeviceMemory memory)
+{
+    (void)device;
+    (void)memory;
+}
+
+VkResult Layer::pre_vkUnmapMemory2KHR(VkDevice device, const VkMemoryUnmapInfoKHR* pMemoryUnmapInfo, VkResult gvkResult)
+{
+    (void)device;
+    (void)pMemoryUnmapInfo;
+    return gvkResult;
+}
+
+VkResult Layer::post_vkUnmapMemory2KHR(VkDevice device, const VkMemoryUnmapInfoKHR* pMemoryUnmapInfo, VkResult gvkResult)
+{
+    (void)device;
+    (void)pMemoryUnmapInfo;
+    return gvkResult;
+}
+
+VkResult Applier::restore_VkDeviceMemory(const GvkStateTrackedObject& restorePointObject, const GvkDeviceMemoryRestoreInfo& restoreInfo)
 {
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         remove_pnext_entries(
@@ -181,7 +267,7 @@ VkResult Applier::process_VkDeviceMemory(const GvkRestorePointObject& restorePoi
             }
         );
 
-        gvk_result(BasicApplier::process_VkDeviceMemory(restorePointObject, restoreInfo));
+        gvk_result(BasicApplier::restore_VkDeviceMemory(restorePointObject, restoreInfo));
         auto device = (VkDevice)get_restored_object(get_restore_point_object_dependency<VkDevice>(restoreInfo.dependencyCount, restoreInfo.pDependencies)).handle;
         auto restoredObject = get_restored_object(restorePointObject);
         auto deviceMemory = (VkDeviceMemory)restoredObject.handle;
@@ -190,7 +276,7 @@ VkResult Applier::process_VkDeviceMemory(const GvkRestorePointObject& restorePoi
             auto bufferRestorePointObject = restorePointObject;
             bufferRestorePointObject.type = VK_OBJECT_TYPE_BUFFER;
             bufferRestorePointObject.handle = (uint64_t)bufferBindInfo.buffer;
-            gvk_result(process_object(bufferRestorePointObject));
+            gvk_result(restore_object(bufferRestorePointObject));
             auto buffer = (VkBuffer)get_restored_object(bufferRestorePointObject).handle;
             VkMemoryRequirements memoryRequirements{ };
             mApplyInfo.dispatchTable.gvkGetBufferMemoryRequirements(device, buffer, &memoryRequirements);
@@ -202,7 +288,11 @@ VkResult Applier::process_VkDeviceMemory(const GvkRestorePointObject& restorePoi
             if (bufferRestoreInfo->pBufferCreateInfo->usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
                 auto bufferDeviceAddressInfo = get_default<VkBufferDeviceAddressInfo>();
                 bufferDeviceAddressInfo.buffer = buffer;
-                mApplyInfo.dispatchTable.gvkGetBufferDeviceAddress(device, &bufferDeviceAddressInfo);
+                if (layer::Registry::get().apiVersion < VK_API_VERSION_1_2) {
+                    mApplyInfo.dispatchTable.gvkGetBufferDeviceAddressKHR(device, &bufferDeviceAddressInfo);
+                } else {
+                    mApplyInfo.dispatchTable.gvkGetBufferDeviceAddress(device, &bufferDeviceAddressInfo);
+                }
             }
         }
         for (uint32_t i = 0; i < restoreInfo.imageBindInfoCount; ++i) {
@@ -210,7 +300,7 @@ VkResult Applier::process_VkDeviceMemory(const GvkRestorePointObject& restorePoi
             auto imageRestorePointObject = restorePointObject;
             imageRestorePointObject.type = VK_OBJECT_TYPE_IMAGE;
             imageRestorePointObject.handle = (uint64_t)imageBindInfo.image;
-            gvk_result(process_object(imageRestorePointObject));
+            gvk_result(restore_object(imageRestorePointObject));
             auto image = (VkImage)get_restored_object(imageRestorePointObject).handle;
             VkMemoryRequirements memoryRequirements{ };
             mApplyInfo.dispatchTable.gvkGetImageMemoryRequirements(device, image, &memoryRequirements);
@@ -220,7 +310,7 @@ VkResult Applier::process_VkDeviceMemory(const GvkRestorePointObject& restorePoi
     return gvkResult;
 }
 
-VkResult Applier::process_VkDeviceMemory_data(const GvkRestorePointObject& restorePointObject)
+VkResult Applier::restore_VkDeviceMemory_data(const GvkStateTrackedObject& restorePointObject)
 {
     gvk_result_scope_begin(VK_SUCCESS) {
         Auto<GvkDeviceMemoryRestoreInfo> restoreInfo;
@@ -270,20 +360,33 @@ void Applier::process_VkDeviceMemory_data_upload(const CopyEngine::UploadDeviceM
     assert(gvkResult == VK_SUCCESS);
 }
 
-VkResult Applier::process_VkDeviceMemory_mapping(const GvkRestorePointObject& capturedDeviceMemory)
+VkResult Applier::restore_VkDeviceMemory_mapping(const GvkStateTrackedObject& capturedDeviceMemory)
 {
     gvk_result_scope_begin(VK_SUCCESS) {
         Auto<GvkDeviceMemoryRestoreInfo> deviceMemoryRestoreInfo;
         gvk_result(read_object_restore_info(mApplyInfo.path, "VkDeviceMemory", to_hex_string(capturedDeviceMemory.handle), deviceMemoryRestoreInfo));
-        if (deviceMemoryRestoreInfo->mappedMemoryInfo.size) {
-            auto restoredDeviceMemory = get_restored_object(capturedDeviceMemory);
+        auto restoredDeviceMemory = get_restored_object(capturedDeviceMemory);
+        auto mappedMemoryInfo = get_default<GvkMappedMemoryInfo>();
+        if (!(mApplyInfo.flags & GVK_RESTORE_POINT_APPLY_SYNTHETIC_BIT)) {
+            void* pData = nullptr;
+            gvkGetStateTrackedMappedMemory(&restoredDeviceMemory, &mappedMemoryInfo.offset, &mappedMemoryInfo.size, &mappedMemoryInfo.flags, &pData);
+            if (pData && deviceMemoryRestoreInfo->mappedMemoryInfo.dataHandle) {
+                mappedMemoryInfo.dataHandle = deviceMemoryRestoreInfo->mappedMemoryInfo.dataHandle;
+            }
+        }
+        if (mappedMemoryInfo != deviceMemoryRestoreInfo->mappedMemoryInfo) {
             auto device = (VkDevice)restoredDeviceMemory.dispatchableHandle;
             auto memory = (VkDeviceMemory)restoredDeviceMemory.handle;
-            auto offset = deviceMemoryRestoreInfo->mappedMemoryInfo.offset;
-            auto size = deviceMemoryRestoreInfo->mappedMemoryInfo.size;
-            auto flags = deviceMemoryRestoreInfo->mappedMemoryInfo.flags;
-            void* pData = nullptr;
-            gvk_result(mApplyInfo.dispatchTable.gvkMapMemory(device, memory, offset, size, flags, (void**)&pData));
+            if (mappedMemoryInfo.size) {
+                mApplyInfo.dispatchTable.gvkUnmapMemory(device, memory);
+            }
+            if (deviceMemoryRestoreInfo->mappedMemoryInfo.size) {
+                auto offset = deviceMemoryRestoreInfo->mappedMemoryInfo.offset;
+                auto size = deviceMemoryRestoreInfo->mappedMemoryInfo.size;
+                auto flags = deviceMemoryRestoreInfo->mappedMemoryInfo.flags;
+                void* pData = nullptr;
+                gvk_result(mApplyInfo.dispatchTable.gvkMapMemory(device, memory, offset, size, flags, (void**)&pData));
+            }
         }
     } gvk_result_scope_end;
     return gvkResult;

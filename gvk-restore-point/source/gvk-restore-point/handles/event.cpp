@@ -34,16 +34,15 @@ namespace restore_point {
 VkResult Creator::process_VkEvent(GvkEventRestoreInfo& restoreInfo)
 {
     Device device = get_dependency<VkDevice>(restoreInfo.dependencyCount, restoreInfo.pDependencies);
-    assert(device);
     restoreInfo.status = device.get<DispatchTable>().gvkGetEventStatus(device, restoreInfo.handle);
     return BasicCreator::process_VkEvent(restoreInfo);
 }
 
-VkResult Applier::restore_VkEvent_state(const GvkRestorePointObject& restorePointObject, const GvkEventRestoreInfo& restoreInfo)
+VkResult Applier::restore_VkEvent_state(const GvkStateTrackedObject& restorePointObject, const GvkEventRestoreInfo& restoreInfo)
 {
-    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
-        auto vkDevice = (VkDevice)get_restored_object({ VK_OBJECT_TYPE_DEVICE, restorePointObject.dispatchableHandle, restorePointObject.dispatchableHandle }).handle;
+    gvk_result_scope_begin(VK_SUCCESS) {
         auto vkEvent = (VkEvent)get_restored_object(restorePointObject).handle;
+        auto vkDevice = (VkDevice)get_restored_object({ VK_OBJECT_TYPE_DEVICE, restorePointObject.dispatchableHandle, restorePointObject.dispatchableHandle }).handle;
         switch (restoreInfo.status) {
         case VK_EVENT_SET: {
             gvk_result(mApplyInfo.dispatchTable.gvkSetEvent(vkDevice, vkEvent));
@@ -52,22 +51,8 @@ VkResult Applier::restore_VkEvent_state(const GvkRestorePointObject& restorePoin
             gvk_result(mApplyInfo.dispatchTable.gvkResetEvent(vkDevice, vkEvent));
         } break;
         default: {
-            gvk_result(VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result(VK_ERROR_UNKNOWN);
         } break;
-        }
-    } gvk_result_scope_end;
-    return gvkResult;
-}
-
-VkResult Applier::process_VkEvent(const GvkRestorePointObject& restorePointObject, const GvkEventRestoreInfo& restoreInfo)
-{
-    // Stateless restore
-    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
-        gvk_result(BasicApplier::process_VkEvent(restorePointObject, restoreInfo));
-        if (restoreInfo.status == VK_EVENT_SET) {
-            auto vkDevice = (VkDevice)get_restored_object({ VK_OBJECT_TYPE_DEVICE, restorePointObject.dispatchableHandle, restorePointObject.dispatchableHandle }).handle;
-            auto vkEvent = (VkEvent)get_restored_object(restorePointObject).handle;
-            gvk_result(Device(vkDevice).get<DispatchTable>().gvkSetEvent(vkDevice, vkEvent));
         }
     } gvk_result_scope_end;
     return gvkResult;

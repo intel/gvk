@@ -26,10 +26,61 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-restore-point/applier.hpp"
 #include "gvk-restore-point/creator.hpp"
+#include "gvk-restore-point/layer.hpp"
 #include "gvk-layer/registry.hpp"
 
 namespace gvk {
 namespace restore_point {
+
+thread_local VkInstanceCreateInfo tlApplicationInstanceCreateInfo;
+thread_local VkInstanceCreateInfo tlRestorePointInstanceCreateInfo;
+VkResult Layer::pre_vkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance, VkResult layerResult)
+{
+    (void)pAllocator;
+    (void)pInstance;
+    assert(pCreateInfo);
+    tlApplicationInstanceCreateInfo = *pCreateInfo;
+    if (layerResult == VK_SUCCESS) {
+        gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+            // TODO : Documentation
+            static const auto layerNpos = std::numeric_limits<uint32_t>::max();
+            auto restorePointLayerIndex = layerNpos;
+            auto stateTrackerLayerIndex = layerNpos;
+            assert(pCreateInfo->ppEnabledLayerNames);
+            for (uint32_t i = 0; i < pCreateInfo->enabledLayerCount; ++i) {
+                if (!strcmp(pCreateInfo->ppEnabledLayerNames[i], VK_LAYER_INTEL_GVK_STATE_TRACKER_NAME)) {
+                    stateTrackerLayerIndex = i;
+                } else
+                if (!strcmp(pCreateInfo->ppEnabledLayerNames[i], VK_LAYER_INTEL_GVK_RESTORE_POINT_NAME)) {
+                    restorePointLayerIndex = i;
+                }
+            }
+            if (restorePointLayerIndex == layerNpos || stateTrackerLayerIndex == layerNpos || restorePointLayerIndex < stateTrackerLayerIndex) {
+                gvk_result(VK_ERROR_LAYER_NOT_PRESENT);
+            }
+
+            // TODO : Documentation
+            auto restorePointInstanceCreateInfo = tlApplicationInstanceCreateInfo;
+            // TODO : Modify restorePointInstanceCreateInfo
+            tlRestorePointInstanceCreateInfo = restorePointInstanceCreateInfo;
+            *const_cast<VkInstanceCreateInfo*>(pCreateInfo) = tlRestorePointInstanceCreateInfo;
+        } gvk_result_scope_end;
+        layerResult = gvkResult;
+    }
+    return layerResult;
+}
+
+VkResult Layer::post_vkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance, VkResult gvkResult)
+{
+    (void)pAllocator;
+    (void)pInstance;
+    if (gvkResult == VK_SUCCESS) {
+        assert(pCreateInfo);
+        *const_cast<VkInstanceCreateInfo*>(pCreateInfo) = tlApplicationInstanceCreateInfo;
+        gvkResult = state_tracker::load_layer_entry_points();
+    }
+    return gvkResult;
+}
 
 VkResult Creator::process_VkInstance(GvkInstanceRestoreInfo& restoreInfo)
 {
@@ -68,73 +119,51 @@ VkResult Creator::process_VkInstance(GvkInstanceRestoreInfo& restoreInfo)
     return gvkResult;
 }
 
-VkResult Applier::restore_VkInstance(const GvkRestorePointObject& restorePointObject, const GvkInstanceRestoreInfo& restoreInfo)
+VkResult Applier::restore_VkInstance(const GvkStateTrackedObject& restorePointObject, const GvkInstanceRestoreInfo& restoreInfo)
 {
-    (void)restorePointObject;
-    (void)restoreInfo;
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
-        gvk_result(VK_SUCCESS);
-    } gvk_result_scope_end;
-    return gvkResult;
-}
+        // TODO : Documentation
+        gvk_result(BasicApplier::restore_VkInstance(restorePointObject, restoreInfo));
 
-VkResult Applier::restore_VkInstance_state(const GvkRestorePointObject& restorePointObject, const GvkInstanceRestoreInfo& restoreInfo)
-{
-    (void)restorePointObject;
-    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
-        const auto& dispatchTableItr = layer::Registry::get().VkInstanceDispatchTables.find(layer::get_dispatch_key(restoreInfo.handle));
-        assert(dispatchTableItr != layer::Registry::get().VkInstanceDispatchTables.end() && "Failed to get gvk::layer::Registry VkInstance gvk::DispatchTable; are the Vulkan SDK, runtime, and layers configured correctly?");
-        const auto& dispatchTable = dispatchTableItr->second;
-        gvk_result(Instance::create_unmanaged(restoreInfo.pInstanceCreateInfo, nullptr, &dispatchTable, mApplyInfo.instance, &mInstance));
-    } gvk_result_scope_end;
-    return gvkResult;
-}
-
-VkResult Applier::process_VkInstance(const GvkRestorePointObject& restorePointObject, const GvkInstanceRestoreInfo& restoreInfo)
-{
-    (void)restoreInfo;
-    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
-        // TODO : Logic to force/filter/unfilter objects for restoration
-        if (mApplyInfo.restoreInstance_HACK) {
-            gvk_result(BasicApplier::process_VkInstance(restorePointObject, restoreInfo));
-        } else {
-            auto restoredObject = restorePointObject;
-            restoredObject.handle = (uint64_t)mApplyInfo.instance;
-            restoredObject.dispatchableHandle = (uint64_t)mApplyInfo.instance;
-            gvk_result(register_restored_object(restorePointObject, restoredObject));
-        }
-
-        DispatchTable::load_global_entry_points(&mApplicationDispatchTable);
-        DispatchTable::load_instance_entry_points(mApplyInfo.instance, &mApplicationDispatchTable);
-        // TODO : Logic to select mApplicationDispatchTable vs layer DispatchTable
-        //  Live apply needs to go down the layer dispatch table...recordable apply
-        //  needs to hit the provided dispatch table...
-        auto recorderEnumeratePhysicalDevices = mApplyInfo.dispatchTable.gvkEnumeratePhysicalDevices;
-
-        gvk_result(Instance::create_unmanaged(restoreInfo.pInstanceCreateInfo, nullptr, &mApplicationDispatchTable, mApplyInfo.instance, &mInstance));
+        // TODO : Documentation
         uint32_t physicalDeviceCount = 0;
-        gvk_result(mApplicationDispatchTable.gvkEnumeratePhysicalDevices(mApplyInfo.instance, &physicalDeviceCount, nullptr));
-        std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
-        gvk_result(mApplicationDispatchTable.gvkEnumeratePhysicalDevices(mApplyInfo.instance, &physicalDeviceCount, physicalDevices.data()));
+        gvk_result(mApplicationDispatchTable.gvkEnumeratePhysicalDevices(mApplyInfo.vkInstance, &physicalDeviceCount, nullptr));
+        std::vector<VkPhysicalDevice> vkPhysicalDevices(physicalDeviceCount);
+        gvk_result(mApplicationDispatchTable.gvkEnumeratePhysicalDevices(mApplyInfo.vkInstance, &physicalDeviceCount, vkPhysicalDevices.data()));
 
-        ///////////////////////////////////////////////////////////////////////////////
         // TODO : Figure out why this is necessary...this call is triggering GPA FW's
         //  object mapping logic, but the RestorePointOperation created by the call to
         //  register_restored_object() _should_ be enough.
-        gvk_result(recorderEnumeratePhysicalDevices(mApplyInfo.instance, &physicalDeviceCount, nullptr));
-        gvk_result(recorderEnumeratePhysicalDevices(mApplyInfo.instance, &physicalDeviceCount, physicalDevices.data()));
-        ///////////////////////////////////////////////////////////////////////////////
+        const auto& dispatchTable = mApplyInfo.dispatchTable;
+        gvk_result(dispatchTable.gvkEnumeratePhysicalDevices(mApplyInfo.vkInstance, &physicalDeviceCount, nullptr));
+        gvk_result(dispatchTable.gvkEnumeratePhysicalDevices(mApplyInfo.vkInstance, &physicalDeviceCount, vkPhysicalDevices.data()));
 
-        for (auto physicalDevice : physicalDevices) {
+        // TODO : Documentation
+        for (auto vkPhysicalDevice : vkPhysicalDevices) {
             VkPhysicalDeviceProperties physicalDeviceProperties{ };
-            mApplicationDispatchTable.gvkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
-            mUnrestoredPhysicalDevices[physicalDeviceProperties].push_back(physicalDevice);
+            mApplicationDispatchTable.gvkGetPhysicalDeviceProperties(vkPhysicalDevice, &physicalDeviceProperties);
+            mUnrestoredPhysicalDevices[physicalDeviceProperties].push_back(vkPhysicalDevice);
         }
 
         // TODO : Documentation
         if (restoreInfo.pInstanceCreateInfo->pApplicationInfo->apiVersion < VK_API_VERSION_1_2) {
             mApplyInfo.dispatchTable.gvkCreateRenderPass2 = mApplyInfo.dispatchTable.gvkCreateRenderPass2KHR;
         }
+    } gvk_result_scope_end;
+    return gvkResult;
+}
+
+VkResult Applier::restore_VkInstance_state(const GvkStateTrackedObject& restorePointObject, const GvkInstanceRestoreInfo& restoreInfo)
+{
+    (void)restorePointObject;
+    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+        const auto& layerDispatchTable = layer::Registry::get().get_instance_dispatch_table(restoreInfo.handle);
+#if 0
+        auto dispatchTable = mApplyInfo.flags & GVK_RESTORE_POINT_APPLY_SYNTHETIC_BIT ? layerDispatchTable : mApplicationDispatchTable;
+#else
+        auto dispatchTable = layerDispatchTable;
+#endif
+        gvk_result(Instance::create_unmanaged(restoreInfo.pInstanceCreateInfo, nullptr, &dispatchTable, mApplyInfo.vkInstance, &mInstance));
     } gvk_result_scope_end;
     return gvkResult;
 }

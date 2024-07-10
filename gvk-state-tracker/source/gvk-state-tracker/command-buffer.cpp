@@ -34,6 +34,7 @@ namespace state_tracker {
 VkResult StateTracker::post_vkResetCommandPool(VkDevice device, VkCommandPool commandPool, VkCommandPoolResetFlags flags, VkResult gvkResult)
 {
     (void)flags;
+    assert(!flags && "Unserviced VkCommandPoolResetFlags; gvk maintenance required");
     if (gvkResult == VK_SUCCESS) {
         auto commandPoolReference = CommandPool({ device, commandPool }).mReference;
         assert(commandPoolReference);
@@ -47,6 +48,24 @@ VkResult StateTracker::post_vkResetCommandPool(VkDevice device, VkCommandPool co
         );
     }
     return gvkResult;
+}
+
+void StateTracker::post_vkDestroyCommandPool(VkDevice device, VkCommandPool commandPool, const VkAllocationCallbacks* pAllocator)
+{
+    auto gvkCommandPool = CommandPool({ device, commandPool });
+    assert(gvkCommandPool);
+    gvkCommandPool.mReference.get_obj().mCommandBufferTracker.enumerate(
+        [&](VkCommandBuffer commandBuffer)
+        {
+#if 1 // TODO : Turn on overriden function...tests need to be updated
+            BasicStateTracker::post_vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+#else
+            post_vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+#endif
+            return true;
+        }
+    );
+    BasicStateTracker::post_vkDestroyCommandPool(device, commandPool, pAllocator);
 }
 
 VkResult StateTracker::post_vkAllocateCommandBuffers(VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo, VkCommandBuffer* pCommandBuffers, VkResult gvkResult)
@@ -81,10 +100,12 @@ void StateTracker::post_vkFreeCommandBuffers(VkDevice device, VkCommandPool comm
         auto& commandPoolControlBlock = commandPoolReference.get_obj();
         for (uint32_t i = 0; i < commandBufferCount; ++i) {
             CommandBuffer commandBuffer(pCommandBuffers[i]);
-            assert(commandBuffer);
-            commandBuffer.mReference.get_obj().mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKED_OBJECT_STATUS_ACTIVE_BIT;
-            commandBuffer.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKED_OBJECT_STATUS_DESTROYED_BIT;
-            commandPoolControlBlock.mCommandBufferTracker.erase(pCommandBuffers[i]);
+            assert(!commandBuffer == !pCommandBuffers[i]);
+            if (commandBuffer) {
+                commandBuffer.mReference.get_obj().mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKED_OBJECT_STATUS_ACTIVE_BIT;
+                commandBuffer.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKED_OBJECT_STATUS_DESTROYED_BIT;
+                commandPoolControlBlock.mCommandBufferTracker.erase(pCommandBuffers[i]);
+            }
         }
     }
 }
@@ -95,8 +116,8 @@ VkResult StateTracker::post_vkBeginCommandBuffer(VkCommandBuffer commandBuffer, 
     auto commandBufferReference = CommandBuffer(commandBuffer).mReference;
     assert(commandBufferReference);
     auto& commandBufferControlBlock = commandBufferReference.get_obj();
-    commandBufferControlBlock.mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKER_OBJECT_STATUS_ALL_COMMAND_BUFFER_BIT;
-    commandBufferControlBlock.mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKER_OBJECT_STATUS_RECORDING_BIT;
+    commandBufferControlBlock.mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKED_OBJECT_STATUS_ALL_COMMAND_BUFFER_BIT;
+    commandBufferControlBlock.mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKED_OBJECT_STATUS_RECORDING_BIT;
     commandBufferControlBlock.mCommandbufferBeginInfo = *pBeginInfo;
     commandBufferControlBlock.mBeginEndCommandBufferResults = { gvkResult, VK_SUCCESS };
     commandBufferControlBlock.mCmdTracker.reset();
@@ -108,8 +129,8 @@ VkResult StateTracker::post_vkEndCommandBuffer(VkCommandBuffer commandBuffer, Vk
     auto commandBufferReference = CommandBuffer(commandBuffer).mReference;
     assert(commandBufferReference);
     auto& commandBufferControlBlock = commandBufferReference.get_obj();
-    commandBufferControlBlock.mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKER_OBJECT_STATUS_ALL_COMMAND_BUFFER_BIT;
-    commandBufferControlBlock.mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKER_OBJECT_STATUS_EXECUTABLE_BIT;
+    commandBufferControlBlock.mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKED_OBJECT_STATUS_ALL_COMMAND_BUFFER_BIT;
+    commandBufferControlBlock.mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKED_OBJECT_STATUS_EXECUTABLE_BIT;
     commandBufferControlBlock.mBeginEndCommandBufferResults.second = gvkResult;
     return gvkResult;
 }
@@ -120,7 +141,7 @@ VkResult StateTracker::post_vkResetCommandBuffer(VkCommandBuffer commandBuffer, 
     auto commandBufferReference = CommandBuffer(commandBuffer).mReference;
     assert(commandBufferReference);
     auto& commandBufferControlBlock = commandBufferReference.get_obj();
-    commandBufferControlBlock.mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKER_OBJECT_STATUS_ALL_COMMAND_BUFFER_BIT;
+    commandBufferControlBlock.mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKED_OBJECT_STATUS_ALL_COMMAND_BUFFER_BIT;
     commandBufferControlBlock.mCommandbufferBeginInfo.reset();
     commandBufferControlBlock.mBeginEndCommandBufferResults = { VK_SUCCESS, VK_SUCCESS };
     commandBufferControlBlock.mCmdTracker.reset();

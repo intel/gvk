@@ -202,9 +202,21 @@ VkResult StateTracker::post_vkCreateDescriptorSetLayout(VkDevice device, const V
 VkResult StateTracker::post_vkResetDescriptorPool(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorPoolResetFlags flags, VkResult gvkResult)
 {
     (void)flags;
+    assert(!flags && "Unserviced VkDescriptorPoolResetFlags; gvk maintenance required");
     if (gvkResult == VK_SUCCESS) {
         DescriptorPool gvkDescriptorPool({ device, descriptorPool });
         assert(gvkDescriptorPool);
+        gvkDescriptorPool.mReference.get_obj().mDescriptorSetTracker.enumerate(
+            [&](VkDescriptorSet descriptorSet)
+            {
+#if 1 // TODO : Turn on overriden function...tests need to be updated
+                gvkResult = BasicStateTracker::post_vkFreeDescriptorSets(device, descriptorPool, 1, &descriptorSet, gvkResult);
+#else
+                gvkResult = post_vkFreeDescriptorSets(device, descriptorPool, 1, &descriptorSet, gvkResult);
+#endif
+                return gvkResult == VK_SUCCESS;
+            }
+        );
         gvkDescriptorPool.mReference.get_obj().mDescriptorSetTracker.clear();
     }
     return gvkResult;
@@ -212,12 +224,9 @@ VkResult StateTracker::post_vkResetDescriptorPool(VkDevice device, VkDescriptorP
 
 void StateTracker::post_vkDestroyDescriptorPool(VkDevice device, VkDescriptorPool descriptorPool, const VkAllocationCallbacks* pAllocator)
 {
-    (void)pAllocator;
-    if (descriptorPool) {
-        DescriptorPool gvkDescriptorPool({ device, descriptorPool });
-        assert(gvkDescriptorPool);
-        gvkDescriptorPool.mReference.get_obj().mDescriptorSetTracker.clear();
-    }
+    auto vkResult = post_vkResetDescriptorPool(device, descriptorPool, 0, VK_SUCCESS);
+    (void)vkResult;
+    assert(vkResult == VK_SUCCESS);
     BasicStateTracker::post_vkDestroyDescriptorPool(device, descriptorPool, pAllocator);
 }
 
@@ -283,10 +292,12 @@ VkResult StateTracker::post_vkFreeDescriptorSets(VkDevice device, VkDescriptorPo
         auto& descriptorPoolControlBlock = descriptorPoolReference.get_obj();
         for (uint32_t i = 0; i < descriptorSetCount; ++i) {
             DescriptorSet descriptorSet({ device, pDescriptorSets[i] });
-            assert(descriptorSet);
-            descriptorSet.mReference.get_obj().mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKED_OBJECT_STATUS_DESTROYED_BIT;
-            descriptorSet.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKED_OBJECT_STATUS_DESTROYED_BIT;
-            descriptorPoolControlBlock.mDescriptorSetTracker.erase(pDescriptorSets[i]);
+            assert(!descriptorSet == !pDescriptorSets[i]);
+            if (descriptorSet) {
+                descriptorSet.mReference.get_obj().mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKED_OBJECT_STATUS_DESTROYED_BIT;
+                descriptorSet.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKED_OBJECT_STATUS_DESTROYED_BIT;
+                descriptorPoolControlBlock.mDescriptorSetTracker.erase(pDescriptorSets[i]);
+            }
         }
     }
     return gvkResult;

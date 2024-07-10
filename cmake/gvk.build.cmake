@@ -170,7 +170,7 @@ macro(gvk_add_target_test)
             add_test(NAME ${ARGS_TARGET}.tests COMMAND ${ARGS_TARGET}.tests)
             add_custom_command(
                 TARGET ${ARGS_TARGET}.tests POST_BUILD
-                COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --verbose --output-on-failures
+                COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --verbose --output-on-failure
             )
         endif()
         if(GVK_BUILD_TESTS)

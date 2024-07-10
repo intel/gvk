@@ -40,6 +40,10 @@ void ApiElementCollectionDeclarationGenerator::generate(const ApiElementCollecti
     file << std::endl;
     HeaderGuardGenerator headerGuardGenerator(file, apiElements.headerGuard);
     file << std::endl;
+    for (const auto& include : apiElements.declarationIncludes) {
+        file << "#include \"" << include << "\"" << std::endl;
+    }
+    file << std::endl;
     file << "#include \"vulkan/vulkan.h\"" << std::endl;
     generate_enumeration_declarations(file, apiElements);
     generate_structure_declarations(file, apiElements);

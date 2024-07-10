@@ -55,10 +55,12 @@ gvk_add_static_library(
         "${includeDirectory}"
     INCLUDE_FILES
         "${generatedIncludeFiles}"
+        "${includePath}/log.hpp"
         "${includePath}/registry.hpp"
         "${includeDirectory}/gvk-layer.hpp"
     SOURCE_FILES
         "${generatedSourceFiles}"
+        "${sourcePath}/log.cpp"
         "${sourcePath}/registry.cpp"
 )
 

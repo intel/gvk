@@ -50,9 +50,12 @@ VkResult Creator::process_VkPhysicalDevice(GvkPhysicalDeviceRestoreInfo& restore
     return BasicCreator::process_VkPhysicalDevice(restoreInfo);
 }
 
-VkResult Applier::process_VkPhysicalDevice(const GvkRestorePointObject& restorePointObject, const GvkPhysicalDeviceRestoreInfo& restoreInfo)
+VkResult Applier::restore_VkPhysicalDevice(const GvkStateTrackedObject& restorePointObject, const GvkPhysicalDeviceRestoreInfo& restoreInfo)
 {
     gvk_result_scope_begin(VK_SUCCESS) {
+        gvk_result(BasicApplier::restore_VkPhysicalDevice(restorePointObject, restoreInfo));
+
+        // TODO : Documentation
         auto& unrestoredPhysicalDevices = mUnrestoredPhysicalDevices[restoreInfo.physicalDeviceProperties];
         if (!unrestoredPhysicalDevices.empty()) {
             auto restoredObject = restorePointObject;
@@ -60,14 +63,23 @@ VkResult Applier::process_VkPhysicalDevice(const GvkRestorePointObject& restoreP
             restoredObject.dispatchableHandle = (uint64_t)unrestoredPhysicalDevices.front();
             gvk_result(register_restored_object(restorePointObject, restoredObject));
             unrestoredPhysicalDevices.erase(unrestoredPhysicalDevices.begin());
+
+            // TODO : Documentation
+            uint32_t queueFamilyCount = 0;
+            mApplyInfo.dispatchTable.gvkGetPhysicalDeviceQueueFamilyProperties((VkPhysicalDevice)restoredObject.handle, &queueFamilyCount, nullptr);
+            std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyCount);
+            mApplyInfo.dispatchTable.gvkGetPhysicalDeviceQueueFamilyProperties((VkPhysicalDevice)restoredObject.handle, &queueFamilyCount, queueFamilyProperties.data());
         }
+
         // TODO : Warn when a capture time physical device is unavailable at playback
         //  time.  It's not necessarily an error, as long as the physical device isn't
         //  used...ie. the capture system had integrated and Arc A770 graphics, but the
         //  playback system only has Arc A770, as long as only the Arc A770 graphics
         //  are used there's no problem.
+
         // NOTE : When it comes time to setup support for cross GPU playback this will
         //  need to be addressed in more detail.
+
     } gvk_result_scope_end;
     return gvkResult;
 }

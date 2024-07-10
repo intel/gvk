@@ -24,26 +24,33 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
+#pragma once
+
 #include "gvk-defines.hpp"
-#include "gvk-restore-info/generated/restore-info.h"
-#include "gvk-restore-info/generated/restore-info-enumerations-to-string.hpp"
-#include "gvk-restore-info/generated/restore-info-structure-to-string.hpp"
 #include "gvk-structures.hpp"
+#include "gvk-restore-info.hpp"
+#include "gvk-command-structures.hpp"
 
-namespace gvk {
+#include "gvk-restore-point/object-map.hpp"
 
-template <>
-void print<GvkStateTrackedObject>(Printer& printer, const GvkStateTrackedObject& obj)
+#define VK_LAYER_INTEL_gvk_restore_point_hpp_OMIT_ENTRY_POINT_DECLARATIONS
+#include "VK_LAYER_INTEL_gvk_restore_point.hpp"
+
+#include <map>
+#include <set>
+
+struct GvkRestorePoint_T
 {
-    printer.print_object(
-        [&]()
-        {
-            printer.print_field("type", obj.type);
-            // NOTE : Casting handles to VkInstance so they print hex values
-            printer.print_field("handle", (VkInstance)obj.handle);
-            printer.print_field("dispatchableHandle", (VkInstance)obj.dispatchableHandle);
-        }
-    );
-}
+    GvkRestorePointCreateFlags createFlags{ };
+    gvk::Auto<GvkRestorePointManifest> manifest;
+    gvk::restore_point::ObjectMap objectMap;
 
-} // namespace gvk
+    // TODO : Wrap these so accessors automatically handle associations correctly
+    std::set<gvk::restore_point::CapturedObject> objectRestorationSubmitted;
+    std::set<gvk::restore_point::CapturedObject> stateRestorationRequired;
+    std::set<gvk::restore_point::CapturedObject> dataRestorationRequired;
+    std::set<gvk::restore_point::CapturedObject> mappingRestorationRequired;
+    std::set<gvk::restore_point::RestoredObject> objectDestructionRequired; // NOTE : Must always be the live object
+    std::set<gvk::restore_point::RestoredObject> objectDestructionSubmitted; // NOTE : Must always be the live object
+    std::set<GvkStateTrackedObject> createdObjects;
+};

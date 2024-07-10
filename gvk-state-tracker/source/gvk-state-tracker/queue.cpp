@@ -71,8 +71,8 @@ VkResult StateTracker::post_vkQueueSubmit(VkQueue queue, uint32_t submitCount, c
                     }
                     #endif
                     if (commandBufferControlBlock.mCommandbufferBeginInfo->flags & VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT) {
-                        commandBufferControlBlock.mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKER_OBJECT_STATUS_ALL_COMMAND_BUFFER_BIT;
-                        commandBufferControlBlock.mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKER_OBJECT_STATUS_INVALID_BIT;
+                        commandBufferControlBlock.mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKED_OBJECT_STATUS_ALL_COMMAND_BUFFER_BIT;
+                        commandBufferControlBlock.mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKED_OBJECT_STATUS_INVALID_BIT;
                         commandBufferControlBlock.mCommandbufferBeginInfo.reset();
                         commandBufferControlBlock.mBeginEndCommandBufferResults = { VK_SUCCESS, VK_SUCCESS };
                         commandBufferControlBlock.mCmdTracker.reset();
@@ -82,12 +82,12 @@ VkResult StateTracker::post_vkQueueSubmit(VkQueue queue, uint32_t submitCount, c
             for (uint32_t wait_i = 0; wait_i < submit.waitSemaphoreCount; ++wait_i) {
                 Semaphore gvkSemaphore({ gvkDevice, submit.pWaitSemaphores[wait_i] });
                 assert(gvkSemaphore);
-                gvkSemaphore.mReference.get_obj().mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKER_OBJECT_STATUS_SIGNALED_BIT;
+                gvkSemaphore.mReference.get_obj().mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKED_OBJECT_STATUS_SIGNALED_BIT;
             }
             for (uint32_t signal_i = 0; signal_i < submit.signalSemaphoreCount; ++signal_i) {
                 Semaphore gvkSemaphore({ gvkDevice, submit.pSignalSemaphores[signal_i] });
                 assert(gvkSemaphore);
-                gvkSemaphore.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKER_OBJECT_STATUS_SIGNALED_BIT;
+                gvkSemaphore.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKED_OBJECT_STATUS_SIGNALED_BIT;
             }
         }
     }
@@ -124,8 +124,8 @@ VkResult StateTracker::post_vkQueueSubmit2(VkQueue queue, uint32_t submitCount, 
                     }
                     #endif
                     if (commandBufferControlBlock.mCommandbufferBeginInfo->flags & VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT) {
-                        commandBufferControlBlock.mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKER_OBJECT_STATUS_ALL_COMMAND_BUFFER_BIT;
-                        commandBufferControlBlock.mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKER_OBJECT_STATUS_INVALID_BIT;
+                        commandBufferControlBlock.mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKED_OBJECT_STATUS_ALL_COMMAND_BUFFER_BIT;
+                        commandBufferControlBlock.mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKED_OBJECT_STATUS_INVALID_BIT;
                         commandBufferControlBlock.mCommandbufferBeginInfo.reset();
                         commandBufferControlBlock.mBeginEndCommandBufferResults = { VK_SUCCESS, VK_SUCCESS };
                         commandBufferControlBlock.mCmdTracker.reset();
@@ -135,12 +135,12 @@ VkResult StateTracker::post_vkQueueSubmit2(VkQueue queue, uint32_t submitCount, 
             for (uint32_t wait_i = 0; wait_i < submit.waitSemaphoreInfoCount; ++wait_i) {
                 Semaphore gvkSemaphore({ gvkDevice, submit.pWaitSemaphoreInfos[wait_i].semaphore });
                 assert(gvkSemaphore);
-                gvkSemaphore.mReference.get_obj().mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKER_OBJECT_STATUS_SIGNALED_BIT;
+                gvkSemaphore.mReference.get_obj().mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKED_OBJECT_STATUS_SIGNALED_BIT;
             }
             for (uint32_t signal_i = 0; signal_i < submit.signalSemaphoreInfoCount; ++signal_i) {
                 Semaphore gvkSemaphore({ gvkDevice, submit.pSignalSemaphoreInfos[signal_i].semaphore });
                 assert(gvkSemaphore);
-                gvkSemaphore.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKER_OBJECT_STATUS_SIGNALED_BIT;
+                gvkSemaphore.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKED_OBJECT_STATUS_SIGNALED_BIT;
             }
         }
     }
@@ -162,7 +162,7 @@ VkResult StateTracker::post_vkQueuePresentKHR(VkQueue queue, const VkPresentInfo
     for (uint32_t wait_i = 0; wait_i < pPresentInfo->waitSemaphoreCount; ++wait_i) {
         Semaphore gvkSemaphore({ gvkDevice, pPresentInfo->pWaitSemaphores[wait_i] });
         assert(gvkSemaphore);
-        gvkSemaphore.mReference.get_obj().mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKER_OBJECT_STATUS_SIGNALED_BIT;
+        gvkSemaphore.mReference.get_obj().mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKED_OBJECT_STATUS_SIGNALED_BIT;
     }
 
     const auto& dispatchTableItr = layer::Registry::get().VkDeviceDispatchTables.find(layer::get_dispatch_key(gvkDevice.get<VkDevice>()));
@@ -187,9 +187,9 @@ VkResult StateTracker::post_vkQueuePresentKHR(VkQueue queue, const VkPresentInfo
 
         Image gvkImage({ gvkDevice, vkImages[pPresentInfo->pImageIndices[swapchain_i]]});
         assert(gvkImage);
-        gvkImage.mReference.get_obj().mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKER_OBJECT_STATUS_ACQUIRED_BIT;
+        gvkImage.mReference.get_obj().mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKED_OBJECT_STATUS_ACQUIRED_BIT;
         if (gvkImage.mReference.get_obj().mSwapchainAcquisitionSemaphore) {
-            gvkImage.mReference.get_obj().mSwapchainAcquisitionSemaphore.mReference.get_obj().mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKER_OBJECT_STATUS_SIGNALED_BIT;
+            gvkImage.mReference.get_obj().mSwapchainAcquisitionSemaphore.mReference.get_obj().mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKED_OBJECT_STATUS_SIGNALED_BIT;
         }
         gvkImage.mReference.get_obj().mSwapchainAcquisitionSemaphore.reset();
         gvkImage.mReference.get_obj().mSwapchainAcquisitionFence.reset();

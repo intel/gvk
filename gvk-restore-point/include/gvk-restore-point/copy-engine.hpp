@@ -69,6 +69,7 @@ public:
         uint32_t regionCount{ };
         const VkBufferCopy* pRegions{ };
         void* pUserData{ };
+        void(*pfnAllocateResourceDataCallaback)(const GvkStateTrackedObject*, VkDeviceSize, void**){ };
         void(*pfnCallback)(const DownloadDeviceMemoryInfo&, const VkBindBufferMemoryInfo&, const uint8_t*){ };
     };
 
@@ -106,7 +107,7 @@ public:
         VkMemoryAllocateInfo memoryAllocateInfo{ };
         VkDevice device{ };
         void* pUserData{ };
-        void(*pfnCallback)(const DownloadAccelerationStructureInfo&, const VkBindBufferMemoryInfo&, const uint8_t*) { };
+        void(*pfnCallback)(const DownloadAccelerationStructureInfo&, const VkBindBufferMemoryInfo&, const uint8_t*){ };
     };
 
     struct UploadDeviceMemoryInfo
@@ -118,7 +119,7 @@ public:
         uint32_t regionCount{ };
         const VkBufferCopy* pRegions{ };
         void* pUserData{ };
-        void(*pfnCallback)(const UploadDeviceMemoryInfo&, const VkBindBufferMemoryInfo&, uint8_t*) { };
+        void(*pfnCallback)(const UploadDeviceMemoryInfo&, const VkBindBufferMemoryInfo&, uint8_t*){ };
     };
 
     struct UploadBufferInfo
@@ -160,7 +161,7 @@ public:
         VkMemoryAllocateInfo memoryAllocateInfo{ };
         VkDevice device{ };
         void* pUserData{ };
-        void(*pfnCallback)(const UploadAccelerationStructureInfo&, const VkBindBufferMemoryInfo&, uint8_t*) { };
+        void(*pfnCallback)(const UploadAccelerationStructureInfo&, const VkBindBufferMemoryInfo&, uint8_t*){ };
     };
 
     struct TransitionImageLayoutInfo
@@ -191,6 +192,7 @@ public:
     operator bool() const;
 
     void download(DownloadDeviceMemoryInfo downloadInfo);
+    void download_to_host_mapped_memory(DownloadDeviceMemoryInfo downloadInfo);
     void download(DownloadBufferInfo downloadInfo);
     void download(DownloadImageInfo downloadInfo);
     void download(DownloadAccelerationStructureInfo downloadInfo);

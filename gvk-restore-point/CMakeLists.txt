@@ -80,7 +80,8 @@ gvk_add_layer(
         "${includePath}/copy-engine.hpp"
         "${includePath}/creator.hpp"
         "${includePath}/layer.hpp"
-        "${includePath}/logger.hpp"
+        "${includePath}/object-map.hpp"
+        "${includePath}/restore-point.hpp"
         "${includePath}/utilities.hpp"
     SOURCE_FILES
         "${generatedSourceFiles}"
@@ -99,21 +100,21 @@ gvk_add_layer(
         "${sourcePath}/handles/query-pool.cpp"
         "${sourcePath}/handles/queue.cpp"
         "${sourcePath}/handles/semaphore.cpp"
+        "${sourcePath}/handles/shader.cpp"
         "${sourcePath}/handles/surface.cpp"
         "${sourcePath}/handles/swapchain.cpp"
         "${sourcePath}/applier.cpp"
         "${sourcePath}/copy-engine.cpp"
         "${sourcePath}/creator.cpp"
         "${sourcePath}/layer.cpp"
-        "${sourcePath}/logger.cpp"
-        "${sourcePath}/utilities.cpp"
+        "${sourcePath}/object-map.cpp"
     DESCRIPTION
         "Intel(R) GPA Utilities for Vulkan* restore point"
     ENTRY_POINTS
         gvkCreateRestorePoint
-        gvkGetRestorePointObjects
-        gvkDestroyRestorePoint
         gvkApplyRestorePoint
+        gvkGetRestorePointManifest
+        gvkDestroyRestorePoint
 )
 if(MSVC)
     set_source_files_properties("${generatedSourcePath}/update-structure-handles.cpp" PROPERTIES COMPILE_FLAGS "/bigobj")

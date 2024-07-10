@@ -33,54 +33,29 @@ namespace restore_point {
 VkResult Creator::process_VkFence(GvkFenceRestoreInfo& restoreInfo)
 {
     Device device = get_dependency<VkDevice>(restoreInfo.dependencyCount, restoreInfo.pDependencies);
-    assert(device);
     restoreInfo.status = device.get<DispatchTable>().gvkGetFenceStatus(device, restoreInfo.handle);
     return BasicCreator::process_VkFence(restoreInfo);
 }
 
-VkResult Applier::restore_VkFence_state(const GvkRestorePointObject& restorePointObject, const GvkFenceRestoreInfo& restoreInfo)
+VkResult Applier::restore_VkFence_state(const GvkStateTrackedObject& restorePointObject, const GvkFenceRestoreInfo& restoreInfo)
 {
-    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
-        // TODO : Check if dispatchTable is pointing at the implementation?
-        // TODO : vkGetFenceStatus() won't work for deferred...
-        bool liveRestore_HACK = true;
-        if (liveRestore_HACK) {
-            // TODO : get_restored_object() should always get the live object...
-            Device gvkDevice = (VkDevice)get_restored_object({ VK_OBJECT_TYPE_DEVICE, restorePointObject.dispatchableHandle, restorePointObject.dispatchableHandle }).handle;
-            auto vkFence = (VkFence)get_restored_object(restorePointObject).handle;
-            auto status = mApplyInfo.dispatchTable.gvkGetFenceStatus(gvkDevice, vkFence);
-            if (status != restoreInfo.status) {
-                switch (restoreInfo.status) {
-                case VK_SUCCESS: {
-                    const auto& gvkQueue = gvkDevice.get<QueueFamilies>()[0].queues[0];
-                    gvk_result(mApplyInfo.dispatchTable.gvkQueueSubmit(gvkQueue, 0, nullptr, vkFence));
-                } break;
-                case VK_NOT_READY: {
-                    gvk_result(mApplyInfo.dispatchTable.gvkResetFences(gvkDevice, 1, &vkFence));
-                } break;
-                default: {
-                    gvk_result(VK_ERROR_INITIALIZATION_FAILED);
-                } break;
-                }
-            }
-        } else {
-            // TODO : Full restore based on restoreInfo...
-        }
-        gvk_result(VK_SUCCESS);
-    } gvk_result_scope_end;
-    return gvkResult;
-}
-
-VkResult Applier::process_VkFence(const GvkRestorePointObject& restorePointObject, const GvkFenceRestoreInfo& restoreInfo)
-{
-    // Stateless restore
-    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
-        gvk_result(BasicApplier::process_VkFence(restorePointObject, restoreInfo));
-        auto vkDevice = (VkDevice)get_restored_object({ VK_OBJECT_TYPE_DEVICE, restorePointObject.dispatchableHandle, restorePointObject.dispatchableHandle }).handle;
+    gvk_result_scope_begin(VK_SUCCESS) {
         auto vkFence = (VkFence)get_restored_object(restorePointObject).handle;
-        if (restoreInfo.status == VK_SUCCESS && !(restoreInfo.pFenceCreateInfo->flags & VK_FENCE_CREATE_SIGNALED_BIT)) {
-            Device gvkDevice(vkDevice);
-            gvk_result(gvkDevice.get<DispatchTable>().gvkQueueSubmit(gvkDevice.get<QueueFamilies>()[0].queues[0], 0, nullptr, vkFence));
+        auto vkDevice = (VkDevice)get_restored_object({ VK_OBJECT_TYPE_DEVICE, restorePointObject.dispatchableHandle, restorePointObject.dispatchableHandle }).handle;
+        auto status = restoreInfo.pFenceCreateInfo->flags & VK_FENCE_CREATE_SIGNALED_BIT ? VK_SUCCESS : VK_NOT_READY;
+        if (!(mApplyInfo.flags & GVK_RESTORE_POINT_APPLY_SYNTHETIC_BIT)) {
+            status = mApplyInfo.dispatchTable.gvkGetFenceStatus(vkDevice, vkFence);
+        }
+        if (status != restoreInfo.status) {
+            const auto& deviceRestoreInfo = mDeviceRestoreInfos[(VkDevice)restorePointObject.dispatchableHandle];
+            gvk_result(deviceRestoreInfo->queueCount ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+            gvk_result(deviceRestoreInfo->pQueues ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+            auto vkQueue = (VkQueue)get_restored_object({ VK_OBJECT_TYPE_QUEUE, (uint64_t)deviceRestoreInfo->pQueues[0], (uint64_t)deviceRestoreInfo->pQueues[0] }).handle;
+            if (restoreInfo.status == VK_SUCCESS && !(restoreInfo.pFenceCreateInfo->flags & VK_FENCE_CREATE_SIGNALED_BIT)) {
+                gvk_result(mApplyInfo.dispatchTable.gvkQueueSubmit(vkQueue, 0, nullptr, vkFence));
+            } else if (restoreInfo.status != VK_SUCCESS && restoreInfo.pFenceCreateInfo->flags & VK_FENCE_CREATE_SIGNALED_BIT) {
+                gvk_result(mApplyInfo.dispatchTable.gvkResetFences(vkDevice, 1, &vkFence));
+            }
         }
     } gvk_result_scope_end;
     return gvkResult;

@@ -43,6 +43,7 @@ public:
     std::string includePath;
     std::string includePrefix;
     std::string sourcePath;
+    std::vector<std::string> declarationIncludes;
     std::vector<std::string> headerIncludes;
     std::vector<std::string> sourceIncludes;
     std::vector<xml::Enumeration> enumerations;

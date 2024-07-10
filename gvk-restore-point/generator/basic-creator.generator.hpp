@@ -92,7 +92,6 @@ private:
             }
         }
         file << "    std::unordered_set<HandleId<uint64_t, uint64_t>> mProcessedHandles;" << std::endl;
-        file << "    std::vector<GvkRestorePointObject> mRestorePointObjects;" << std::endl;
         file << "    CreateInfo mCreateInfo{ };" << std::endl;
         file << "    VkResult mResult { VK_ERROR_INITIALIZATION_FAILED };" << std::endl;
         file << "private:" << std::endl;
@@ -100,7 +99,7 @@ private:
         file << "    {" << std::endl;
         file << "    public:" << std::endl;
         file << "        BasicCreator* pCreator { nullptr };" << std::endl;
-        file << "        std::vector<GvkRestorePointObject> dependencies;" << std::endl;
+        file << "        std::vector<GvkStateTrackedObject> dependencies;" << std::endl;
         file << "    };" << std::endl;
         file << "    BasicCreator(const BasicCreator&) = delete;" << std::endl;
         file << "    BasicCreator& operator=(const BasicCreator&) = delete;" << std::endl;
@@ -129,7 +128,7 @@ private:
         file << "    auto pCreator = (BasicCreator*)pUserData;" << std::endl;
         file << "    gvk_result_scope_begin(VK_SUCCESS) {" << std::endl;
         file << "        if (pCreator->mProcessedHandles.insert(HandleId<uint64_t, uint64_t>(pStateTrackedObject->dispatchableHandle, pStateTrackedObject->handle)).second) {" << std::endl;
-        file << "            pCreator->mRestorePointObjects.push_back(*(GvkRestorePointObject*)pStateTrackedObject);" << std::endl;
+        file << "            pCreator->mCreateInfo.gvkRestorePoint->objectMap.register_object_restoration(*pStateTrackedObject, *pStateTrackedObject);" << std::endl;
         file << "            GvkStateTrackedObjectInfo stateTrackedObjectInfo { };" << std::endl;
         file << "            gvkGetStateTrackedObjectInfo(pStateTrackedObject, &stateTrackedObjectInfo);" << std::endl;
         file << "            DependencyEnumerationInfo dependencyEnumerationInfo { };" << std::endl;
@@ -197,7 +196,7 @@ private:
         file << "    auto pDependencyEnumerationInfo = (DependencyEnumerationInfo*)pUserData;" << std::endl;
         file << "    assert(pDependencyEnumerationInfo->pCreator);" << std::endl;
         file << "    process_object(pStateTrackedObject, nullptr, pDependencyEnumerationInfo->pCreator);" << std::endl;
-        file << "    GvkRestorePointObject dependency { };" << std::endl;
+        file << "    GvkStateTrackedObject dependency { };" << std::endl;
         file << "    dependency.type = pStateTrackedObject->type;" << std::endl;
         file << "    dependency.handle = pStateTrackedObject->handle;" << std::endl;
         file << "    dependency.dispatchableHandle = pStateTrackedObject->dispatchableHandle;" << std::endl;

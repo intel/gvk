@@ -58,14 +58,14 @@ public:
         file << "    ++((CmdEnumerationUserData*)pUserData)->cmdCount;" << std::endl;
         file << "    if (!userData.cmdsFile.is_open()) {" << std::endl;
         file << "        auto path = userData.pCreateInfo->path / \"VkCommandBuffer\";" << std::endl;
-        file << "        if (userData.pCreateInfo->flags & (GVK_RESTORE_POINT_CREATE_OBJECT_INFO_BIT | GVK_RESTORE_POINT_CREATE_OBJECT_JSON_BIT)) {" << std::endl;
+        file << "        if (userData.pCreateInfo->gvkRestorePoint->createFlags & (GVK_RESTORE_POINT_CREATE_OBJECT_INFO_BIT | GVK_RESTORE_POINT_CREATE_OBJECT_JSON_BIT)) {" << std::endl;
         file << "            std::filesystem::create_directories(path);" << std::endl;
         file << "        }" << std::endl;
         file << "        path /= to_hex_string(userData.commandBuffer);" << std::endl;
-        file << "        if (userData.pCreateInfo->flags & GVK_RESTORE_POINT_CREATE_OBJECT_INFO_BIT) {" << std::endl;
+        file << "        if (userData.pCreateInfo->gvkRestorePoint->createFlags & GVK_RESTORE_POINT_CREATE_OBJECT_INFO_BIT) {" << std::endl;
         file << "            userData.cmdsFile.open(path.replace_extension(\"cmds\"), std::ios::binary);" << std::endl;
         file << "        }" << std::endl;
-        file << "        if (userData.pCreateInfo->flags & GVK_RESTORE_POINT_CREATE_OBJECT_JSON_BIT) {" << std::endl;
+        file << "        if (userData.pCreateInfo->gvkRestorePoint->createFlags & GVK_RESTORE_POINT_CREATE_OBJECT_JSON_BIT) {" << std::endl;
         file << "            userData.jsonFile.open(path.replace_extension(\"cmds.json\"));" << std::endl;
         file << "        }" << std::endl;
         file << "    }" << std::endl;
@@ -80,10 +80,10 @@ public:
                 }
                 CompileGuardGenerator compileGuardGenerator(file, command.compileGuards);
                 file << "    case " << structureType << ": {" << std::endl;
-                file << "        if (userData.pCreateInfo->flags & GVK_RESTORE_POINT_CREATE_OBJECT_INFO_BIT) {" << std::endl;
+                file << "        if (userData.pCreateInfo->gvkRestorePoint->createFlags & GVK_RESTORE_POINT_CREATE_OBJECT_INFO_BIT) {" << std::endl;
                 file << "            serialize(userData.cmdsFile, *(const GvkCommandStructure" << gvk::string::strip_vk(command.name) << "*)pInfo);" << std::endl;
                 file << "        }" << std::endl;
-                file << "        if (userData.pCreateInfo->flags & GVK_RESTORE_POINT_CREATE_OBJECT_JSON_BIT) {" << std::endl;
+                file << "        if (userData.pCreateInfo->gvkRestorePoint->createFlags & GVK_RESTORE_POINT_CREATE_OBJECT_JSON_BIT) {" << std::endl;
                 file << "            userData.jsonFile << to_string(*(const GvkCommandStructure" << gvk::string::strip_vk(command.name) << "*)pInfo, gvk::Printer::Default & ~gvk::Printer::EnumValue) << std::endl;" << std::endl;
                 file << "        }" << std::endl;
                 file << "    } break;" << std::endl;
@@ -110,10 +110,10 @@ public:
         file << "        enumerateInfo.pUserData = &userData;" << std::endl;
         file << "        gvkEnumerateStateTrackedCommandBufferCmds(&stateTrackedObject, &enumerateInfo);" << std::endl;
         file << "        if (userData.cmdCount) {" << std::endl;
-        file << "            if (userData.pCreateInfo->flags & GVK_RESTORE_POINT_CREATE_OBJECT_INFO_BIT) {" << std::endl;
+        file << "            if (userData.pCreateInfo->gvkRestorePoint->createFlags & GVK_RESTORE_POINT_CREATE_OBJECT_INFO_BIT) {" << std::endl;
         file << "                gvk_result(userData.cmdsFile.is_open() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);" << std::endl;
         file << "            }" << std::endl;
-        file << "            if (userData.pCreateInfo->flags & GVK_RESTORE_POINT_CREATE_OBJECT_JSON_BIT) {" << std::endl;
+        file << "            if (userData.pCreateInfo->gvkRestorePoint->createFlags & GVK_RESTORE_POINT_CREATE_OBJECT_JSON_BIT) {" << std::endl;
         file << "                gvk_result(userData.jsonFile.is_open() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);" << std::endl;
         file << "            }" << std::endl;
         file << "        }" << std::endl;

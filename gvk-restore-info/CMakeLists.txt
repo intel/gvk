@@ -60,6 +60,7 @@ gvk_add_static_library(
     LINK_LIBRARIES
         gvk-runtime
         gvk-structures
+        VK_LAYER_INTEL_gvk_state_tracker-interface
     INCLUDE_DIRECTORIES
         "${generatedIncludeDirectory}"
         "${includeDirectory}"

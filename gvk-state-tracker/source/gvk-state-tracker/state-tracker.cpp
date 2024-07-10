@@ -236,7 +236,7 @@ void StateTracker::enumerate_state_tracked_command_buffer_cmds(const GvkStateTra
         CommandBuffer gvkCommandBuffer((VkCommandBuffer)pStateTrackedObject->handle);
         if (gvkCommandBuffer) {
             const auto& commandBufferControlBlock = gvkCommandBuffer.mReference.get_obj();
-            auto beginCommandBufferFlags = GVK_STATE_TRACKER_OBJECT_STATUS_RECORDING_BIT | GVK_STATE_TRACKER_OBJECT_STATUS_EXECUTABLE_BIT | GVK_STATE_TRACKER_OBJECT_STATUS_PENDING_BIT;
+            auto beginCommandBufferFlags = GVK_STATE_TRACKED_OBJECT_STATUS_RECORDING_BIT | GVK_STATE_TRACKED_OBJECT_STATUS_EXECUTABLE_BIT | GVK_STATE_TRACKED_OBJECT_STATUS_PENDING_BIT;
             if (commandBufferControlBlock.mStateTrackedObjectInfo.flags & beginCommandBufferFlags) {
                 GvkCommandStructureBeginCommandBuffer commandStructureBeginCommandBuffer { };
                 commandStructureBeginCommandBuffer.sType = get_stype<GvkCommandStructureBeginCommandBuffer>();
@@ -248,7 +248,7 @@ void StateTracker::enumerate_state_tracked_command_buffer_cmds(const GvkStateTra
             for (auto pCmd : gvkCommandBuffer.mReference.get_obj().mCmdTracker.get_cmds()) {
                 pEnumerateInfo->pfnCallback(pStateTrackedObject, (const VkBaseInStructure*)pCmd, pEnumerateInfo->pUserData);
             }
-            auto endCommandBufferFlags = GVK_STATE_TRACKER_OBJECT_STATUS_EXECUTABLE_BIT | GVK_STATE_TRACKER_OBJECT_STATUS_PENDING_BIT;
+            auto endCommandBufferFlags = GVK_STATE_TRACKED_OBJECT_STATUS_EXECUTABLE_BIT | GVK_STATE_TRACKED_OBJECT_STATUS_PENDING_BIT;
             if (commandBufferControlBlock.mStateTrackedObjectInfo.flags & endCommandBufferFlags) {
                 GvkCommandStructureEndCommandBuffer commandStructureEndCommandBuffer { };
                 commandStructureEndCommandBuffer.sType = get_stype<GvkCommandStructureEndCommandBuffer>();

@@ -26,9 +26,26 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-restore-point/applier.hpp"
 #include "gvk-restore-point/creator.hpp"
+#include "gvk-restore-point/layer.hpp"
+#include "gvk-layer/registry.hpp"
 
 namespace gvk {
 namespace restore_point {
+
+VkResult Layer::pre_vkCreateBuffer(VkDevice device, const VkBufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer, VkResult gvkResult)
+{
+    (void)device;
+    (void)pAllocator;
+    (void)pBuffer;
+    if (gvkResult == VK_SUCCESS) {
+        assert(pCreateInfo);
+        if (pCreateInfo->usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
+            const_cast<VkBufferCreateInfo*>(pCreateInfo)->flags |= VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT;
+        }
+        const_cast<VkBufferCreateInfo*>(pCreateInfo)->usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    }
+    return gvkResult;
+}
 
 VkResult Creator::process_VkBuffer(GvkBufferRestoreInfo& restoreInfo)
 {
@@ -58,14 +75,14 @@ VkResult Creator::process_VkBuffer(GvkBufferRestoreInfo& restoreInfo)
         restoreInfo.memoryBindInfoCount = (uint32_t)bindBufferMemoryInfos.size();
         restoreInfo.pMemoryBindInfos = !bindBufferMemoryInfos.empty() ? bindBufferMemoryInfos.data() : nullptr;
 
-        if (restoreInfo.flags & GVK_RESTORE_POINT_OBJECT_STATUS_ACTIVE_BIT) {
+        if (restoreInfo.flags & GVK_STATE_TRACKED_OBJECT_STATUS_ACTIVE_BIT) {
             // Get VkMemoryRequirements
             // TODO : Cache memory requirements in resource control block
             restoreInfo.memoryRequirements = get_default<VkMemoryRequirements2>();
             Device(device).get<DispatchTable>().gvkGetBufferMemoryRequirements(device, restoreInfo.handle, &restoreInfo.memoryRequirements.memoryRequirements);
 
             // Submit for download
-            if (mCreateInfo.flags & GVK_RESTORE_POINT_CREATE_BUFFER_DATA_BIT) {
+            if (mCreateInfo.gvkRestorePoint->createFlags & GVK_RESTORE_POINT_CREATE_BUFFER_DATA_BIT) {
                 const auto& bufferCreateInfo = *restoreInfo.pBufferCreateInfo;
                 auto downloadInfo = get_default<CopyEngine::DownloadBufferInfo>();
                 downloadInfo.device = device;
@@ -136,7 +153,7 @@ void Creator::process_downloaded_VkBuffer(const CopyEngine::DownloadBufferInfo& 
     assert(downloadInfo.pUserData);
     assert(pData);
     const auto& creator = *(const Creator*)downloadInfo.pUserData;
-    if (creator.mCreateInfo.flags & GVK_RESTORE_POINT_CREATE_BUFFER_DATA_BIT) {
+    if (creator.mCreateInfo.gvkRestorePoint->createFlags & GVK_RESTORE_POINT_CREATE_BUFFER_DATA_BIT) {
         if (creator.mCreateInfo.pfnProcessResourceDataCallback) {
             GvkStateTrackedObject restorePointObject{ };
             restorePointObject.type = VK_OBJECT_TYPE_BUFFER;
@@ -153,38 +170,40 @@ void Creator::process_downloaded_VkBuffer(const CopyEngine::DownloadBufferInfo& 
     }
 }
 
-VkResult Applier::process_VkBuffer(const GvkRestorePointObject& restorePointObject, const GvkBufferRestoreInfo& restoreInfo)
+VkResult Applier::restore_VkBuffer(const GvkStateTrackedObject& restorePointObject, const GvkBufferRestoreInfo& restoreInfo)
 {
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         const_cast<VkBufferCreateInfo*>(restoreInfo.pBufferCreateInfo)->usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-        gvk_result(BasicApplier::process_VkBuffer(restorePointObject, restoreInfo));
+        gvk_result(BasicApplier::restore_VkBuffer(restorePointObject, restoreInfo));
         for (uint32_t i = 0; i < restoreInfo.memoryBindInfoCount; ++i) {
             auto deviceMemoryRestorePointObject = restorePointObject;
             deviceMemoryRestorePointObject.type = VK_OBJECT_TYPE_DEVICE_MEMORY;
             deviceMemoryRestorePointObject.handle = (uint64_t)restoreInfo.pMemoryBindInfos[i].memory;
-            gvk_result(process_object(deviceMemoryRestorePointObject));
+            gvk_result(restore_object(deviceMemoryRestorePointObject));
         }
     } gvk_result_scope_end;
     return gvkResult;
 }
 
-VkResult Applier::process_VkBuffer_data(const GvkRestorePointObject& restorePointObject)
+VkResult Applier::restore_VkBuffer_data(const GvkStateTrackedObject& restorePointObject)
 {
     gvk_result_scope_begin(VK_SUCCESS) {
-        Auto<GvkBufferRestoreInfo> restoreInfo;
-        gvk_result(read_object_restore_info(mApplyInfo.path, "VkBuffer", to_hex_string(restorePointObject.handle), restoreInfo));
-        if (restoreInfo->flags & GVK_RESTORE_POINT_OBJECT_STATUS_ACTIVE_BIT) {
-            auto device = get_dependency<VkDevice>(restoreInfo->dependencyCount, restoreInfo->pDependencies);
-            device = (VkDevice)get_restored_object({ VK_OBJECT_TYPE_DEVICE, (uint64_t)device, (uint64_t)device }).handle;
-            CopyEngine::UploadBufferInfo uploadBufferInfo{ };
-            uploadBufferInfo.path = (mApplyInfo.path / "VkBuffer" / to_hex_string(restorePointObject.handle)).replace_extension(".data");
-            uploadBufferInfo.device = device;
-            uploadBufferInfo.buffer = (VkBuffer)get_restored_object(restorePointObject).handle;
-            uploadBufferInfo.bufferCreateInfo = *restoreInfo->pBufferCreateInfo;
-            uploadBufferInfo.size = restoreInfo->pBufferCreateInfo->size;
-            uploadBufferInfo.pUserData = this;
-            uploadBufferInfo.pfnCallback = process_VkBuffer_data_upload;
-            mCopyEngines[device].upload(uploadBufferInfo);
+        if (mApplyInfo.gvkRestorePoint->createFlags & GVK_RESTORE_POINT_CREATE_BUFFER_DATA_BIT) {
+            Auto<GvkBufferRestoreInfo> restoreInfo;
+            gvk_result(read_object_restore_info(mApplyInfo.path, "VkBuffer", to_hex_string(restorePointObject.handle), restoreInfo));
+            if (restoreInfo->flags & GVK_STATE_TRACKED_OBJECT_STATUS_ACTIVE_BIT) {
+                auto device = get_dependency<VkDevice>(restoreInfo->dependencyCount, restoreInfo->pDependencies);
+                device = (VkDevice)get_restored_object({ VK_OBJECT_TYPE_DEVICE, (uint64_t)device, (uint64_t)device }).handle;
+                CopyEngine::UploadBufferInfo uploadBufferInfo{ };
+                uploadBufferInfo.path = (mApplyInfo.path / "VkBuffer" / to_hex_string(restorePointObject.handle)).replace_extension(".data");
+                uploadBufferInfo.device = device;
+                uploadBufferInfo.buffer = (VkBuffer)get_restored_object(restorePointObject).handle;
+                uploadBufferInfo.bufferCreateInfo = *restoreInfo->pBufferCreateInfo;
+                uploadBufferInfo.size = restoreInfo->pBufferCreateInfo->size;
+                uploadBufferInfo.pUserData = this;
+                uploadBufferInfo.pfnCallback = process_VkBuffer_data_upload;
+                mCopyEngines[device].upload(uploadBufferInfo);
+            }
         }
     } gvk_result_scope_end;
     return gvkResult;

@@ -29,7 +29,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-defines.hpp"
 #include "gvk-restore-point/generated/basic-creator.hpp"
 #include "gvk-restore-point/copy-engine.hpp"
-#include "gvk-restore-point/logger.hpp"
+#include "gvk-layer/log.hpp"
 
 #include <set>
 #include <unordered_map>
@@ -42,8 +42,6 @@ class Creator final
 {
 public:
     VkResult create_restore_point(const CreateInfo& createInfo) override final;
-    void create_VkAccelerationStructure_restore_point();
-    const std::vector<GvkRestorePointObject>& get_restore_point_objects() const;
 
 protected:
     VkResult process_VkInstance(GvkInstanceRestoreInfo& objectRestoreInfo) override final;
@@ -54,6 +52,7 @@ protected:
     VkResult process_VkDescriptorSet(GvkDescriptorSetRestoreInfo& objectRestoreInfo) override final;
     VkResult process_VkDeviceMemory(GvkDeviceMemoryRestoreInfo& objectRestoreInfo) override final;
     VkResult process_VkAccelerationStructureKHR(GvkAccelerationStructureRestoreInfoKHR& objectRestoreInfo) override final;
+    VkResult process_VkAccelerationStructureKHR_downloads();
     VkResult process_VkBuffer(GvkBufferRestoreInfo& objectRestoreInfo) override final;
     VkResult process_VkImage(GvkImageRestoreInfo& objectRestoreInfo) override final;
     VkResult process_VkEvent(GvkEventRestoreInfo& objectRestoreInfo) override final;
@@ -74,7 +73,7 @@ private:
     std::set<Device> mDevices;
     std::unordered_map<VkQueue, Auto<VkDeviceQueueCreateInfo>> mDeviceQueueCreateInfos;
     std::unordered_map<VkDevice, CopyEngine> mCopyEngines;
-    Log mLog;
+    layer::Log mLog;
 };
 
 } // namespace state_tracker

@@ -52,11 +52,15 @@ std::string get_env_var(const std::string& key)
 
 void set_env_var(const std::string& key, const std::string& value)
 {
-    if (!key.empty() && !value.empty()) {
+    if (!key.empty()) {
 #ifdef GVK_PLATFORM_WINDOWS
         _putenv_s(key.c_str(), value.c_str());
 #else
-        setenv(key.c_str(), value.c_str(), 1);
+        if (!value.empty()) {
+            setenv(key.c_str(), value.c_str(), 1);
+        } else {
+            unsetenv(key.c_str());
+        }
 #endif
     }
 }

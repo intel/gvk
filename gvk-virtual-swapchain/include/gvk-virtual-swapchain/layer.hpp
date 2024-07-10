@@ -67,7 +67,7 @@ private:
     std::vector<VirtualVkImage> mVirtualVkImages;
     std::unordered_set<uint32_t> mAvailableVkImages;
     std::unordered_map<uint32_t, uint32_t> mAcquiredVkImages;
-    uint32_t mPendingAcquisition{ UINT32_MAX };
+    uint32_t mPendingAcquisitionImageIndex{ UINT32_MAX };
 
     Swapchain(const Swapchain&) = delete;
     Swapchain& operator=(const Swapchain&) = delete;
@@ -131,6 +131,7 @@ public:
 private:
     VkResult get_command_buffer(const Queue& gvkQueue, VkCommandBuffer* pCommandBuffer);
 
+    layer::Log mLog;
     std::mutex mMutex;
     Instance mGvkInstance;
     std::set<Device> mGvkDevices;
