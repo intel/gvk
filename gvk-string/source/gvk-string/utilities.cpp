@@ -137,6 +137,18 @@ std::string trim_whitespace(const std::string& str)
     return trim_leading_whitespace(trim_trailing_whitespace(str));
 }
 
+std::string remove_control_characters(const std::string& str, bool preserveWhiteSpaceControlChar)
+{
+    auto result = str;
+    result.erase(std::remove_if(result.begin(), result.end(),
+        [&](auto c)
+        {
+            return std::iscntrl(c) && (!preserveWhiteSpaceControlChar || !std::isspace(c));
+        }
+    ), result.end());
+    return result;
+}
+
 bool is_upper(char c)
 {
     return std::isupper((int)c);

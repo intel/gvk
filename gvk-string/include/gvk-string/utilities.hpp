@@ -170,6 +170,14 @@ Gets a copy of string with all leading and trailing whitespace characters remove
 std::string trim_whitespace(const std::string& str);
 
 /**
+Gets a copy of string with all control characters removed
+@param [in] str The string to remove control characters from
+@param [in] preserveWhiteSpace (optional = false) Whether or not to preserve whitespace
+@return The resulting std::string
+*/
+std::string remove_control_characters(const std::string& str, bool preserveWhiteSpaceControlChar = false);
+
+/**
 Gets a value indicating whether or not a specified char is an upper case character
 @param [in] c The char to check
 @return Whether or not the specified char is an upper case character

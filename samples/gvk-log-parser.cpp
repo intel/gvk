@@ -24,7 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "gvk-sample-utilities.hpp"
+#include "gvk-string.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -34,7 +34,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sstream>
 #include <string>
 #include <vector>
-
 class LogEntry final
 {
 public:
@@ -145,8 +144,9 @@ bool log_entry_unique_or_unfiltered(const std::string& logEntry, const std::set<
 void output_filtered_log(std::ostream& ostrm, const std::vector<std::string>& logEntries, const std::set<std::string>& includes, const std::set<std::string>& excludes, const std::set<std::string>& uniques)
 {
     std::set<std::string> encounteredUniques;
-    for (const auto& logEntry : logEntries) {
-        if (!log_entry_contains(logEntry, excludes) &&
+    for (auto logEntry : logEntries) {
+        logEntry = gvk::string::remove_control_characters(logEntry, true);
+        if (!logEntry.empty() && !log_entry_contains(logEntry, excludes) &&
             (includes.empty() || log_entry_contains(logEntry, includes)) &&
             (uniques.empty() || log_entry_unique_or_unfiltered(logEntry, uniques, encounteredUniques))) {
             ostrm << std::endl << logEntry << std::endl;
@@ -221,6 +221,7 @@ int main(int argc, const char* ppArgv[])
     auto excludes = cmdLine["-x"];
     auto uniques = cmdLine["-u"];
     auto output = cmdLine["-o"];
+
     if (!filepath.empty()) {
         // parse_log() outputs progress via std::cout, so format is set and reset before
         //  and after calling the function.

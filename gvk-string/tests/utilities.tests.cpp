@@ -246,6 +246,19 @@ TEST(string, trim_whitespace)
     EXPECT_EQ(gvk::string::trim_whitespace(str), TheQuickBrownFox);
 }
 
+TEST(string, remove_control_characters)
+{
+    auto str = "\x1b[36m[GPA]\t I 33980 Playback completed with code 0\x1b[0m\n";
+    EXPECT_EQ(gvk::string::remove_control_characters(str), "[36m[GPA] I 33980 Playback completed with code 0[0m");
+
+    EXPECT_EQ(gvk::string::remove_control_characters(str, true), "[36m[GPA]\t I 33980 Playback completed with code 0[0m\n");
+
+    auto str2 = "[36m[GPA] I 33980 Playback completed with code 0[0m";
+    EXPECT_EQ(gvk::string::remove_control_characters(str2), "[36m[GPA] I 33980 Playback completed with code 0[0m");
+}
+
+
+
 TEST(string, is_upper)
 {
     // Successful true
