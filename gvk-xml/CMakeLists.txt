@@ -62,4 +62,9 @@ set_target_properties(gvk-xml-to-json.runner PROPERTIES FOLDER "${GVK_IDE_FOLDER
 
 ################################################################################
 # gvk-xml install
-gvk_install_library(TARGET gvk-xml)
+if(gvk-xml_INSTALL_ARTIFACTS)
+    gvk_install_artifacts(TARGET gvk-xml)
+endif()
+if(gvk-xml_INSTALL_HEADERS)
+    gvk_install_headers(TARGET gvk-xml)
+endif()

@@ -35,4 +35,9 @@ gvk_add_target_test(
 
 ################################################################################
 # gvk-reference install
-gvk_install_library(TARGET gvk-reference)
+if(gvk-reference_INSTALL_ARTIFACTS)
+    gvk_install_artifacts(TARGET gvk-reference)
+endif()
+if(gvk-reference_INSTALL_HEADERS)
+    gvk_install_headers(TARGET gvk-reference)
+endif()

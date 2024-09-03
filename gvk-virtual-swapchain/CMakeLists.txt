@@ -23,4 +23,6 @@ gvk_add_layer(
 
 ################################################################################
 # VK_LAYER_INTEL_gvk_virtual_swapchain install
-gvk_install_layer(TARGET VK_LAYER_INTEL_gvk_virtual_swapchain)
+if(gvk-virtual-swapchain_INSTALL_ARTIFACTS)
+    gvk_install_layer(TARGET VK_LAYER_INTEL_gvk_virtual_swapchain)
+endif()

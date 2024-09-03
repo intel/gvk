@@ -1,7 +1,7 @@
 
-include_guard()
 
-include(FetchContent)
+include_guard(GLOBAL)
+gvk_enable_target(stb)
 
 set(stb_VERSION f75e8d1cad7d90d72ef7a4661f1b994ef78b4e31)
 FetchContent_Declare(
@@ -10,6 +10,7 @@ FetchContent_Declare(
     GIT_TAG ${stb_VERSION}
     GIT_PROGRESS TRUE
 )
+
 FetchContent_MakeAvailable(stb)
 FetchContent_GetProperties(stb SOURCE_DIR stb_SOURCE_DIR)
 FetchContent_GetProperties(stb BINARY_DIR stb_BINARY_DIR)
@@ -58,4 +59,9 @@ gvk_add_static_library(
     SOURCE_FILES "${sourceFiles}"
 )
 
-gvk_install_artifacts(TARGET stb VERSION ${stb_VERSION})
+if(gvk-stb_INSTALL_ARTIFACTS)
+    gvk_install_artifacts(TARGET stb VERSION ${stb_VERSION})
+endif()
+if(gvk-stb_INSTALL_HEADERS)
+    gvk_install_headers(TARGET stb EXCLUDE "*.cpp")
+endif()

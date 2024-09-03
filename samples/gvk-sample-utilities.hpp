@@ -494,7 +494,7 @@ inline VkResult gvk_sample_create_render_target(const gvk::Context& context, Gvk
     assert(createInfo.colorFormat);
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         // If we have a depthFormat, we need to check what VkFormats are supported
-        //  and find the VkFormat the best matches the request.  This is similar to
+        //  and find the VkFormat that best matches the request.  This is similar to
         //  the VkFormat selection algorithm used by gvk::WsiManager...it will select
         //  the supported VkFormat with the highest bit depth that is less than or
         //  equal to the requested VkFormat.

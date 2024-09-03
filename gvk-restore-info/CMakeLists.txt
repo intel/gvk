@@ -74,4 +74,9 @@ gvk_add_static_library(
 
 ################################################################################
 # gvk-restore-info install
-gvk_install_library(TARGET gvk-restore-info)
+if(gvk-restore-info_INSTALL_ARTIFACTS)
+    gvk_install_artifacts(TARGET gvk-restore-info)
+endif()
+if(gvk-restore-info_INSTALL_HEADERS)
+    gvk_install_headers(TARGET gvk-restore-info)
+endif()

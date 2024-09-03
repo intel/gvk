@@ -34,6 +34,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <sstream>
 #include <string>
 #include <vector>
+
 class LogEntry final
 {
 public:
@@ -159,11 +160,14 @@ void output_function_counts(std::ostream& ostrm, const std::vector<std::string>&
     std::map<std::string, uint32_t> functionCounts;
     for (const auto& logEntry : logEntries) {
         if (gvk::string::contains(logEntry, "Thread") && gvk::string::contains(logEntry, "Frame")) {
-            auto functionNameBegin = logEntry.find_first_of(':') + 3;
-            auto functionNameEnd = logEntry.find_first_of('(');
-            auto functionNameLength = functionNameEnd - functionNameBegin;
-            auto functionName = logEntry.substr(functionNameBegin, functionNameLength);
-            ++functionCounts[functionName];
+            auto functionNameBegin = logEntry.find_first_of(':') + 1;
+            if (functionNameBegin != std::string::npos && functionNameBegin < logEntry.length() - 1) {
+                functionNameBegin = logEntry.find_first_not_of(gvk::string::WhiteSpaceCharacters, functionNameBegin);
+                auto functionNameEnd = logEntry.find_first_of('(');
+                auto functionNameLength = functionNameEnd - functionNameBegin;
+                auto functionName = logEntry.substr(functionNameBegin, functionNameLength);
+                ++functionCounts[functionName];
+            }
         }
     }
     for (const auto& functionCountItr : functionCounts) {

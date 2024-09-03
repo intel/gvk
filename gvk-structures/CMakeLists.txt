@@ -86,11 +86,9 @@ gvk_add_static_library(
     LINK_LIBRARIES
         gvk-runtime
         cereal
-        # cereal_INTERFACE
     INCLUDE_DIRECTORIES
         "${generatedIncludeDirectory}"
         "${includeDirectory}"
-        # "${cerealSourceDirectory}/include/"
     INCLUDE_FILES
         "${generatedIncludeFiles}"
         "${includePath}/detail/cerealization-manual.hpp"
@@ -144,4 +142,9 @@ gvk_add_target_test(
 
 ################################################################################
 # gvk-structures install
-gvk_install_library(TARGET gvk-structures)
+if(gvk-structures_INSTALL_ARTIFACTS)
+    gvk_install_artifacts(TARGET gvk-structures)
+endif()
+if(gvk-structures_INSTALL_HEADERS)
+    gvk_install_headers(TARGET gvk-structures)
+endif()

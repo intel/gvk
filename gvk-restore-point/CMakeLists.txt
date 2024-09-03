@@ -52,6 +52,10 @@ gvk_add_code_generator(
 set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
 set(includePath "${includeDirectory}/gvk-restore-point/")
 set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk-restore-point/")
+list(APPEND interfaceFiles
+    "${includeDirectory}/VK_LAYER_INTEL_gvk_restore_point.h"
+    "${includeDirectory}/VK_LAYER_INTEL_gvk_restore_point.hpp"
+)
 gvk_add_layer(
     TARGET
         VK_LAYER_INTEL_gvk_restore_point
@@ -69,8 +73,7 @@ gvk_add_layer(
         stb
         Threads::Threads
     INTERFACE_FILES
-        "${includeDirectory}/VK_LAYER_INTEL_gvk_restore_point.h"
-        "${includeDirectory}/VK_LAYER_INTEL_gvk_restore_point.hpp"
+        "${interfaceFiles}"
     INCLUDE_DIRECTORIES
         "${generatedIncludeDirectory}"
         "${includeDirectory}"
@@ -122,5 +125,10 @@ endif()
 
 ################################################################################
 # VK_LAYER_INTEL_gvk_restore_point install
-gvk_install_library(TARGET VK_LAYER_INTEL_gvk_restore_point-interface)
-gvk_install_layer(TARGET VK_LAYER_INTEL_gvk_restore_point)
+if(gvk-restore-point_INSTALL_ARTIFACTS)
+    gvk_install_artifacts(TARGET VK_LAYER_INTEL_gvk_restore_point-interface)
+    gvk_install_layer(TARGET VK_LAYER_INTEL_gvk_restore_point)
+endif()
+if(gvk-restore-point_INSTALL_HEADERS)
+    install(FILES ${interfaceFiles} DESTINATION include/)
+endif()

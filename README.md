@@ -44,11 +44,24 @@ cmake --build build
 For Linux, replace `cmake -G "Visual Studio 17 2022" -A x64 ..` with `cmake ..` for the default Makefile generator.  See CMake's documentation for other generators.  Note that Windows support is further along than Linux, ymmv.
 
 # External use
-Somewhere in your CMakeLists, add the following...
+Somewhere in your CMakeLists, add the following with options configured as necessary, all avaialable options can be found in gvk's root CMakeLists.txt...
 ```
 include(FetchContent)
-set(GVK_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(GVK_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
+
+set(gvk-default_ENABLED           OFF CACHE BOOL "" FORCE)
+set(gvk-default_INSTALL_ARTIFACTS OFF CACHE BOOL "" FORCE)
+set(gvk-default_INSTALL_HEADERS   OFF CACHE BOOL "" FORCE)
+set(gvk-gui_ENABLED               ON  CACHE BOOL "" FORCE)
+set(gvk-handles_ENABLED           ON  CACHE BOOL "" FORCE)
+set(gvk-math_ENABLED              ON  CACHE BOOL "" FORCE)
+set(gvk-runtime_ENABLED           ON  CACHE BOOL "" FORCE)
+set(gvk-spirv_ENABLED             ON  CACHE BOOL "" FORCE)
+set(gvk-structures_ENABLED        ON  CACHE BOOL "" FORCE)
+set(gvk-system_ENABLED            ON  CACHE BOOL "" FORCE)
+set(gvk-stb_ENABLED               ON  CACHE BOOL "" FORCE)
+set(gvk-build-tests               OFF CACHE BOOL "" FORCE)
+set(gvk-build-samples             OFF CACHE BOOL "" FORCE)
+
 FetchContent_Declare(
     gvk
     GIT_REPOSITORY "https://github.com/intel/gvk.git"
@@ -56,11 +69,18 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(gvk)
 ```
-...then...
+...and the enabled gvk components are avaialable for linking...
 ```
-target_link_libraries(someTarget PUBLIC gvk)
-```
-...or link individual modules...
-```
-target_link_libraries(someTarget PUBLIC gvk-handles gvk-xml)
+target_link_libraries(
+    someTarget
+    PUBLIC
+        gvk-gui
+        gvk-handles
+        gvk-math
+        gvk-runtime
+        gvk-spirv
+        gvk-structures
+        gvk-system
+        stb
+)
 ```

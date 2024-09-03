@@ -22,3 +22,12 @@ gvk_add_static_library(
     SOURCE_FILES
         "${sourcePath}/renderer.cpp"
 )
+
+################################################################################
+# gvk-gui install
+if(gvk-gui_INSTALL_ARTIFACTS)
+    gvk_install_artifacts(TARGET gvk-gui)
+endif()
+if(gvk-gui_INSTALL_HEADERS)
+    gvk_install_headers(TARGET gvk-gui)
+endif()

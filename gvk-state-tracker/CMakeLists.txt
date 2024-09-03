@@ -54,6 +54,10 @@ gvk_add_code_generator(
 set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
 set(includePath "${includeDirectory}/gvk-state-tracker/")
 set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk-state-tracker/")
+list(APPEND interfaceFiles
+    "${includeDirectory}/VK_LAYER_INTEL_gvk_state_tracker.h"
+    "${includeDirectory}/VK_LAYER_INTEL_gvk_state_tracker.hpp"
+)
 gvk_add_layer(
     TARGET
         VK_LAYER_INTEL_gvk_state_tracker
@@ -64,8 +68,7 @@ gvk_add_layer(
         gvk-reference
         gvk-runtime
     INTERFACE_FILES
-        "${includeDirectory}/VK_LAYER_INTEL_gvk_state_tracker.h"
-        "${includeDirectory}/VK_LAYER_INTEL_gvk_state_tracker.hpp"
+        "${interfaceFiles}"
     INCLUDE_DIRECTORIES
         "${generatedIncludeDirectory}"
         "${includeDirectory}"
@@ -156,5 +159,10 @@ gvk_add_target_test(
 
 ################################################################################
 # VK_LAYER_INTEL_gvk_state_tracker install
-gvk_install_library(TARGET VK_LAYER_INTEL_gvk_state_tracker-interface)
-gvk_install_layer(TARGET VK_LAYER_INTEL_gvk_state_tracker)
+if(gvk-state-tracker_INSTALL_ARTIFACTS)
+    gvk_install_artifacts(TARGET VK_LAYER_INTEL_gvk_state_tracker-interface)
+    gvk_install_layer(TARGET VK_LAYER_INTEL_gvk_state_tracker)
+endif()
+if(gvk-state-tracker_INSTALL_HEADERS)
+    install(FILES ${interfaceFiles} DESTINATION include/)
+endif()

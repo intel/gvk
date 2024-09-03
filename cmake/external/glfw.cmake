@@ -1,7 +1,6 @@
 
-include_guard()
-
-include(FetchContent)
+include_guard(GLOBAL)
+gvk_enable_target(glfw)
 
 set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
@@ -14,11 +13,19 @@ FetchContent_Declare(
     GIT_TAG ${glfw_VERSION}
     GIT_PROGRESS TRUE
 )
+
 FetchContent_MakeAvailable(glfw)
+FetchContent_GetProperties(glfw SOURCE_DIR glfw_SOURCE_DIR)
 set(folder "${GVK_IDE_FOLDER}/external/glfw/")
 set_target_properties(glfw PROPERTIES FOLDER "${folder}")
 set_target_properties(update_mappings PROPERTIES FOLDER "${folder}")
+
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     # TODO : Need to revisit cmake exports on Linux
-    gvk_install_artifacts(TARGET glfw VERSION ${glfw_VERSION})
+    if(gvk-glfw_INSTALL_ARTIFACTS)
+        gvk_install_artifacts(TARGET glfw VERSION ${glfw_VERSION})
+    endif()
+    if(gvk-glfw_INSTALL_HEADERS)
+        install(DIRECTORY "${glfw_SOURCE_DIR}/include/GLFW/" DESTINATION include/GLFW/)
+    endif()
 endif()

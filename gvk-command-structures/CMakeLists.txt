@@ -86,4 +86,9 @@ endif()
 
 ################################################################################
 # gvk-command-structures install
-gvk_install_library(TARGET gvk-command-structures)
+if(gvk-command-structures_INSTALL_ARTIFACTS)
+    gvk_install_artifacts(TARGET gvk-command-structures)
+endif()
+if(gvk-command-structures_INSTALL_HEADERS)
+    gvk_install_headers(TARGET gvk-command-structures)
+endif()

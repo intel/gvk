@@ -41,4 +41,9 @@ gvk_add_target_test(
 
 ################################################################################
 # gvk-spirv install
-gvk_install_library(TARGET gvk-spirv)
+if(gvk-spirv_INSTALL_ARTIFACTS)
+    gvk_install_artifacts(TARGET gvk-spirv)
+endif()
+if(gvk-spirv_INSTALL_HEADERS)
+    gvk_install_headers(TARGET gvk-spirv)
+endif()

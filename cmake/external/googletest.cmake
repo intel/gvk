@@ -5,7 +5,7 @@ include(FetchContent)
 
 set(BUILD_GMOCK   OFF CACHE BOOL "" FORCE)
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
-set(googletest_VERSION e39786088138f2749d64e9e90e0f9902daa77c40) # 1.15.0
+set(googletest_VERSION b514bdc898e2951020cbdca1304b75f5950d1f59) # 1.15.2
 FetchContent_Declare(
     googletest
     GIT_REPOSITORY "https://github.com/google/googletest.git"

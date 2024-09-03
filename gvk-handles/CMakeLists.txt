@@ -93,4 +93,9 @@ gvk_add_target_test(
 
 ################################################################################
 # gvk-handles install
-gvk_install_library(TARGET gvk-handles)
+if(gvk-handles_INSTALL_ARTIFACTS)
+    gvk_install_artifacts(TARGET gvk-handles)
+endif()
+if(gvk-handles_INSTALL_HEADERS)
+    gvk_install_headers(TARGET gvk-handles)
+endif()

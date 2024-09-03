@@ -150,7 +150,7 @@ int main(int, const char*[])
                 gvk_result(vkResetFences(device, 1, &vkFences[imageIndex]));
 
                 // To render the triangle we'll start by beginning command buffer recording and
-                //  and beginning a render pass.  We'll get a VkRenderPassBeginInfo from the
+                //  beginning a render pass.  We'll get a VkRenderPassBeginInfo from the
                 //  gvk::RenderTarget (which is really just a gvk::Framebuffer with some added
                 //  functionality) we're rendering into.  The VkRenderPassBeginInfo that we get
                 //  from the gvk::RenderTarget is populated with default values and can be

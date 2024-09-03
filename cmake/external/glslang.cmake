@@ -1,7 +1,7 @@
 
-include_guard()
-
-include(FetchContent)
+include_guard(GLOBAL)
+gvk_enable_target(glslang)
+include(external/SPIRV-Tools)
 
 set(BUILD_TESTING           OFF CACHE BOOL "" FORCE)
 set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "" FORCE)
@@ -16,13 +16,8 @@ FetchContent_Declare(
     GIT_TAG ${glslang_VERSION}
     GIT_PROGRESS TRUE
 )
-FetchContent_MakeAvailable(glslang)
 
-macro(gvk_setup_glslang_target glslangTarget)
-    list(APPEND glslangLibraries ${glslangTarget})
-    set_target_properties(${glslangTarget} PROPERTIES FOLDER "${GVK_IDE_FOLDER}/external/glslang/")
-    gvk_install_artifacts(TARGET ${glslangTarget} VERSION ${glslang_VERSION})
-endmacro()
+FetchContent_MakeAvailable(glslang)
 
 # HACK : glslang headers aren't being installed, but the export expects them to
 #   be at `include/External`...this modifies the INSTALL_INTERFACE to `include`
@@ -31,6 +26,17 @@ get_target_property(SPIRV_INTERFACE_INCLUDE_DIRECTORIES SPIRV INTERFACE_INCLUDE_
 string(REPLACE "$<INSTALL_INTERFACE:include/External>" "$<INSTALL_INTERFACE:include>" SPIRV_INTERFACE_INCLUDE_DIRECTORIES "${SPIRV_INTERFACE_INCLUDE_DIRECTORIES}")
 set_target_properties(SPIRV PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${SPIRV_INTERFACE_INCLUDE_DIRECTORIES}")
 
+macro(gvk_setup_glslang_target glslangTarget)
+    list(APPEND glslangLibraries ${glslangTarget})
+    set_target_properties(${glslangTarget} PROPERTIES FOLDER "${GVK_IDE_FOLDER}/external/glslang/")
+    if(gvk-glslang_INSTALL_ARTIFACTS)
+        gvk_install_artifacts(TARGET ${glslangTarget} VERSION ${glslang_VERSION})
+    endif()
+    if(gvk-glslang_INSTALL_HEADERS)
+        # TODO :
+    endif()
+endmacro()
+
 gvk_setup_glslang_target(GenericCodeGen)
 gvk_setup_glslang_target(glslang)
 gvk_setup_glslang_target(glslang-default-resource-limits)
@@ -38,3 +44,4 @@ gvk_setup_glslang_target(MachineIndependent)
 gvk_setup_glslang_target(OSDependent)
 gvk_setup_glslang_target(SPIRV)
 gvk_setup_glslang_target(SPVRemapper)
+set(glslangLibraries ${glslangLibraries} PARENT_SCOPE)

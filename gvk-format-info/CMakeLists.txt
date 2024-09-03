@@ -91,4 +91,9 @@ gvk_add_target_test(
 
 ################################################################################
 # gvk-format-info install
-gvk_install_library(TARGET gvk-format-info)
+if(gvk-format-info_INSTALL_ARTIFACTS)
+    gvk_install_artifacts(TARGET gvk-format-info)
+endif()
+if(gvk-format-info_INSTALL_HEADERS)
+    gvk_install_headers(TARGET gvk-format-info)
+endif()

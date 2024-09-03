@@ -35,4 +35,9 @@ gvk_add_target_test(
 
 ################################################################################
 # gvk-string install
-gvk_install_library(TARGET gvk-string)
+if(gvk-string_INSTALL_ARTIFACTS)
+    gvk_install_artifacts(TARGET gvk-string)
+endif()
+if(gvk-string_INSTALL_HEADERS)
+    gvk_install_headers(TARGET gvk-string)
+endif()
