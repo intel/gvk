@@ -51,6 +51,7 @@ protected:
     class AccelerationStructureSerializationResources final
     {
     public:
+        AccelerationStructureSerializationResources() = default;
         ~AccelerationStructureSerializationResources();
         VkResult validate(const DispatchTable& dispatchTable, VkDevice vkDevice, const GvkAccelerationStructureSerilizationInfoKHR& serializationInfo);
         VkBuffer get_buffer() const;
@@ -62,6 +63,9 @@ protected:
         VkDevice mVkDevice{ };
         VkBuffer mVkBuffer{ };
         VkDeviceMemory mVkDeviceMemory{ };
+
+        AccelerationStructureSerializationResources(const AccelerationStructureSerializationResources&) = delete;
+        AccelerationStructureSerializationResources& operator=(const AccelerationStructureSerializationResources&) = delete;
     };
 
     VkResult restore_object(const GvkStateTrackedObject& restorePointObject) override final;

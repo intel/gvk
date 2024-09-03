@@ -449,7 +449,7 @@ void CopyEngine::download_to_host_mapped_memory(DownloadDeviceMemoryInfo downloa
             }
 
             // TODO : Documentation
-            while (dstSize % physicalDeviceMemoryHostProperties.minImportedHostPointerAlignment) {
+            while (physicalDeviceMemoryHostProperties.minImportedHostPointerAlignment && dstSize % physicalDeviceMemoryHostProperties.minImportedHostPointerAlignment) {
                 dstSize += physicalDeviceMemoryHostProperties.minImportedHostPointerAlignment - (dstSize % physicalDeviceMemoryHostProperties.minImportedHostPointerAlignment);
             }
 
