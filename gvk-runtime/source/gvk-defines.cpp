@@ -28,9 +28,25 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace gvk {
 
+PFN_result_scope_callback gPfnGvkResultScopeCallback;
+thread_local PFN_result_scope_callback tlPfnGvkResultScopeCallback;
+
 const VkAllocationCallbacks* validate_allocator(const VkAllocationCallbacks& allocator)
 {
     return (allocator.pfnAllocation && allocator.pfnFree) ? &allocator : nullptr;
 }
 
+namespace detail {
+
+VkBool32 process_result_scope_failure(VkResult gvkResult, const char* pFileLine, const char* pGvkCall)
+{
+    if (gvk::tlPfnGvkResultScopeCallback) {
+        return gvk::tlPfnGvkResultScopeCallback(gvkResult, pFileLine, pGvkCall);
+    } else if (gvk::gPfnGvkResultScopeCallback) {
+        return gvk::gPfnGvkResultScopeCallback(gvkResult, pFileLine, pGvkCall);
+    }
+    return VK_FALSE;
+}
+
+} // namespace detail
 } // namespace gvk

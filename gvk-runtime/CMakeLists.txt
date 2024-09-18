@@ -64,6 +64,20 @@ gvk_add_static_library(
 )
 
 ################################################################################
+# gvk-runtime.test
+set(testsPath "${CMAKE_CURRENT_LIST_DIR}/tests/")
+gvk_add_target_test(
+    TARGET
+        gvk-runtime
+    FOLDER
+        "gvk-runtime/"
+    LINK_LIBRARIES
+        asio
+    SOURCE_FILES
+        "${testsPath}/result-scope-callback.tests.cpp"
+)
+
+################################################################################
 # gvk-runtime install
 if(gvk-runtime_INSTALL_ARTIFACTS)
     gvk_install_artifacts(TARGET gvk-runtime)

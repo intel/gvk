@@ -109,17 +109,51 @@ NOTE : Best practices for loading dll/so libraries (ie. full paths instead of re
         return gvkResult;
     }
 */
-#define gvk_result_scope_begin(GVK_RESULT) VkResult gvkResult = GVK_RESULT; (void)gvkResult; {
-#define gvk_result_scope_end } GVK_FAIL:
-#define gvk_result(GVK_CALL) \
-gvkResult = (GVK_CALL); \
-if (gvkResult != VK_SUCCESS) { \
-    assert(gvkResult == VK_SUCCESS && #GVK_CALL); \
-    goto GVK_FAIL; \
+#define gvk_result_scope_begin(GVK_RESULT) VkResult gvkResult = GVK_RESULT; (void)gvkResult; do {
+#define gvk_result(GVK_CALL)                                                               \
+gvkResult = (GVK_CALL);                                                                    \
+if (gvkResult != VK_SUCCESS) {                                                             \
+    if (!gvk::detail::process_result_scope_failure(gvkResult, gvk_file_line, #GVK_CALL)) { \
+        assert(gvkResult == VK_SUCCESS && #GVK_CALL);                                      \
+    }                                                                                      \
+    break;                                                                                 \
 }
+#define gvk_result_scope_end } while(0);
 
 namespace gvk {
 
+/**
+Callback for processing gvk_result_scope failures
+@param [in] gvkResult The VkResult of the failed gvk_result_scope
+@param [in] pFileLine A string with the file and line number where the error occured
+@param [in[ pGvkCall A string with the expression that triggered the error
+@return Whether or not to continue execution in Debug configurations
+    @note In Debug configurations returning VK_FALSE will trigger an assert()
+*/
+typedef VkBool32 (*PFN_result_scope_callback)(VkResult gvkResult, const char* pFileLine, const char* pGvkCall);
+
+/**
+Global gvk_result_scope callback
+*/
+extern PFN_result_scope_callback gPfnGvkResultScopeCallback;
+
+/**
+thread_local gvk_result_scope callback
+    @note thread_local gvk_result_scope callbacks take precedence over the global gvk_result_scope
+    @note If a thread_local gvk_result_scope calback isn't set for a particular thread, the global callback will be used if set
+*/
+extern thread_local PFN_result_scope_callback tlPfnGvkResultScopeCallback;
+
+/**
+Gets a pointer to the given VkAllocationCallbacks if valid, otherwise nullptr
+@param [in] allocator The VkAllocationCallbacks to validate
+@return A pointer to the given VkAllocationCallbacks if valid, otherwise nullptr
+*/
 const VkAllocationCallbacks* validate_allocator(const VkAllocationCallbacks& allocator);
 
+namespace detail {
+
+VkBool32 process_result_scope_failure(VkResult gvkResult, const char* pFileLine, const char* pGvkCall);
+
+} // namespace detail
 } // namespace gvk

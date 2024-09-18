@@ -1,4 +1,13 @@
 
+VERSION 2024.3.0
+--
+-   CHANGED : gvk-log-parser improvmements for readability and usability
+-   CHANGED : VK_LAYER_INTEL_gvk_virtual_swapchain stability and performance improvements
+-   CHANGED : Improved install, targets now enable their dependencies recursively
+-   NEW : VK_LAYER_INTEL_gvk_state_tracker preliminary support for VKRT workloads
+-   NEW : VK_LAYER_INTEL_gvk_restore_point preliminary support for VKRT workloads
+-   NEW : gvk_result_scope callbacks
+
 VERSION 2024.1.0
 --
 -   NEW : VK_LAYER_INTEL_gvk_restore_point
