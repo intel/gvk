@@ -32,29 +32,27 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace virtual_swapchain {
 
-Swapchain::Swapchain(Swapchain&& other)
+VirtualSwapchain::VirtualSwapchain(VirtualSwapchain&& other)
 {
     *this = std::move(other);
 }
 
-Swapchain& Swapchain::operator=(Swapchain&& other)
+VirtualSwapchain& VirtualSwapchain::operator=(VirtualSwapchain&& other)
 {
     if (this != &other) {
         mGvkDevice = std::move(other.mGvkDevice);
         mVkSwapchain = std::exchange(other.mVkSwapchain, VK_NULL_HANDLE);
         mExtent = std::move(other.mExtent);
         mGvkDeviceMemory = std::move(other.mGvkDeviceMemory);
-        mActualImages = std::move(other.mActualImages);
-        mImageLayouts = std::move(other.mImageLayouts);
-        mVirtualVkImages = std::move(other.mVirtualVkImages);
-        mAvailableVkImages = std::move(other.mAvailableVkImages);
-        mAcquiredVkImages = std::move(other.mAcquiredVkImages);
-        mPendingAcquisitionImageIndex = std::exchange(other.mPendingAcquisitionImageIndex, UINT32_MAX);
+        mActualVkImages = std::move(other.mActualVkImages);
+        mVirtualImages = std::move(other.mVirtualImages);
+        mAvailableImageIndices = std::move(other.mAvailableImageIndices);
+        mAcquiredImages = std::move(other.mAcquiredImages);
     }
     return *this;
 }
 
-VkResult Swapchain::post_vkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain)
+VkResult VirtualSwapchain::post_vkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain)
 {
     (void)pAllocator;
     assert(device);
@@ -66,12 +64,14 @@ VkResult Swapchain::post_vkCreateSwapchainKHR(VkDevice device, const VkSwapchain
         mVkSwapchain = *pSwapchain;
         mExtent = pCreateInfo->imageExtent;
 
+        // Get the actual VkSwapchainKHR VkImages
         uint32_t imageCount = 0;
         gvk_result(mGvkDevice.get<DispatchTable>().gvkGetSwapchainImagesKHR(device, mVkSwapchain, &imageCount, nullptr));
-        mActualImages.resize(imageCount);
-        gvk_result(mGvkDevice.get<DispatchTable>().gvkGetSwapchainImagesKHR(device, mVkSwapchain, &imageCount, mActualImages.data()));
-        mImageLayouts.resize(imageCount);
+        mActualVkImages.resize(imageCount);
+        gvk_result(mGvkDevice.get<DispatchTable>().gvkGetSwapchainImagesKHR(device, mVkSwapchain, &imageCount, mActualVkImages.data()));
 
+        // Create VirtualImages
+        mVirtualImages.resize(imageCount);
         auto imageCreateInfo = get_default<VkImageCreateInfo>();
         imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
         imageCreateInfo.format = pCreateInfo->imageFormat;
@@ -82,15 +82,15 @@ VkResult Swapchain::post_vkCreateSwapchainKHR(VkDevice device, const VkSwapchain
         imageCreateInfo.sharingMode = pCreateInfo->imageSharingMode;
         imageCreateInfo.queueFamilyIndexCount = pCreateInfo->queueFamilyIndexCount;
         imageCreateInfo.pQueueFamilyIndices = pCreateInfo->pQueueFamilyIndices;
-        mVirtualVkImages.resize(imageCount);
         for (uint32_t i = 0; i < imageCount; ++i) {
-            gvk_result(mGvkDevice.get<DispatchTable>().gvkCreateImage(device, &imageCreateInfo, nullptr, &mVirtualVkImages[i]));
-            mAvailableVkImages.insert(i);
+            gvk_result(Image::create(device, &imageCreateInfo, nullptr, &mVirtualImages[i].image));
+            gvk_result(Semaphore::create(device, &get_default<VkSemaphoreCreateInfo>(), nullptr, &mVirtualImages[i].imageTransferedSemaphore));
+            mAvailableImageIndices.insert(i);
         }
 
+        // Allocate backing DeviceMemory for the virtual VkImages
         VkMemoryRequirements memoryRequirements{ };
-        mGvkDevice.get<DispatchTable>().gvkGetImageMemoryRequirements(device, mVirtualVkImages[0], &memoryRequirements);
-
+        mGvkDevice.get<DispatchTable>().gvkGetImageMemoryRequirements(device, mVirtualImages[0].image, &memoryRequirements);
         auto memoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         uint32_t memoryTypeCount = 0;
         get_compatible_memory_type_indices(mGvkDevice.get<PhysicalDevice>(), memoryRequirements.memoryTypeBits, memoryPropertyFlags, &memoryTypeCount, nullptr);
@@ -98,7 +98,6 @@ VkResult Swapchain::post_vkCreateSwapchainKHR(VkDevice device, const VkSwapchain
         memoryTypeCount = 1;
         uint32_t memoryTypeIndex = 0;
         get_compatible_memory_type_indices(mGvkDevice.get<PhysicalDevice>(), memoryRequirements.memoryTypeBits, memoryPropertyFlags, &memoryTypeCount, &memoryTypeIndex);
-
         auto memoryAllocateInfo = get_default<VkMemoryAllocateInfo>();
         auto padding = memoryRequirements.alignment ? memoryRequirements.size % memoryRequirements.alignment : 0;
         if (padding) {
@@ -108,47 +107,56 @@ VkResult Swapchain::post_vkCreateSwapchainKHR(VkDevice device, const VkSwapchain
         memoryAllocateInfo.memoryTypeIndex = memoryTypeIndex;
         gvk_result(DeviceMemory::allocate(mGvkDevice, &memoryAllocateInfo, nullptr, &mGvkDeviceMemory));
 
+        // Bind Images to DeviceMemory
         VkDeviceSize offset = 0;
         for (uint32_t i = 0; i < imageCount && gvkResult == VK_SUCCESS; ++i) {
-            gvk_result(mGvkDevice.get<DispatchTable>().gvkBindImageMemory(device, mVirtualVkImages[i], mGvkDeviceMemory, offset));
+            gvk_result(mGvkDevice.get<DispatchTable>().gvkBindImageMemory(device, mVirtualImages[i].image, mGvkDeviceMemory, offset));
             offset += memoryRequirements.size + padding;
         }
     } gvk_result_scope_end;
     return gvkResult;
 }
 
-void Swapchain::pre_vkDestroySwapchainKHR(VkDevice device, VkSwapchainKHR swapchain, const VkAllocationCallbacks* pAllocator)
+void VirtualSwapchain::pre_vkDestroySwapchainKHR(VkDevice device, VkSwapchainKHR swapchain, const VkAllocationCallbacks* pAllocator)
 {
-    if (swapchain) {
-        assert(mGvkDevice);
-        assert(mGvkDevice == device);
-        for (auto virtualImage : mVirtualVkImages) {
-            mGvkDevice.get<DispatchTable>().gvkDestroyImage(device, virtualImage, pAllocator);
-        }
-        mGvkDevice.reset();
-        mVkSwapchain = VK_NULL_HANDLE;
-        mExtent = { };
-        mGvkDeviceMemory.reset();
-        mActualImages.clear();
-        mImageLayouts.clear();
-        mVirtualVkImages.clear();
-        mAvailableVkImages.clear();
-        mAcquiredVkImages.clear();
-        mPendingAcquisitionImageIndex = UINT32_MAX;
-    }
+    (void)device;
+    (void)swapchain;
+    (void)pAllocator;
+    // NOOP :
 }
 
-VkResult Swapchain::post_vkGetSwapchainImagesKHR(VkDevice device, VkSwapchainKHR swapchain, uint32_t* pSwapchainImageCount, VkImage* pSwapchainImages)
+VkResult VirtualSwapchain::post_vkGetSwapchainImagesKHR(VkDevice device, VkSwapchainKHR swapchain, uint32_t* pSwapchainImageCount, VkImage* pSwapchainImages)
 {
     (void)device;
     (void)swapchain;
     if (pSwapchainImageCount && pSwapchainImages) {
-        memcpy(pSwapchainImages, mVirtualVkImages.data(), *pSwapchainImageCount * sizeof(VkImage));
+        for (uint32_t i = 0; i < *pSwapchainImageCount && i < mVirtualImages.size(); ++i) {
+            pSwapchainImages[i] = mVirtualImages[i].image;
+        }
     }
     return VK_SUCCESS;
 }
 
-VkResult Swapchain::pre_vkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex)
+VkResult VirtualSwapchain::pre_vkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex)
+{
+    (void)device;
+    (void)swapchain;
+    (void)timeout;
+    (void)fence;
+    assert(pImageIndex);
+    assert(*pImageIndex < mVirtualImages.size());
+
+    // Update mPendingImageAcquisition.  The application provides the index of the
+    //  image it wants to acquire.
+    mPendingImageAcquisition = { };
+    mPendingImageAcquisition.imageAcquiredSemaphore = semaphore;
+    mPendingImageAcquisition.virtualImageIndex = *pImageIndex;
+    mPendingImageAcquisition.pVirtualImage = &mVirtualImages[*pImageIndex];
+    auto erased = mAvailableImageIndices.erase(*pImageIndex);
+    return erased ? VK_SUCCESS : VK_NOT_READY;
+}
+
+VkResult VirtualSwapchain::post_vkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex)
 {
     (void)device;
     (void)swapchain;
@@ -156,32 +164,21 @@ VkResult Swapchain::pre_vkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR sw
     (void)semaphore;
     (void)fence;
     assert(pImageIndex);
-    assert(*pImageIndex < mVirtualVkImages.size());
-    mPendingAcquisitionImageIndex = *pImageIndex;
-    return VK_SUCCESS;
+    assert(*pImageIndex < mActualVkImages.size());
+
+    // In the post call handler the live Vulkan call has updated the index to refer
+    //  to the actual image acquired.  Update mPendingImageAcquisition with the
+    //  actual index and image, map mPendingImageAcquisition, reset the pImageIndex
+    //  to the virtual image index, then clear mPendingImageAcquisition.
+    mPendingImageAcquisition.actualImageIndex = *pImageIndex;
+    mPendingImageAcquisition.actualImage = mActualVkImages[*pImageIndex];
+    auto inserted = mAcquiredImages.insert({ mPendingImageAcquisition.virtualImageIndex, mPendingImageAcquisition }).second;
+    *pImageIndex = mPendingImageAcquisition.virtualImageIndex;
+    mPendingImageAcquisition = { };
+    return inserted ? VK_SUCCESS : VK_NOT_READY;
 }
 
-VkResult Swapchain::post_vkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex)
-{
-    (void)device;
-    (void)swapchain;
-    (void)timeout;
-    (void)semaphore;
-    (void)fence;
-    assert(pImageIndex);
-    assert(*pImageIndex < mActualImages.size());
-    auto erased = mAvailableVkImages.erase(mPendingAcquisitionImageIndex);
-    (void)erased;
-    assert(erased);
-    auto inserted = mAcquiredVkImages.insert({ mPendingAcquisitionImageIndex, *pImageIndex }).second;
-    (void)inserted;
-    assert(inserted);
-    *pImageIndex = mPendingAcquisitionImageIndex;
-    mPendingAcquisitionImageIndex = UINT32_MAX;
-    return VK_SUCCESS;
-}
-
-VkResult Swapchain::pre_vkAcquireNextImage2KHR(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex)
+VkResult VirtualSwapchain::pre_vkAcquireNextImage2KHR(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex)
 {
     (void)device;
     (void)pAcquireInfo;
@@ -190,7 +187,7 @@ VkResult Swapchain::pre_vkAcquireNextImage2KHR(VkDevice device, const VkAcquireN
     return VK_ERROR_UNKNOWN;
 }
 
-VkResult Swapchain::post_vkAcquireNextImage2KHR(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex)
+VkResult VirtualSwapchain::post_vkAcquireNextImage2KHR(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex)
 {
     (void)device;
     (void)pAcquireInfo;
@@ -199,36 +196,51 @@ VkResult Swapchain::post_vkAcquireNextImage2KHR(VkDevice device, const VkAcquire
     return VK_ERROR_UNKNOWN;
 }
 
-void Swapchain::pre_vkQueuePresentKHR(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+VkResult VirtualSwapchain::pre_vkQueuePresentKHR(VkCommandBuffer commandBuffer, uint32_t* pImageIndex, VkSemaphore* pImageAcquiredSemaphore, VkSemaphore* pImageTransferedSemaphore)
 {
     assert(commandBuffer);
-    auto actualImage = mActualImages[imageIndex];
-    auto itr = mAcquiredVkImages.find(imageIndex);
-    assert(itr != mAcquiredVkImages.end());
-    assert(itr->second < mVirtualVkImages.size());
-    auto virtualImage = mVirtualVkImages[itr->second];
+    assert(pImageIndex);
+    assert(pImageAcquiredSemaphore);
+    assert(pImageTransferedSemaphore);
 
-    // Actual VkImage VK_IMAGE_LAYOUT_UNDEFINED/VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL -> VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-    // Virtual VkImage VK_IMAGE_LAYOUT_PRESENT_SRC_KHR -> VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+    // Get the AcquiredImage associated with the given image index
+    auto acquiredImageItr = mAcquiredImages.find(*pImageIndex);
+    assert(acquiredImageItr != mAcquiredImages.end());
+    const auto& acquiredImage = acquiredImageItr->second;
+    assert(acquiredImage.virtualImageIndex == *pImageIndex);
+    assert(acquiredImage.pVirtualImage);
+
+    // Populate semaphore out parameters
+    *pImageAcquiredSemaphore = acquiredImage.imageAcquiredSemaphore;
+    *pImageTransferedSemaphore = acquiredImage.pVirtualImage->imageTransferedSemaphore;
+
+    // Prepare VkImageMemoryBarriers
     std::array<VkImageMemoryBarrier, 2> imageMemoryBarriers{ };
     auto imageMemoryBarrier = get_default<VkImageMemoryBarrier>();
     imageMemoryBarrier.srcAccessMask = 0;
     imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    imageMemoryBarrier.oldLayout = mImageLayouts[imageIndex];
-    imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    imageMemoryBarrier.image = actualImage;
     imageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     imageMemoryBarrier.subresourceRange.baseMipLevel = 0;
     imageMemoryBarrier.subresourceRange.levelCount = 1;
     imageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
     imageMemoryBarrier.subresourceRange.layerCount = 1;
-    imageMemoryBarriers[0] = imageMemoryBarrier;
-    imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    imageMemoryBarrier.image = virtualImage;
-    imageMemoryBarriers[1] = imageMemoryBarrier;
+    imageMemoryBarriers.fill(imageMemoryBarrier);
+
+    // Virtual VkImage VK_IMAGE_LAYOUT_PRESENT_SRC_KHR -> VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+    auto& virtualImageMemoryBarrier = imageMemoryBarriers[0];
+    virtualImageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    virtualImageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    virtualImageMemoryBarrier.image = acquiredImage.pVirtualImage->image;
+
+    // Actual VkImage VK_IMAGE_LAYOUT_UNDEFINED/VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL -> VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+    auto& actualImageMemoryBarrier = imageMemoryBarriers[1];
+    actualImageMemoryBarrier.oldLayout = acquiredImage.pVirtualImage->layout;
+    actualImageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    actualImageMemoryBarrier.image = acquiredImage.actualImage;
+
+    // Record barriers
     mGvkDevice.get<DispatchTable>().gvkCmdPipelineBarrier(
         commandBuffer,
         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
@@ -250,22 +262,27 @@ void Swapchain::pre_vkQueuePresentKHR(VkCommandBuffer commandBuffer, uint32_t im
     imageCopy.extent.depth = 1;
     mGvkDevice.get<DispatchTable>().gvkCmdCopyImage(
         commandBuffer,
-        virtualImage,
+        acquiredImage.pVirtualImage->image,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        actualImage,
+        acquiredImage.actualImage,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         1,
         &imageCopy
     );
 
-    // Actual VkImage VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL -> VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
     // Virtual VkImage VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL -> VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-    std::swap(imageMemoryBarriers[0].srcAccessMask, imageMemoryBarriers[0].dstAccessMask);
-    std::swap(imageMemoryBarriers[0].oldLayout, imageMemoryBarriers[0].newLayout);
-    imageMemoryBarriers[0].newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    mImageLayouts[imageIndex] = imageMemoryBarriers[0].newLayout;
-    std::swap(imageMemoryBarriers[1].srcAccessMask, imageMemoryBarriers[1].dstAccessMask);
-    std::swap(imageMemoryBarriers[1].oldLayout, imageMemoryBarriers[1].newLayout);
+    std::swap(virtualImageMemoryBarrier.srcAccessMask, virtualImageMemoryBarrier.dstAccessMask);
+    std::swap(virtualImageMemoryBarrier.oldLayout, virtualImageMemoryBarrier.newLayout);
+
+    // Actual VkImage VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL -> VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+    std::swap(actualImageMemoryBarrier.srcAccessMask, actualImageMemoryBarrier.dstAccessMask);
+    actualImageMemoryBarrier.oldLayout = actualImageMemoryBarrier.newLayout;
+    actualImageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    // Update the VirtualImage layout
+    acquiredImage.pVirtualImage->layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    // Record barriers
     mGvkDevice.get<DispatchTable>().gvkCmdPipelineBarrier(
         commandBuffer,
         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
@@ -277,14 +294,20 @@ void Swapchain::pre_vkQueuePresentKHR(VkCommandBuffer commandBuffer, uint32_t im
         imageMemoryBarriers.data()
     );
 
-    auto inserted = mAvailableVkImages.insert(itr->first).second;
-    (void)inserted;
-    assert(inserted);
-    mAcquiredVkImages.erase(itr);
+    // After presentation, we're done with this VirtualImage until it's reacquired.
+    //  insert() the index back into mAvailableImageIndices, set the out parameter
+    //  to acquiredImage.actualImageIndex so that the present will use the actual
+    //  VkSwapchainKHR VkImage that is used as TRANSFER_DST in the cmds above, then
+    //  erase the AcquiredImage.
+    auto inserted = mAvailableImageIndices.insert(*pImageIndex).second;
+    *pImageIndex = acquiredImage.actualImageIndex;
+    mAcquiredImages.erase(acquiredImageItr);
+    return inserted ? VK_SUCCESS : VK_NOT_READY;
 }
 
 VkResult Layer::post_vkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance, VkResult gvkResult)
 {
+    // TODO : gvk-handles needs to hook up VkAllocationCallbacks
     (void)pAllocator;
     if (gvkResult == VK_SUCCESS) {
         mLog.set_instance(*pInstance);
@@ -306,6 +329,7 @@ void Layer::pre_vkDestroyInstance(VkInstance instance, const VkAllocationCallbac
 
 VkResult Layer::post_vkCreateDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice, VkResult gvkResult)
 {
+    // TODO : gvk-handles needs to hook up VkAllocationCallbacks
     (void)pAllocator;
     if (gvkResult == VK_SUCCESS) {
         assert(pDevice);
@@ -317,8 +341,7 @@ VkResult Layer::post_vkCreateDevice(VkPhysicalDevice physicalDevice, const VkDev
         if (gvkResult == VK_SUCCESS) {
             std::lock_guard<std::mutex> lock(mMutex);
             auto inserted = mGvkDevices.insert(gvkDevice).second;
-            (void)inserted;
-            assert(inserted);
+            gvkResult = inserted ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED;
         }
     }
     return gvkResult;
@@ -329,7 +352,7 @@ void Layer::pre_vkDestroyDevice(VkDevice device, const VkAllocationCallbacks* pA
     (void)pAllocator;
     if (device) {
         std::lock_guard<std::mutex> lock(mMutex);
-        auto erased = mCommandBuffers.erase(device);
+        auto erased = mCommandResources.erase(device);
         (void)erased;
         assert(erased);
         erased = mGvkDevices.erase(device);
@@ -424,30 +447,40 @@ VkResult Layer::post_vkCreateSharedSwapchainsKHR(VkDevice device, uint32_t swapc
     return gvkResult;
 }
 
+thread_local VkSwapchainCreateInfoKHR tlApplicationSwapchinCreateInfoKHR;
 VkResult Layer::pre_vkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain, VkResult gvkResult)
 {
     (void)device;
     (void)pAllocator;
     (void)pSwapchain;
     assert(pCreateInfo);
+
+    // Cache the application's VkSwapchainCreateInfoKHR then set the TRANSFER_DST
+    //  bit.  This needs to be on so that we can copy from the virtual swapchain
+    //  images to the actual images.
+    tlApplicationSwapchinCreateInfoKHR = *pCreateInfo;
     const_cast<VkSwapchainCreateInfoKHR*>(pCreateInfo)->imageUsage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     return gvkResult;
 }
 
 VkResult Layer::post_vkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain, VkResult vkResult)
 {
+    // Create the virtual swapchain
     if (vkResult == VK_SUCCESS) {
+        assert(pSwapchain);
         std::lock_guard<std::mutex> lock(mMutex);
         assert(!mSwapchains.count(*pSwapchain));
         vkResult = mSwapchains[*pSwapchain].post_vkCreateSwapchainKHR(device, pCreateInfo, pAllocator, pSwapchain);
     }
+
+    // Revert the application's VkSwapchainCreateInfoKHR
+    *const_cast<VkSwapchainCreateInfoKHR*>(pCreateInfo) = tlApplicationSwapchinCreateInfoKHR;
+    tlApplicationSwapchinCreateInfoKHR = { };
     return vkResult;
 }
 
 void Layer::pre_vkDestroySwapchainKHR(VkDevice device, VkSwapchainKHR swapchain, const VkAllocationCallbacks* pAllocator)
 {
-    (void)device;
-    (void)pAllocator;
     if (swapchain) {
         std::lock_guard<std::mutex> lock(mMutex);
         auto itr = mSwapchains.find(swapchain);
@@ -551,12 +584,11 @@ VkResult Layer::pre_vkGetSwapchainImagesKHR(VkDevice device, VkSwapchainKHR swap
 
 VkResult Layer::post_vkGetSwapchainImagesKHR(VkDevice device, VkSwapchainKHR swapchain, uint32_t* pSwapchainImageCount, VkImage* pSwapchainImages, VkResult gvkResult)
 {
-    (void)device;
     if (gvkResult == VK_SUCCESS && pSwapchainImageCount && pSwapchainImages) {
         std::lock_guard<std::mutex> lock(mMutex);
-        auto itr = mSwapchains.find(swapchain);
-        assert(itr != mSwapchains.end());
-        gvkResult = itr->second.post_vkGetSwapchainImagesKHR(device, swapchain, pSwapchainImageCount, pSwapchainImages);
+        auto swapchainItr = mSwapchains.find(swapchain);
+        assert(swapchainItr != mSwapchains.end());
+        gvkResult = swapchainItr->second.post_vkGetSwapchainImagesKHR(device, swapchain, pSwapchainImageCount, pSwapchainImages);
     }
     return gvkResult;
 }
@@ -717,29 +749,96 @@ VkResult Layer::post_vkWaitForPresentKHR(VkDevice device, VkSwapchainKHR swapcha
     return gvkResult;
 }
 
+thread_local VkPresentInfoKHR tlApplicationPresentInfo;
+thread_local std::vector<uint32_t> tlImageIndices;
+thread_local std::vector<VkSemaphore> tlImageAcquiredVkSemaphores;
+thread_local std::vector<VkPipelineStageFlags> tlWaitDstStageMask;
+thread_local std::vector<VkSemaphore> tlImageTransferedVkSemaphores;
+thread_local std::vector<VkSemaphore> tlPresentWaitVkSemaphores;
 VkResult Layer::pre_vkQueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPresentInfo, VkResult vkResult)
 {
+    assert(pPresentInfo);
+    assert(pPresentInfo->swapchainCount);
+    assert(pPresentInfo->pSwapchains);
+    assert(pPresentInfo->pImageIndices);
+
+    std::lock_guard<std::mutex> lock(mMutex);
+
+    // Prepare storage used for modifying pPresentInfo across pre/post handlers
+    tlApplicationPresentInfo = { };
+    tlImageIndices.clear();
+    tlImageIndices.insert(tlImageIndices.end(), pPresentInfo->pImageIndices, pPresentInfo->pImageIndices + pPresentInfo->swapchainCount);
+    tlImageAcquiredVkSemaphores.clear();
+    tlImageAcquiredVkSemaphores.reserve(pPresentInfo->swapchainCount);
+    tlImageTransferedVkSemaphores.clear();
+    tlImageTransferedVkSemaphores.reserve(pPresentInfo->swapchainCount);
+    tlPresentWaitVkSemaphores.clear();
+    tlPresentWaitVkSemaphores.reserve(pPresentInfo->waitSemaphoreCount + pPresentInfo->swapchainCount);
+    if (pPresentInfo->waitSemaphoreCount && pPresentInfo->pWaitSemaphores) {
+        tlPresentWaitVkSemaphores.insert(tlPresentWaitVkSemaphores.end(), pPresentInfo->pWaitSemaphores, pPresentInfo->pWaitSemaphores + pPresentInfo->waitSemaphoreCount);
+    }
+
     if (vkResult == VK_SUCCESS) {
         gvk_result_scope_begin(vkResult) {
             Queue gvkQueue = queue;
+            gvk_result(gvkQueue ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
             Device gvkDevice = gvkQueue.get<VkDevice>();
-            VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
-            gvk_result(get_command_buffer(queue, &commandBuffer));
+            gvk_result(gvkDevice ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+
+            // Get CommandResources and prepare the VkCommandBuffer for recording
+            CommandResources commandResources{ };
+            gvk_result(get_command_resources(lock, queue, &commandResources));
             auto commandBufferBeginInfo = get_default<VkCommandBufferBeginInfo>();
             commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-            gvk_result(gvkDevice.get<DispatchTable>().gvkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
+            gvk_result(gvkDevice.get<DispatchTable>().gvkBeginCommandBuffer(commandResources.vkCommandBuffer, &commandBufferBeginInfo));
+
+            // For each VkSwapchainKHR used in this present record commands to transfer the
+            //  contents of each virtual image to the actual image that will be presented.
             for (uint32_t i = 0; i < pPresentInfo->swapchainCount; ++i) {
-                std::lock_guard<std::mutex> lock(mMutex);
+                VkSemaphore imageAcquiredSemaphore = VK_NULL_HANDLE;
+                VkSemaphore imageTransferedSemaphore = VK_NULL_HANDLE;
                 auto swapchainItr = mSwapchains.find(pPresentInfo->pSwapchains[i]);
                 assert(swapchainItr != mSwapchains.end());
-                swapchainItr->second.pre_vkQueuePresentKHR(commandBuffer, pPresentInfo->pImageIndices[i]);
+                swapchainItr->second.pre_vkQueuePresentKHR(commandResources.vkCommandBuffer, &tlImageIndices[i], &imageAcquiredSemaphore, &imageTransferedSemaphore);
+                if (imageAcquiredSemaphore) {
+                    tlImageAcquiredVkSemaphores.push_back(imageAcquiredSemaphore);
+                }
+                if (imageTransferedSemaphore) {
+                    tlImageTransferedVkSemaphores.push_back(imageTransferedSemaphore);
+                    tlPresentWaitVkSemaphores.push_back(imageTransferedSemaphore);
+                }
             }
-            gvk_result(gvkDevice.get<DispatchTable>().gvkEndCommandBuffer(commandBuffer));
-            // TODO : Hook up app's VkSemaphores
+
+            // End VkCommandBuffer recording.
+            gvk_result(gvkDevice.get<DispatchTable>().gvkEndCommandBuffer(commandResources.vkCommandBuffer));
+
+            // Prepare a VkSubmitInfo to execute the recorded VkCommandBuffer.  When
+            //  execution completes, the VkSemphores waiting on the transfer to complete
+            //  will be signaled.
             auto submitInfo = get_default<VkSubmitInfo>();
+            // NOTE : The application should be waiting on the VkSemaphores provided at
+            //  vkAcquireNextImageKHR() time.  We can't wait on them as well.  Some use
+            //  cases may require introducing waits on these VkSemaphores.  This can be
+            //  addressed when a use case presents itself.
+            #if 0
+            submitInfo.waitSemaphoreCount = (uint32_t)tlImageAcquiredVkSemaphores.size();
+            submitInfo.pWaitSemaphores = !tlImageAcquiredVkSemaphores.empty() ? tlImageAcquiredVkSemaphores.data() : nullptr;
+            tlWaitDstStageMask.resize(tlImageAcquiredVkSemaphores.size(), VK_PIPELINE_STAGE_TRANSFER_BIT);
+            submitInfo.pWaitDstStageMask = !tlWaitDstStageMask.empty() ? tlWaitDstStageMask.data() : nullptr;
+            #endif
             submitInfo.commandBufferCount = 1;
-            submitInfo.pCommandBuffers = &commandBuffer;
-            gvk_result(gvkDevice.get<DispatchTable>().gvkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
+            submitInfo.pCommandBuffers = &commandResources.vkCommandBuffer;
+            submitInfo.signalSemaphoreCount = (uint32_t)tlImageTransferedVkSemaphores.size();
+            submitInfo.pSignalSemaphores = !tlImageTransferedVkSemaphores.empty() ? tlImageTransferedVkSemaphores.data() : nullptr;
+            gvk_result(gvkQueue.get<DispatchTable>().gvkQueueSubmit(queue, 1, &submitInfo, commandResources.gvkFence));
+
+            // Cache the application's VkPresentInfoKHR so it can be reverted in the post
+            //  handler, then const_cast<>() and update
+            tlApplicationPresentInfo = *pPresentInfo;
+            auto pMutablePresentInfo = const_cast<VkPresentInfoKHR*>(pPresentInfo);
+            pMutablePresentInfo->waitSemaphoreCount = (uint32_t)tlPresentWaitVkSemaphores.size();
+            pMutablePresentInfo->pWaitSemaphores = !tlPresentWaitVkSemaphores.empty() ? tlPresentWaitVkSemaphores.data() : nullptr;
+            pMutablePresentInfo->pImageIndices = tlImageIndices.data();
         } gvk_result_scope_end;
         vkResult = gvkResult;
     }
@@ -749,37 +848,59 @@ VkResult Layer::pre_vkQueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPr
 VkResult Layer::post_vkQueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPresentInfo, VkResult gvkResult)
 {
     (void)queue;
-    (void)pPresentInfo;
-    // NOOP :
+    assert(pPresentInfo);
+    *const_cast<VkPresentInfoKHR*>(pPresentInfo) = tlApplicationPresentInfo;
+    tlApplicationPresentInfo = { };
+    tlImageIndices.clear();
+    tlImageAcquiredVkSemaphores.clear();
+    tlWaitDstStageMask.clear();
+    tlImageTransferedVkSemaphores.clear();
+    tlPresentWaitVkSemaphores.clear();
     return gvkResult;
 }
 
-VkResult Layer::get_command_buffer(const Queue& gvkQueue, VkCommandBuffer* pCommandBuffer)
+VkResult Layer::get_command_resources(const std::lock_guard<std::mutex>&, const Queue& gvkQueue, CommandResources* pCommandResources)
 {
     assert(gvkQueue);
-    assert(pCommandBuffer);
-    *pCommandBuffer = VK_NULL_HANDLE;
+    assert(pCommandResources);
+    *pCommandResources = { };
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         Device gvkDevice = gvkQueue.get<VkDevice>();
-        assert(gvkDevice);
-        std::lock_guard<std::mutex> lock(mMutex);
-        auto& commandResources = mCommandBuffers[gvkDevice][gvkQueue.get<VkDeviceQueueCreateInfo>().queueFamilyIndex];
-        assert(!commandResources.first == !commandResources.second);
-        if (!commandResources.first) {
+        auto& commandResources = mCommandResources[gvkDevice][gvkQueue.get<VkDeviceQueueCreateInfo>().queueFamilyIndex];
+        assert(!commandResources.gvkCommandPool == !commandResources.vkCommandBuffer);
+        assert(!commandResources.gvkCommandPool == !commandResources.gvkFence);
+        if (!commandResources.gvkCommandPool) {
+
+            // Create CommandPool
             auto commandPoolCreateInfo = get_default<VkCommandPoolCreateInfo>();
             commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
             commandPoolCreateInfo.queueFamilyIndex = gvkQueue.get<VkDeviceQueueCreateInfo>().queueFamilyIndex;
-            gvk_result(CommandPool::create(gvkDevice, &commandPoolCreateInfo, nullptr, &commandResources.first));
+            gvk_result(CommandPool::create(gvkDevice, &commandPoolCreateInfo, nullptr, &commandResources.gvkCommandPool));
+
+            // Allocate VkCommandBuffer
             auto commandBufferAllocateInfo = get_default<VkCommandBufferAllocateInfo>();
-            commandBufferAllocateInfo.commandPool = commandResources.first;
+            commandBufferAllocateInfo.commandPool = commandResources.gvkCommandPool;
             commandBufferAllocateInfo.commandBufferCount = 1;
             // TODO : Detect layer and automate dispatch table update so gvk::CommandBuffer
             //  can be allocated in layers
-            gvk_result(gvkDevice.get<DispatchTable>().gvkAllocateCommandBuffers(gvkDevice, &commandBufferAllocateInfo, &commandResources.second));
-            *(void**)commandResources.second = *(void**)gvkDevice.get<VkDevice>();
+            gvk_result(gvkDevice.get<DispatchTable>().gvkAllocateCommandBuffers(gvkDevice, &commandBufferAllocateInfo, &commandResources.vkCommandBuffer));
+            *(void**)commandResources.vkCommandBuffer = *(void**)gvkDevice.get<VkDevice>();
+
+            // Create Fence, signaled since it will be waited on right away
+            auto fenceCreateInfo = get_default<VkFenceCreateInfo>();
+            fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+            gvk_result(Fence::create(gvkDevice, &fenceCreateInfo, nullptr, &commandResources.gvkFence));
         }
-        *pCommandBuffer = commandResources.second;
-        gvk_result(*pCommandBuffer ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+
+        // Populate out parameter
+        *pCommandResources = commandResources;
+        gvk_result(pCommandResources->gvkCommandPool ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result(pCommandResources->vkCommandBuffer ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result(pCommandResources->gvkFence ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+
+        // Wait on Fence to ensure resources aren't still in use, then reset Fence
+        gvk_result(gvkDevice.get<DispatchTable>().gvkWaitForFences(gvkDevice, 1, &commandResources.gvkFence.get<VkFence>(), VK_TRUE, UINT64_MAX));
+        gvk_result(gvkDevice.get<DispatchTable>().gvkResetFences(gvkDevice, 1, &commandResources.gvkFence.get<VkFence>()));
     } gvk_result_scope_end;
     return gvkResult;
 }

@@ -39,15 +39,30 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace virtual_swapchain {
 
-using ActualVkImage = VkImage;
-using VirtualVkImage = VkImage;
-
-class Swapchain final
+class VirtualSwapchain final
 {
 public:
-    Swapchain() = default;
-    Swapchain(Swapchain&& other);
-    Swapchain& operator=(Swapchain&& other);
+    class VirtualImage final
+    {
+    public:
+        Image image{ VK_NULL_HANDLE };
+        Semaphore imageTransferedSemaphore{ VK_NULL_HANDLE };
+        VkImageLayout layout{ VK_IMAGE_LAYOUT_UNDEFINED };
+    };
+
+    class AcquiredImage final
+    {
+    public:
+        VkSemaphore imageAcquiredSemaphore{ VK_NULL_HANDLE };
+        uint32_t virtualImageIndex{ UINT32_MAX };
+        VirtualImage* pVirtualImage{ nullptr };
+        uint32_t actualImageIndex{ UINT32_MAX };
+        VkImage actualImage{ VK_NULL_HANDLE };
+    };
+
+    VirtualSwapchain() = default;
+    VirtualSwapchain(VirtualSwapchain&& other);
+    VirtualSwapchain& operator=(VirtualSwapchain&& other);
     VkResult post_vkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain);
     void pre_vkDestroySwapchainKHR(VkDevice device, VkSwapchainKHR swapchain, const VkAllocationCallbacks* pAllocator);
     VkResult post_vkGetSwapchainImagesKHR(VkDevice device, VkSwapchainKHR swapchain, uint32_t* pSwapchainImageCount, VkImage* pSwapchainImages);
@@ -55,22 +70,21 @@ public:
     VkResult post_vkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex);
     VkResult pre_vkAcquireNextImage2KHR(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex);
     VkResult post_vkAcquireNextImage2KHR(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex);
-    void pre_vkQueuePresentKHR(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    VkResult pre_vkQueuePresentKHR(VkCommandBuffer commandBuffer, uint32_t* pImageIndex, VkSemaphore* pImageAcquiredSemaphore, VkSemaphore* pImageTransferedSemaphore);
 
 private:
-    Device mGvkDevice;
-    VkSwapchainKHR mVkSwapchain{ };
+    Device mGvkDevice{ VK_NULL_HANDLE };
+    VkSwapchainKHR mVkSwapchain{ VK_NULL_HANDLE };
     VkExtent2D mExtent{ };
-    DeviceMemory mGvkDeviceMemory;
-    std::vector<ActualVkImage> mActualImages;
-    std::vector<VkImageLayout> mImageLayouts;
-    std::vector<VirtualVkImage> mVirtualVkImages;
-    std::unordered_set<uint32_t> mAvailableVkImages;
-    std::unordered_map<uint32_t, uint32_t> mAcquiredVkImages;
-    uint32_t mPendingAcquisitionImageIndex{ UINT32_MAX };
+    DeviceMemory mGvkDeviceMemory{ VK_NULL_HANDLE };
+    std::vector<VkImage> mActualVkImages;
+    std::vector<VirtualImage> mVirtualImages;
+    std::unordered_set<uint32_t> mAvailableImageIndices;
+    std::unordered_map<uint32_t, AcquiredImage> mAcquiredImages;
+    AcquiredImage mPendingImageAcquisition{ };
 
-    Swapchain(const Swapchain&) = delete;
-    Swapchain& operator=(const Swapchain&) = delete;
+    VirtualSwapchain(const VirtualSwapchain&) = delete;
+    VirtualSwapchain& operator=(const VirtualSwapchain&) = delete;
 };
 
 class Layer final
@@ -129,15 +143,23 @@ public:
     VkResult post_vkQueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPresentInfo, VkResult gvkResult) override final;
 
 private:
-    VkResult get_command_buffer(const Queue& gvkQueue, VkCommandBuffer* pCommandBuffer);
+    class CommandResources final
+    {
+    public:
+        CommandPool gvkCommandPool{ VK_NULL_HANDLE };
+        VkCommandBuffer vkCommandBuffer{ VK_NULL_HANDLE };
+        Fence gvkFence{ VK_NULL_HANDLE };
+    };
+
+    VkResult get_command_resources(const std::lock_guard<std::mutex>& lock, const Queue& gvkQueue, CommandResources* pCommandResources);
 
     layer::Log mLog;
     std::mutex mMutex;
-    Instance mGvkInstance;
-    std::set<Device> mGvkDevices;
-    std::unordered_map<VkSwapchainKHR, Swapchain> mSwapchains;
+    Instance mGvkInstance{ VK_NULL_HANDLE };
+    std::set<Device> mGvkDevices{ VK_NULL_HANDLE };
+    std::unordered_map<VkSwapchainKHR, VirtualSwapchain> mSwapchains;
     using QueueFamilyIndex = uint32_t;
-    std::unordered_map<VkDevice, std::unordered_map<QueueFamilyIndex, std::pair<CommandPool, VkCommandBuffer>>> mCommandBuffers;
+    std::unordered_map<VkDevice, std::unordered_map<QueueFamilyIndex, CommandResources>> mCommandResources;
 };
 
 } // namespace virtual_swapchain

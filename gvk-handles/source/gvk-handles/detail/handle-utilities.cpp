@@ -154,6 +154,11 @@ VkResult Buffer::create(const Device& device, const VkBufferCreateInfo* pBufferC
     return gvkResult;
 }
 
+VkResult Buffer::create(const Device& device, const VkBufferCreateInfo* pCreateInfo, std::nullptr_t pAllocator, Buffer* pBuffer)
+{
+    return Buffer::create(device, pCreateInfo, (VkAllocationCallbacks*)pAllocator, pBuffer);
+}
+
 VkResult Image::create(const Device& device, const VkImageCreateInfo* pImageCreateInfo, const VmaAllocationCreateInfo* pAllocationCreateInfo, Image* pImage)
 {
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
@@ -173,6 +178,11 @@ VkResult Image::create(const Device& device, const VkImageCreateInfo* pImageCrea
         }
     } gvk_result_scope_end;
     return gvkResult;
+}
+
+VkResult Image::create(const Device& device, const VkImageCreateInfo* pCreateInfo, std::nullptr_t pAllocator, Image* pImage)
+{
+    return Image::create(device, pCreateInfo, (VkAllocationCallbacks*)pAllocator, pImage);
 }
 
 VkResult DeferredOperationKHR::create(const Device& device, const VkAllocationCallbacks* pAllocator, DeferredOperationKHR* pDeferredOperation)
