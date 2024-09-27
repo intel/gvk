@@ -117,12 +117,14 @@ void CmdTracker::record_vkCmdBeginRenderingKHR(VkCommandBuffer commandBuffer, co
 template <typename RenderPassCreateInfoType, typename RecordImageLayoutTransitionFunctionType>
 inline void record_render_pass_layout_transitions(VkDevice device, const RenderPassCreateInfoType& renderPassCreateInfo, const std::vector<ImageView>& framebufferAttachments, RecordImageLayoutTransitionFunctionType recordImageLayoutTransition)
 {
-    assert(renderPassCreateInfo.pAttachments);
-    for (uint32_t i = 0; i < renderPassCreateInfo.attachmentCount && i < framebufferAttachments.size(); ++i) {
-        const auto& gvkImageView = framebufferAttachments[i];
-        assert(gvkImageView);
-        const auto& imageViewCreateInfo = gvkImageView.get<VkImageViewCreateInfo>();
-        recordImageLayoutTransition(device, imageViewCreateInfo.image, imageViewCreateInfo.subresourceRange, renderPassCreateInfo.pAttachments[i].finalLayout);
+    if (renderPassCreateInfo.attachmentCount) {
+        assert(renderPassCreateInfo.pAttachments);
+        for (uint32_t i = 0; i < renderPassCreateInfo.attachmentCount && i < framebufferAttachments.size(); ++i) {
+            const auto& gvkImageView = framebufferAttachments[i];
+            assert(gvkImageView);
+            const auto& imageViewCreateInfo = gvkImageView.get<VkImageViewCreateInfo>();
+            recordImageLayoutTransition(device, imageViewCreateInfo.image, imageViewCreateInfo.subresourceRange, renderPassCreateInfo.pAttachments[i].finalLayout);
+        }
     }
 }
 
