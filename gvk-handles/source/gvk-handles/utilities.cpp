@@ -36,10 +36,8 @@ void get_compatible_memory_type_indices(const PhysicalDevice& physicalDevice, ui
 {
     assert(physicalDevice);
     assert(pMemoryTypeCount);
-    const auto& dispatchTable = physicalDevice.get<DispatchTable>();
-    assert(dispatchTable.gvkGetPhysicalDeviceMemoryProperties);
     VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties{ };
-    dispatchTable.gvkGetPhysicalDeviceMemoryProperties(physicalDevice, &physicalDeviceMemoryProperties);
+    physicalDevice.GetPhysicalDeviceMemoryProperties(&physicalDeviceMemoryProperties);
     get_compatible_memory_type_indices(&physicalDeviceMemoryProperties, memoryTypeBits, memoryPropertyFlags, pMemoryTypeCount, pMemoryTypeIndices);
 }
 
@@ -79,9 +77,7 @@ VkSampleCountFlagBits get_max_framebuffer_sample_count(const PhysicalDevice& phy
 {
     assert(physicalDevice);
     VkPhysicalDeviceProperties physicalDeviceProperties { };
-    const auto& dispatchTable = physicalDevice.get<DispatchTable>();
-    assert(dispatchTable.gvkGetPhysicalDeviceProperties);
-    dispatchTable.gvkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
+    physicalDevice.GetPhysicalDeviceProperties(&physicalDeviceProperties);
     VkSampleCountFlags sampleCounts = (color || depth || stencil) ? (uint32_t)-1 : 0;
     if (color) {
         sampleCounts &= physicalDeviceProperties.limits.framebufferColorSampleCounts;

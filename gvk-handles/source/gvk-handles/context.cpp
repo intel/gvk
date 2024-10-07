@@ -120,7 +120,7 @@ uint32_t Context::get_physical_device_rating(const PhysicalDevice& physicalDevic
 {
     uint32_t rating = 0;
     VkPhysicalDeviceProperties physicalDeviceProperties{ };
-    physicalDevice.get<DispatchTable>().gvkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
+    physicalDevice.GetPhysicalDeviceProperties(&physicalDeviceProperties);
 #ifdef GVK_COMPILER_GCC
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"

@@ -89,8 +89,27 @@ public:
             add_member(MemberInfo("std::vector<Image>", "mImages", "std::vector<Image>"));
         }
         add_private_declaration("template <typename HandleType> friend VkResult gvk::detail::initialize_control_block(HandleType&)");
-        if (handle.isDispatchable && handle.name != "VkCommandBuffer") {
+        if (handle.isDispatchable) {
             add_member(MemberInfo("DispatchTable", "mDispatchTable", "DispatchTable"));
+            for (const auto& commandItr : manifest.commands) {
+                const auto& command = commandItr.second;
+                if (!command.parameters.empty() &&
+                    command.parameters[0].type == handle.name &&
+                    command.type != xml::Command::Type::Create &&
+                    command.type != xml::Command::Type::Destroy) {
+                    MethodInfo methodInfo{ };
+                    methodInfo.method = command;
+                    methodInfo.method.name = string::strip_vk(command.name);
+                    methodInfo.method.parameters.erase(methodInfo.method.parameters.begin());
+                    auto parameterList = get_parameter_list(methodInfo.method.parameters, false, true);
+                    methodInfo.body = "return get<DispatchTable>().g" + command.name + "(get<" + handle.name + ">()";
+                    if (!parameterList.empty()) {
+                        methodInfo.body += ", " + parameterList;
+                    }
+                    methodInfo.body += ");";
+                    add_method(methodInfo);
+                }
+            }
         }
     }
 

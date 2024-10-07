@@ -1,12 +1,20 @@
 
+VERSION 2024.3.2
+--
+-   CHANGED : gvk handle types now use same reference counting mechanism as handles generated from vk.xml
+-   CHANGED : gvk dispatchable handle types now have generated member functions for API entry points
+
+VERSION 2024.3.1
+--
+-   CHANGED : VK_LAYER_INTEL_gvk_virtual_swapchain stability and performance improvements
+-   NEW : gvk_result_scope callbacks
+
 VERSION 2024.3.0
 --
 -   CHANGED : gvk-log-parser improvmements for readability and usability
--   CHANGED : VK_LAYER_INTEL_gvk_virtual_swapchain stability and performance improvements
 -   CHANGED : Improved install, targets now enable their dependencies recursively
 -   NEW : VK_LAYER_INTEL_gvk_state_tracker preliminary support for VKRT workloads
 -   NEW : VK_LAYER_INTEL_gvk_restore_point preliminary support for VKRT workloads
--   NEW : gvk_result_scope callbacks
 
 VERSION 2024.1.0
 --

@@ -51,10 +51,8 @@ VkResult Context::create(const Device& device, const SurfaceKHR& surface, const 
     controlBlock.mDevice = device;
     controlBlock.mSurface = surface;
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
-        const auto& physicalDevice = device.get<PhysicalDevice>();
-        const auto& dispatchTable = physicalDevice.get<DispatchTable>();
         VkBool32 physicalDeviceSurfaceSupport = VK_FALSE;
-        gvk_result(dispatchTable.gvkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, controlBlock.mCreateInfo.queueFamilyIndex, surface, &physicalDeviceSurfaceSupport));
+        gvk_result(device.get<PhysicalDevice>().GetPhysicalDeviceSurfaceSupportKHR(controlBlock.mCreateInfo.queueFamilyIndex, surface, &physicalDeviceSurfaceSupport));
         gvk_result(gvkResult != VK_SUCCESS ? gvkResult : physicalDeviceSurfaceSupport ? gvkResult : VK_ERROR_FEATURE_NOT_PRESENT);
         controlBlock.mInfo.queueFamilyIndex = controlBlock.mCreateInfo.queueFamilyIndex;
         controlBlock.mInfo.maxFramesInFlight = std::max(1u, controlBlock.mCreateInfo.maxFramesInFlight);
@@ -86,15 +84,14 @@ VkResult Context::acquire_next_image(uint64_t timeout, VkFence vkFence, Acquired
 
     gvk_result_scope_begin(VK_INCOMPLETE) {
         const auto& device = get<Device>();
-        const auto& dispatchTable = device.get<DispatchTable>();
+        const auto& swapchain = get<SwapchainKHR>();
 
         // Wait on VkFence to ensure resources aren't in use
-        gvk_result(dispatchTable.gvkWaitForFences(device, 1, &commandResources.fence.get<VkFence>(), VK_TRUE, UINT64_MAX));
+        gvk_result(device.WaitForFences(1, &commandResources.fence.get<VkFence>(), VK_TRUE, UINT64_MAX));
 
         // Call vkAcquireNextImageKHR(), if VK_ERROR_OUT_OF_DATE_KHR recreate resources
-        const auto& swapchain = get<SwapchainKHR>();
         pAcquiredImageInfo->swapchain = swapchain;
-        pAcquiredImageInfo->status = dispatchTable.gvkAcquireNextImageKHR(device, swapchain, timeout, commandResources.imageAcquiredSemaphore, vkFence, &pAcquiredImageInfo->index);
+        pAcquiredImageInfo->status = device.AcquireNextImageKHR(swapchain, timeout, commandResources.imageAcquiredSemaphore, vkFence, &pAcquiredImageInfo->index);
         switch (pAcquiredImageInfo->status) {
         case VK_ERROR_OUT_OF_DATE_KHR: { gvk_result(validate_swapchain_resources()); gvk_result_scope_break(pAcquiredImageInfo->status); } break;
         case VK_SUCCESS:
@@ -103,7 +100,7 @@ VkResult Context::acquire_next_image(uint64_t timeout, VkFence vkFence, Acquired
         }
 
         // Reset VkFence
-        gvk_result(dispatchTable.gvkResetFences(device, 1, &commandResources.fence.get<VkFence>()));
+        gvk_result(device.ResetFences(1, &commandResources.fence.get<VkFence>()));
 
         // Populate the AcquiredImageInfo
         pAcquiredImageInfo->image = swapchain.get<Images>()[pAcquiredImageInfo->index];
@@ -126,13 +123,12 @@ VkResult Context::queue_present(const Queue& queue, const AcquiredImageInfo* pAc
     assert(pAcquiredImageInfo);
     gvk_result_scope_begin(VK_INCOMPLETE) {
 
-        // Call vkQueuePresentKHR\()
-        auto status = queue.get<DispatchTable>().gvkQueuePresentKHR(queue, &get<VkPresentInfoKHR>(*pAcquiredImageInfo));
+        // Call vkQueuePresentKHR()
+        auto status = queue.QueuePresentKHR(&get<VkPresentInfoKHR>(*pAcquiredImageInfo));
 
         // Get VkSurfaceCapabilitiesKHR
         VkSurfaceCapabilitiesKHR surfaceCapabilities{ };
-        const auto& physicalDevice = get<Device>().get<PhysicalDevice>();
-        gvk_result(physicalDevice.get<DispatchTable>().gvkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, get<SurfaceKHR>(), &surfaceCapabilities));
+        gvk_result(get<Device>().get<PhysicalDevice>().GetPhysicalDeviceSurfaceCapabilitiesKHR(get<SurfaceKHR>(), &surfaceCapabilities));
 
         // If status is anything but VK_SUCCESS (and isn't an actual failure), or if the
         //  gvk::SurfaceKHR and gvk::SwapchainKHR extents don't match recreate resources.
@@ -151,12 +147,10 @@ VkResult Context::queue_present(const Queue& queue, const AcquiredImageInfo* pAc
 
 VkPresentModeKHR Context::select_present_mode(VkPresentModeKHR requestedPresentMode) const
 {
-    const auto& physicalDevice = get<Device>().get<PhysicalDevice>();
-    const auto& dispatchTable = physicalDevice.get<DispatchTable>();
     uint32_t availablePresentModeCount = 0;
-    dispatchTable.gvkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, get<SurfaceKHR>(), &availablePresentModeCount, nullptr);
+    get<Device>().get<PhysicalDevice>().GetPhysicalDeviceSurfacePresentModesKHR(get<SurfaceKHR>(), &availablePresentModeCount, nullptr);
     std::vector<VkPresentModeKHR> availablePresentModes(availablePresentModeCount);
-    dispatchTable.gvkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, get<SurfaceKHR>(), &availablePresentModeCount, availablePresentModes.data());
+    get<Device>().get<PhysicalDevice>().GetPhysicalDeviceSurfacePresentModesKHR(get<SurfaceKHR>(), &availablePresentModeCount, availablePresentModes.data());
     for (const auto& avaialablePresentMode : availablePresentModes) {
         if (avaialablePresentMode == requestedPresentMode) {
             return avaialablePresentMode;
@@ -168,12 +162,10 @@ VkPresentModeKHR Context::select_present_mode(VkPresentModeKHR requestedPresentM
 VkSurfaceFormatKHR Context::select_surface_format(const VkSurfaceFormatKHR& requestedSurfaceFormat) const
 {
     gvk_result_scope_begin(VK_INCOMPLETE) {
-        const auto& physicalDevice = get<Device>().get<PhysicalDevice>();
-        const auto& dispatchTable = physicalDevice.get<DispatchTable>();
         uint32_t surfaceFormatCount = 0;
-        gvk_result(dispatchTable.gvkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, get<SurfaceKHR>(), &surfaceFormatCount, nullptr));
+        get<Device>().get<PhysicalDevice>().GetPhysicalDeviceSurfaceFormatsKHR(get<SurfaceKHR>(), &surfaceFormatCount, nullptr);
         std::vector<VkSurfaceFormatKHR> surfaceFormats(surfaceFormatCount);
-        gvk_result(dispatchTable.gvkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, get<SurfaceKHR>(), &surfaceFormatCount, surfaceFormats.data()));
+        get<Device>().get<PhysicalDevice>().GetPhysicalDeviceSurfaceFormatsKHR(get<SurfaceKHR>(), &surfaceFormatCount, surfaceFormats.data());
         gvk_result(surfaceFormats.size() ? VK_SUCCESS : VK_INCOMPLETE);
         for (const auto& surfaceFormat : surfaceFormats) {
             if (requestedSurfaceFormat.format) {
@@ -412,11 +404,11 @@ VkResult Context::create_render_targets(std::vector<RenderTarget>* pRenderTarget
             imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         }
         auto queue = gvk::get_queue_family(get<Device>(), get<Info>().queueFamilyIndex).queues[0];
-        gvk_result(gvk::execute_immediately(get<Device>(), queue, get<std::vector<CommandResources>>()[0].commandBuffer, VK_NULL_HANDLE,
+        const auto& commandBuffer = get<std::vector<CommandResources>>()[0].commandBuffer;
+        gvk_result(gvk::execute_immediately(get<Device>(), queue, commandBuffer, VK_NULL_HANDLE,
             [&](auto)
             {
-                get<Device>().get<DispatchTable>().gvkCmdPipelineBarrier(
-                    get<std::vector<CommandResources>>()[0].commandBuffer,
+                commandBuffer.CmdPipelineBarrier(
                     VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                     VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
                     0,
@@ -434,9 +426,7 @@ VkResult Context::validate_swapchain_resources()
 {
     gvk_result_scope_begin(VK_SUCCESS) {
         VkSurfaceCapabilitiesKHR surfaceCapabilities{ };
-        const auto& physicalDevice = get<Device>().get<PhysicalDevice>();
-        const auto& dispatchTable = physicalDevice.get<DispatchTable>();
-        gvk_result(dispatchTable.gvkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, get<SurfaceKHR>(), &surfaceCapabilities));
+        gvk_result(get<Device>().get<PhysicalDevice>().GetPhysicalDeviceSurfaceCapabilitiesKHR(get<SurfaceKHR>(), &surfaceCapabilities));
         if (surfaceCapabilities.currentExtent.width && surfaceCapabilities.currentExtent.height) {
             auto& controlBlock = mReference.get_obj();
             controlBlock.mInfo.presentMode = select_present_mode(controlBlock.mCreateInfo.presentMode);
@@ -446,7 +436,7 @@ VkResult Context::validate_swapchain_resources()
             controlBlock.mInfo.imageUsage = surfaceCapabilities.supportedUsageFlags & controlBlock.mCreateInfo.imageUsage;
             controlBlock.mInfo.extent = surfaceCapabilities.currentExtent;
             controlBlock.mInfo.transform = surfaceCapabilities.currentTransform;
-            gvk_result(get<Device>().get<DispatchTable>().gvkDeviceWaitIdle(get<Device>()));
+            gvk_result(get<Device>().DeviceWaitIdle());
             gvk_result(create_swapchain(&surfaceCapabilities, &controlBlock.mSwapchain));
             gvk_result(create_render_pass(&controlBlock.mRenderPass));
             gvk_result(create_render_targets(&controlBlock.mRenderTargets));

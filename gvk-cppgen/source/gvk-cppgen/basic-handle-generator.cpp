@@ -274,6 +274,7 @@ public:
         file << "    static " << manuallyImplementedCtorSignature << ";\n";
     }
     for (const auto& methodInfo : mMethodInfos) {
+        CompileGuardGenerator methodCompileGuardGenerator(file, get_inner_scope_compile_guards(mHandle.compileGuards, methodInfo.method.compileGuards));
         file << string::replace("    {methodReturnType} {methodName}({methodParameters}) const;\n", {
             { "{methodReturnType}", methodInfo.method.returnType },
             { "{methodName}", methodInfo.method.name },
@@ -312,19 +313,22 @@ void BasicHandleGenerator::generate_handle_definition(FileGenerator& file, const
         }
     }
     for (const auto& methodInfo : mMethodInfos) {
-        if (methodInfo.manuallyImplemented) {
-            file << "#if 0 // NOTE : Manually implemented\n";
-        }
-        file << string::replace("{methodReturnType} {handleName}::{methodName}({methodParameters}) const\n", {
-            get_inner_scope_replacements(replacements, {
-                { "{methodReturnType}", methodInfo.method.returnType },
-                { "{methodName}", methodInfo.method.name },
-                { "{methodParameters}", get_parameter_list(methodInfo.method.parameters) },
-            })
-        });
-        file << methodInfo.body;
-        if (methodInfo.manuallyImplemented) {
-            file << "#endif\n";
+        {
+            CompileGuardGenerator methodCompileGuardGenerator(file, get_inner_scope_compile_guards(mHandle.compileGuards, methodInfo.method.compileGuards));
+            if (methodInfo.manuallyImplemented) {
+                file << "#if 0 // NOTE : Manually implemented\n";
+            }
+            file << string::replace("{methodReturnType} {handleName}::{methodName}({methodParameters}) const\n", {
+                get_inner_scope_replacements(replacements, {
+                    { "{methodReturnType}", methodInfo.method.returnType },
+                    { "{methodName}", methodInfo.method.name },
+                    { "{methodParameters}", get_parameter_list(methodInfo.method.parameters) },
+                })
+                });
+            file << "{\n" << "    " << methodInfo.body << "\n}\n";
+            if (methodInfo.manuallyImplemented) {
+                file << "#endif\n";
+            }
         }
         file << "\n";
     }

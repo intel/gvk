@@ -426,6 +426,7 @@ VkResult initialize_control_block<CommandBuffer>(CommandBuffer& commandBuffer)
     //  https://vulkan.lunarg.com/doc/view/latest/linux/vkspec.html#fundamentals-objectmodel-overview
     //  https://renderdoc.org/vulkan-layer-guide.html
     *(void**)commandBufferControlBlock.mVkCommandBuffer = *(void**)commandBufferControlBlock.mDevice.get<VkDevice>();
+    commandBufferControlBlock.mDispatchTable = commandBufferControlBlock.mDevice.get<DispatchTable>();
     return VK_SUCCESS;
 }
 
