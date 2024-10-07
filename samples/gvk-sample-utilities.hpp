@@ -52,6 +52,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 class GvkSampleContext final
     : public gvk::Context
 {
+public:
+    using gvk::Context::Context;
+
 private:
     static VkBool32 debug_utils_messenger_callback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -80,36 +83,41 @@ private:
 public:
     static VkResult create(const char* pApplicationName, GvkSampleContext* pGvkSampleContext)
     {
-        // Setup a VkInstanceCreateInfo.
-        auto applicationInfo = gvk::get_default<VkApplicationInfo>();
-        applicationInfo.pApplicationName = pApplicationName;
-        auto instanceCreateInfo = gvk::get_default<VkInstanceCreateInfo>();
-        instanceCreateInfo.pApplicationInfo = &applicationInfo;
+        assert(pApplicationName);
+        assert(pGvkSampleContext);
+        gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
 
-        // Setup VkDeviceCreateInfo with desired VkPhysicalDeviceFeatures.
-        auto physicalDeviceFeatures = gvk::get_default<VkPhysicalDeviceFeatures>();
-        physicalDeviceFeatures.samplerAnisotropy = VK_TRUE;
-        auto deviceCreateInfo = gvk::get_default<VkDeviceCreateInfo>();
-        deviceCreateInfo.pEnabledFeatures = &physicalDeviceFeatures;
+            // Setup a VkInstanceCreateInfo.
+            auto applicationInfo = gvk::get_default<VkApplicationInfo>();
+            applicationInfo.pApplicationName = pApplicationName;
+            auto instanceCreateInfo = gvk::get_default<VkInstanceCreateInfo>();
+            instanceCreateInfo.pApplicationInfo = &applicationInfo;
 
-        // VkDebugUtilsMessengerCreateInfoEXT is an optional member of gvk::Context::CreateInfo.
-        //  Providing a VkDebugUtilsMessengerCreateInfoEXT indicates that the debug
-        //  utils extension should be loaded.
-        auto debugUtilsMessengerCreateInfo = gvk::get_default<VkDebugUtilsMessengerCreateInfoEXT>();
-        debugUtilsMessengerCreateInfo.pfnUserCallback = debug_utils_messenger_callback;
+            // Setup VkDeviceCreateInfo with desired VkPhysicalDeviceFeatures.
+            auto physicalDeviceFeatures = gvk::get_default<VkPhysicalDeviceFeatures>();
+            physicalDeviceFeatures.samplerAnisotropy = VK_TRUE;
+            auto deviceCreateInfo = gvk::get_default<VkDeviceCreateInfo>();
+            deviceCreateInfo.pEnabledFeatures = &physicalDeviceFeatures;
 
-        // Populate the gvk::Context::CreateInfo and call the base implementation.
-        auto contextCreateInfo = gvk::get_default<gvk::Context::CreateInfo>();
-        contextCreateInfo.pInstanceCreateInfo = &instanceCreateInfo;
-        contextCreateInfo.loadApiDumpLayer = VK_FALSE;
-        contextCreateInfo.loadValidationLayer = VK_FALSE;
-        contextCreateInfo.loadWsiExtensions = VK_TRUE;
-        contextCreateInfo.pDebugUtilsMessengerCreateInfo = &debugUtilsMessengerCreateInfo;
-        contextCreateInfo.pDeviceCreateInfo = &deviceCreateInfo;
-        auto gvkResult = gvk::Context::create(&contextCreateInfo, nullptr, pGvkSampleContext);
-#ifdef VK_NO_PROTOTYPES
-        gvk_sample_set_entry_points(pGvkSampleContext->get_devices()[0]);
-#endif
+            // VkDebugUtilsMessengerCreateInfoEXT is an optional member of gvk::Context::CreateInfo.
+            //  Providing a VkDebugUtilsMessengerCreateInfoEXT indicates that the debug
+            //  utils extension should be loaded.
+            auto debugUtilsMessengerCreateInfo = gvk::get_default<VkDebugUtilsMessengerCreateInfoEXT>();
+            debugUtilsMessengerCreateInfo.pfnUserCallback = debug_utils_messenger_callback;
+
+            // Populate the gvk::Context::CreateInfo and call the base implementation.
+            auto contextCreateInfo = gvk::get_default<gvk::Context::CreateInfo>();
+            contextCreateInfo.pInstanceCreateInfo = &instanceCreateInfo;
+            contextCreateInfo.loadApiDumpLayer = VK_FALSE;
+            contextCreateInfo.loadValidationLayer = VK_TRUE;
+            contextCreateInfo.loadWsiExtensions = VK_TRUE;
+            contextCreateInfo.pDebugUtilsMessengerCreateInfo = &debugUtilsMessengerCreateInfo;
+            contextCreateInfo.pDeviceCreateInfo = &deviceCreateInfo;
+            gvk_result(gvk::Context::create(&contextCreateInfo, nullptr, pGvkSampleContext));
+    #ifdef VK_NO_PROTOTYPES
+            gvk_sample_set_entry_points(pGvkSampleContext->get<gvk::Devices>()[0]);
+    #endif
+        } gvk_result_scope_end;
         return gvkResult;
     }
 };
@@ -219,47 +227,47 @@ inline VkResult gvk_sample_create_sys_surface(const gvk::Context& context, gvk::
 {
     assert(context);
     assert(pSystemSurface);
-    const auto& vkInstanceCreateInfo = context.get_instance().get<VkInstanceCreateInfo>();
+    const auto& vkInstanceCreateInfo = context.get<gvk::Instance>().get<VkInstanceCreateInfo>();
     auto systemSurfaceCreateInfo = gvk::get_default<gvk::system::Surface::CreateInfo>();
     if (vkInstanceCreateInfo.pApplicationInfo) {
         systemSurfaceCreateInfo.pTitle = vkInstanceCreateInfo.pApplicationInfo->pApplicationName;
     }
-    return gvk::system::Surface::create(&systemSurfaceCreateInfo, pSystemSurface) ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED;
+    return (VkResult)gvk::system::Surface::create(&systemSurfaceCreateInfo, pSystemSurface);
 }
 
-inline VkResult gvk_sample_create_wsi_manager(const gvk::Context& context, const gvk::system::Surface& systemSurface, gvk::WsiManager* pWsiManager)
+inline VkResult gvk_sample_create_wsi_context(const gvk::Context& gvkContext, const gvk::system::Surface& systemSurface, gvk::wsi::Context* pWsiContext)
 {
-    assert(context);
-    assert(pWsiManager);
-    auto device = context.get_devices()[0];
-    auto wsiManagerCreateInfo = gvk::get_default<gvk::WsiManager::CreateInfo>();
+    assert(gvkContext);
+    assert(pWsiContext);
+    auto device = gvkContext.get<gvk::Devices>()[0];
+    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+
+        // Create gvk::SurfaceKHR
+        const VkBaseInStructure* pSurfaceCreateInfo = nullptr;
 #ifdef VK_USE_PLATFORM_XLIB_KHR
-    auto xlibSurfaceCreateInfo = gvk::get_default<VkXlibSurfaceCreateInfoKHR>();
-    xlibSurfaceCreateInfo.dpy = (Display*)systemSurface.get_display();
-    xlibSurfaceCreateInfo.window = (Window)systemSurface.get_window();
-    wsiManagerCreateInfo.pXlibSurfaceCreateInfoKHR = &xlibSurfaceCreateInfo;
+        auto xlibSurfaceCreateInfo = gvk::get_default<VkXlibSurfaceCreateInfoKHR>();
+        xlibSurfaceCreateInfo.dpy = systemSurface.get<gvk::system::Surface::PlatformInfo>().x11Display;
+        xlibSurfaceCreateInfo.window = systemSurface.get<gvk::system::Surface::PlatformInfo>().x11Window;
+        pSurfaceCreateInfo = (VkBaseInStructure*)&xlibSurfaceCreateInfo;
 #endif
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-    auto win32SurfaceCreateInfo = gvk::get_default<VkWin32SurfaceCreateInfoKHR>();
-    win32SurfaceCreateInfo.hinstance = GetModuleHandle(NULL);
-    win32SurfaceCreateInfo.hwnd = (HWND)systemSurface.get_hwnd();
-    wsiManagerCreateInfo.pWin32SurfaceCreateInfoKHR = &win32SurfaceCreateInfo;
+        auto win32SurfaceCreateInfo = gvk::get_default<VkWin32SurfaceCreateInfoKHR>();
+        win32SurfaceCreateInfo.hinstance = GetModuleHandle(NULL);
+        win32SurfaceCreateInfo.hwnd = systemSurface.get<gvk::system::Surface::PlatformInfo>().hwnd;
+        pSurfaceCreateInfo = (VkBaseInStructure*)&win32SurfaceCreateInfo;
 #endif
+        gvk::SurfaceKHR surface = VK_NULL_HANDLE;
+        gvk_result(gvk::SurfaceKHR::create(device.get<gvk::Instance>(), pSurfaceCreateInfo, nullptr, &surface));
 
-    // sampleCount is a request.  The max supported sample count that is less than
-    //  or equal to the requested value will be selected.
-    wsiManagerCreateInfo.sampleCount = VK_SAMPLE_COUNT_64_BIT;
-
-    // depthFormat is a request.  The supported VkFormat with the greatest bit
-    //  depth that is less than or equal to the requested VkFormat will be selected.
-    wsiManagerCreateInfo.depthFormat = VK_FORMAT_D32_SFLOAT;
-
-    // presentMode is a request.  If the request cannot be met, it will default to
-    //  VK_PRESENT_MODE_FIFO_KHR.
-    wsiManagerCreateInfo.presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
-
-    wsiManagerCreateInfo.queueFamilyIndex = gvk::get_queue_family(device, 0).queues[0].get<VkDeviceQueueCreateInfo>().queueFamilyIndex;
-    return gvk::WsiManager::create(device, &wsiManagerCreateInfo, nullptr, pWsiManager);
+        // Create gvk::wsi::Context
+        auto wsiContextCreateInfo = gvk::get_default<gvk::wsi::Context::CreateInfo>();
+        wsiContextCreateInfo.queueFamilyIndex = gvk::get_queue_family(device, 0).queues[0].get<VkDeviceQueueCreateInfo>().queueFamilyIndex;
+        wsiContextCreateInfo.presentMode = VK_PRESENT_MODE_MAILBOX_KHR; // Request; if unavailable VK_PRESENT_MODE_FIFO_KHR will be selected
+        wsiContextCreateInfo.depthFormat = VK_FORMAT_D32_SFLOAT; // Request; if unavailable the supported VkFormat with the greatest bit depth that is less than or equal will be selected
+        wsiContextCreateInfo.sampleCount = VK_SAMPLE_COUNT_64_BIT; // Request; if unavailable the max supported sample count that is less than or equal will be selected
+        gvk_result(gvk::wsi::Context::create(device, surface, &wsiContextCreateInfo, nullptr, pWsiContext));
+    } gvk_result_scope_end;
+    return gvkResult;
 }
 
 inline VkResult gvk_sample_validate_shader_info(const gvk::spirv::ShaderInfo& shaderInfo)
@@ -477,7 +485,7 @@ inline VkResult gvk_sample_create_uniform_buffer(const gvk::Context& context, gv
     VmaAllocationCreateInfo vmaAllocationCreateInfo{ };
     vmaAllocationCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
     vmaAllocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
-    return gvk::Buffer::create(context.get_devices()[0], &bufferCreateInfo, &vmaAllocationCreateInfo, pUniformBuffer);
+    return gvk::Buffer::create(context.get<gvk::Devices>()[0], &bufferCreateInfo, &vmaAllocationCreateInfo, pUniformBuffer);
 }
 
 struct GvkSampleRenderTargetCreateInfo
@@ -505,7 +513,7 @@ inline VkResult gvk_sample_create_render_target(const gvk::Context& context, Gvk
             assert(requestedDepthFormatInfo.componentCount);
             assert(requestedDepthFormatInfo.pComponents);
             auto requestedDepthBits = requestedDepthFormatInfo.pComponents[0].bits;
-            const auto& physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
+            const auto& physicalDevice = context.get<gvk::Devices>()[0].get<gvk::PhysicalDevice>();
             gvk::enumerate_formats(
                 physicalDevice.get<gvk::DispatchTable>().gvkGetPhysicalDeviceFormatProperties2,
                 physicalDevice,
@@ -541,7 +549,7 @@ inline VkResult gvk_sample_create_render_target(const gvk::Context& context, Gvk
 
         // We do a similar validation for sampleCount...
         if (VK_SAMPLE_COUNT_1_BIT < createInfo.sampleCount) {
-            const auto& physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
+            const auto& physicalDevice = context.get<gvk::Devices>()[0].get<gvk::PhysicalDevice>();
             auto maxSampleCount = gvk::get_max_framebuffer_sample_count(physicalDevice, VK_TRUE, createInfo.depthFormat != VK_FORMAT_UNDEFINED, VK_FALSE);
             createInfo.sampleCount = std::min(createInfo.sampleCount, maxSampleCount);
         }
@@ -613,21 +621,18 @@ inline VkResult gvk_sample_create_render_target(const gvk::Context& context, Gvk
         renderPassCreateInfo.subpassCount = 1;
         renderPassCreateInfo.pSubpasses = &subpassDescription;
         gvk::RenderPass renderPass;
-        gvk_result(gvk::RenderPass::create(context.get_devices()[0], &renderPassCreateInfo, nullptr, &renderPass));
+        gvk_result(gvk::RenderPass::create(context.get<gvk::Devices>()[0], &renderPassCreateInfo, nullptr, &renderPass));
 
+        // Create gvk::RenderTarget...
         // Prepare VkFramebufferCreateInfo.  Any attachments that aren't proivded via
         //  the VkFramebufferCreateInfo pAttachments member will be automatically
         //  created by gvk::RenderTarget.  We're not creating any here explicitly, so
         //  all of the attachments are created by the gvk::RenderTarget implicitly...
-        auto framebufferCreateInfo = gvk::get_default<VkFramebufferCreateInfo>();
-        framebufferCreateInfo.renderPass = renderPass;
-        framebufferCreateInfo.width = createInfo.extent.width;
-        framebufferCreateInfo.height = createInfo.extent.height;
-
-        // Create gvk::RenderTarget...
-        auto renderTargetCreateInfo = gvk::get_default<gvk::RenderTarget::CreateInfo>();
-        renderTargetCreateInfo.pFramebufferCreateInfo = &framebufferCreateInfo;
-        gvk_result(gvk::RenderTarget::create(context.get_devices()[0], &renderTargetCreateInfo, nullptr, pRenderTarget));
+        auto renderTargetCreateInfo = gvk::get_default<VkFramebufferCreateInfo>();
+        renderTargetCreateInfo.renderPass = renderPass;
+        renderTargetCreateInfo.width = createInfo.extent.width;
+        renderTargetCreateInfo.height = createInfo.extent.height;
+        gvk_result(gvk::RenderTarget::create(context.get<gvk::Devices>()[0], &renderTargetCreateInfo, nullptr, pRenderTarget));
 
         // Transition the gvk::RenderTarget object's gvk::Image objects to the correct
         //  VkImageLayouts.  gvk::RenderTarget::get_image_memory_barrier() returns a
@@ -638,20 +643,20 @@ inline VkResult gvk_sample_create_render_target(const gvk::Context& context, Gvk
         //  changed by something besides the associated gvk::RenderPass, your
         //  application must keep track of this.
         gvk::execute_immediately(
-            context.get_devices()[0],
-            gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
-            context.get_command_buffers()[0],
+            context.get<gvk::Devices>()[0],
+            gvk::get_queue_family(context.get<gvk::Devices>()[0], 0).queues[0],
+            context.get<gvk::CommandBuffers>()[0],
             VK_NULL_HANDLE,
             [&](auto)
             {
-                auto attachmentCount = pRenderTarget->get_framebuffer().get<gvk::ImageViews>().size();
+                auto attachmentCount = pRenderTarget->get<gvk::Framebuffer>().get<gvk::ImageViews>().size();
                 for (size_t i = 0; i < attachmentCount; ++i) {
-                    auto imageMemoryBarrier = pRenderTarget->get_image_memory_barrier((uint32_t)i);
+                    auto imageMemoryBarrier = pRenderTarget->get<VkImageMemoryBarrier>((uint32_t)i);
                     if (imageMemoryBarrier.oldLayout) {
                         imageMemoryBarrier.newLayout = imageMemoryBarrier.oldLayout;
                         imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
                         vkCmdPipelineBarrier(
-                            context.get_command_buffers()[0],
+                            context.get<gvk::CommandBuffers>()[0],
                             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                             VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
                             0,

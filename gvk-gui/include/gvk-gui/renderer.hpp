@@ -50,34 +50,52 @@ public:
         const uint32_t* pTextStreamCodePoints { nullptr };
     };
 
-    Renderer() = default;
-    Renderer(Renderer&& other);
-    Renderer& operator=(Renderer&& other);
     static VkResult create(const Device& device, VkQueue vkQueue, VkCommandBuffer vkCommandBuffer, const RenderPass& renderPass, const VkAllocationCallbacks* pAllocator, Renderer* pRenderer);
-    ~Renderer();
-
-    const Device& get_device() const;
-    const Pipeline& get_pipeline() const;
+    
+    template <typename T>
+    inline const T& get() const
+    {
+        assert(mReference && "Attempting to dereference nullref gvk::gui::Renderer");
+        if constexpr (std::is_same_v<T, Device>) { return mReference->mDevice; }
+        if constexpr (std::is_same_v<T, Pipeline>) { return mReference->mPipeline; }
+    }
 
     void begin_gui(const BeginInfo& beginInfo);
-    VkResult end_gui(uint32_t fenceCount, const VkFence* pVkFences);
-    void record_cmds(VkCommandBuffer vkCommandBuffer) const;
+    VkResult end_gui(uint32_t resourceId);
+    void record_cmds(VkCommandBuffer vkCommandBuffer, uint32_t resourceId) const;
 
 private:
     VkResult create_pipeline(const RenderPass& renderPass, const VkAllocationCallbacks* pAllocator);
     VkResult create_image_view_and_sampler(VkQueue vkQueue, VkCommandBuffer vkCommandBuffer, const VkAllocationCallbacks* pAllocator);
     VkResult allocate_and_update_descriptor_set(const VkAllocationCallbacks* pAllocator);
-    void record_render_state_setup_cmds(VkCommandBuffer vkCommandBuffer, const ImDrawData* pImDrawData) const;
+    void record_render_state_setup_cmds(VkCommandBuffer vkCommandBuffer, const ImDrawData* pImDrawData, VkBuffer vkVertexIndexBuffer, VkDeviceSize indexDataOffset) const;
 
-    ImGuiContext* mpImGuiContext { nullptr };
-    Device mDevice;
-    Pipeline mPipeline;
-    ImageView mFontImageView;
-    Sampler mFontSampler;
-    DescriptorSet mFontDescriptorSet;
-    Buffer mVertexIndexBuffer;
-    VkDeviceSize mIndexDataOffset { };
-    uint32_t mIndexCount { };
+    class VertexIndexBufferResources final
+    {
+    public:
+        Buffer buffer{ VK_NULL_HANDLE };
+        VkDeviceSize indexDataOffset{ };
+        VkDeviceSize indexCount{ };
+    };
+
+    class ControlBlock final
+    {
+    public:
+        ControlBlock();
+        ~ControlBlock();
+        ImGuiContext* mpImGuiContext{ nullptr };
+        Device mDevice{ VK_NULL_HANDLE };
+        Pipeline mPipeline{ VK_NULL_HANDLE };
+        ImageView mFontImageView{ VK_NULL_HANDLE };
+        Sampler mFontSampler{ VK_NULL_HANDLE };
+        DescriptorSet mFontDescriptorSet{ VK_NULL_HANDLE };
+        std::unordered_map<uint32_t, VertexIndexBufferResources> mVertexIndexBufferResources;
+    private:
+        ControlBlock(const ControlBlock&) = delete;
+        ControlBlock& operator=(const ControlBlock&) = delete;
+    };
+
+    gvk_reference_type(Renderer)
 };
 
 } // namespace gui

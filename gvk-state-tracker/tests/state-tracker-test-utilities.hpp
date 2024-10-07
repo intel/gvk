@@ -39,7 +39,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-structures/get-stype.hpp"
 #include "gvk-structures/to-string.hpp"
 #include "gvk-handles/utilities.hpp"
-#include "gvk-handles/wsi-manager.hpp"
+#include "gvk-handles/wsi-context.hpp"
 #include "gvk-structures/to-string.hpp"
 #include "VK_LAYER_INTEL_gvk_state_tracker.hpp"
 
@@ -83,7 +83,7 @@ public:
     static VkResult create(StateTrackerValidationContext* pContext);
 
 protected:
-    VkResult create_devices(const VkDeviceCreateInfo* pDeviceCreateInfo, const VkAllocationCallbacks*) override final;
+    VkResult create_devices(const VkDeviceCreateInfo* pDeviceCreateInfo, std::vector<gvk::Device>* pDevices) const override final;
 };
 
 class ObjectRecord final
@@ -448,7 +448,7 @@ public:
 inline VkFormat get_render_pass_color_format(const gvk::Context& context)
 {
     auto colorFormat = VK_FORMAT_UNDEFINED;
-    const auto& physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
+    const auto& physicalDevice = context.get<gvk::Devices>()[0].get<gvk::PhysicalDevice>();
     gvk::enumerate_formats(
         physicalDevice.get<gvk::DispatchTable>().gvkGetPhysicalDeviceFormatProperties2,
         physicalDevice,
@@ -476,10 +476,10 @@ inline VkFormat get_render_pass_color_format(const gvk::Context& context)
 inline std::map<GvkStateTrackedObject, ObjectRecord> get_expected_instance_objects(const gvk::Context& context)
 {
     std::map<GvkStateTrackedObject, ObjectRecord> expectedInstanceObjects;
-    for (const auto& physicalDevice : context.get_physical_devices()) {
+    for (const auto& physicalDevice : context.get<gvk::PhysicalDevices>()) {
         create_state_tracked_object_record(physicalDevice, VkApplicationInfo { }, expectedInstanceObjects);
     }
-    for (const auto& device : context.get_devices()) {
+    for (const auto& device : context.get<gvk::Devices>()) {
         create_state_tracked_object_record(device, device.get<VkDeviceCreateInfo>(), expectedInstanceObjects);
         for (const auto& queueFamily : device.get<gvk::QueueFamilies>()) {
             for (const auto& queue : queueFamily.queues) {
@@ -487,8 +487,8 @@ inline std::map<GvkStateTrackedObject, ObjectRecord> get_expected_instance_objec
             }
         }
     }
-    for (const auto& commandBuffer : context.get_command_buffers()) {
-        const auto& commandPool = context.get_command_buffers()[0].get<gvk::CommandPool>();
+    for (const auto& commandBuffer : context.get<gvk::CommandBuffers>()) {
+        const auto& commandPool = context.get<gvk::CommandBuffers>()[0].get<gvk::CommandPool>();
         create_state_tracked_object_record(commandPool, commandPool.get<VkCommandPoolCreateInfo>(), expectedInstanceObjects);
         create_state_tracked_object_record(commandBuffer, commandBuffer.get<VkCommandBufferAllocateInfo>(), expectedInstanceObjects);
     }
@@ -626,7 +626,7 @@ inline void create_memory_bound_image(const gvk::Context& context, const VkImage
     assert(pImage);
     assert(pDeviceMemory);
 
-    ASSERT_EQ(gvk::Image::create(context.get_devices()[0], &imageCreateInfo, (const VkAllocationCallbacks*)nullptr, pImage), VK_SUCCESS);
+    ASSERT_EQ(gvk::Image::create(context.get<gvk::Devices>()[0], &imageCreateInfo, (const VkAllocationCallbacks*)nullptr, pImage), VK_SUCCESS);
 
     auto imageMemoryRequirementsInfo = gvk::get_default<VkImageMemoryRequirementsInfo2>();
     imageMemoryRequirementsInfo.image = *pImage;
@@ -637,7 +637,7 @@ inline void create_memory_bound_image(const gvk::Context& context, const VkImage
     auto memoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     uint32_t memoryTypeCount = VK_MAX_MEMORY_TYPES;
     std::array<uint32_t, VK_MAX_MEMORY_TYPES> memoryTypeIndices;
-    gvk::get_compatible_memory_type_indices(context.get_devices()[0].get<gvk::PhysicalDevice>(), memoryRequirements.memoryRequirements.memoryTypeBits, memoryPropertyFlags, &memoryTypeCount, memoryTypeIndices.data());
+    gvk::get_compatible_memory_type_indices(context.get<gvk::Devices>()[0].get<gvk::PhysicalDevice>(), memoryRequirements.memoryRequirements.memoryTypeBits, memoryPropertyFlags, &memoryTypeCount, memoryTypeIndices.data());
     ASSERT_TRUE(1 <= memoryTypeCount);
 
     auto memoryAllocateInfo = gvk::get_default<VkMemoryAllocateInfo>();
@@ -778,16 +778,12 @@ inline void create_render_target(const gvk::Context& context, const RenderTarget
     renderPassCreateInfo.dependencyCount = VK_SAMPLE_COUNT_1_BIT < pCreateInfo->sampleCount ? 2 : 1;
     renderPassCreateInfo.pDependencies = subpassDependencies.data();
     gvk::RenderPass renderPass;
-    ASSERT_EQ(gvk::RenderPass::create(context.get_devices()[0], &renderPassCreateInfo, nullptr, &renderPass), VK_SUCCESS);
-
-    // Prepare VkFramebufferCreateInfo
-    auto framebufferCreateInfo = gvk::get_default<VkFramebufferCreateInfo>();
-    framebufferCreateInfo.renderPass = renderPass;
-    framebufferCreateInfo.width = pCreateInfo->extent.width;
-    framebufferCreateInfo.height = pCreateInfo->extent.height;
+    ASSERT_EQ(gvk::RenderPass::create(context.get<gvk::Devices>()[0], &renderPassCreateInfo, nullptr, &renderPass), VK_SUCCESS);
 
     // Create gvk::RenderTarget
-    auto renderTargetCreateInfo = gvk::get_default<gvk::RenderTarget::CreateInfo>();
-    renderTargetCreateInfo.pFramebufferCreateInfo = &framebufferCreateInfo;
-    ASSERT_EQ(gvk::RenderTarget::create(context.get_devices()[0], &renderTargetCreateInfo, nullptr, pRenderTarget), VK_SUCCESS);
+    auto renderTargetCreateInfo = gvk::get_default<VkFramebufferCreateInfo>();
+    renderTargetCreateInfo.renderPass = renderPass;
+    renderTargetCreateInfo.width = pCreateInfo->extent.width;
+    renderTargetCreateInfo.height = pCreateInfo->extent.height;
+    ASSERT_EQ(gvk::RenderTarget::create(context.get<gvk::Devices>()[0], &renderTargetCreateInfo, nullptr, pRenderTarget), VK_SUCCESS);
 }

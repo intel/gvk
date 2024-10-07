@@ -66,7 +66,7 @@ inline void validate_pipeline_layout_creation(
 
     // Create gvk::PipelineLayout
     gvk::PipelineLayout pipelineLayout;
-    ASSERT_EQ(gvk::spirv::create_pipeline_layout(context.get_devices()[0], bindingInfo, nullptr, &pipelineLayout), VK_SUCCESS);
+    ASSERT_EQ(gvk::spirv::create_pipeline_layout(context.get<gvk::Devices>()[0], bindingInfo, nullptr, &pipelineLayout), VK_SUCCESS);
 
     // Validate descriptorSetLayoutBindings
     const auto& descriptorSetLayouts = pipelineLayout.get<gvk::DescriptorSetLayouts>();

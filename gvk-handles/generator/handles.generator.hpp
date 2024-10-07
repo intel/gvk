@@ -48,10 +48,10 @@ public:
             add_member(MemberInfo("std::vector<PhysicalDevice>", "mPhysicalDevices", "std::vector<PhysicalDevice>"));
             add_member(MemberInfo("bool", "mUnmanaged"));
             add_manually_implemented_dtor();
-        }
+        } else
         if (handle.name == "VkPhysicalDevice") {
             add_member(MemberInfo("VkInstance", "mVkInstance", "VkInstance"));
-        }
+        } else
         if (handle.name == "VkDevice") {
             add_manually_implemented_ctor("VkResult create_unmanaged(const PhysicalDevice& physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, const DispatchTable* pDispatchTable, VkDevice vkDevice, Device *pGvkDevice)");
             add_member(MemberInfo("Instance", "mInstance", "Instance"));
@@ -59,18 +59,18 @@ public:
             add_member(MemberInfo("VmaAllocator", "mVmaAllocator", "VmaAllocator"));
             add_member(MemberInfo("bool", "mUnmanaged"));
             add_manually_implemented_dtor();
-        }
+        } else
         if (handle.name == "VkQueue") {
             add_member(MemberInfo("VkDevice", "mVkDevice", "VkDevice"));
             add_member(MemberInfo("gvk::Auto<VkDeviceQueueCreateInfo>", "mDeviceQueueCreateInfo", "VkDeviceQueueCreateInfo"));
-        }
+        } else
         if (handle.name == "VkBuffer") {
             add_manually_implemented_ctor("VkResult create(const Device& device, const VkBufferCreateInfo* pBufferCreateInfo, const VmaAllocationCreateInfo* pAllocationCreateInfo, Buffer* pBuffer)");
             add_manually_implemented_ctor("VkResult create(const Device& device, const VkBufferCreateInfo* pCreateInfo, std::nullptr_t pAllocator, Buffer* pBuffer)");
             add_member(MemberInfo("VmaAllocation", "mVmaAllocation", "VmaAllocation"));
             add_member(MemberInfo("VmaAllocationCreateInfo", "mVmaAllocationCreateInfo", "VmaAllocationCreateInfo"));
             add_manually_implemented_dtor();
-        }
+        } else
         if (handle.name == "VkImage") {
             add_manually_implemented_ctor("VkResult create(const Device& device, const VkImageCreateInfo* pImageCreateInfo, const VmaAllocationCreateInfo* pAllocationCreateInfo, Image* pImage)");
             add_manually_implemented_ctor("VkResult create(const Device& device, const VkImageCreateInfo* pCreateInfo, std::nullptr_t pAllocator, Image* pImage)");
@@ -78,10 +78,13 @@ public:
             add_member(MemberInfo("VmaAllocation", "mVmaAllocation", "VmaAllocation"));
             add_member(MemberInfo("VmaAllocationCreateInfo", "mVmaAllocationCreateInfo", "VmaAllocationCreateInfo"));
             add_manually_implemented_dtor();
-        }
+        } else
         if (handle.name == "VkDeferredOperationKHR") {
             generate_ctors(true, false);
-        }
+        } else
+        if (handle.name == "VkSurfaceKHR") {
+            add_manually_implemented_ctor("VkResult create(const Instance& instance, const VkBaseInStructure* pCreateInfo, const VkAllocationCallbacks* pAllocator, SurfaceKHR* pSurface)");
+        } else
         if (handle.name == "VkSwapchainKHR") {
             add_member(MemberInfo("std::vector<Image>", "mImages", "std::vector<Image>"));
         }

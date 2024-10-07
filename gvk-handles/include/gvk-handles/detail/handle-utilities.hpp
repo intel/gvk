@@ -36,6 +36,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace gvk {
 
+class Mesh;
+class RenderTarget;
+
 class QueueFamily final
 {
 public:

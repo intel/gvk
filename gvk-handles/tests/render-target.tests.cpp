@@ -168,18 +168,14 @@ VkResult create_validation_render_target(const gvk::Context& context, RenderTarg
         renderPassCreateInfo.dependencyCount = VK_SAMPLE_COUNT_1_BIT < createInfo.sampleCount ? 2 : 1;
         renderPassCreateInfo.pDependencies = subpassDependencies.data();
         gvk::RenderPass renderPass;
-        gvk_result(gvk::RenderPass::create(context.get_devices()[0], &renderPassCreateInfo, nullptr, &renderPass));
+        gvk_result(gvk::RenderPass::create(context.get<gvk::Devices>()[0], &renderPassCreateInfo, nullptr, &renderPass));
 
         // Prepare VkFramebufferCreateInfo
-        auto framebufferCreateInfo = gvk::get_default<VkFramebufferCreateInfo>();
-        framebufferCreateInfo.renderPass = renderPass;
-        framebufferCreateInfo.width = createInfo.extent.width;
-        framebufferCreateInfo.height = createInfo.extent.height;
-
-        // Create gvk::RenderTarget
-        auto renderTargetCreateInfo = gvk::get_default<gvk::RenderTarget::CreateInfo>();
-        renderTargetCreateInfo.pFramebufferCreateInfo = &framebufferCreateInfo;
-        gvk_result(gvk::RenderTarget::create(context.get_devices()[0], &renderTargetCreateInfo, nullptr, pRenderTarget));
+        auto renderTargetCreateInfo = gvk::get_default<VkFramebufferCreateInfo>();
+        renderTargetCreateInfo.renderPass = renderPass;
+        renderTargetCreateInfo.width = createInfo.extent.width;
+        renderTargetCreateInfo.height = createInfo.extent.height;
+        gvk_result(gvk::RenderTarget::create(context.get<gvk::Devices>()[0], &renderTargetCreateInfo, nullptr, pRenderTarget));
     } gvk_result_scope_end
     return gvkResult;
 }
@@ -192,7 +188,7 @@ void validate_render_target(
 {
     gvk::RenderTarget renderTarget;
     create_validation_render_target(context, renderTargetCreateInfo, &renderTarget);
-    const auto& imageViews = renderTarget.get_framebuffer().get<gvk::ImageViews>();
+    const auto& imageViews = renderTarget.get<gvk::Framebuffer>().get<gvk::ImageViews>();
     ASSERT_EQ(imageViews.size(), expectedImageCreateInfos.size());
     for (size_t i = 0; i < imageViews.size(); ++i) {
         if (imageViews[i].get<gvk::Image>().get<VkImageCreateInfo>() != expectedImageCreateInfos[i]) {
@@ -218,7 +214,7 @@ TEST(RenderTarget, ResourceCreation)
 
     // Get color VkFormat
     auto colorFormat = VK_FORMAT_UNDEFINED;
-    const auto& physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
+    const auto& physicalDevice = context.get<gvk::Devices>()[0].get<gvk::PhysicalDevice>();
     gvk::enumerate_formats(
         physicalDevice.get<gvk::DispatchTable>().gvkGetPhysicalDeviceFormatProperties2,
         physicalDevice,

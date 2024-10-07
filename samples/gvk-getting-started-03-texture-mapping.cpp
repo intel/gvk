@@ -71,14 +71,14 @@ VkResult create_image_and_view(const gvk::Context& context, gvk::ImageView* pIma
         VmaAllocationCreateInfo allocationCreateInfo{ };
         allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
         gvk::Image image;
-        gvk_result(gvk::Image::create(context.get_devices()[0], &imageCreateInfo, &allocationCreateInfo, &image));
+        gvk_result(gvk::Image::create(context.get<gvk::Devices>()[0], &imageCreateInfo, &allocationCreateInfo, &image));
 
         // Get the gvk::Device object's VmaAllocator, then get the gvk::Image
         //  object's VmaAllocationInfo...we'll use this to get the required
         //  size to create a gvk::Buffer to use as a staging resource for
         //  uploading the image data...
         VmaAllocationInfo allocationInfo{ };
-        auto vmaAllocator = context.get_devices()[0].get<VmaAllocator>();
+        auto vmaAllocator = context.get<gvk::Devices>()[0].get<VmaAllocator>();
         vmaGetAllocationInfo(vmaAllocator, image.get<VmaAllocation>(), &allocationInfo);
 
         // Create the staging gvk::Buffer.
@@ -92,7 +92,7 @@ VkResult create_image_and_view(const gvk::Context& context, gvk::ImageView* pIma
         allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
         allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
         gvk::Buffer stagingBuffer;
-        gvk_result(gvk::Buffer::create(context.get_devices()[0], &bufferCreateInfo, &allocationCreateInfo, &stagingBuffer));
+        gvk_result(gvk::Buffer::create(context.get<gvk::Devices>()[0], &bufferCreateInfo, &allocationCreateInfo, &stagingBuffer));
 
         // Copy the image data that we got from stb into the gvk::Buffer...
         uint8_t* pStagingData = nullptr;
@@ -107,9 +107,9 @@ VkResult create_image_and_view(const gvk::Context& context, gvk::ImageView* pIma
         //  VkFence isn't provided, gvk::execute_immediately() will block the calling
         //  thread until execution of the given VkCommandBuffer has completed...
         gvk_result(gvk::execute_immediately(
-            context.get_devices()[0],
-            gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
-            context.get_command_buffers()[0],
+            context.get<gvk::Devices>()[0],
+            gvk::get_queue_family(context.get<gvk::Devices>()[0], 0).queues[0],
+            context.get<gvk::CommandBuffers>()[0],
             VK_NULL_HANDLE,
             [&](auto)
             {
@@ -123,7 +123,7 @@ VkResult create_image_and_view(const gvk::Context& context, gvk::ImageView* pIma
                 imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
                 imageMemoryBarrier.image = image;
                 vkCmdPipelineBarrier(
-                    context.get_command_buffers()[0],
+                    context.get<gvk::CommandBuffers>()[0],
                     VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                     VK_PIPELINE_STAGE_TRANSFER_BIT,
                     0,
@@ -137,7 +137,7 @@ VkResult create_image_and_view(const gvk::Context& context, gvk::ImageView* pIma
                 bufferImageCopy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                 bufferImageCopy.imageSubresource.layerCount = 1;
                 bufferImageCopy.imageExtent = imageCreateInfo.extent;
-                vkCmdCopyBufferToImage(context.get_command_buffers()[0], stagingBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferImageCopy);
+                vkCmdCopyBufferToImage(context.get<gvk::CommandBuffers>()[0], stagingBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferImageCopy);
 
                 // Then transition the gvk::Image to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
                 //  after VK_PIPELINE_STAGE_TRANSFER_BIT and make it available at
@@ -148,7 +148,7 @@ VkResult create_image_and_view(const gvk::Context& context, gvk::ImageView* pIma
                 imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
                 imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                 vkCmdPipelineBarrier(
-                    context.get_command_buffers()[0],
+                    context.get<gvk::CommandBuffers>()[0],
                     VK_PIPELINE_STAGE_TRANSFER_BIT,
                     VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                     0,
@@ -164,7 +164,7 @@ VkResult create_image_and_view(const gvk::Context& context, gvk::ImageView* pIma
         imageViewCreateInfo.image = image;
         imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
         imageViewCreateInfo.format = imageCreateInfo.format;
-        gvk_result(gvk::ImageView::create(context.get_devices()[0], &imageViewCreateInfo, nullptr, pImageView));
+        gvk_result(gvk::ImageView::create(context.get<gvk::Devices>()[0], &imageViewCreateInfo, nullptr, pImageView));
     } gvk_result_scope_end;
 
     // If we got image data from stb, we need to free it...
@@ -192,9 +192,9 @@ VkResult create_mesh(const gvk::Context& context, const glm::vec2& extent, gvk::
             2, 3, 0,
         };
         gvk_result(pMesh->write(
-            context.get_devices()[0],
-            gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
-            context.get_command_buffers()[0],
+            context.get<gvk::Devices>()[0],
+            gvk::get_queue_family(context.get<gvk::Devices>()[0], 0).queues[0],
+            context.get<gvk::CommandBuffers>()[0],
             VK_NULL_HANDLE,
             (uint32_t)vertices.size(),
             vertices.data(),
@@ -214,8 +214,8 @@ int main(int, const char*[])
         gvk::system::Surface systemSurface;
         gvk_result(gvk_sample_create_sys_surface(context, &systemSurface));
 
-        gvk::WsiManager wsiManager;
-        gvk_result(gvk_sample_create_wsi_manager(context, systemSurface, &wsiManager));
+        gvk::wsi::Context wsiContext;
+        gvk_result(gvk_sample_create_wsi_context(context, systemSurface, &wsiContext));
 
         gvk::spirv::ShaderInfo vertexShaderInfo{ };
         vertexShaderInfo.language = gvk::spirv::ShadingLanguage::Glsl;
@@ -254,7 +254,13 @@ int main(int, const char*[])
         fragmentShaderInfo.source = R"(
             #version 450
 
+            /**
+            This provides access to VkImage data referenced by the VkImageView referenced by
+                the descriptor at binding 1 of the VkDescriptorSet bound by the call to
+                vkCmdBindDescriptorSets() during VkCommandBuffer recording.
+            */
             layout(set = 0, binding = 1) uniform sampler2D image;
+
             layout(location = 0) in vec2 fsTexcoord;
             layout(location = 0) out vec4 fragColor;
 
@@ -265,7 +271,7 @@ int main(int, const char*[])
         )";
         gvk::Pipeline pipeline;
         gvk_result(gvk_sample_create_pipeline<VertexPositionTexcoord>(
-            wsiManager.get_render_pass(),
+            wsiContext.get<gvk::RenderPass>(),
             VK_CULL_MODE_BACK_BIT,
             vertexShaderInfo,
             fragmentShaderInfo,
@@ -279,7 +285,7 @@ int main(int, const char*[])
 
         // Create gvk::Sampler...
         gvk::Sampler sampler;
-        gvk_result(gvk::Sampler::create(context.get_devices()[0], &gvk::get_default<VkSamplerCreateInfo>(), nullptr, &sampler));
+        gvk_result(gvk::Sampler::create(context.get<gvk::Devices>()[0], &gvk::get_default<VkSamplerCreateInfo>(), nullptr, &sampler));
 
         gvk::Mesh mesh;
         gvk_result(create_mesh(context, { (float)imageViewExtent.width, (float)imageViewExtent.height }, &mesh));
@@ -287,7 +293,7 @@ int main(int, const char*[])
         gvk::Buffer uniformBuffer;
         gvk_result(gvk_sample_create_uniform_buffer<Uniforms>(context, &uniformBuffer));
         VmaAllocationInfo uniformBufferAllocationInfo{ };
-        vmaGetAllocationInfo(context.get_devices()[0].get<VmaAllocator>(), uniformBuffer.get<VmaAllocation>(), &uniformBufferAllocationInfo);
+        vmaGetAllocationInfo(context.get<gvk::Devices>()[0].get<VmaAllocator>(), uniformBuffer.get<VmaAllocation>(), &uniformBufferAllocationInfo);
 
         std::vector<gvk::DescriptorSet> descriptorSets;
         gvk_result(gvk_sample_allocate_descriptor_sets(pipeline, descriptorSets));
@@ -331,7 +337,7 @@ int main(int, const char*[])
                 /* .pTexelBufferView = */ nullptr,
             }
         };
-        vkUpdateDescriptorSets(context.get_devices()[0], (uint32_t)writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
+        vkUpdateDescriptorSets(context.get<gvk::Devices>()[0], (uint32_t)writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
 
         gvk::system::Clock clock;
         gvk::math::Camera camera;
@@ -339,8 +345,8 @@ int main(int, const char*[])
         gvk::math::Transform quadTransform;
 
         while (
-            !(systemSurface.get_input().keyboard.down(gvk::system::Key::Escape)) &&
-            !(systemSurface.get_status() & gvk::system::Surface::CloseRequested)) {
+            !(systemSurface.get<gvk::system::Input>().keyboard.down(gvk::system::Key::Escape)) &&
+            !(systemSurface.get<gvk::system::Surface::StatusFlags>() & gvk::system::Surface::CloseRequested)) {
             gvk::system::Surface::update();
 
             clock.update();
@@ -353,48 +359,38 @@ int main(int, const char*[])
             uniforms.camera.projection = camera.projection();
             memcpy(uniformBufferAllocationInfo.pMappedData, &uniforms, sizeof(Uniforms));
 
-            wsiManager.update();
-            auto swapchain = wsiManager.get_swapchain();
-            if (swapchain) {
-                auto extent = wsiManager.get_swapchain().get<VkSwapchainCreateInfoKHR>().imageExtent;
+            gvk::wsi::AcquiredImageInfo acquiredImageInfo{ };
+            gvk::RenderTarget acquiredImageRenderTarget = VK_NULL_HANDLE;
+            auto wsiStatus = wsiContext.acquire_next_image(UINT64_MAX, VK_NULL_HANDLE, &acquiredImageInfo, &acquiredImageRenderTarget);
+            if (wsiStatus == VK_SUCCESS || wsiStatus == VK_SUBOPTIMAL_KHR) {
+                const auto& device = context.get<gvk::Devices>()[0];
+                auto extent = wsiContext.get<gvk::SwapchainKHR>().get<VkSwapchainCreateInfoKHR>().imageExtent;
                 camera.set_aspect_ratio(extent.width, extent.height);
 
-                uint32_t imageIndex = 0;
-                auto vkResult = wsiManager.acquire_next_image(UINT64_MAX, VK_NULL_HANDLE, &imageIndex);
-                gvk_result((vkResult == VK_SUCCESS || vkResult == VK_SUBOPTIMAL_KHR) ? VK_SUCCESS : vkResult);
-
-                const auto& device = context.get_devices()[0];
-                const auto& vkFences = wsiManager.get_vk_fences();
-                gvk_result(vkWaitForFences(device, 1, &vkFences[imageIndex], VK_TRUE, UINT64_MAX));
-                gvk_result(vkResetFences(device, 1, &vkFences[imageIndex]));
-
-                const auto& commandBuffer = wsiManager.get_command_buffers()[imageIndex];
-                gvk_result(vkBeginCommandBuffer(commandBuffer, &gvk::get_default<VkCommandBufferBeginInfo>()));
-                auto renderPassBeginInfo = wsiManager.get_render_targets()[imageIndex].get_render_pass_begin_info();
-                vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+                gvk_result(vkBeginCommandBuffer(acquiredImageInfo.commandBuffer, &gvk::get_default<VkCommandBufferBeginInfo>()));
+                const auto& renderPassBeginInfo = acquiredImageRenderTarget.get<VkRenderPassBeginInfo>();
+                vkCmdBeginRenderPass(acquiredImageInfo.commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
                 VkRect2D scissor { { }, renderPassBeginInfo.renderArea.extent };
-                vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+                vkCmdSetScissor(acquiredImageInfo.commandBuffer, 0, 1, &scissor);
                 VkViewport viewport { 0, 0, (float)scissor.extent.width, (float)scissor.extent.height, 0, 1 };
-                vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+                vkCmdSetViewport(acquiredImageInfo.commandBuffer, 0, 1, &viewport);
 
-                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get<gvk::PipelineLayout>(), 0, 1, &descriptorSet.get<VkDescriptorSet>(), 0, nullptr);
-                mesh.record_cmds(commandBuffer);
+                vkCmdBindPipeline(acquiredImageInfo.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+                vkCmdBindDescriptorSets(acquiredImageInfo.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get<gvk::PipelineLayout>(), 0, 1, &descriptorSet.get<VkDescriptorSet>(), 0, nullptr);
+                mesh.record_cmds(acquiredImageInfo.commandBuffer);
 
-                vkCmdEndRenderPass(commandBuffer);
-                gvk_result(vkEndCommandBuffer(commandBuffer));
+                vkCmdEndRenderPass(acquiredImageInfo.commandBuffer);
+                gvk_result(vkEndCommandBuffer(acquiredImageInfo.commandBuffer));
 
                 const auto& queue = gvk::get_queue_family(device, 0).queues[0];
-                auto submitInfo = wsiManager.get_submit_info(imageIndex);
-                gvk_result(vkQueueSubmit(queue, 1, &submitInfo, vkFences[imageIndex]));
+                gvk_result(vkQueueSubmit(queue, 1, &wsiContext.get<VkSubmitInfo>(acquiredImageInfo), acquiredImageInfo.fence));
 
-                auto presentInfo = wsiManager.get_present_info(&imageIndex);
-                vkResult = vkQueuePresentKHR(gvk::get_queue_family(context.get_devices()[0], 0).queues[0], &presentInfo);
-                gvk_result((vkResult == VK_SUCCESS || vkResult == VK_SUBOPTIMAL_KHR) ? VK_SUCCESS : vkResult);
+                wsiStatus = wsiContext.queue_present(queue, &acquiredImageInfo);
+                gvk_result((wsiStatus == VK_SUBOPTIMAL_KHR || wsiStatus == VK_ERROR_OUT_OF_DATE_KHR) ? VK_SUCCESS : wsiStatus);
             }
         }
-        gvk_result(vkDeviceWaitIdle(context.get_devices()[0]));
+        gvk_result(vkDeviceWaitIdle(context.get<gvk::Devices>()[0]));
     } gvk_result_scope_end;
     if (gvkResult) {
         std::cerr << gvk::to_string(gvkResult) << std::endl;

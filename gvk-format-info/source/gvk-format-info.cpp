@@ -69,4 +69,16 @@ uint32_t get_bytes_per_texel(VkFormat format)
     return get_bits_per_texel(format) / 8;
 }
 
+uint32_t get_depth_bits(VkFormat format)
+{
+    GvkFormatInfo formatInfo{ };
+    get_format_info(format, &formatInfo);
+    for (uint32_t i = 0; i < formatInfo.componentCount; ++i) {
+        if (formatInfo.pComponents[i].name == GVK_FORMAT_COMPONENT_NAME_D) {
+            return formatInfo.pComponents[i].bits;
+        }
+    }
+    return 0;
+}
+
 } // namespace gvk

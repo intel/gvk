@@ -25,6 +25,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include "gvk-handles/utilities.hpp"
+#include "gvk-format-info.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -105,6 +106,36 @@ VkSampleCountFlagBits get_max_framebuffer_sample_count(const PhysicalDevice& phy
         return VK_SAMPLE_COUNT_2_BIT;
     }
     return VK_SAMPLE_COUNT_1_BIT;
+}
+
+VkFormat get_max_depth_format(const PhysicalDevice& physicalDevice, VkFormat requestedFormat, VkImageTiling imageTiling)
+{
+    auto selectedDepthFormat = VK_FORMAT_UNDEFINED;
+    uint32_t selectedDepthBits = 0;
+    auto requestedDepthBits = get_depth_bits(requestedFormat);
+    if (requestedDepthBits) {
+        const auto& dispatchTable = physicalDevice.get<DispatchTable>();
+        enumerate_formats(
+            dispatchTable.gvkGetPhysicalDeviceFormatProperties2,
+            physicalDevice,
+            imageTiling,
+            VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT,
+            [&](VkFormat availableDepthFormat)
+            {
+                if (availableDepthFormat == requestedFormat) {
+                    selectedDepthFormat = requestedFormat;
+                } else {
+                    auto availableDepthBits = get_depth_bits(availableDepthFormat);
+                    if (selectedDepthBits < availableDepthBits && availableDepthBits <= requestedDepthBits) {
+                        selectedDepthFormat = availableDepthFormat;
+                        selectedDepthBits = availableDepthBits;
+                    }
+                }
+                return selectedDepthFormat != requestedFormat;
+            }
+        );
+    }
+    return selectedDepthFormat;
 }
 
 } // namespace gvk

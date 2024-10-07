@@ -109,16 +109,19 @@ NOTE : Best practices for loading dll/so libraries (ie. full paths instead of re
         return gvkResult;
     }
 */
-#define gvk_result_scope_begin(GVK_RESULT) VkResult gvkResult = GVK_RESULT; (void)gvkResult; do {
-#define gvk_result(GVK_CALL)                                                               \
-gvkResult = (GVK_CALL);                                                                    \
-if (gvkResult != VK_SUCCESS) {                                                             \
-    if (!gvk::detail::process_result_scope_failure(gvkResult, gvk_file_line, #GVK_CALL)) { \
-        assert(gvkResult == VK_SUCCESS && #GVK_CALL);                                      \
-    }                                                                                      \
-    break;                                                                                 \
+#define gvk_result_scope_begin(GVK_RESULT) VkResult gvkResult = GVK_RESULT; (void)gvkResult; {
+#define gvk_result_scope_break(GVK_RESULT) { gvkResult = GVK_RESULT; goto GVK_FAIL; }
+#define gvk_result(GVK_CALL)                                                                   \
+{                                                                                              \
+    gvkResult = (VkResult)(GVK_CALL);                                                          \
+    if (gvkResult != VK_SUCCESS) {                                                             \
+        if (!gvk::detail::process_result_scope_failure(gvkResult, gvk_file_line, #GVK_CALL)) { \
+            assert(gvkResult == VK_SUCCESS && #GVK_CALL);                                      \
+        }                                                                                      \
+        goto GVK_FAIL;                                                                         \
+    }                                                                                          \
 }
-#define gvk_result_scope_end } while(0);
+#define gvk_result_scope_end } GVK_FAIL:
 
 namespace gvk {
 

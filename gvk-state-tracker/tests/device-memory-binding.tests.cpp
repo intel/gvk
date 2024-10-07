@@ -43,11 +43,11 @@ TEST(DeviceMemoryBindingTracking, BindBufferMemory)
     bufferCreateInfo.size = 64;
     bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     gvk::Buffer buffer;
-    ASSERT_EQ(gvk::Buffer::create(context.get_devices()[0], &bufferCreateInfo, (const VkAllocationCallbacks*)nullptr, &buffer), VK_SUCCESS);
+    ASSERT_EQ(gvk::Buffer::create(context.get<gvk::Devices>()[0], &bufferCreateInfo, (const VkAllocationCallbacks*)nullptr, &buffer), VK_SUCCESS);
     ASSERT_TRUE(create_state_tracked_object_record(buffer, buffer.get<VkBufferCreateInfo>(), expectedInstanceObjects));
 
     VkMemoryRequirements memoryRequirements { };
-    const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
+    const auto& dispatchTable = context.get<gvk::Devices>()[0].get<gvk::DispatchTable>();
     assert(dispatchTable.gvkGetBufferMemoryRequirements);
     dispatchTable.gvkGetBufferMemoryRequirements(buffer.get<gvk::Device>(), buffer, &memoryRequirements);
     auto memoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
@@ -69,7 +69,7 @@ TEST(DeviceMemoryBindingTracking, BindBufferMemory)
     auto enumerateInfo = gvk::get_default<GvkStateTrackedObjectEnumerateInfo>();
     enumerateInfo.pfnCallback = StateTrackerValidationEnumerator::enumerate;
     enumerateInfo.pUserData = &enumerator;
-    auto stateTrackedInstance = gvk::get_state_tracked_object(context.get_instance());
+    auto stateTrackedInstance = gvk::get_state_tracked_object(context.get<gvk::Instance>());
     gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
@@ -117,19 +117,19 @@ TEST(DeviceMemoryBindingTracking, BindBufferMemory2)
     bufferCreateInfo.size = 64;
     bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     gvk::Buffer buffer;
-    ASSERT_EQ(gvk::Buffer::create(context.get_devices()[0], &bufferCreateInfo, (const VkAllocationCallbacks*)nullptr, &buffer), VK_SUCCESS);
+    ASSERT_EQ(gvk::Buffer::create(context.get<gvk::Devices>()[0], &bufferCreateInfo, (const VkAllocationCallbacks*)nullptr, &buffer), VK_SUCCESS);
     ASSERT_TRUE(create_state_tracked_object_record(buffer, buffer.get<VkBufferCreateInfo>(), expectedInstanceObjects));
 
     auto bufferMemoryRequirementsInfo = gvk::get_default<VkBufferMemoryRequirementsInfo2>();
     bufferMemoryRequirementsInfo.buffer = buffer;
     auto memoryRequirements = gvk::get_default<VkMemoryRequirements2>();
-    const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
+    const auto& dispatchTable = context.get<gvk::Devices>()[0].get<gvk::DispatchTable>();
     assert(dispatchTable.gvkGetBufferMemoryRequirements2);
     dispatchTable.gvkGetBufferMemoryRequirements2(buffer.get<gvk::Device>(), &bufferMemoryRequirementsInfo, &memoryRequirements);
     auto memoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     uint32_t memoryTypeCount = VK_MAX_MEMORY_TYPES;
     std::array<uint32_t, VK_MAX_MEMORY_TYPES> memoryTypeIndices;
-    gvk::get_compatible_memory_type_indices(context.get_devices()[0].get<gvk::PhysicalDevice>(), memoryRequirements.memoryRequirements.memoryTypeBits, memoryPropertyFlags, &memoryTypeCount, memoryTypeIndices.data());
+    gvk::get_compatible_memory_type_indices(context.get<gvk::Devices>()[0].get<gvk::PhysicalDevice>(), memoryRequirements.memoryRequirements.memoryTypeBits, memoryPropertyFlags, &memoryTypeCount, memoryTypeIndices.data());
     ASSERT_TRUE(1 <= memoryTypeCount);
 
     auto memoryAllocateInfo = gvk::get_default<VkMemoryAllocateInfo>();
@@ -143,7 +143,7 @@ TEST(DeviceMemoryBindingTracking, BindBufferMemory2)
     auto enumerateInfo = gvk::get_default<GvkStateTrackedObjectEnumerateInfo>();
     enumerateInfo.pfnCallback = StateTrackerValidationEnumerator::enumerate;
     enumerateInfo.pUserData = &enumerator;
-    auto stateTrackedInstance = gvk::get_state_tracked_object(context.get_instance());
+    auto stateTrackedInstance = gvk::get_state_tracked_object(context.get<gvk::Instance>());
     gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
@@ -197,11 +197,11 @@ TEST(DeviceMemoryBindingTracking, BindImageMemory)
     imageCreateInfo.extent.height = 256;
     imageCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     gvk::Image image;
-    ASSERT_EQ(gvk::Image::create(context.get_devices()[0], &imageCreateInfo, (const VkAllocationCallbacks*)nullptr, &image), VK_SUCCESS);
+    ASSERT_EQ(gvk::Image::create(context.get<gvk::Devices>()[0], &imageCreateInfo, (const VkAllocationCallbacks*)nullptr, &image), VK_SUCCESS);
     ASSERT_TRUE(create_state_tracked_object_record(image, image.get<VkImageCreateInfo>(), expectedInstanceObjects));
 
     VkMemoryRequirements memoryRequirements { };
-    const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
+    const auto& dispatchTable = context.get<gvk::Devices>()[0].get<gvk::DispatchTable>();
     assert(dispatchTable.gvkGetImageMemoryRequirements);
     dispatchTable.gvkGetImageMemoryRequirements(image.get<gvk::Device>(), image, &memoryRequirements);
     auto memoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
@@ -223,7 +223,7 @@ TEST(DeviceMemoryBindingTracking, BindImageMemory)
     auto enumerateInfo = gvk::get_default<GvkStateTrackedObjectEnumerateInfo>();
     enumerateInfo.pfnCallback = StateTrackerValidationEnumerator::enumerate;
     enumerateInfo.pUserData = &enumerator;
-    auto stateTrackedInstance = gvk::get_state_tracked_object(context.get_instance());
+    auto stateTrackedInstance = gvk::get_state_tracked_object(context.get<gvk::Instance>());
     gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
@@ -274,19 +274,19 @@ TEST(DeviceMemoryBindingTracking, BindImageMemory2)
     imageCreateInfo.extent.height = 256;
     imageCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     gvk::Image image;
-    ASSERT_EQ(gvk::Image::create(context.get_devices()[0], &imageCreateInfo, (const VkAllocationCallbacks*)nullptr, &image), VK_SUCCESS);
+    ASSERT_EQ(gvk::Image::create(context.get<gvk::Devices>()[0], &imageCreateInfo, (const VkAllocationCallbacks*)nullptr, &image), VK_SUCCESS);
     ASSERT_TRUE(create_state_tracked_object_record(image, image.get<VkImageCreateInfo>(), expectedInstanceObjects));
 
     auto imageMemoryRequirementsInfo = gvk::get_default<VkImageMemoryRequirementsInfo2>();
     imageMemoryRequirementsInfo.image = image;
     auto memoryRequirements = gvk::get_default<VkMemoryRequirements2>();
-    const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
+    const auto& dispatchTable = context.get<gvk::Devices>()[0].get<gvk::DispatchTable>();
     assert(dispatchTable.gvkGetImageMemoryRequirements2);
     dispatchTable.gvkGetImageMemoryRequirements2(image.get<gvk::Device>(), &imageMemoryRequirementsInfo, &memoryRequirements);
     auto memoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     uint32_t memoryTypeCount = VK_MAX_MEMORY_TYPES;
     std::array<uint32_t, VK_MAX_MEMORY_TYPES> memoryTypeIndices;
-    gvk::get_compatible_memory_type_indices(context.get_devices()[0].get<gvk::PhysicalDevice>(), memoryRequirements.memoryRequirements.memoryTypeBits, memoryPropertyFlags, &memoryTypeCount, memoryTypeIndices.data());
+    gvk::get_compatible_memory_type_indices(context.get<gvk::Devices>()[0].get<gvk::PhysicalDevice>(), memoryRequirements.memoryRequirements.memoryTypeBits, memoryPropertyFlags, &memoryTypeCount, memoryTypeIndices.data());
     ASSERT_TRUE(1 <= memoryTypeCount);
 
     auto memoryAllocateInfo = gvk::get_default<VkMemoryAllocateInfo>();
@@ -300,7 +300,7 @@ TEST(DeviceMemoryBindingTracking, BindImageMemory2)
     auto enumerateInfo = gvk::get_default<GvkStateTrackedObjectEnumerateInfo>();
     enumerateInfo.pfnCallback = StateTrackerValidationEnumerator::enumerate;
     enumerateInfo.pUserData = &enumerator;
-    auto stateTrackedInstance = gvk::get_state_tracked_object(context.get_instance());
+    auto stateTrackedInstance = gvk::get_state_tracked_object(context.get<gvk::Instance>());
     gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 

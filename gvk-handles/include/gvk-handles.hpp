@@ -34,4 +34,4 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-handles/mesh.hpp"
 #include "gvk-handles/render-target.hpp"
 #include "gvk-handles/utilities.hpp"
-#include "gvk-handles/wsi-manager.hpp"
+#include "gvk-handles/wsi-context.hpp"

@@ -67,45 +67,29 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace spirv {
 
-std::mutex Context::sMutex;
-uint32_t Context::sInstanceCount;
-
 VkResult Context::create(const CreateInfo* pCreateInfo, Context* pContext)
 {
     (void)pCreateInfo;
     assert(pCreateInfo);
     assert(pContext);
-    pContext->reset();
-    if (!pContext->mInitialized) {
-        std::lock_guard<std::mutex> lock(sMutex);
-        if (sInstanceCount) {
-            pContext->mInitialized = true;
-        } else {
-            pContext->mInitialized = glslang::InitializeProcess();
+    gvk::Reference<Context::ControlBlock>::enumerate(
+        [&](const auto& reference)
+        {
+            pContext->mReference = reference;
         }
-        sInstanceCount += (uint32_t)pContext->mInitialized;
+    );
+    if (!*pContext) {
+        pContext->mReference.reset(newref);
     }
-    return pContext->mInitialized ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED;
+    return *pContext ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED;
 }
 
 Context::~Context()
 {
-    reset();
-}
-
-void Context::reset()
-{
-    if (mInitialized) {
-        std::lock_guard<std::mutex> lock(sMutex);
-        glslang::FinalizeProcess();
-        assert(sInstanceCount);
-        --sInstanceCount;
-    }
 }
 
 VkResult Context::compile(ShaderInfo* pShaderInfo)
 {
-    assert(mInitialized);
     assert(pShaderInfo);
     assert(pShaderInfo->language == ShadingLanguage::Glsl && "TODO : ShadingLanguage::Hlsl");
     pShaderInfo->spirv.clear();
@@ -153,9 +137,14 @@ VkResult Context::compile(ShaderInfo* pShaderInfo)
     return pShaderInfo->errors.empty() ? VK_SUCCESS : VK_ERROR_UNKNOWN;
 }
 
-Context::operator bool() const
+Context::ControlBlock::ControlBlock()
 {
-    return mInitialized;
+    glslang::InitializeProcess();
+}
+
+Context::ControlBlock::~ControlBlock()
+{
+    glslang::FinalizeProcess();
 }
 
 void BindingInfo::add_shader(const ShaderInfo& shaderInfo)

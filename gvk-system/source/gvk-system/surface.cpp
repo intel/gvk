@@ -40,13 +40,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef GLFW_EXPOSE_NATIVE_WIN32
 #define GLFW_EXPOSE_NATIVE_WIN32
 #endif
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#include <Windows.h>
 #endif
 
 #include "GLFW/glfw3.h"
@@ -83,224 +76,59 @@ private:
     std::set<GLFWwindow*> mGlfwWindows;
 };
 
-std::unordered_map<Surface::CursorType, GLFWcursor*> Surface::smCursors;
+static void glfw_error_callback(int, const char*);
+static void glfw_window_close_callback(GLFWwindow*);
+static void glfw_window_size_callback(GLFWwindow*, int, int);
+static void glfw_framebuffer_size_callback(GLFWwindow*, int, int);
+static void glfw_char_callback(GLFWwindow*, unsigned int);
+static void glfw_key_callback(GLFWwindow*, int, int, int, int);
+static void glfw_cursor_pos_callback(GLFWwindow*, double, double);
+static void glfw_mouse_button_callback(GLFWwindow*, int, int, int);
+static void glfw_scroll_callback(GLFWwindow*, double, double);
+static void glfw_window_focus_callback(GLFWwindow*, int);
+static std::unordered_map<Surface::CursorType, GLFWcursor*> sCursors;
 
-bool Surface::create(const CreateInfo* pCreateInfo, Surface* pSurface)
+int32_t Surface::create(const CreateInfo* pCreateInfo, Surface* pSurface)
 {
-    if (pCreateInfo && pSurface) {
-        pSurface->reset();
+    assert(pCreateInfo);
+    assert(pSurface);
+    // NOTE : Creating new Reference here because the Surface::ControlBlock lifetime
+    //  manages GLFW initialization and termination.
+    Reference<Surface::ControlBlock> reference(newref);
+    glfwWindowHint(GLFW_DECORATED, pCreateInfo->flags & Surface::CreateInfo::Decorated);
+    glfwWindowHint(GLFW_RESIZABLE, pCreateInfo->flags & Surface::CreateInfo::Resizable);
+    glfwWindowHint(GLFW_VISIBLE, pCreateInfo->flags & Surface::CreateInfo::Visible);
+    glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, pCreateInfo->flags & Surface::CreateInfo::Transparent);
+    auto pGlfwWindow = glfwCreateWindow(
+        pCreateInfo->extent[0],
+        pCreateInfo->extent[1],
+        pCreateInfo->pTitle ? pCreateInfo->pTitle : "Intel GVK",
+        pCreateInfo->flags & Surface::CreateInfo::Fullscreen ? glfwGetPrimaryMonitor() : nullptr,
+        nullptr
+    );
+    if (pGlfwWindow) {
+        glfwSetWindowUserPointer(pGlfwWindow, &reference.get_obj());
+        glfwSetWindowCloseCallback(pGlfwWindow, glfw_window_close_callback);
+        glfwSetWindowSizeCallback(pGlfwWindow, glfw_window_size_callback);
+        glfwSetFramebufferSizeCallback(pGlfwWindow, glfw_framebuffer_size_callback);
+        glfwSetCharCallback(pGlfwWindow, glfw_char_callback);
+        glfwSetKeyCallback(pGlfwWindow, glfw_key_callback);
+        glfwSetCursorPosCallback(pGlfwWindow, glfw_cursor_pos_callback);
+        glfwSetMouseButtonCallback(pGlfwWindow, glfw_mouse_button_callback);
+        glfwSetScrollCallback(pGlfwWindow, glfw_scroll_callback);
+        glfwSetWindowFocusCallback(pGlfwWindow, glfw_window_focus_callback);
         GlfwWindowSet::instance().access(
             [&](std::set<GLFWwindow*>& glfwWindows)
             {
-                if (glfwWindows.empty()) {
-                    glfwSetErrorCallback(glfw_error_callback);
-                    glfwInit();
-                    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-                    smCursors[CursorType::Arrow] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
-                    smCursors[CursorType::IBeam] = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
-                    smCursors[CursorType::Hand] = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
-                    smCursors[CursorType::Crosshair] = glfwCreateStandardCursor(GLFW_CROSSHAIR_CURSOR);
-                    smCursors[CursorType::ResizeEW] = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
-                    smCursors[CursorType::ResizeNS] = glfwCreateStandardCursor(GLFW_VRESIZE_CURSOR);
-                    smCursors[CursorType::ResizeNWSE] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
-                    smCursors[CursorType::ResizeNESW] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
-                    smCursors[CursorType::ResizeAll] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
-                    smCursors[CursorType::NotAllowed] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
-                }
-                glfwWindowHint(GLFW_DECORATED, pCreateInfo->flags & Surface::CreateInfo::Decorated);
-                glfwWindowHint(GLFW_RESIZABLE, pCreateInfo->flags & Surface::CreateInfo::Resizable);
-                glfwWindowHint(GLFW_VISIBLE, pCreateInfo->flags & Surface::CreateInfo::Visible);
-                glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, pCreateInfo->flags & Surface::CreateInfo::Transparent);
-                pSurface->mpGlfwWindow = glfwCreateWindow(
-                    pCreateInfo->extent[0],
-                    pCreateInfo->extent[1],
-                    pCreateInfo->pTitle ? pCreateInfo->pTitle : "Intel GVK",
-                    pCreateInfo->flags & Surface::CreateInfo::Fullscreen ? glfwGetPrimaryMonitor() : nullptr,
-                    nullptr
-                );
-                if (pSurface->mpGlfwWindow) {
-                    glfwSetWindowUserPointer(pSurface->mpGlfwWindow, pSurface);
-                    glfwSetWindowCloseCallback(pSurface->mpGlfwWindow, glfw_window_close_callback);
-                    glfwSetWindowSizeCallback(pSurface->mpGlfwWindow, glfw_window_size_callback);
-                    glfwSetFramebufferSizeCallback(pSurface->mpGlfwWindow, glfw_framebuffer_size_callback);
-                    glfwSetCharCallback(pSurface->mpGlfwWindow, glfw_char_callback);
-                    glfwSetKeyCallback(pSurface->mpGlfwWindow, glfw_key_callback);
-                    glfwSetCursorPosCallback(pSurface->mpGlfwWindow, glfw_cursor_pos_callback);
-                    glfwSetMouseButtonCallback(pSurface->mpGlfwWindow, glfw_mouse_button_callback);
-                    glfwSetScrollCallback(pSurface->mpGlfwWindow, glfw_scroll_callback);
-                    glfwSetWindowFocusCallback(pSurface->mpGlfwWindow, glfw_window_focus_callback);
-                    glfwWindows.insert(pSurface->mpGlfwWindow);
-                }
+                glfwWindows.insert(pGlfwWindow);
             }
         );
+        reference->mpWindowHandle = pGlfwWindow;
+        pSurface->mReference = reference;
+        return 0; // VK_SUCCESS
     }
-    return pSurface && pSurface->mpGlfwWindow != nullptr;
+    return -3; // VK_ERROR_INITIALIZATION_FAILED
 }
-
-Surface::Surface(Surface&& other) noexcept
-{
-    *this = std::move(other);
-}
-
-Surface& Surface::operator=(Surface&& other) noexcept
-{
-    if (this != &other) {
-        mInput = std::move(other.mInput);
-        mTitle = std::move(other.mTitle);
-        mStatus = std::move(other.mStatus);
-        mTextStream = std::move(other.mTextStream);
-        mpGlfwWindow = std::exchange(other.mpGlfwWindow, nullptr);
-        if (mpGlfwWindow) {
-            glfwSetWindowUserPointer(mpGlfwWindow, this);
-        }
-    }
-    return *this;
-}
-
-Surface::~Surface()
-{
-    reset();
-}
-
-void Surface::reset()
-{
-    if (mpGlfwWindow) {
-        GlfwWindowSet::instance().access(
-            [&](std::set<GLFWwindow*>& glfwWindows)
-            {
-                glfwDestroyWindow(mpGlfwWindow);
-                glfwWindows.erase(mpGlfwWindow);
-                if (glfwWindows.empty()) {
-                    for (auto cursorItr : smCursors) {
-                        glfwDestroyCursor(cursorItr.second);
-                    }
-                    smCursors.clear();
-                    glfwTerminate();
-                }
-            }
-        );
-    }
-    mInput = { };
-    mTitle.clear();
-    mStatus = 0;
-    mTextStream.clear();
-    mpGlfwWindow = nullptr;
-}
-
-Surface::operator bool() const
-{
-    return mpGlfwWindow != nullptr;
-}
-
-Surface::CursorMode Surface::get_cursor_mode() const
-{
-    assert(mpGlfwWindow);
-    switch (glfwGetInputMode(mpGlfwWindow, GLFW_CURSOR)) {
-    case GLFW_CURSOR_NORMAL: return CursorMode::Visible;
-    case GLFW_CURSOR_HIDDEN: return CursorMode::Hidden;
-    case GLFW_CURSOR_DISABLED: return CursorMode::Disabled;
-    default: assert(false);
-    }
-    return CursorMode::Disabled;
-}
-
-void Surface::set_cursor_mode(CursorMode cursorMode)
-{
-    assert(mpGlfwWindow);
-    switch (cursorMode) {
-    case CursorMode::Visible: glfwSetInputMode(mpGlfwWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL); break;
-    case CursorMode::Hidden: glfwSetInputMode(mpGlfwWindow, GLFW_CURSOR, GLFW_CURSOR_HIDDEN); break;
-    case CursorMode::Disabled: glfwSetInputMode(mpGlfwWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED); break;
-    default: assert(false);
-    }
-}
-
-void Surface::set_cursor_type(CursorType cursorType)
-{
-    assert(mpGlfwWindow);
-    auto cursorItr = smCursors.find(cursorType);
-    if (cursorItr == smCursors.end()) {
-        cursorItr = smCursors.find(CursorType::Arrow);
-    }
-    assert(cursorItr != smCursors.end());
-    assert(cursorItr->second);
-    glfwSetCursor(mpGlfwWindow, cursorItr->second);
-}
-
-const Input& Surface::get_input() const
-{
-    assert(mpGlfwWindow);
-    return mInput;
-}
-
-Surface::StatusFlags Surface::get_status() const
-{
-    assert(mpGlfwWindow);
-    return mStatus;
-}
-
-const std::string& Surface::get_title() const
-{
-    assert(mpGlfwWindow);
-    return mTitle;
-}
-
-void Surface::set_title(const std::string& title)
-{
-    assert(mpGlfwWindow);
-    mTitle = title;
-    glfwSetWindowTitle(mpGlfwWindow, mTitle.c_str());
-}
-
-void Surface::set_window_extent(const std::array<int32_t, 2>& extent)
-{
-    assert(mpGlfwWindow);
-    glfwSetWindowSize(mpGlfwWindow, extent[0], extent[1]);
-}
-
-std::array<int32_t, 2> Surface::get_window_extent() const
-{
-    assert(mpGlfwWindow);
-    std::array<int32_t, 2> extent{ };
-    glfwGetWindowSize(mpGlfwWindow, &extent[0], &extent[1]);
-    return extent;
-}
-
-std::array<int32_t, 2> Surface::get_framebuffer_extent() const
-{
-    assert(mpGlfwWindow);
-    std::array<int32_t, 2> extent{ };
-    glfwGetFramebufferSize(mpGlfwWindow, &extent[0], &extent[1]);
-    return extent;
-}
-
-const std::vector<uint32_t>& Surface::get_text_stream() const
-{
-    assert(mpGlfwWindow);
-    return mTextStream;
-}
-
-#if defined(__linux__)
-void* Surface::get_display() const
-{
-    assert(mpGlfwWindow);
-    return glfwGetX11Display();
-}
-
-unsigned long Surface::get_window() const
-{
-    assert(mpGlfwWindow);
-    return glfwGetX11Window(mpGlfwWindow);
-}
-#endif
-
-#if defined(_WIN32) || defined(_WIN64)
-void* Surface::get_hwnd() const
-{
-    assert(mpGlfwWindow);
-    return glfwGetWin32Window(mpGlfwWindow);
-}
-#endif
 
 void Surface::update()
 {
@@ -308,15 +136,121 @@ void Surface::update()
         [&](std::set<GLFWwindow*>& glfwWindows)
         {
             for (auto glfwWindow : glfwWindows) {
-                auto pSurface = (Surface*)glfwGetWindowUserPointer(glfwWindow);
-                assert(pSurface);
-                pSurface->mStatus = 0;
-                pSurface->mInput.update();
-                pSurface->mTextStream.clear();
+                auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(glfwWindow);
+                assert(pSurfaceControlBlock);
+                pSurfaceControlBlock->mStatus = 0;
+                pSurfaceControlBlock->mInput.update();
+                pSurfaceControlBlock->mTextStream.clear();
             }
             glfwPollEvents();
         }
     );
+}
+
+Surface::ControlBlock::ControlBlock()
+{
+    GlfwWindowSet::instance().access(
+        [&](std::set<GLFWwindow*>& glfwWindows)
+        {
+            if (glfwWindows.empty()) {
+                glfwSetErrorCallback(glfw_error_callback);
+                glfwInit();
+                glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+                sCursors[CursorType::Arrow] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+                sCursors[CursorType::IBeam] = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
+                sCursors[CursorType::Hand] = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
+                sCursors[CursorType::Crosshair] = glfwCreateStandardCursor(GLFW_CROSSHAIR_CURSOR);
+                sCursors[CursorType::ResizeEW] = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
+                sCursors[CursorType::ResizeNS] = glfwCreateStandardCursor(GLFW_VRESIZE_CURSOR);
+                sCursors[CursorType::ResizeNWSE] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+                sCursors[CursorType::ResizeNESW] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+                sCursors[CursorType::ResizeAll] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+                sCursors[CursorType::NotAllowed] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+            }
+        }
+    );
+}
+
+Surface::ControlBlock::~ControlBlock()
+{
+    GlfwWindowSet::instance().access(
+        [&](std::set<GLFWwindow*>& glfwWindows)
+        {
+            glfwDestroyWindow((GLFWwindow*)mpWindowHandle);
+            glfwWindows.erase((GLFWwindow*)mpWindowHandle);
+            if (glfwWindows.empty()) {
+                for (auto cursorItr : sCursors) {
+                    glfwDestroyCursor(cursorItr.second);
+                }
+                sCursors.clear();
+                glfwTerminate();
+            }
+        }
+    );
+}
+
+const std::string& Surface::get_title() const
+{
+    assert(mReference);
+    return mReference->mTitle;
+}
+
+void Surface::set_title(const std::string& title)
+{
+    assert(mReference);
+    mReference->mTitle = title;
+    glfwSetWindowTitle((GLFWwindow*)mReference->mpWindowHandle, mReference->mTitle.c_str());
+}
+
+const Surface::CursorMode& Surface::get_cursor_mode() const
+{
+    assert(mReference);
+    auto& mutableReference = const_cast<decltype(mReference)&>(mReference);
+    switch (glfwGetInputMode((GLFWwindow*)mutableReference->mpWindowHandle, GLFW_CURSOR)) {
+    case GLFW_CURSOR_NORMAL: { mutableReference->mCursorMode = CursorMode::Visible; } break;
+    case GLFW_CURSOR_HIDDEN: { mutableReference->mCursorMode = CursorMode::Hidden; } break;
+    case GLFW_CURSOR_DISABLED: { mutableReference->mCursorMode = CursorMode::Disabled; } break;
+    default: { assert(false && "Unserviced GFLW cursor mode; gvk maintenance required"); } break;
+    }
+    return mutableReference->mCursorMode;
+}
+
+void Surface::set_cursor_mode(CursorMode cursorMode)
+{
+    assert(mReference);
+    auto pGlfwWindow = (GLFWwindow*)mReference->mpWindowHandle;
+    switch (cursorMode) {
+    case CursorMode::Visible: { glfwSetInputMode(pGlfwWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL); } break;
+    case CursorMode::Hidden: { glfwSetInputMode(pGlfwWindow, GLFW_CURSOR, GLFW_CURSOR_HIDDEN); } break;
+    case CursorMode::Disabled: { glfwSetInputMode(pGlfwWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED); } break;
+    default: { assert(false); } break;
+    }
+}
+
+void Surface::set_cursor_type(CursorType cursorType)
+{
+    assert(mReference);
+    auto cursorItr = sCursors.find(cursorType);
+    if (cursorItr == sCursors.end()) {
+        cursorItr = sCursors.find(CursorType::Arrow);
+    }
+    assert(cursorItr != sCursors.end());
+    assert(cursorItr->second);
+    glfwSetCursor((GLFWwindow*)mReference->mpWindowHandle, cursorItr->second);
+}
+
+const Surface::PlatformInfo& Surface::get_platform_info() const
+{
+    assert(mReference);
+    auto& mutableReference = const_cast<decltype(mReference)&>(mReference);
+#if defined(__linux__)
+    mutableReference->mPlatformInfo.x11Display = glfwGetX11Display();
+    mutableReference->mPlatformInfo.x11Window = glfwGetX11Window((GLFWwindow*)mReference->mpWindowHandle);
+#endif
+#if defined(_WIN32) || defined(_WIN64)
+    mutableReference->mPlatformInfo.hwnd = glfwGetWin32Window((GLFWwindow*)mReference->mpWindowHandle);
+#endif
+    return mReference->mPlatformInfo;
 }
 
 Key glfw_to_gvk_key(int glfwKey)
@@ -461,84 +395,84 @@ Mouse::Button glfw_to_gvk_mouse_button(int glfwMouseButton)
     }
 }
 
-void Surface::glfw_error_callback(int error, const char* pMessage)
+void glfw_error_callback(int error, const char* pMessage)
 {
     std::cerr << "GLFW Error [" << error << "] : " << (pMessage ? pMessage : "Unknown") << std::endl;
     assert(false);
 }
 
-void Surface::glfw_window_close_callback(GLFWwindow* glfwWindow)
+void glfw_window_close_callback(GLFWwindow* glfwWindow)
 {
-    auto pSurface = (Surface*)glfwGetWindowUserPointer(glfwWindow);
-    assert(pSurface);
-    pSurface->mStatus |= Surface::CloseRequested;
+    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(glfwWindow);
+    assert(pSurfaceControlBlock);
+    pSurfaceControlBlock->mStatus |= Surface::CloseRequested;
 }
 
-void Surface::glfw_window_size_callback(GLFWwindow* glfwWindow, int width, int height)
-{
-    (void)width;
-    (void)height;
-    auto pSurface = (Surface*)glfwGetWindowUserPointer(glfwWindow);
-    assert(pSurface);
-    pSurface->mStatus |= Resized;
-}
-
-void Surface::glfw_framebuffer_size_callback(GLFWwindow* glfwWindow, int width, int height)
+void glfw_window_size_callback(GLFWwindow* glfwWindow, int width, int height)
 {
     (void)width;
     (void)height;
-    auto pSurface = (Surface*)glfwGetWindowUserPointer(glfwWindow);
-    assert(pSurface);
-    pSurface->mStatus |= Resized;
+    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(glfwWindow);
+    assert(pSurfaceControlBlock);
+    pSurfaceControlBlock->mStatus |= Surface::Resized;
 }
 
-void Surface::glfw_char_callback(GLFWwindow* glfwWindow, unsigned int codepoint)
+void glfw_framebuffer_size_callback(GLFWwindow* glfwWindow, int width, int height)
 {
-    auto pSurface = (Surface*)glfwGetWindowUserPointer(glfwWindow);
-    assert(pSurface);
-    pSurface->mTextStream.push_back(codepoint);
+    (void)width;
+    (void)height;
+    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(glfwWindow);
+    assert(pSurfaceControlBlock);
+    pSurfaceControlBlock->mStatus |= Surface::Resized;
 }
 
-void Surface::glfw_key_callback(GLFWwindow* glfwWindow, int key, int scancode, int action, int mods)
+void glfw_char_callback(GLFWwindow* glfwWindow, unsigned int codepoint)
+{
+    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(glfwWindow);
+    assert(pSurfaceControlBlock);
+    pSurfaceControlBlock->mTextStream.push_back(codepoint);
+}
+
+void glfw_key_callback(GLFWwindow* glfwWindow, int key, int scancode, int action, int mods)
 {
     (void)scancode;
     (void)mods;
-    auto pSurface = (Surface*)glfwGetWindowUserPointer(glfwWindow);
-    assert(pSurface);
-    pSurface->mInput.keyboard.staged[(size_t)glfw_to_gvk_key(key)] = action == GLFW_PRESS || action == GLFW_REPEAT;
+    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(glfwWindow);
+    assert(pSurfaceControlBlock);
+    pSurfaceControlBlock->mInput.keyboard.staged[(size_t)glfw_to_gvk_key(key)] = action == GLFW_PRESS || action == GLFW_REPEAT;
 }
 
-void Surface::glfw_cursor_pos_callback(GLFWwindow* glfwWindow, double xOffset, double yOffset)
+void glfw_cursor_pos_callback(GLFWwindow* glfwWindow, double xOffset, double yOffset)
 {
-    auto pSurface = (Surface*)glfwGetWindowUserPointer(glfwWindow);
-    assert(pSurface);
-    pSurface->mInput.mouse.position.staged = { (float)xOffset, (float)yOffset };
+    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(glfwWindow);
+    assert(pSurfaceControlBlock);
+    pSurfaceControlBlock->mInput.mouse.position.staged = { (float)xOffset, (float)yOffset };
 }
 
-void Surface::glfw_mouse_button_callback(GLFWwindow* glfwWindow, int button, int action, int mods)
+void glfw_mouse_button_callback(GLFWwindow* glfwWindow, int button, int action, int mods)
 {
     (void)mods;
-    auto pSurface = (Surface*)glfwGetWindowUserPointer(glfwWindow);
-    assert(pSurface);
-    pSurface->mInput.mouse.buttons.staged[(size_t)glfw_to_gvk_mouse_button(button)] = action == GLFW_PRESS || action == GLFW_REPEAT;
+    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(glfwWindow);
+    assert(pSurfaceControlBlock);
+    pSurfaceControlBlock->mInput.mouse.buttons.staged[(size_t)glfw_to_gvk_mouse_button(button)] = action == GLFW_PRESS || action == GLFW_REPEAT;
 }
 
-void Surface::glfw_scroll_callback(GLFWwindow* glfwWindow, double xOffset, double yOffset)
+void glfw_scroll_callback(GLFWwindow* glfwWindow, double xOffset, double yOffset)
 {
-    auto pSurface = (Surface*)glfwGetWindowUserPointer(glfwWindow);
-    assert(pSurface);
-    pSurface->mInput.mouse.scroll.staged[0] += (float)xOffset;
-    pSurface->mInput.mouse.scroll.staged[1] += (float)yOffset;
+    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(glfwWindow);
+    assert(pSurfaceControlBlock);
+    pSurfaceControlBlock->mInput.mouse.scroll.staged[0] += (float)xOffset;
+    pSurfaceControlBlock->mInput.mouse.scroll.staged[1] += (float)yOffset;
 }
 
-void Surface::glfw_window_focus_callback(GLFWwindow* glfwWindow, int focused)
+void glfw_window_focus_callback(GLFWwindow* glfwWindow, int focused)
 {
-    auto pSurface = (Surface*)glfwGetWindowUserPointer(glfwWindow);
-    assert(pSurface);
+    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(glfwWindow);
+    assert(pSurfaceControlBlock);
     if (focused) {
-        pSurface->mStatus |= GainedFocus;
+        pSurfaceControlBlock->mStatus |= Surface::GainedFocus;
     } else {
-        pSurface->mStatus |= LostFocus;
+        pSurfaceControlBlock->mStatus |= Surface::LostFocus;
     }
 }
 

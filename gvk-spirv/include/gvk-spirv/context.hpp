@@ -76,29 +76,8 @@ public:
     {
     };
 
-    /**
-    Creates an instance of spirv::Context
-    @param [in] pCreateInfo A pointer to the spirv::Context creation parameters
-    @param [out] pContext A pointer to the spirv::Context to create
-    @return the VkResult
-    */
     static VkResult create(const CreateInfo* pCreateInfo, Context* pContext);
-
-    /**
-    Destroys this instance of spirv::Context
-    */
     ~Context();
-
-    /**
-    Destroys this instance of spirv::Context
-    */
-    void reset();
-
-    /**
-    Gets a value indicating whether or not this spirv::Context is valid
-    @return A value indicating whether or not this spirv::Context is valid
-    */
-    operator bool() const;
 
     /**
     Compiles SPIR-V from a given spirv::ShaderInfo
@@ -107,9 +86,17 @@ public:
     VkResult compile(ShaderInfo* pShaderInfo);
 
 private:
-    bool mInitialized{ false };
-    static std::mutex sMutex;
-    static uint32_t sInstanceCount;
+    class ControlBlock final
+    {
+    public:
+        ControlBlock();
+        ~ControlBlock();
+    private:
+        ControlBlock(const ControlBlock&) = delete;
+        ControlBlock& operator=(const ControlBlock&) = delete;
+    };
+
+    gvk_reference_type(Context)
 };
 
 class BindingInfo final

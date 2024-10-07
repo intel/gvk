@@ -27,13 +27,26 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 #include "gvk-system/input.hpp"
+#include "gvk-reference.hpp"
+
+#ifdef __linux__
+#include <X11/Xlib.h>
+#include <X11/extensions/Xrandr.h>
+#endif
+
+#if defined(_WIN32) || defined(_WIN64)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <Windows.h>
+#endif
 
 #include <array>
 #include <unordered_map>
 #include <vector>
-
-struct GLFWcursor;
-struct GLFWwindow;
 
 namespace gvk {
 namespace system {
@@ -83,62 +96,73 @@ public:
             Transparent = 1 << 4,
         };
 
-        uint32_t flags { Decorated | Resizable | Visible };
-        const char* pTitle { nullptr };
-        std::array<int32_t, 2> position { 320, 180 };
-        std::array<int32_t, 2> extent { 1280, 720 };
-        CursorMode cursorMode { CursorMode::Visible };
+        uint32_t flags{ Decorated | Resizable | Visible };
+        const char* pTitle{ nullptr };
+        std::array<int32_t, 2> position{ 320, 180 };
+        std::array<int32_t, 2> extent{ 1280, 720 };
+        CursorMode cursorMode{ CursorMode::Visible };
     };
 
-    Surface() = default;
-    static bool create(const CreateInfo* pCreateInfo, Surface* pSurface);
-    Surface(Surface&& other) noexcept;
-    Surface& operator=(Surface&& other) noexcept;
-    ~Surface();
-    void reset();
-    operator bool() const;
-
-    CursorMode get_cursor_mode() const;
-    void set_cursor_mode(CursorMode cursorMode);
-    void set_cursor_type(CursorType cursorType);
-    const Input& get_input() const;
-    StatusFlags get_status() const;
-    const std::string& get_title() const;
-    void set_title(const std::string& title);
-    void set_window_extent(const std::array<int32_t, 2>& extent);
-    std::array<int32_t, 2> get_window_extent() const;
-    std::array<int32_t, 2> get_framebuffer_extent() const;
-    const std::vector<uint32_t>& get_text_stream() const;
+    struct PlatformInfo
+    {
 #if defined(__linux__)
-    void* get_display() const;
-    unsigned long get_window() const;
+        Display* x11Display{ nullptr };
+        Window x11Window{ };
 #endif
 #if defined(_WIN32) || defined(_WIN64)
-    void* get_hwnd() const;
+        HWND hwnd{ NULL };
 #endif
+    };
+
+    static int32_t create(const CreateInfo* pCreateInfo, Surface* pSurface);
     static void update();
 
+    template <typename T>
+    const T& get() const
+    {
+        if constexpr (std::is_same_v<T, Input>) { assert(mReference && "Attempting to dereference nullref gvk::system::Surface"); return mReference->mInput; }
+        if constexpr (std::is_same_v<T, StatusFlags>) { assert(mReference && "Attempting to dereference nullref gvk::system::Surface"); return mReference->mStatus; }
+        if constexpr (std::is_same_v<T, TextStream>) { assert(mReference && "Attempting to dereference nullref gvk::system::Surface"); return mReference->mTextStream; }
+        if constexpr (std::is_same_v<T, std::string>) { assert(mReference && "Attempting to dereference nullref gvk::system::Surface"); return get_title(); }
+        if constexpr (std::is_same_v<T, CursorMode>) { assert(mReference && "Attempting to dereference nullref gvk::system::Surface"); return get_cursor_mode(); }
+        if constexpr (std::is_same_v<T, PlatformInfo>) { assert(mReference && "Attempting to dereference nullref gvk::system::Surface"); return get_platform_info(); }
+    }
+
+    template <typename T>
+    void set(const T& value)
+    {
+        if constexpr (std::is_same_v<T, std::string>) { assert(mReference && "Attempting to dereference nullref gvk::system::Surface"); return set_title(value); }
+        if constexpr (std::is_same_v<T, CursorMode>) { assert(mReference && "Attempting to dereference nullref gvk::system::Surface"); return set_cursor_mode(value); }
+        if constexpr (std::is_same_v<T, CursorType>) { assert(mReference && "Attempting to dereference nullref gvk::system::Surface"); return set_cursor_type(value); }
+    }
+
+    using TextStream = std::vector<uint32_t>;
+
+    class ControlBlock final
+    {
+    public:
+        ControlBlock();
+        ~ControlBlock();
+        Input mInput;
+        std::string mTitle;
+        StatusFlags mStatus{ };
+        TextStream mTextStream;
+        CursorMode mCursorMode{ };
+        void* mpWindowHandle{ nullptr };
+        PlatformInfo mPlatformInfo{ };
+    private:
+        ControlBlock(const ControlBlock&) = delete;
+        ControlBlock& operator=(const ControlBlock&) = delete;
+    };
+
 private:
-    static void glfw_error_callback(int, const char*);
-    static void glfw_window_close_callback(GLFWwindow*);
-    static void glfw_window_size_callback(GLFWwindow*, int, int);
-    static void glfw_framebuffer_size_callback(GLFWwindow*, int, int);
-    static void glfw_char_callback(GLFWwindow*, unsigned int);
-    static void glfw_key_callback(GLFWwindow*, int, int, int, int);
-    static void glfw_cursor_pos_callback(GLFWwindow*, double, double);
-    static void glfw_mouse_button_callback(GLFWwindow*, int, int, int);
-    static void glfw_scroll_callback(GLFWwindow*, double, double);
-    static void glfw_window_focus_callback(GLFWwindow*, int);
-    static std::unordered_map<CursorType, GLFWcursor*> smCursors;
-
-    Input mInput;
-    std::string mTitle;
-    StatusFlags mStatus{ };
-    std::vector<uint32_t> mTextStream;
-    GLFWwindow* mpGlfwWindow { nullptr };
-
-    Surface(const Surface&) = delete;
-    Surface& operator=(const Surface&) = delete;
+    const std::string& get_title() const;
+    void set_title(const std::string& title);
+    const CursorMode& get_cursor_mode() const;
+    void set_cursor_mode(CursorMode cursorMode);
+    void set_cursor_type(CursorType cursorType);
+    const PlatformInfo& get_platform_info() const;
+    gvk_reference_type(Surface)
 };
 
 } // namespace system

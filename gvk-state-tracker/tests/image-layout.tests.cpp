@@ -124,16 +124,16 @@ TEST(ImageLayout, PipelineBarrier)
     imageMemoryBarriers[1].subresourceRange.baseMipLevel = imageCreateInfo.mipLevels / 2;
 
     gvk::execute_immediately(
-        context.get_devices()[0],
-        gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
-        context.get_command_buffers()[0],
+        context.get<gvk::Devices>()[0],
+        gvk::get_queue_family(context.get<gvk::Devices>()[0], 0).queues[0],
+        context.get<gvk::CommandBuffers>()[0],
         VK_NULL_HANDLE,
         [&](auto)
         {
-            const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
+            const auto& dispatchTable = context.get<gvk::Devices>()[0].get<gvk::DispatchTable>();
             assert(dispatchTable.gvkCmdPipelineBarrier);
             dispatchTable.gvkCmdPipelineBarrier(
-                context.get_command_buffers()[0],
+                context.get<gvk::CommandBuffers>()[0],
                 VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                 VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
                 0,
@@ -200,15 +200,15 @@ TEST(ImageLayout, PipelineBarrier2)
     dependencyInfo.pImageMemoryBarriers = imageMemoryBarriers.data();
 
     gvk::execute_immediately(
-        context.get_devices()[0],
-        gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
-        context.get_command_buffers()[0],
+        context.get<gvk::Devices>()[0],
+        gvk::get_queue_family(context.get<gvk::Devices>()[0], 0).queues[0],
+        context.get<gvk::CommandBuffers>()[0],
         VK_NULL_HANDLE,
         [&](auto)
         {
-            const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
+            const auto& dispatchTable = context.get<gvk::Devices>()[0].get<gvk::DispatchTable>();
             assert(dispatchTable.gvkCmdPipelineBarrier2);
-            dispatchTable.gvkCmdPipelineBarrier2(context.get_command_buffers()[0], &dependencyInfo);
+            dispatchTable.gvkCmdPipelineBarrier2(context.get<gvk::CommandBuffers>()[0], &dependencyInfo);
         }
     );
 
@@ -264,21 +264,21 @@ TEST(ImageLayout, WaitEvents)
 
     auto eventCreateInfo = gvk::get_default<VkEventCreateInfo>();
     gvk::Event event;
-    ASSERT_EQ(gvk::Event::create(context.get_devices()[0], &eventCreateInfo, nullptr, &event), VK_SUCCESS);
-    const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
+    ASSERT_EQ(gvk::Event::create(context.get<gvk::Devices>()[0], &eventCreateInfo, nullptr, &event), VK_SUCCESS);
+    const auto& dispatchTable = context.get<gvk::Devices>()[0].get<gvk::DispatchTable>();
     assert(dispatchTable.gvkSetEvent);
-    ASSERT_EQ(dispatchTable.gvkSetEvent(context.get_devices()[0], event), VK_SUCCESS);
+    ASSERT_EQ(dispatchTable.gvkSetEvent(context.get<gvk::Devices>()[0], event), VK_SUCCESS);
 
     gvk::execute_immediately(
-        context.get_devices()[0],
-        gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
-        context.get_command_buffers()[0],
+        context.get<gvk::Devices>()[0],
+        gvk::get_queue_family(context.get<gvk::Devices>()[0], 0).queues[0],
+        context.get<gvk::CommandBuffers>()[0],
         VK_NULL_HANDLE,
         [&](auto)
         {
             assert(dispatchTable.gvkCmdWaitEvents);
             dispatchTable.gvkCmdWaitEvents(
-                context.get_command_buffers()[0],
+                context.get<gvk::CommandBuffers>()[0],
                 1,
                 &event.get<VkEvent>(),
                 VK_PIPELINE_STAGE_HOST_BIT,
@@ -348,20 +348,20 @@ TEST(ImageLayout, WaitEvents2)
 
     auto eventCreateInfo = gvk::get_default<VkEventCreateInfo>();
     gvk::Event event;
-    ASSERT_EQ(gvk::Event::create(context.get_devices()[0], &eventCreateInfo, nullptr, &event), VK_SUCCESS);
-    const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
+    ASSERT_EQ(gvk::Event::create(context.get<gvk::Devices>()[0], &eventCreateInfo, nullptr, &event), VK_SUCCESS);
+    const auto& dispatchTable = context.get<gvk::Devices>()[0].get<gvk::DispatchTable>();
     assert(dispatchTable.gvkSetEvent);
-    ASSERT_EQ(dispatchTable.gvkSetEvent(context.get_devices()[0], event), VK_SUCCESS);
+    ASSERT_EQ(dispatchTable.gvkSetEvent(context.get<gvk::Devices>()[0], event), VK_SUCCESS);
 
     gvk::execute_immediately(
-        context.get_devices()[0],
-        gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
-        context.get_command_buffers()[0],
+        context.get<gvk::Devices>()[0],
+        gvk::get_queue_family(context.get<gvk::Devices>()[0], 0).queues[0],
+        context.get<gvk::CommandBuffers>()[0],
         VK_NULL_HANDLE,
         [&](auto)
         {
             assert(dispatchTable.gvkCmdWaitEvents2);
-            dispatchTable.gvkCmdWaitEvents2(context.get_command_buffers()[0], 1, &event.get<VkEvent>(), &dependencyInfo);
+            dispatchTable.gvkCmdWaitEvents2(context.get<gvk::CommandBuffers>()[0], 1, &event.get<VkEvent>(), &dependencyInfo);
         }
     );
 
@@ -386,7 +386,7 @@ TEST(ImageLayout, RenderPass)
     ASSERT_EQ(StateTrackerValidationContext::create(&context), VK_SUCCESS);
 
     auto colorFormat = VK_FORMAT_UNDEFINED;
-    const auto& physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
+    const auto& physicalDevice = context.get<gvk::Devices>()[0].get<gvk::PhysicalDevice>();
     gvk::enumerate_formats(
         physicalDevice.get<gvk::DispatchTable>().gvkGetPhysicalDeviceFormatProperties2,
         physicalDevice,
@@ -463,26 +463,26 @@ TEST(ImageLayout, RenderPass)
     create_render_target(context, &renderTargetValidationCreateInfo, &renderTarget);
 
     gvk::execute_immediately(
-        context.get_devices()[0],
-        gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
-        context.get_command_buffers()[0],
+        context.get<gvk::Devices>()[0],
+        gvk::get_queue_family(context.get<gvk::Devices>()[0], 0).queues[0],
+        context.get<gvk::CommandBuffers>()[0],
         VK_NULL_HANDLE,
         [&](auto)
         {
-            auto renderPassBeginInfo = renderTarget.get_render_pass_begin_info();
-            const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
+            auto renderPassBeginInfo = renderTarget.get<VkRenderPassBeginInfo>();
+            const auto& dispatchTable = context.get<gvk::Devices>()[0].get<gvk::DispatchTable>();
             assert(dispatchTable.gvkCmdBeginRenderPass);
-            dispatchTable.gvkCmdBeginRenderPass(context.get_command_buffers()[0], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+            dispatchTable.gvkCmdBeginRenderPass(context.get<gvk::CommandBuffers>()[0], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
             assert(dispatchTable.gvkCmdEndRenderPass);
-            dispatchTable.gvkCmdEndRenderPass(context.get_command_buffers()[0]);
+            dispatchTable.gvkCmdEndRenderPass(context.get<gvk::CommandBuffers>()[0]);
         }
     );
 
-    auto renderPass = renderTarget.get_render_pass();
+    auto renderPass = renderTarget.get<gvk::Framebuffer>().get<gvk::RenderPass>();
     ASSERT_TRUE(renderPass);
     const auto& renderPassCreateInfo = renderPass.get<VkRenderPassCreateInfo2>();
     for (uint32_t i = 0; i < renderPassCreateInfo.attachmentCount; ++i) {
-        auto image = renderTarget.get_image(i);
+        auto image = renderTarget.get<gvk::Framebuffer>().get<gvk::ImageViews>()[i].get<gvk::Image>();
         ASSERT_TRUE(image);
         auto stateTrackedImage = gvk::get_state_tracked_object(image);
         VkImageLayout imageLayout { };
@@ -498,7 +498,7 @@ TEST(ImageLayout, RenderPass2)
 
     // Get color VkFormat
     auto colorFormat = VK_FORMAT_UNDEFINED;
-    const auto& physicalDevice = context.get_devices()[0].get<gvk::PhysicalDevice>();
+    const auto& physicalDevice = context.get<gvk::Devices>()[0].get<gvk::PhysicalDevice>();
     gvk::enumerate_formats(
         physicalDevice.get<gvk::DispatchTable>().gvkGetPhysicalDeviceFormatProperties2,
         physicalDevice,
@@ -575,28 +575,28 @@ TEST(ImageLayout, RenderPass2)
     create_render_target(context, &renderTargetValidationCreateInfo, &renderTarget);
 
     gvk::execute_immediately(
-        context.get_devices()[0],
-        gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
-        context.get_command_buffers()[0],
+        context.get<gvk::Devices>()[0],
+        gvk::get_queue_family(context.get<gvk::Devices>()[0], 0).queues[0],
+        context.get<gvk::CommandBuffers>()[0],
         VK_NULL_HANDLE,
         [&](auto)
         {
-            auto renderPassBeginInfo = renderTarget.get_render_pass_begin_info();
+            auto renderPassBeginInfo = renderTarget.get<VkRenderPassBeginInfo>();
             auto subpassBeginInfo = gvk::get_default<VkSubpassBeginInfo>();
             subpassBeginInfo.contents = VK_SUBPASS_CONTENTS_INLINE;
-            const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
+            const auto& dispatchTable = context.get<gvk::Devices>()[0].get<gvk::DispatchTable>();
             assert(dispatchTable.gvkCmdBeginRenderPass2);
-            dispatchTable.gvkCmdBeginRenderPass2(context.get_command_buffers()[0], &renderPassBeginInfo, &subpassBeginInfo);
+            dispatchTable.gvkCmdBeginRenderPass2(context.get<gvk::CommandBuffers>()[0], &renderPassBeginInfo, &subpassBeginInfo);
             assert(dispatchTable.gvkCmdEndRenderPass);
-            dispatchTable.gvkCmdEndRenderPass(context.get_command_buffers()[0]);
+            dispatchTable.gvkCmdEndRenderPass(context.get<gvk::CommandBuffers>()[0]);
         }
     );
 
-    auto renderPass = renderTarget.get_render_pass();
+    auto renderPass = renderTarget.get<gvk::Framebuffer>().get<gvk::RenderPass>();
     ASSERT_TRUE(renderPass);
     const auto& renderPassCreateInfo = renderPass.get<VkRenderPassCreateInfo2>();
     for (uint32_t i = 0; i < renderPassCreateInfo.attachmentCount; ++i) {
-        auto image = renderTarget.get_image(i);
+        auto image = renderTarget.get<gvk::Framebuffer>().get<gvk::ImageViews>()[i].get<gvk::Image>();
         ASSERT_TRUE(image);
         auto stateTrackedImage = gvk::get_state_tracked_object(image);
         VkImageLayout imageLayout { };

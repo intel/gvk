@@ -204,6 +204,90 @@ VkResult DeferredOperationKHR::create(const Device& device, const VkAllocationCa
     return gvkResult;
 }
 
+VkResult SurfaceKHR::create(const Instance& instance, const VkBaseInStructure* pCreateInfo, const VkAllocationCallbacks* pAllocator, SurfaceKHR* pSurface)
+{
+    assert(instance);
+    assert(pCreateInfo);
+    assert(pSurface);
+    switch (pCreateInfo->sType) {
+    #ifdef VK_USE_PLATFORM_ANDROID_KHR
+    case get_stype<VkAndroidSurfaceCreateInfoKHR>(): {
+        return SurfaceKHR::create(instance, (const VkAndroidSurfaceCreateInfoKHR*)pCreateInfo, pAllocator, pSurface);
+    } break;
+    #endif // VK_USE_PLATFORM_ANDROID_KHR
+    #ifdef VK_USE_PLATFORM_DIRECTFB_EXT
+    case get_stype<VkWin32SurfaceCreateInfoKHR>(): {
+        return SurfaceKHR::create(instance, (const VkWin32SurfaceCreateInfoKHR*)pCreateInfo, pAllocator, pSurface);
+    } break;
+    #endif // VK_USE_PLATFORM_DIRECTFB_EXT
+    case get_stype<VkDisplaySurfaceCreateInfoKHR>(): {
+        return SurfaceKHR::create(instance, (const VkDisplaySurfaceCreateInfoKHR*)pCreateInfo, pAllocator, pSurface);
+    } break;
+    case get_stype<VkHeadlessSurfaceCreateInfoEXT>(): {
+        return SurfaceKHR::create(instance, (const VkHeadlessSurfaceCreateInfoEXT*)pCreateInfo, pAllocator, pSurface);
+    } break;
+    #ifdef VK_USE_PLATFORM_IOS_MVK
+    case get_stype<VkIOSSurfaceCreateInfoMVK>(): {
+        return SurfaceKHR::create(instance, (const VkIOSSurfaceCreateInfoMVK*)pCreateInfo, pAllocator, pSurface);
+    } break;
+    #endif // VK_USE_PLATFORM_IOS_MVK
+    #ifdef VK_USE_PLATFORM_FUCHSIA
+    case get_stype<VkImagePipeSurfaceCreateInfoFUCHSIA>(): {
+        return SurfaceKHR::create(instance, (const VkImagePipeSurfaceCreateInfoFUCHSIA*)pCreateInfo, pAllocator, pSurface);
+    } break;
+    #endif // VK_USE_PLATFORM_FUCHSIA
+    #ifdef VK_USE_PLATFORM_MACOS_MVK
+    case get_stype<VkMacOSSurfaceCreateInfoMVK>(): {
+        return SurfaceKHR::create(instance, (const VkMacOSSurfaceCreateInfoMVK*)pCreateInfo, pAllocator, pSurface);
+    } break;
+    #endif // VK_USE_PLATFORM_MACOS_MVK
+    #ifdef VK_USE_PLATFORM_METAL_EXT
+    case get_stype<VkMetalSurfaceCreateInfoEXT>(): {
+        return SurfaceKHR::create(instance, (const VkMetalSurfaceCreateInfoEXT*)pCreateInfo, pAllocator, pSurface);
+    } break;
+    #endif // VK_USE_PLATFORM_METAL_EXT
+    #ifdef VK_USE_PLATFORM_SCREEN_QNX
+    case get_stype<VkScreenSurfaceCreateInfoQNX>(): {
+        return SurfaceKHR::create(instance, (const VkScreenSurfaceCreateInfoQNX*)pCreateInfo, pAllocator, pSurface);
+    } break;
+    #endif // VK_USE_PLATFORM_SCREEN_QNX
+    #ifdef VK_USE_PLATFORM_GGP
+    case get_stype<VkStreamDescriptorSurfaceCreateInfoGGP>(): {
+        return SurfaceKHR::create(instance, (const VkStreamDescriptorSurfaceCreateInfoGGP*)pCreateInfo, pAllocator, pSurface);
+    } break;
+    #endif // VK_USE_PLATFORM_GGP
+    #ifdef VK_USE_PLATFORM_VI_NN
+    case get_stype<VkViSurfaceCreateInfoNN>(): {
+        return SurfaceKHR::create(instance, (const VkViSurfaceCreateInfoNN*)pCreateInfo, pAllocator, pSurface);
+    } break;
+    #endif // VK_USE_PLATFORM_VI_NN
+    #ifdef VK_USE_PLATFORM_WAYLAND_KHR
+    case get_stype<VkWaylandSurfaceCreateInfoKHR>(): {
+        return SurfaceKHR::create(instance, (const VkWaylandSurfaceCreateInfoKHR*)pCreateInfo, pAllocator, pSurface);
+    } break;
+    #endif // VK_USE_PLATFORM_WAYLAND_KHR
+    #ifdef VK_USE_PLATFORM_WIN32_KHR
+    case get_stype<VkWin32SurfaceCreateInfoKHR>(): {
+        return SurfaceKHR::create(instance, (const VkWin32SurfaceCreateInfoKHR*)pCreateInfo, pAllocator, pSurface);
+    } break;
+    #endif // VK_USE_PLATFORM_WIN32_KHR
+    #ifdef VK_USE_PLATFORM_XCB_KHR
+    case get_stype<VkXcbSurfaceCreateInfoKHR>(): {
+        return SurfaceKHR::create(instance, (const VkXcbSurfaceCreateInfoKHR*)pCreateInfo, pAllocator, pSurface);
+    } break;
+    #endif // VK_USE_PLATFORM_XCB_KHR
+    #ifdef VK_USE_PLATFORM_XLIB_KHR
+    case get_stype<VkXlibSurfaceCreateInfoKHR>(): {
+        return SurfaceKHR::create(instance, (const VkXlibSurfaceCreateInfoKHR*)pCreateInfo, pAllocator, pSurface);
+    } break;
+    #endif // VK_USE_PLATFORM_XLIB_KHR
+    default: {
+        assert(false && "Unserviced VkSurfaceKHR create info type; gvk maintenance required");
+    } break;
+    }
+    return VK_ERROR_INITIALIZATION_FAILED;
+}
+
 namespace detail {
 
 void* get_transient_storage(size_t size)

@@ -37,7 +37,7 @@ namespace gvk {
 
 /*
 Gets the indices of phyiscal device memory types compatible with specified VkMemoryPropertyFlags
-@param [in] physicalDevice The PhysicalDevice to request memory properties from
+@param [in] physicalDevice The gvk::PhysicalDevice to request memory properties from
 @param [in] memoryTypeBits A bitmask with one bit set for each memory type to check for compatibility
     @note This is generally expected to be the memoryTypeBits member of a resource's VkMemoryRequirements
 @param [in] memoryPropertyFlags a bitmask of required memory properties
@@ -78,13 +78,22 @@ VkExtent3D get_mip_level_extent(const VkExtent3D& imageExtent, uint32_t mipLevel
 
 /**
 Gets the max VkSampleCountFlagBits for a Framebuffer with specified attachment types
-@param [in] vkPhysicalDevice
+@param [in] physicalDevice The gvk::PhysicalDevice to request multisampling capabilities from
 @param [in] color A value indicating whether or not the Framebuffer has a color attachment
 @param [in] depth A value indicating whether or not the Framebuffer has a depth attachment
 @param [in] stencil A value indicating whether or not the Framebuffer has a stencil attachment
 @return The max VkSampleCountFlagBits for a Framebuffer with the specified attachment types
 */
 VkSampleCountFlagBits get_max_framebuffer_sample_count(const PhysicalDevice& physicalDevice, VkBool32 color, VkBool32 depth, VkBool32 stencil);
+
+/**
+Gets the VkFormat with the maximum bit depth that is less than or equal to a specified VkFormat and supports the specified VkImageTiling
+@param [in] physicalDevice The gvk::PhysicalDevice to request depth buffering capabilities from
+@param [in] requestedFormat (optional = VK_FORMAT_D32_SFLOAT) The VkFormat with the greatest depth bit count to request
+@param [in] imageTiling (optional = VK_IMAGE_TILING_OPTIMAL) The VkImageTiling to check for depth buffering support
+@return The VkFormat with the maximum bit depth that is less than or equal to a specified VkFormat and supports the specified VkImageTiling
+*/
+VkFormat get_max_depth_format(const PhysicalDevice& physicalDevice, VkFormat reqeustedFormat = VK_FORMAT_D32_SFLOAT, VkImageTiling imageTiling = VK_IMAGE_TILING_OPTIMAL);
 
 /**
 Gets the vertex input attribute VkFormat for a given type

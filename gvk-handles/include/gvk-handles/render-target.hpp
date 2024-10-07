@@ -39,80 +39,58 @@ Provides high level control over RenderPass, Framebuffer, ImageView, and Image o
 class RenderTarget final
 {
 public:
-    /**
-    Creation parameters for RenderTarget
-    */
-    struct CreateInfo
+    static VkResult create(const Device& device, const VkFramebufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, RenderTarget* pRenderTarget);
+
+    template <typename T>
+    const T& get() const
     {
+        assert(mReference && "Attempting to dereference nullref RenderTarget");
+        if constexpr (std::is_same_v<T, Device>) { return mReference->mFramebuffer.get<Device>(); }
+        if constexpr (std::is_same_v<T, Framebuffer>) { return mReference->mFramebuffer; }
+        if constexpr (std::is_same_v<T, VkFramebufferCreateInfo>) { return mReference->mFramebuffer.get<VkFramebufferCreateInfo>(); }
+        if constexpr (std::is_same_v<T, VkRenderPassBeginInfo>) { return mReference->mRenderPassBeginInfo; }
+    }
+
+    template <typename T>
+    const T& get(uint32_t attachmentIndex) const
+    {
+        assert(mReference && "Attempting to dereference nullref RenderTarget");
+
         /**
-        Framebuffer creation parameters
-            @note The renderPass member of pFramebufferCreateInfo must refer to a RenderPass
-            @note Any attachments not provided via pFramebufferCreateInfo will be created
+        Gets this gvk::RenderTarget object's VkImageMemoryBarrier for a specified attachment index
+        @param [in] attachmentIndex The index of the attachment to return the VkImageMemoryBarrier for
+        @return This gvk::RenderTarget object's VkImageMemoryBarrier for the specified attachment index
+            @note The VkImageMemoryBarrier2 will have its oldLayout member set to the corresponding VkAttachmentDescription2 object's finalLayout
+            @note The VkImageMemoryBarrier2 will have its newLayout member set to the corresponding VkAttachmentDescription2 object's initialLayout
         */
-        const VkFramebufferCreateInfo* pFramebufferCreateInfo{ nullptr };
-    };
+        if constexpr (std::is_same_v<T, VkImageMemoryBarrier>) { return mReference->mImageMemoryBarriers[attachmentIndex]; }
 
-    /**
-    Creates an instance of RenderTarget
-    @param [in] device The Device used to create RenderTarget resources
-    @param [in] pCreateInfo A pointer to the RenderTarget creation parameters
-    @param [in] (optional) pAllocator A pointer to the VkAllocationCallbacks to use
-    @param [out] pRenderTarget A pointer to the RenderTarget to create
-    @return the VkResult
-    */
-    static VkResult create(const Device& device, const CreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, RenderTarget* pRenderTarget);
-
-    /**
-    Destroys this instance of RenderTarget
-    */
-    void reset();
-
-    /**
-    Gets this RenderTarget object's Framebuffer
-    @return This RenderTarget object's Framebuffer
-    */
-    const Framebuffer& get_framebuffer() const;
-
-    /**
-    Gets this RenderTarget object's RenderPass
-    @return This RenderTarget object's RenderPass
-    */
-    RenderPass get_render_pass() const;
-
-    /**
-    Gets this RenderTarget object's Image for a specified attachment index
-    @param [in] attachmentIndex The index of the attachment to return the Image for
-    @return This RenderTarget object's Image for the specified attachment index
-    */
-    Image get_image(uint32_t attachmentIndex) const;
-
-    /**
-    Gets this RenderTarget object's VkRenderPassBeginInfo
-    @return This RenderTarget object's VkRenderPassBeginInfo
-    */
-    VkRenderPassBeginInfo get_render_pass_begin_info() const;
-
-    /**
-    Gets this RenderTarget object's VkImageMemoryBarrier for a specified attachment index
-    @param [in] attachmentIndex The index of the attachment to return the VkImageMemoryBarrier for
-    @return This RenderTarget object's VkImageMemoryBarrier for the specified attachment index
-        @note The VkImageMemoryBarrier2 will have its oldLayout member set to the corresponding VkAttachmentDescription2 object's finalLayout
-        @note The VkImageMemoryBarrier2 will have its newLayout member set to the corresponding VkAttachmentDescription2 object's initialLayout
-    */
-    VkImageMemoryBarrier get_image_memory_barrier(uint32_t attachmentIndex) const;
-
-    /**
-    Gets this RenderTarget object's VkImageMemoryBarrier2 for a specified attachment index
-    @param [in] attachmentIndex The index of the attachment to return the VkImageMemoryBarrier2 for
-    @return This RenderTarget object's VkImageMemoryBarrier2 for the specified attachment index
-        @note The VkImageMemoryBarrier2 will have its oldLayout member set to the corresponding VkAttachmentDescription2 object's finalLayout
-        @note The VkImageMemoryBarrier2 will have its newLayout member set to the corresponding VkAttachmentDescription2 object's initialLayout
-    */
-    VkImageMemoryBarrier2 get_image_memory_barrier_2(uint32_t attachmentIndex) const;
+        /**
+        Gets this gvk::RenderTarget object's VkImageMemoryBarrier2 for a specified attachment index
+        @param [in] attachmentIndex The index of the attachment to return the VkImageMemoryBarrier2 for
+        @return This gvk::RenderTarget object's VkImageMemoryBarrier2 for the specified attachment index
+            @note The VkImageMemoryBarrier2 will have its oldLayout member set to the corresponding VkAttachmentDescription2 object's finalLayout
+            @note The VkImageMemoryBarrier2 will have its newLayout member set to the corresponding VkAttachmentDescription2 object's initialLayout
+        */
+        if constexpr (std::is_same_v<T, VkImageMemoryBarrier2>) { return mReference->mImageMemoryBarrier2s[attachmentIndex]; }
+    }
 
 private:
-    Framebuffer mFramebuffer;
-    std::vector<VkClearValue> mClearValues;
+    class ControlBlock final
+    {
+    public:
+        ControlBlock() = default;
+        ~ControlBlock();
+        Framebuffer mFramebuffer;
+        Auto<VkRenderPassBeginInfo> mRenderPassBeginInfo{ };
+        std::vector<Auto<VkImageMemoryBarrier>> mImageMemoryBarriers;
+        std::vector<Auto<VkImageMemoryBarrier2>> mImageMemoryBarrier2s;
+    private:
+        ControlBlock(const ControlBlock&) = delete;
+        ControlBlock& operator=(const ControlBlock&) = delete;
+    };
+
+    gvk_reference_type(RenderTarget)
 };
 
 } // namespace gvk

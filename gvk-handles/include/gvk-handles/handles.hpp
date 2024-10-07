@@ -34,11 +34,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace gvk {
 
+using CommandBuffers = std::vector<CommandBuffer>;
 using DescriptorSetLayouts = std::vector<DescriptorSetLayout>;
+using Devices = std::vector<Device>;
 using Images = std::vector<Image>;
 using ImageViews = std::vector<ImageView>;
+using Meshes = std::vector<Mesh>;
 using PhysicalDevices = std::vector<PhysicalDevice>;
 using QueueFamilies = std::vector<QueueFamily>;
+using RenderTargets = std::vector<RenderTarget>;
 
 template <typename GvkHandleType>
 inline std::vector<typename GvkHandleType::VkHandleType> get_vk_handles(const std::vector<GvkHandleType>& gvkHandles)

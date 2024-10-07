@@ -46,9 +46,9 @@ VkResult create_mesh(const gvk::Context& context, gvk::Mesh* pMesh)
             2, 3, 0,
         };
         gvk_result(pMesh->write(
-            context.get_devices()[0],
-            gvk::get_queue_family(context.get_devices()[0], 0).queues[0],
-            context.get_command_buffers()[0],
+            context.get<gvk::Devices>()[0],
+            gvk::get_queue_family(context.get<gvk::Devices>()[0], 0).queues[0],
+            context.get<gvk::CommandBuffers>()[0],
             VK_NULL_HANDLE,
             (uint32_t)vertices.size(),
             vertices.data(),
@@ -63,24 +63,27 @@ int main(int, const char*[])
 {
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
 
-        GvkSampleContext context;
+        GvkSampleContext context = gvk::nullref;
         gvk_result(GvkSampleContext::create("Intel(R) GPA Utilities for Vulkan* - Getting Started - 02 - Uniform Buffer", &context));
 
-        gvk::system::Surface systemSurface;
+        gvk::system::Surface systemSurface = gvk::nullref;
         gvk_result(gvk_sample_create_sys_surface(context, &systemSurface));
 
-        gvk::WsiManager wsiManager;
-        gvk_result(gvk_sample_create_wsi_manager(context, systemSurface, &wsiManager));
+        gvk::wsi::Context wsiContext = gvk::nullref;
+        gvk_result(gvk_sample_create_wsi_context(context, systemSurface, &wsiContext));
 
-        gvk::spirv::ShaderInfo vertexShaderInfo{ };
+        auto vertexShaderInfo = gvk::get_default<gvk::spirv::ShaderInfo>();
         vertexShaderInfo.language = gvk::spirv::ShadingLanguage::Glsl;
         vertexShaderInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
         vertexShaderInfo.lineOffset = __LINE__;
         vertexShaderInfo.source = R"(
             #version 450
 
-            layout(binding = 0)
-
+            /**
+            This provides access to the data referenced by the VkDescriptorSet bound by the
+                call to vkCmdBindDescriptorSets() during VkCommandBuffer recording.
+            */
+            layout(set = 0, binding = 0)
             uniform UniformBuffer
             {
                 mat4 world;
@@ -103,7 +106,7 @@ int main(int, const char*[])
                 fsColor = vsColor;
             }
         )";
-        gvk::spirv::ShaderInfo fragmentShaderInfo{ };
+        auto fragmentShaderInfo = gvk::get_default<gvk::spirv::ShaderInfo>();
         fragmentShaderInfo.language = gvk::spirv::ShadingLanguage::Glsl;
         fragmentShaderInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
         fragmentShaderInfo.lineOffset = __LINE__;
@@ -118,9 +121,9 @@ int main(int, const char*[])
                 fragColor = fsColor;
             }
         )";
-        gvk::Pipeline pipeline;
+        gvk::Pipeline pipeline = VK_NULL_HANDLE;
         gvk_result(gvk_sample_create_pipeline<VertexPositionColor>(
-            wsiManager.get_render_pass(),
+            wsiContext.get<gvk::RenderPass>(),
             VK_CULL_MODE_BACK_BIT,
             vertexShaderInfo,
             fragmentShaderInfo,
@@ -133,10 +136,10 @@ int main(int, const char*[])
         // We create a gvk::Buffer that will be used to hold uniform data.  The
         //  gvk::Buffer will be persistently mapped so we can write to it without
         //  mapping/unmapping each time we want to write...
-        gvk::Buffer uniformBuffer;
+        gvk::Buffer uniformBuffer = VK_NULL_HANDLE;
         gvk_result(gvk_sample_create_uniform_buffer<Uniforms>(context, &uniformBuffer));
         VmaAllocationInfo uniformBufferAllocationInfo{ };
-        vmaGetAllocationInfo(context.get_devices()[0].get<VmaAllocator>(), uniformBuffer.get<VmaAllocation>(), &uniformBufferAllocationInfo);
+        vmaGetAllocationInfo(context.get<gvk::Devices>()[0].get<VmaAllocator>(), uniformBuffer.get<VmaAllocation>(), &uniformBufferAllocationInfo);
 
         // Allocate a gvk::DescriptorSet...
         std::vector<gvk::DescriptorSet> descriptorSets;
@@ -153,7 +156,7 @@ int main(int, const char*[])
         writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         writeDescriptorSet.descriptorCount = 1;
         writeDescriptorSet.pBufferInfo = &descriptorBufferInfo;
-        vkUpdateDescriptorSets(context.get_devices()[0], 1, &writeDescriptorSet, 0, nullptr);
+        vkUpdateDescriptorSets(context.get<gvk::Devices>()[0], 1, &writeDescriptorSet, 0, nullptr);
 
         // Create a gvk::system::Clock, gvk::math::Camera, and gvk::math::Transform.
         //  These objects will be used to animate our gvk::Mesh...
@@ -163,8 +166,8 @@ int main(int, const char*[])
         gvk::math::Transform quadTransform;
 
         while (
-            !(systemSurface.get_input().keyboard.down(gvk::system::Key::Escape)) &&
-            !(systemSurface.get_status() & gvk::system::Surface::CloseRequested)) {
+            !(systemSurface.get<gvk::system::Input>().keyboard.down(gvk::system::Key::Escape)) &&
+            !(systemSurface.get<gvk::system::Surface::StatusFlags>() & gvk::system::Surface::CloseRequested)) {
             gvk::system::Surface::update();
 
             // Update the gvk::system::Clock and gvk::math::Transform...
@@ -180,49 +183,39 @@ int main(int, const char*[])
             uniforms.camera.projection = camera.projection();
             memcpy(uniformBufferAllocationInfo.pMappedData, &uniforms, sizeof(Uniforms));
 
-            wsiManager.update();
-            auto swapchain = wsiManager.get_swapchain();
-            if (swapchain) {
-                auto extent = wsiManager.get_swapchain().get<VkSwapchainCreateInfoKHR>().imageExtent;
+            gvk::wsi::AcquiredImageInfo acquiredImageInfo{ };
+            gvk::RenderTarget acquiredImageRenderTarget = VK_NULL_HANDLE;
+            auto wsiStatus = wsiContext.acquire_next_image(UINT64_MAX, VK_NULL_HANDLE, &acquiredImageInfo, &acquiredImageRenderTarget);
+            if (wsiStatus == VK_SUCCESS || wsiStatus == VK_SUBOPTIMAL_KHR) {
+                const auto& device = context.get<gvk::Devices>()[0];
+                auto extent = wsiContext.get<gvk::SwapchainKHR>().get<VkSwapchainCreateInfoKHR>().imageExtent;
                 camera.set_aspect_ratio(extent.width, extent.height);
 
-                uint32_t imageIndex = 0;
-                auto vkResult = wsiManager.acquire_next_image(UINT64_MAX, VK_NULL_HANDLE, &imageIndex);
-                gvk_result((vkResult == VK_SUCCESS || vkResult == VK_SUBOPTIMAL_KHR) ? VK_SUCCESS : vkResult);
-
-                const auto& device = context.get_devices()[0];
-                const auto& vkFences = wsiManager.get_vk_fences();
-                gvk_result(vkWaitForFences(device, 1, &vkFences[imageIndex], VK_TRUE, UINT64_MAX));
-                gvk_result(vkResetFences(device, 1, &vkFences[imageIndex]));
-
-                const auto& commandBuffer = wsiManager.get_command_buffers()[imageIndex];
-                gvk_result(vkBeginCommandBuffer(commandBuffer, &gvk::get_default<VkCommandBufferBeginInfo>()));
-                auto renderPassBeginInfo = wsiManager.get_render_targets()[imageIndex].get_render_pass_begin_info();
-                vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+                gvk_result(vkBeginCommandBuffer(acquiredImageInfo.commandBuffer, &gvk::get_default<VkCommandBufferBeginInfo>()));
+                const auto& renderPassBeginInfo = acquiredImageRenderTarget.get<VkRenderPassBeginInfo>();
+                vkCmdBeginRenderPass(acquiredImageInfo.commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
                 VkRect2D scissor { { }, renderPassBeginInfo.renderArea.extent };
-                vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+                vkCmdSetScissor(acquiredImageInfo.commandBuffer, 0, 1, &scissor);
                 VkViewport viewport { 0, 0, (float)scissor.extent.width, (float)scissor.extent.height, 0, 1 };
-                vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+                vkCmdSetViewport(acquiredImageInfo.commandBuffer, 0, 1, &viewport);
 
-                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+                vkCmdBindPipeline(acquiredImageInfo.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
                 // Bind our gvk::DescriptorSet for use with the bound gvk::Pipeline...
-                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get<gvk::PipelineLayout>(), 0, 1, &descriptorSet.get<VkDescriptorSet>(), 0, nullptr);
+                vkCmdBindDescriptorSets(acquiredImageInfo.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get<gvk::PipelineLayout>(), 0, 1, &descriptorSet.get<VkDescriptorSet>(), 0, nullptr);
 
-                mesh.record_cmds(commandBuffer);
-                vkCmdEndRenderPass(commandBuffer);
-                gvk_result(vkEndCommandBuffer(commandBuffer));
+                mesh.record_cmds(acquiredImageInfo.commandBuffer);
+                vkCmdEndRenderPass(acquiredImageInfo.commandBuffer);
+                gvk_result(vkEndCommandBuffer(acquiredImageInfo.commandBuffer));
 
                 const auto& queue = gvk::get_queue_family(device, 0).queues[0];
-                auto submitInfo = wsiManager.get_submit_info(imageIndex);
-                gvk_result(vkQueueSubmit(queue, 1, &submitInfo, vkFences[imageIndex]));
+                gvk_result(vkQueueSubmit(queue, 1, &wsiContext.get<VkSubmitInfo>(acquiredImageInfo), acquiredImageInfo.fence));
 
-                auto presentInfo = wsiManager.get_present_info(&imageIndex);
-                vkResult = vkQueuePresentKHR(gvk::get_queue_family(context.get_devices()[0], 0).queues[0], &presentInfo);
-                gvk_result((vkResult == VK_SUCCESS || vkResult == VK_SUBOPTIMAL_KHR) ? VK_SUCCESS : vkResult);
+                wsiStatus = wsiContext.queue_present(queue, &acquiredImageInfo);
+                gvk_result((wsiStatus == VK_SUBOPTIMAL_KHR || wsiStatus == VK_ERROR_OUT_OF_DATE_KHR) ? VK_SUCCESS : wsiStatus);
             }
         }
-        gvk_result(vkDeviceWaitIdle(context.get_devices()[0]));
+        gvk_result(vkDeviceWaitIdle(context.get<gvk::Devices>()[0]));
     } gvk_result_scope_end;
     if (gvkResult) {
         std::cerr << gvk::to_string(gvkResult) << std::endl;

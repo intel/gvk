@@ -28,3 +28,19 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-reference/handle-id.hpp"
 #include "gvk-reference/reference.hpp"
+
+#include <cstddef>
+#include <cstdint>
+
+#define gvk_reference_type(GVK_REFERENCE_TYPE)                           \
+public:                                                                  \
+    GVK_REFERENCE_TYPE() = default;                                      \
+    inline GVK_REFERENCE_TYPE(std::nullptr_t) { };                       \
+    inline GVK_REFERENCE_TYPE(gvk::nullref_t) { };                       \
+    GVK_REFERENCE_TYPE(const GVK_REFERENCE_TYPE&) = default;             \
+    GVK_REFERENCE_TYPE(GVK_REFERENCE_TYPE&&) = default;                  \
+    GVK_REFERENCE_TYPE& operator=(const GVK_REFERENCE_TYPE&) = default;  \
+    GVK_REFERENCE_TYPE& operator=(GVK_REFERENCE_TYPE&&) = default;       \
+    inline operator bool() const { return mReference; }                  \
+private:                                                                 \
+    gvk::Reference<ControlBlock> mReference;

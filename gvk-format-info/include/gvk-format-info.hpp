@@ -71,6 +71,13 @@ Gets the nubmer of bytes per texel (if applicable) of a specific VkFormat
 uint32_t get_bytes_per_texel(VkFormat format);
 
 /**
+Gets the depth bit count (if applicable) of a specific VkFormat
+@param [in] format The VkFormat to get the depth bit count for
+@return The depth bit count of the specified VkFormat
+*/
+uint32_t get_depth_bits(VkFormat format);
+
+/**
 Executes a given function for every VkFormat the fulfills the provided criteria
 @typename <ProcessFormatFunctionType> The type of function to execute for each VkFormat the fulfills the provided criteria
     @note The function type must accept a single VkFormat argument and return a bool indicating whether or not to continue enumerating

@@ -57,13 +57,13 @@ TEST(Pipeline, ComputePipelineResourceLifetime)
     shaderMoudleCreateInfo.codeSize = (uint32_t)shaderInfo.spirv.size() * sizeof(uint32_t);
     shaderMoudleCreateInfo.pCode = shaderInfo.spirv.data();
     gvk::ShaderModule shaderModule;
-    ASSERT_EQ(gvk::ShaderModule::create(context.get_devices()[0], &shaderMoudleCreateInfo, nullptr, &shaderModule), VK_SUCCESS);
+    ASSERT_EQ(gvk::ShaderModule::create(context.get<gvk::Devices>()[0], &shaderMoudleCreateInfo, nullptr, &shaderModule), VK_SUCCESS);
     ASSERT_TRUE(create_state_tracked_object_record(shaderModule, shaderModule.get<VkShaderModuleCreateInfo>(), expectedInstanceObjects));
 
     auto bindingInfo = gvk::get_default<gvk::spirv::BindingInfo>();
     bindingInfo.add_shader(shaderInfo);
     gvk::PipelineLayout pipelineLayout;
-    ASSERT_EQ(gvk::spirv::create_pipeline_layout(context.get_devices()[0], bindingInfo, nullptr, &pipelineLayout), VK_SUCCESS);
+    ASSERT_EQ(gvk::spirv::create_pipeline_layout(context.get<gvk::Devices>()[0], bindingInfo, nullptr, &pipelineLayout), VK_SUCCESS);
     ASSERT_TRUE(create_state_tracked_object_record(pipelineLayout, pipelineLayout.get<VkPipelineLayoutCreateInfo>(), expectedInstanceObjects));
     const auto& descriptorSetLayouts = pipelineLayout.get<gvk::DescriptorSetLayouts>();
     ASSERT_EQ(descriptorSetLayouts.size(), 1);
@@ -73,28 +73,28 @@ TEST(Pipeline, ComputePipelineResourceLifetime)
     computePipelineCreateInfo.stage.module = shaderModule;
     computePipelineCreateInfo.layout = pipelineLayout;
     VkPipeline vkPipeline = VK_NULL_HANDLE;
-    const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
+    const auto& dispatchTable = context.get<gvk::Devices>()[0].get<gvk::DispatchTable>();
     assert(dispatchTable.gvkCreateComputePipelines);
-    ASSERT_EQ(dispatchTable.gvkCreateComputePipelines(context.get_devices()[0], VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &vkPipeline), VK_SUCCESS);
+    ASSERT_EQ(dispatchTable.gvkCreateComputePipelines(context.get<gvk::Devices>()[0], VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &vkPipeline), VK_SUCCESS);
     auto stateTrackedPipeline = gvk::get_default<GvkStateTrackedObject>();
     stateTrackedPipeline.type = VK_OBJECT_TYPE_PIPELINE;
     stateTrackedPipeline.handle = (uint64_t)vkPipeline;
-    stateTrackedPipeline.dispatchableHandle = (uint64_t)(VkDevice)context.get_devices()[0];
+    stateTrackedPipeline.dispatchableHandle = (uint64_t)(VkDevice)context.get<gvk::Devices>()[0];
     ASSERT_TRUE(expectedInstanceObjects.insert({ stateTrackedPipeline, ObjectRecord(stateTrackedPipeline, computePipelineCreateInfo, GVK_STATE_TRACKED_OBJECT_STATUS_ACTIVE_BIT) }).second);
 
     std::map<GvkStateTrackedObject, ObjectRecord> expectedPipelineDependencies;
     ASSERT_TRUE(create_state_tracked_object_record(shaderModule, shaderModule.get<VkShaderModuleCreateInfo>(), expectedPipelineDependencies));
     ASSERT_TRUE(create_state_tracked_object_record(pipelineLayout, pipelineLayout.get<VkPipelineLayoutCreateInfo>(), expectedPipelineDependencies));
     ASSERT_TRUE(create_state_tracked_object_record(descriptorSetLayouts[0], descriptorSetLayouts[0].get<VkDescriptorSetLayoutCreateInfo>(), expectedPipelineDependencies));
-    ASSERT_TRUE(create_state_tracked_object_record(context.get_devices()[0], context.get_devices()[0].get<VkDeviceCreateInfo>(), expectedPipelineDependencies));
-    ASSERT_TRUE(create_state_tracked_object_record(context.get_physical_devices()[0], VkApplicationInfo { }, expectedPipelineDependencies));
-    ASSERT_TRUE(create_state_tracked_object_record(context.get_instance(), context.get_instance().get<VkInstanceCreateInfo>(), expectedPipelineDependencies));
+    ASSERT_TRUE(create_state_tracked_object_record(context.get<gvk::Devices>()[0], context.get<gvk::Devices>()[0].get<VkDeviceCreateInfo>(), expectedPipelineDependencies));
+    ASSERT_TRUE(create_state_tracked_object_record(context.get<gvk::PhysicalDevices>()[0], VkApplicationInfo { }, expectedPipelineDependencies));
+    ASSERT_TRUE(create_state_tracked_object_record(context.get<gvk::Instance>(), context.get<gvk::Instance>().get<VkInstanceCreateInfo>(), expectedPipelineDependencies));
 
     StateTrackerValidationEnumerator enumerator;
     auto enumerateInfo = gvk::get_default<GvkStateTrackedObjectEnumerateInfo>();
     enumerateInfo.pfnCallback = StateTrackerValidationEnumerator::enumerate;
     enumerateInfo.pUserData = &enumerator;
-    auto stateTrackedInstance = gvk::get_state_tracked_object(context.get_instance());
+    auto stateTrackedInstance = gvk::get_state_tracked_object(context.get<gvk::Instance>());
     gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
@@ -120,7 +120,7 @@ TEST(Pipeline, ComputePipelineResourceLifetime)
     validate(gvk_file_line, expectedPipelineDependencies, enumerator.records);
 
     assert(dispatchTable.gvkDestroyPipeline);
-    dispatchTable.gvkDestroyPipeline(context.get_devices()[0], vkPipeline, nullptr);
+    dispatchTable.gvkDestroyPipeline(context.get<gvk::Devices>()[0], vkPipeline, nullptr);
 }
 
 TEST(Pipeline, GraphicsPipelineResourceLifetime)
@@ -166,7 +166,7 @@ TEST(Pipeline, GraphicsPipelineResourceLifetime)
     renderPassCreateInfo.dependencyCount = 1;
     renderPassCreateInfo.pDependencies = &subpassDependency;
     gvk::RenderPass renderPass;
-    ASSERT_EQ(gvk::RenderPass::create(context.get_devices()[0], &renderPassCreateInfo, nullptr, &renderPass), VK_SUCCESS);
+    ASSERT_EQ(gvk::RenderPass::create(context.get<gvk::Devices>()[0], &renderPassCreateInfo, nullptr, &renderPass), VK_SUCCESS);
     ASSERT_TRUE(create_state_tracked_object_record(renderPass, renderPass.get<VkRenderPassCreateInfo2>(), expectedInstanceObjects));
 
     auto vertexShaderInfo = gvk::get_default<gvk::spirv::ShaderInfo>();
@@ -234,21 +234,21 @@ TEST(Pipeline, GraphicsPipelineResourceLifetime)
     vertexShaderModuleCreateInfo.codeSize = (uint32_t)vertexShaderInfo.spirv.size() * sizeof(uint32_t);
     vertexShaderModuleCreateInfo.pCode = vertexShaderInfo.spirv.data();
     gvk::ShaderModule vertexShaderModule;
-    ASSERT_EQ(gvk::ShaderModule::create(context.get_devices()[0], &vertexShaderModuleCreateInfo, nullptr, &vertexShaderModule), VK_SUCCESS);
+    ASSERT_EQ(gvk::ShaderModule::create(context.get<gvk::Devices>()[0], &vertexShaderModuleCreateInfo, nullptr, &vertexShaderModule), VK_SUCCESS);
     ASSERT_TRUE(create_state_tracked_object_record(vertexShaderModule, vertexShaderModule.get<VkShaderModuleCreateInfo>(), expectedInstanceObjects));
 
     auto fragmentShaderModuleCreateInfo = gvk::get_default<VkShaderModuleCreateInfo>();
     fragmentShaderModuleCreateInfo.codeSize = (uint32_t)fragmentShaderInfo.spirv.size() * sizeof(uint32_t);
     fragmentShaderModuleCreateInfo.pCode = fragmentShaderInfo.spirv.data();
     gvk::ShaderModule fragmentShaderModule;
-    ASSERT_EQ(gvk::ShaderModule::create(context.get_devices()[0], &fragmentShaderModuleCreateInfo, nullptr, &fragmentShaderModule), VK_SUCCESS);
+    ASSERT_EQ(gvk::ShaderModule::create(context.get<gvk::Devices>()[0], &fragmentShaderModuleCreateInfo, nullptr, &fragmentShaderModule), VK_SUCCESS);
     ASSERT_TRUE(create_state_tracked_object_record(fragmentShaderModule, fragmentShaderModule.get<VkShaderModuleCreateInfo>(), expectedInstanceObjects));
 
     auto bindingInfo = gvk::get_default<gvk::spirv::BindingInfo>();
     bindingInfo.add_shader(vertexShaderInfo);
     bindingInfo.add_shader(fragmentShaderInfo);
     gvk::PipelineLayout pipelineLayout;
-    ASSERT_EQ(gvk::spirv::create_pipeline_layout(context.get_devices()[0], bindingInfo, nullptr, &pipelineLayout), VK_SUCCESS);
+    ASSERT_EQ(gvk::spirv::create_pipeline_layout(context.get<gvk::Devices>()[0], bindingInfo, nullptr, &pipelineLayout), VK_SUCCESS);
     ASSERT_TRUE(create_state_tracked_object_record(pipelineLayout, pipelineLayout.get<VkPipelineLayoutCreateInfo>(), expectedInstanceObjects));
     const auto& descriptorSetLayouts = pipelineLayout.get<gvk::DescriptorSetLayouts>();
     ASSERT_EQ(descriptorSetLayouts.size(), 2);
@@ -280,13 +280,13 @@ TEST(Pipeline, GraphicsPipelineResourceLifetime)
     graphicsPipelineCreateInfo.layout = pipelineLayout;
     graphicsPipelineCreateInfo.renderPass = renderPass;
     VkPipeline vkPipeline = VK_NULL_HANDLE;
-    const auto& dispatchTable = context.get_devices()[0].get<gvk::DispatchTable>();
+    const auto& dispatchTable = context.get<gvk::Devices>()[0].get<gvk::DispatchTable>();
     assert(dispatchTable.gvkCreateGraphicsPipelines);
-    ASSERT_EQ(dispatchTable.gvkCreateGraphicsPipelines(context.get_devices()[0], VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &vkPipeline), VK_SUCCESS);
+    ASSERT_EQ(dispatchTable.gvkCreateGraphicsPipelines(context.get<gvk::Devices>()[0], VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &vkPipeline), VK_SUCCESS);
     auto stateTrackedPipeline = gvk::get_default<GvkStateTrackedObject>();
     stateTrackedPipeline.type = VK_OBJECT_TYPE_PIPELINE;
     stateTrackedPipeline.handle = (uint64_t)vkPipeline;
-    stateTrackedPipeline.dispatchableHandle = (uint64_t)(VkDevice)context.get_devices()[0];
+    stateTrackedPipeline.dispatchableHandle = (uint64_t)(VkDevice)context.get<gvk::Devices>()[0];
     ASSERT_TRUE(expectedInstanceObjects.insert({ stateTrackedPipeline, ObjectRecord(stateTrackedPipeline, graphicsPipelineCreateInfo, GVK_STATE_TRACKED_OBJECT_STATUS_ACTIVE_BIT) }).second);
 
     std::map<GvkStateTrackedObject, ObjectRecord> expectedPipelineDependencies;
@@ -296,15 +296,15 @@ TEST(Pipeline, GraphicsPipelineResourceLifetime)
     ASSERT_TRUE(create_state_tracked_object_record(pipelineLayout, pipelineLayout.get<VkPipelineLayoutCreateInfo>(), expectedPipelineDependencies));
     ASSERT_TRUE(create_state_tracked_object_record(descriptorSetLayouts[0], descriptorSetLayouts[0].get<VkDescriptorSetLayoutCreateInfo>(), expectedPipelineDependencies));
     ASSERT_TRUE(create_state_tracked_object_record(descriptorSetLayouts[1], descriptorSetLayouts[1].get<VkDescriptorSetLayoutCreateInfo>(), expectedPipelineDependencies));
-    ASSERT_TRUE(create_state_tracked_object_record(context.get_devices()[0], context.get_devices()[0].get<VkDeviceCreateInfo>(), expectedPipelineDependencies));
-    ASSERT_TRUE(create_state_tracked_object_record(context.get_physical_devices()[0], VkApplicationInfo { }, expectedPipelineDependencies));
-    ASSERT_TRUE(create_state_tracked_object_record(context.get_instance(), context.get_instance().get<VkInstanceCreateInfo>(), expectedPipelineDependencies));
+    ASSERT_TRUE(create_state_tracked_object_record(context.get<gvk::Devices>()[0], context.get<gvk::Devices>()[0].get<VkDeviceCreateInfo>(), expectedPipelineDependencies));
+    ASSERT_TRUE(create_state_tracked_object_record(context.get<gvk::PhysicalDevices>()[0], VkApplicationInfo { }, expectedPipelineDependencies));
+    ASSERT_TRUE(create_state_tracked_object_record(context.get<gvk::Instance>(), context.get<gvk::Instance>().get<VkInstanceCreateInfo>(), expectedPipelineDependencies));
 
     StateTrackerValidationEnumerator enumerator;
     auto enumerateInfo = gvk::get_default<GvkStateTrackedObjectEnumerateInfo>();
     enumerateInfo.pfnCallback = StateTrackerValidationEnumerator::enumerate;
     enumerateInfo.pUserData = &enumerator;
-    auto stateTrackedInstance = gvk::get_state_tracked_object(context.get_instance());
+    auto stateTrackedInstance = gvk::get_state_tracked_object(context.get<gvk::Instance>());
     gvkEnumerateStateTrackedObjects(&stateTrackedInstance, &enumerateInfo);
     validate(gvk_file_line, expectedInstanceObjects, enumerator.records);
 
@@ -338,5 +338,5 @@ TEST(Pipeline, GraphicsPipelineResourceLifetime)
     validate(gvk_file_line, expectedPipelineDependencies, enumerator.records);
 
     assert(dispatchTable.gvkDestroyPipeline);
-    dispatchTable.gvkDestroyPipeline(context.get_devices()[0], vkPipeline, nullptr);
+    dispatchTable.gvkDestroyPipeline(context.get<gvk::Devices>()[0], vkPipeline, nullptr);
 }

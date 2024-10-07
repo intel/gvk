@@ -98,22 +98,22 @@ VkResult StateTrackerValidationContext::create(StateTrackerValidationContext* pC
     return gvk::Context::create(&contextCreateInfo, nullptr, pContext);
 }
 
-VkResult StateTrackerValidationContext::create_devices(const VkDeviceCreateInfo* pDeviceCreateInfo, const VkAllocationCallbacks*)
+VkResult StateTrackerValidationContext::create_devices(const VkDeviceCreateInfo* pDeviceCreateInfo, std::vector<gvk::Device>* pDevices) const
 {
     assert(pDeviceCreateInfo);
     gvk::state_tracker::load_layer_entry_points();
     auto physicalDeviceSynchronization2Features = gvk::get_default<VkPhysicalDeviceSynchronization2Features>();
     auto availablePhysicalDeviceFeatures = gvk::get_default<VkPhysicalDeviceFeatures2>();
     availablePhysicalDeviceFeatures.pNext = &physicalDeviceSynchronization2Features;
-    const auto& dispatchTable = get_physical_devices()[0].get<gvk::DispatchTable>();
+    const auto& dispatchTable = get<gvk::PhysicalDevices>()[0].get<gvk::DispatchTable>();
     assert(dispatchTable.gvkGetPhysicalDeviceFeatures2);
-    dispatchTable.gvkGetPhysicalDeviceFeatures2(get_physical_devices()[0], &availablePhysicalDeviceFeatures);
+    dispatchTable.gvkGetPhysicalDeviceFeatures2(get<gvk::PhysicalDevices>()[0], &availablePhysicalDeviceFeatures);
     auto enabledPhysicalDeviceFeatures = gvk::get_default<VkPhysicalDeviceFeatures2>();
     if (physicalDeviceSynchronization2Features.synchronization2) {
         enabledPhysicalDeviceFeatures.pNext = &physicalDeviceSynchronization2Features;
     }
     auto deviceCreateInfo = *pDeviceCreateInfo;
     deviceCreateInfo.pNext = &enabledPhysicalDeviceFeatures;
-    mDevices.push_back({ });
-    return gvk::Device::create(get_physical_devices()[0], &deviceCreateInfo, nullptr, &mDevices.back());
+    pDevices->push_back({ });
+    return gvk::Device::create(get<gvk::PhysicalDevices>()[0], &deviceCreateInfo, nullptr, &pDevices->back());
 }

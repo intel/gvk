@@ -67,7 +67,7 @@ gvk_add_static_library(
         "${includePath}/mesh.hpp"
         "${includePath}/render-target.hpp"
         "${includePath}/utilities.hpp"
-        "${includePath}/wsi-manager.hpp"
+        "${includePath}/wsi-context.hpp"
         "${includeDirectory}/gvk-handles.hpp"
     SOURCE_FILES
         "${generatedSourceFiles}"
@@ -76,7 +76,7 @@ gvk_add_static_library(
         "${sourcePath}/mesh.cpp"
         "${sourcePath}/render-target.cpp"
         "${sourcePath}/utilities.cpp"
-        "${sourcePath}/wsi-manager.cpp"
+        "${sourcePath}/wsi-context.cpp"
 )
 
 ################################################################################

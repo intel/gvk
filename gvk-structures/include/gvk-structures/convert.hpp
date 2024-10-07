@@ -210,4 +210,40 @@ inline Auto<VkRenderPassCreateInfo> convert<VkRenderPassCreateInfo2, VkRenderPas
     return dst;
 }
 
+template<>
+inline Auto<VkImageMemoryBarrier2> convert<VkImageMemoryBarrier, VkImageMemoryBarrier2>(const VkImageMemoryBarrier& src)
+{
+    Auto<VkImageMemoryBarrier2> dst;
+    auto& imageMemoryBarrier = const_cast<VkImageMemoryBarrier2&>(*dst);
+    imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+    imageMemoryBarrier.pNext = detail::create_pnext_copy(src.pNext, nullptr);
+    imageMemoryBarrier.srcAccessMask = (VkAccessFlags2)src.srcAccessMask;
+    imageMemoryBarrier.dstAccessMask = (VkAccessFlags2)src.dstAccessMask;
+    imageMemoryBarrier.oldLayout = src.oldLayout;
+    imageMemoryBarrier.newLayout = src.newLayout;
+    imageMemoryBarrier.srcQueueFamilyIndex = src.srcQueueFamilyIndex;
+    imageMemoryBarrier.dstQueueFamilyIndex = src.dstQueueFamilyIndex;
+    imageMemoryBarrier.image = src.image;
+    imageMemoryBarrier.subresourceRange = src.subresourceRange;
+    return dst;
+}
+
+template<>
+inline Auto<VkImageMemoryBarrier> convert<VkImageMemoryBarrier2, VkImageMemoryBarrier>(const VkImageMemoryBarrier2& src)
+{
+    Auto<VkImageMemoryBarrier> dst;
+    auto& imageMemoryBarrier = const_cast<VkImageMemoryBarrier&>(*dst);
+    imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    imageMemoryBarrier.pNext = detail::create_pnext_copy(src.pNext, nullptr);
+    imageMemoryBarrier.srcAccessMask = (VkAccessFlags)src.srcAccessMask;
+    imageMemoryBarrier.dstAccessMask = (VkAccessFlags)src.dstAccessMask;
+    imageMemoryBarrier.oldLayout = src.oldLayout;
+    imageMemoryBarrier.newLayout = src.newLayout;
+    imageMemoryBarrier.srcQueueFamilyIndex = src.srcQueueFamilyIndex;
+    imageMemoryBarrier.dstQueueFamilyIndex = src.dstQueueFamilyIndex;
+    imageMemoryBarrier.image = src.image;
+    imageMemoryBarrier.subresourceRange = src.subresourceRange;
+    return dst;
+}
+
 } // namespace gvk
