@@ -52,6 +52,7 @@ namespace gvk {
 namespace detail {
 
 extern thread_local const VkAllocationCallbacks* tlpDecerealizationAllocator;
+extern thread_local VkPhysicalDeviceRayTracingPipelinePropertiesKHR tlPhysicalDeviceRayTracingPipelineProperties;
 
 template <typename ArchiveType>
 void cerealize_pnext(ArchiveType& archive, const void* const& pNext);

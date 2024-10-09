@@ -34,7 +34,7 @@ namespace state_tracker {
 VkResult StateTracker::post_vkResetCommandPool(VkDevice device, VkCommandPool commandPool, VkCommandPoolResetFlags flags, VkResult gvkResult)
 {
     (void)flags;
-    assert(!flags && "Unserviced VkCommandPoolResetFlags; gvk maintenance required");
+    assert((!flags || flags == VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT) && "Unserviced VkCommandPoolResetFlags; gvk maintenance required");
     if (gvkResult == VK_SUCCESS) {
         auto commandPoolReference = CommandPool({ device, commandPool }).mReference;
         assert(commandPoolReference);

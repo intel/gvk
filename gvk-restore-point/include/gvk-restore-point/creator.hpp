@@ -57,6 +57,7 @@ protected:
     VkResult process_VkImage(GvkImageRestoreInfo& objectRestoreInfo) override final;
     VkResult process_VkEvent(GvkEventRestoreInfo& objectRestoreInfo) override final;
     VkResult process_VkFence(GvkFenceRestoreInfo& objectRestoreInfo) override final;
+    VkResult process_VkPipeline(GvkPipelineRestoreInfo& objectRestoreInfo) override final;
     VkResult process_VkSemaphore(GvkSemaphoreRestoreInfo& objectRestoreInfo) override final;
     VkResult process_VkQueryPool(GvkQueryPoolRestoreInfo& objectRestoreInfo) override final;
     VkResult process_VkSurfaceKHR(GvkSurfaceRestoreInfoKHR& objectRestoreInfo) override final;

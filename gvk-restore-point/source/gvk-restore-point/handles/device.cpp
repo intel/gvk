@@ -62,10 +62,16 @@ VkResult Layer::pre_vkCreateDevice(VkPhysicalDevice physicalDevice, const VkDevi
                 ((VkPhysicalDeviceOpacityMicromapFeaturesEXT*)pNext)->micromapCaptureReplay = ((VkPhysicalDeviceOpacityMicromapFeaturesEXT*)pNext)->micromap;
             } break;
             case get_stype<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>(): {
-                #if 0 // NOTE : Unsupported pretty much everywhere...hopefully it doesn't bite
-                ((VkPhysicalDeviceRayTracingPipelineFeaturesKHR*)pNext)->rayTracingPipelineShaderGroupHandleCaptureReplay = ((VkPhysicalDeviceRayTracingPipelineFeaturesKHR*)pNext)->rayTracingPipeline;
-                ((VkPhysicalDeviceRayTracingPipelineFeaturesKHR*)pNext)->rayTracingPipelineShaderGroupHandleCaptureReplayMixed = ((VkPhysicalDeviceRayTracingPipelineFeaturesKHR*)pNext)->rayTracingPipeline;
-                #endif
+                // NOTE : Enable rayTracingPipelineShaderGroupHandleCaptureReplay on Intel
+                //  discrete graphics.
+                // TODO : Enabling this causes a crash on Nvidia...more investigation required.
+                VkPhysicalDeviceProperties physicalDeviceProperties{};
+                const auto& layerDispatchTable = layer::Registry::get().get_physical_device_dispatch_table(physicalDevice);
+                layerDispatchTable.gvkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
+                if (physicalDeviceProperties.vendorID == 0x8086 && physicalDeviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+                    ((VkPhysicalDeviceRayTracingPipelineFeaturesKHR*)pNext)->rayTracingPipelineShaderGroupHandleCaptureReplay = ((VkPhysicalDeviceRayTracingPipelineFeaturesKHR*)pNext)->rayTracingPipeline;
+                    ((VkPhysicalDeviceRayTracingPipelineFeaturesKHR*)pNext)->rayTracingPipelineShaderGroupHandleCaptureReplayMixed = VK_FALSE;
+                }
             } break;
             case get_stype<VkPhysicalDeviceVulkan12Features>(): {
                 ((VkPhysicalDeviceVulkan12Features*)pNext)->bufferDeviceAddressCaptureReplay = ((VkPhysicalDeviceVulkan12Features*)pNext)->bufferDeviceAddress;

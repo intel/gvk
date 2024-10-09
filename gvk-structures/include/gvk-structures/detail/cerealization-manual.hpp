@@ -817,4 +817,34 @@ inline void load(ArchiveType& archive, VkAccelerationStructureSRTMotionInstanceN
     archive(cereal::binary_data(&obj, sizeof(VkAccelerationStructureSRTMotionInstanceNV)));
 }
 
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkRayTracingShaderGroupCreateInfoKHR& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+    archive(obj.type);
+    archive(obj.generalShader);
+    archive(obj.closestHitShader);
+    archive(obj.anyHitShader);
+    archive(obj.intersectionShader);
+    assert(
+        !obj.pShaderGroupCaptureReplayHandle == !gvk::detail::tlPhysicalDeviceRayTracingPipelineProperties.shaderGroupHandleCaptureReplaySize &&
+        "gvk::detail::tlPhysicalDeviceRayTracingPipelineProperties must be set before serializing VkRayTracingShaderGroupCreateInfoKHR with pShaderGroupCaptureReplayHandle"
+    );
+    gvk::detail::cerealize_dynamic_array(archive, gvk::detail::tlPhysicalDeviceRayTracingPipelineProperties.shaderGroupHandleCaptureReplaySize, (const uint8_t*)obj.pShaderGroupCaptureReplayHandle);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkRayTracingShaderGroupCreateInfoKHR& obj)
+{
+    archive(obj.sType);
+    obj.pNext = gvk::detail::decerealize_pnext(archive);
+    archive(obj.type);
+    archive(obj.generalShader);
+    archive(obj.closestHitShader);
+    archive(obj.anyHitShader);
+    archive(obj.intersectionShader);
+    obj.pShaderGroupCaptureReplayHandle = gvk::detail::decerealize_dynamic_array<uint8_t>(archive);
+}
+
 } // namespace cereal

@@ -91,9 +91,9 @@ StateTracker::PhysicalDeviceEnumerationMode StateTracker::get_physical_device_en
     return smPhysicalDeviceEnumerationMode;
 }
 
-void StateTracker::set_physical_device_enumeration_mode(PhysicalDeviceEnumerationMode physicalDeviceRetrievalMode)
+void StateTracker::set_physical_device_enumeration_mode(PhysicalDeviceEnumerationMode physicalDeviceEnumerationMode)
 {
-    smPhysicalDeviceEnumerationMode = physicalDeviceRetrievalMode;
+    smPhysicalDeviceEnumerationMode = physicalDeviceEnumerationMode;
 }
 
 VkPhysicalDevice StateTracker::get_loader_physical_device_handle(VkPhysicalDevice applicationVkPhyicalDevice)

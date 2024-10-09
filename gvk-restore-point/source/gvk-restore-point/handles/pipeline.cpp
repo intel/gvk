@@ -25,8 +25,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include "gvk-restore-point/applier.hpp"
+#include "gvk-layer/registry.hpp"
 #include "gvk-restore-point/creator.hpp"
 #include "gvk-restore-point/layer.hpp"
+#include "gvk-structures/detail/cerealization-utilities.hpp"
 
 namespace gvk {
 namespace restore_point {
@@ -128,14 +130,46 @@ VkResult Layer::post_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache 
 
 VkResult Layer::pre_vkCreateRayTracingPipelinesKHR(VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkRayTracingPipelineCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines, VkResult gvkResult)
 {
-    (void)device;
     (void)deferredOperation;
     (void)pipelineCache;
-    (void)createInfoCount;
-    (void)pCreateInfos;
     (void)pAllocator;
     (void)pPipelines;
-    // NOOP :
+    if (gvkResult == VK_SUCCESS) {
+        assert(pCreateInfos);
+
+        // Get VkPhysicalDevice from state tracker
+        VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+        auto stateTrackedDevice = get_default<GvkStateTrackedObject>();
+        stateTrackedDevice.type = VK_OBJECT_TYPE_DEVICE;
+        stateTrackedDevice.handle = (uint64_t)device;
+        stateTrackedDevice.dispatchableHandle = (uint64_t)device;
+        auto enumerateInfo = get_default<GvkStateTrackedObjectEnumerateInfo>();
+        enumerateInfo.pUserData = &physicalDevice;
+        enumerateInfo.pfnCallback = [](GvkStateTrackedObject const* pStateTrackedObject, VkBaseInStructure const*, void* pUserData)
+        {
+            assert(pStateTrackedObject);
+            assert(pUserData);
+            if (pStateTrackedObject->type == VK_OBJECT_TYPE_PHYSICAL_DEVICE) {
+                *(VkPhysicalDevice*)pUserData = (VkPhysicalDevice)pStateTrackedObject->handle;
+            }
+        };
+        gvkEnumerateStateTrackedObjectDependencies(&stateTrackedDevice, &enumerateInfo);
+        assert(physicalDevice);
+        physicalDevice = layer::Registry::get().VkPhysicalDevices[physicalDevice];
+        assert(physicalDevice);
+
+        // NOTE : Only enable on Intel discrete graphics.  See the note in
+        //  gvk/gvk-restore-point/source/gvk-restore-point/handles/device.cpp
+        //  Layer::pre_vkCreateDevice() for more info.
+        VkPhysicalDeviceProperties physicalDeviceProperties{};
+        const auto& layerDispatchTable = layer::Registry::get().get_physical_device_dispatch_table(physicalDevice);
+        layerDispatchTable.gvkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
+        if (physicalDeviceProperties.vendorID == 0x8086 && physicalDeviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+            for (uint32_t i = 0; i < createInfoCount; ++i) {
+                const_cast<VkRayTracingPipelineCreateInfoKHR*>(&pCreateInfos[i])->flags |= VK_PIPELINE_CREATE_RAY_TRACING_SHADER_GROUP_HANDLE_CAPTURE_REPLAY_BIT_KHR;
+            }
+        }
+    }
     return gvkResult;
 }
 
@@ -187,6 +221,62 @@ VkResult Layer::post_vkCreateRayTracingPipelinesNV(VkDevice device, VkPipelineCa
             gvkRestorePoint->createdObjects.insert(stateTrackedPipeline);
         }
     }
+    return gvkResult;
+}
+
+VkResult Creator::process_VkPipeline(GvkPipelineRestoreInfo& restoreInfo)
+{
+    gvk_result_scope_begin(VK_SUCCESS) {
+        std::vector<uint8_t> data;
+        if (restoreInfo.pRayTracingPipelineCreateInfoKHR) {
+            Device gvkDevice = get_dependency<VkDevice>(restoreInfo.dependencyCount, restoreInfo.pDependencies);
+            auto gvkPhysicalDevice = gvkDevice.get<PhysicalDevice>();
+
+            // NOTE : Only enable on Intel discrete graphics.  See the note in
+            //  gvk/gvk-restore-point/source/gvk-restore-point/handles/device.cpp
+            //  Layer::pre_vkCreateDevice() for more info.
+            VkPhysicalDeviceProperties physicalDeviceProperties{};
+            const auto& layerDispatchTable = layer::Registry::get().get_physical_device_dispatch_table(gvkPhysicalDevice.get<VkPhysicalDevice>());
+            layerDispatchTable.gvkGetPhysicalDeviceProperties(gvkPhysicalDevice, &physicalDeviceProperties);
+            if (physicalDeviceProperties.vendorID == 0x8086 && physicalDeviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+
+                // Get VkPhysicalDeviceRayTracingPipelinePropertiesKHR
+                auto pApplicationInfo = gvkDevice.get<Instance>().get<VkInstanceCreateInfo>().pApplicationInfo;
+                auto apiVersion = pApplicationInfo ? pApplicationInfo->apiVersion : VK_API_VERSION_1_0;
+                auto pfnGetPhysicalDeviceProperties2 = apiVersion < VK_API_VERSION_1_2 ? gvkPhysicalDevice.get<DispatchTable>().gvkGetPhysicalDeviceProperties2KHR : gvkPhysicalDevice.get<DispatchTable>().gvkGetPhysicalDeviceProperties2;
+                auto physicalDeviceRayTracingPipelineProperties = get_default<VkPhysicalDeviceRayTracingPipelinePropertiesKHR>();
+                auto physicalDeviceProperties2 = get_default<VkPhysicalDeviceProperties2>();
+                physicalDeviceProperties2.pNext = &physicalDeviceRayTracingPipelineProperties;
+                pfnGetPhysicalDeviceProperties2(gvkPhysicalDevice, &physicalDeviceProperties2);
+
+                // NOTE : This must be set before serializing VkRayTracingPipelineCreateInfoKHR
+                //  because it contains the size info for shader group capture/replay handles.
+                //  It would be much nicer to not need to set any kind of global/thread_local
+                /// state to serialize things, but this seems to be the best option for now.
+                detail::tlPhysicalDeviceRayTracingPipelineProperties = physicalDeviceRayTracingPipelineProperties;
+                detail::tlPhysicalDeviceRayTracingPipelineProperties.pNext = nullptr;
+
+                // Get shader group capture/replay handles
+                data.resize(restoreInfo.pRayTracingPipelineCreateInfoKHR->groupCount * physicalDeviceRayTracingPipelineProperties.shaderGroupHandleCaptureReplaySize);
+                gvk_result(gvkDevice.get<DispatchTable>().gvkGetRayTracingCaptureReplayShaderGroupHandlesKHR(
+                    gvkDevice,
+                    restoreInfo.handle,
+                    0,
+                    restoreInfo.pRayTracingPipelineCreateInfoKHR->groupCount,
+                    data.size(),
+                    data.data()
+                ));
+
+                // Populate GvkPipelineRestoreInfo with shader group capture/replay handles
+                auto pHandle = data.data();
+                for (uint32_t i = 0; i < restoreInfo.pRayTracingPipelineCreateInfoKHR->groupCount; ++i) {
+                    const_cast<VkRayTracingShaderGroupCreateInfoKHR&>(restoreInfo.pRayTracingPipelineCreateInfoKHR->pGroups[i]).pShaderGroupCaptureReplayHandle = pHandle;
+                    pHandle += physicalDeviceRayTracingPipelineProperties.shaderGroupHandleCaptureReplaySize;
+                }
+            }
+        }
+        gvk_result(BasicCreator::process_VkPipeline(restoreInfo));
+    } gvk_result_scope_end;
     return gvkResult;
 }
 

@@ -102,7 +102,7 @@ int32_t Surface::create(const CreateInfo* pCreateInfo, Surface* pSurface)
     auto pGlfwWindow = glfwCreateWindow(
         pCreateInfo->extent[0],
         pCreateInfo->extent[1],
-        pCreateInfo->pTitle ? pCreateInfo->pTitle : "Intel GVK",
+        pCreateInfo->pTitle,
         pCreateInfo->flags & Surface::CreateInfo::Fullscreen ? glfwGetPrimaryMonitor() : nullptr,
         nullptr
     );
@@ -123,6 +123,9 @@ int32_t Surface::create(const CreateInfo* pCreateInfo, Surface* pSurface)
                 glfwWindows.insert(pGlfwWindow);
             }
         );
+        if (pCreateInfo->pTitle) {
+            reference->mTitle = pCreateInfo->pTitle;
+        }
         reference->mpWindowHandle = pGlfwWindow;
         pSurface->mReference = reference;
         return 0; // VK_SUCCESS
@@ -145,6 +148,12 @@ void Surface::update()
             glfwPollEvents();
         }
     );
+}
+
+void Surface::set_window_extent(const std::array<int32_t, 2>& extent)
+{
+    assert(mReference);
+    glfwSetWindowSize((GLFWwindow*)mReference->mpWindowHandle, extent[0], extent[1]);
 }
 
 Surface::ControlBlock::ControlBlock()

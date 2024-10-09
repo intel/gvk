@@ -116,6 +116,7 @@ public:
 
     static int32_t create(const CreateInfo* pCreateInfo, Surface* pSurface);
     static void update();
+    void set_window_extent(const std::array<int32_t, 2>& extent);
 
     template <typename T>
     const T& get() const

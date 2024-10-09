@@ -30,6 +30,7 @@ namespace gvk {
 namespace detail {
 
 thread_local const VkAllocationCallbacks* tlpDecerealizationAllocator;
+thread_local VkPhysicalDeviceRayTracingPipelinePropertiesKHR tlPhysicalDeviceRayTracingPipelineProperties;
 
 } // namespace detail
 } // namespace gvk

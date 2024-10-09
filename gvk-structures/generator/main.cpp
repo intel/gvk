@@ -121,6 +121,7 @@ int main(int, const char*[])
         apiElements.manuallyImplemented.insert("VkAccelerationStructureInstanceKHR");
         apiElements.manuallyImplemented.insert("VkAccelerationStructureMatrixMotionInstanceNV");
         apiElements.manuallyImplemented.insert("VkAccelerationStructureSRTMotionInstanceNV");
+        apiElements.manuallyImplemented.insert("VkRayTracingShaderGroupCreateInfoKHR");
         apiElements.manuallyImplemented.insert("VkSurfaceFullScreenExclusiveWin32InfoEXT");
         apiElements.manuallyImplemented.insert("VkWin32SurfaceCreateInfoKHR");
 
