@@ -137,7 +137,7 @@ VkResult VirtualSwapchain::post_vkGetSwapchainImagesKHR(VkDevice device, VkSwapc
     return VK_SUCCESS;
 }
 
-VkResult VirtualSwapchain::pre_vkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex)
+VkResult VirtualSwapchain::pre_vkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex, VkResult gvkResult)
 {
     (void)device;
     (void)swapchain;
@@ -145,6 +145,7 @@ VkResult VirtualSwapchain::pre_vkAcquireNextImageKHR(VkDevice device, VkSwapchai
     (void)fence;
     assert(pImageIndex);
     assert(*pImageIndex < mVirtualImages.size());
+    assert(gvkResult == VK_SUCCESS || gvkResult == VK_SUBOPTIMAL_KHR);
 
     // Update mPendingImageAcquisition.  The application provides the index of the
     //  image it wants to acquire.
@@ -153,10 +154,10 @@ VkResult VirtualSwapchain::pre_vkAcquireNextImageKHR(VkDevice device, VkSwapchai
     mPendingImageAcquisition.virtualImageIndex = *pImageIndex;
     mPendingImageAcquisition.pVirtualImage = &mVirtualImages[*pImageIndex];
     auto erased = mAvailableImageIndices.erase(*pImageIndex);
-    return erased ? VK_SUCCESS : VK_NOT_READY;
+    return erased ? gvkResult : VK_NOT_READY;
 }
 
-VkResult VirtualSwapchain::post_vkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex)
+VkResult VirtualSwapchain::post_vkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex, VkResult gvkResult)
 {
     (void)device;
     (void)swapchain;
@@ -165,6 +166,7 @@ VkResult VirtualSwapchain::post_vkAcquireNextImageKHR(VkDevice device, VkSwapcha
     (void)fence;
     assert(pImageIndex);
     assert(*pImageIndex < mActualVkImages.size());
+    assert(gvkResult == VK_SUCCESS || gvkResult == VK_SUBOPTIMAL_KHR);
 
     // In the post call handler the live Vulkan call has updated the index to refer
     //  to the actual image acquired.  Update mPendingImageAcquisition with the
@@ -175,23 +177,27 @@ VkResult VirtualSwapchain::post_vkAcquireNextImageKHR(VkDevice device, VkSwapcha
     auto inserted = mAcquiredImages.insert({ mPendingImageAcquisition.virtualImageIndex, mPendingImageAcquisition }).second;
     *pImageIndex = mPendingImageAcquisition.virtualImageIndex;
     mPendingImageAcquisition = { };
-    return inserted ? VK_SUCCESS : VK_NOT_READY;
+    return  inserted ? gvkResult : VK_NOT_READY;
 }
 
-VkResult VirtualSwapchain::pre_vkAcquireNextImage2KHR(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex)
+VkResult VirtualSwapchain::pre_vkAcquireNextImage2KHR(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex, VkResult gvkResult)
 {
     (void)device;
     (void)pAcquireInfo;
     (void)pImageIndex;
+    (void)gvkResult;
+    assert(gvkResult == VK_SUCCESS || gvkResult == VK_SUBOPTIMAL_KHR);
     assert(false && "VK_LAYER_INTEL_gvk_virtual_swapchain vkAcquireNextImage2KHR() is unserviced; gvk maintenance required");
     return VK_ERROR_UNKNOWN;
 }
 
-VkResult VirtualSwapchain::post_vkAcquireNextImage2KHR(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex)
+VkResult VirtualSwapchain::post_vkAcquireNextImage2KHR(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex, VkResult gvkResult)
 {
     (void)device;
     (void)pAcquireInfo;
     (void)pImageIndex;
+    (void)gvkResult;
+    assert(gvkResult == VK_SUCCESS || gvkResult == VK_SUBOPTIMAL_KHR);
     assert(false && "VK_LAYER_INTEL_gvk_virtual_swapchain vkAcquireNextImage2KHR() is unserviced; gvk maintenance required");
     return VK_ERROR_UNKNOWN;
 }
@@ -379,48 +385,48 @@ VkResult Layer::post_vkAcquireFullScreenExclusiveModeEXT(VkDevice device, VkSwap
 }
 #endif // VK_USE_PLATFORM_WIN32_KHR
 
-VkResult Layer::pre_vkAcquireNextImage2KHR(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex, VkResult vkResult)
-{
-    if (vkResult == VK_SUCCESS) {
-        assert(pAcquireInfo);
-        std::lock_guard<std::mutex> lock(mMutex);
-        auto itr = mSwapchains.find(pAcquireInfo->swapchain);
-        assert(itr != mSwapchains.end());
-        vkResult = itr->second.pre_vkAcquireNextImage2KHR(device, pAcquireInfo, pImageIndex);
-    }
-    return vkResult;
-}
-
-VkResult Layer::post_vkAcquireNextImage2KHR(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex, VkResult vkResult)
-{
-    if (vkResult == VK_SUCCESS) {
-        assert(pAcquireInfo);
-        std::lock_guard<std::mutex> lock(mMutex);
-        auto itr = mSwapchains.find(pAcquireInfo->swapchain);
-        assert(itr != mSwapchains.end());
-        vkResult = itr->second.post_vkAcquireNextImage2KHR(device, pAcquireInfo, pImageIndex);
-    }
-    return vkResult;
-}
-
 VkResult Layer::pre_vkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex, VkResult gvkResult)
 {
-    if (gvkResult == VK_SUCCESS) {
+    if (gvkResult == VK_SUCCESS || gvkResult == VK_SUBOPTIMAL_KHR) {
         std::lock_guard<std::mutex> lock(mMutex);
         auto itr = mSwapchains.find(swapchain);
         assert(itr != mSwapchains.end());
-        gvkResult = itr->second.pre_vkAcquireNextImageKHR(device, swapchain, timeout, semaphore, fence, pImageIndex);
+        gvkResult = itr->second.pre_vkAcquireNextImageKHR(device, swapchain, timeout, semaphore, fence, pImageIndex, gvkResult);
     }
     return gvkResult;
 }
 
 VkResult Layer::post_vkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex, VkResult gvkResult)
 {
-    if (gvkResult == VK_SUCCESS) {
+    if (gvkResult == VK_SUCCESS || gvkResult == VK_SUBOPTIMAL_KHR) {
         std::lock_guard<std::mutex> lock(mMutex);
         auto itr = mSwapchains.find(swapchain);
         assert(itr != mSwapchains.end());
-        gvkResult = itr->second.post_vkAcquireNextImageKHR(device, swapchain, timeout, semaphore, fence, pImageIndex);
+        gvkResult = itr->second.post_vkAcquireNextImageKHR(device, swapchain, timeout, semaphore, fence, pImageIndex, gvkResult);
+    }
+    return gvkResult;
+}
+
+VkResult Layer::pre_vkAcquireNextImage2KHR(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex, VkResult gvkResult)
+{
+    if (gvkResult == VK_SUCCESS || gvkResult == VK_SUBOPTIMAL_KHR) {
+        assert(pAcquireInfo);
+        std::lock_guard<std::mutex> lock(mMutex);
+        auto itr = mSwapchains.find(pAcquireInfo->swapchain);
+        assert(itr != mSwapchains.end());
+        gvkResult = itr->second.pre_vkAcquireNextImage2KHR(device, pAcquireInfo, pImageIndex, gvkResult);
+    }
+    return gvkResult;
+}
+
+VkResult Layer::post_vkAcquireNextImage2KHR(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex, VkResult gvkResult)
+{
+    if (gvkResult == VK_SUCCESS || gvkResult == VK_SUBOPTIMAL_KHR) {
+        assert(pAcquireInfo);
+        std::lock_guard<std::mutex> lock(mMutex);
+        auto itr = mSwapchains.find(pAcquireInfo->swapchain);
+        assert(itr != mSwapchains.end());
+        gvkResult = itr->second.post_vkAcquireNextImage2KHR(device, pAcquireInfo, pImageIndex, gvkResult);
     }
     return gvkResult;
 }
