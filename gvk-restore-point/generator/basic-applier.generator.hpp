@@ -51,14 +51,7 @@ private:
     static bool pure_virtual(const std::string& handleName)
     {
         static const std::set<std::string> scPureVirtual {
-            // "VkInstance",
-            // "VkDevice",
-            // "VkPipeline",
-            // "VkCommandBuffer",
-            // "VkDescriptorSet",
-            // "VkDisplayModeKHR",
-            // "VkShaderEXT",
-            // "VkSurfaceKHR",
+            "VkPipelineBinaryKHR",
             "VkSwapchainKHR",
         };
         return scPureVirtual.count(handleName);

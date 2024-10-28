@@ -204,6 +204,15 @@ VkResult DeferredOperationKHR::create(const Device& device, const VkAllocationCa
     return gvkResult;
 }
 
+VkResult PipelineBinaryKHR::create(const Device& device, const VkPipelineBinaryCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineBinaryHandlesInfoKHR* pBinaries)
+{
+    (void)device;
+    (void)pCreateInfo;
+    (void)pAllocator;
+    (void)pBinaries;
+    return VK_ERROR_INITIALIZATION_FAILED;
+}
+
 VkResult SurfaceKHR::create(const Instance& instance, const VkBaseInStructure* pCreateInfo, const VkAllocationCallbacks* pAllocator, SurfaceKHR* pSurface)
 {
     assert(instance);

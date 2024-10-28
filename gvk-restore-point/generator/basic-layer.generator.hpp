@@ -56,6 +56,7 @@ private:
             "vkCreateComputePipelines",
             "vkCreateExecutionGraphPipelinesAMDX",
             "vkCreateGraphicsPipelines",
+            "vkCreatePipelineBinariesKHR",
             "vkCreateRayTracingPipelinesKHR",
             "vkCreateRayTracingPipelinesNV",
             "vkCreateShadersEXT",
@@ -106,8 +107,8 @@ private:
             if (command.type == xml::Command::Type::Create || command.type == xml::Command::Type::Destroy) {
                 const auto& targetParameter = command.get_target_parameter();
                 const auto& targetItr = manifest.handles.find(targetParameter.unqualifiedType);
-                assert(targetItr != manifest.handles.end());
-                const auto& target = targetItr->second;
+                assert(targetItr != manifest.handles.end() || get_pure_virtual_commands().count(command.name));
+                const auto& target = targetItr != manifest.handles.end() ? targetItr->second : xml::Handle{};
                 file << std::endl;
                 auto compileGuards = command.compileGuards;
                 if (get_pure_virtual_commands().count(command.name)) {

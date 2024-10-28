@@ -136,6 +136,11 @@ protected:
     static void process_VkImage_data_upload(const CopyEngine::UploadImageInfo& uploadInfo, const VkBindBufferMemoryInfo& bindBufferMemoryInfo, uint8_t* pData);
     VkResult process_VkImage_layouts(const GvkStateTrackedObject& restorePointObject);
 
+    // VkPipelineBinary
+    VkResult restore_VkPipelineBinaryKHR(const GvkStateTrackedObject& restorePointObject, const GvkPipelineBinaryRestoreInfoKHR& restoreInfo) override final;
+    VkResult restore_VkPipelineBinaryKHR_state(const GvkStateTrackedObject& restorePointObject, const GvkPipelineBinaryRestoreInfoKHR& restoreInfo) override final;
+    void destroy_VkPipelineBinaryKHR(const GvkStateTrackedObject& restorePointObject) override final;
+
     VkResult process_GvkCommandStructureAllocateCommandBuffers(const GvkStateTrackedObject& restorePointObject, const GvkCommandBufferRestoreInfo& restoreInfo, GvkCommandStructureAllocateCommandBuffers& commandStructure) override final;
     VkResult process_GvkCommandStructureCreateComputePipelines(const GvkStateTrackedObject& restorePointObject, const GvkPipelineRestoreInfo& restoreInfo, GvkCommandStructureCreateComputePipelines& commandStructure) override final;
     VkResult process_GvkCommandStructureCreateGraphicsPipelines(const GvkStateTrackedObject& restorePointObject, const GvkPipelineRestoreInfo& restoreInfo, GvkCommandStructureCreateGraphicsPipelines& commandStructure) override final;

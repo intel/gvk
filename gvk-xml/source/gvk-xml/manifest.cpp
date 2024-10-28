@@ -216,6 +216,15 @@ static void post_process_handles(Manifest& manifest)
             }
         }
     }
+
+    // vkCreatePipelineBinariesKHR and VkPipelineBinaryCreateInfoKHR don't follow
+    //  the same patterns as other handles, so set them explicitly
+    auto pipelineBinaryHandleItr = manifest.handles.find("VkPipelineBinaryKHR");
+    if (pipelineBinaryHandleItr != manifest.handles.end()) {
+        pipelineBinaryHandleItr->second.createCommands.insert("vkCreatePipelineBinariesKHR");
+        pipelineBinaryHandleItr->second.createInfos.insert("VkPipelineBinaryCreateInfoKHR");
+    }
+
     // Set parent/child Handles
     for (const auto& handleItr : manifest.handles) {
         for (const auto& parent : handleItr.second.parents) {
@@ -242,6 +251,13 @@ static void post_process_commands(Manifest& manifest)
             command.alias = alias;
             command.extension = extension;
         }
+    }
+
+    // vkCreatePipelineBinariesKHR and VkPipelineBinaryKHR don't follow the same
+    //  patterns as other handles, so set them explicitly
+    auto createPipelineBinaryCommandItr = manifest.commands.find("vkCreatePipelineBinariesKHR");
+    if (createPipelineBinaryCommandItr != manifest.commands.end()) {
+        createPipelineBinaryCommandItr->second.target = "VkPipelineBinaryKHR";
     }
 }
 

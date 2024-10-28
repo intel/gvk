@@ -49,6 +49,15 @@ if(gvk-string_ENABLED)
     )
 endif()
 
+if(gvk-xml_ENABLED)
+    gvk_add_executable(
+        TARGET gvk-xml-comparison
+        FOLDER "samples/"
+        LINK_LIBRARIES gvk-xml
+        SOURCE_FILES "${CMAKE_CURRENT_LIST_DIR}/gvk-xml-comparison.cpp"
+    )
+endif()
+
 if(gvk-layer_ENABLED)
     gvk_add_layer(
         TARGET VK_LAYER_INTEL_gvk_sample

@@ -68,6 +68,7 @@ private:
             "vkCreateGraphicsPipelines",
             "vkCreateRayTracingPipelinesKHR",
             "vkCreateRayTracingPipelinesNV",
+            "vkCreatePipelineBinariesKHR",
             "vkCreateExecutionGraphPipelinesAMDX",
             "vkCreateShadersEXT",
         };

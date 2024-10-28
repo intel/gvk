@@ -310,5 +310,44 @@ VkResult Applier::process_GvkCommandStructureCreateRayTracingPipelinesKHR(const 
     return VK_SUCCESS;
 }
 
+VkResult Layer::pre_vkCreatePipelineBinariesKHR(VkDevice device, const VkPipelineBinaryCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineBinaryHandlesInfoKHR* pBinaries, VkResult gvkResult)
+{
+    (void)device;
+    (void)pCreateInfo;
+    (void)pAllocator;
+    (void)pBinaries;
+    (void)gvkResult;
+    return VK_ERROR_INITIALIZATION_FAILED;
+}
+
+VkResult Layer::post_vkCreatePipelineBinariesKHR(VkDevice device, const VkPipelineBinaryCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineBinaryHandlesInfoKHR* pBinaries, VkResult gvkResult)
+{
+    (void)device;
+    (void)pCreateInfo;
+    (void)pAllocator;
+    (void)pBinaries;
+    (void)gvkResult;
+    return VK_ERROR_INITIALIZATION_FAILED;
+}
+
+VkResult Applier::restore_VkPipelineBinaryKHR(const GvkStateTrackedObject& restorePointObject, const GvkPipelineBinaryRestoreInfoKHR& restoreInfo)
+{
+    (void)restorePointObject;
+    (void)restoreInfo;
+    return VK_ERROR_INITIALIZATION_FAILED;
+}
+
+VkResult Applier::restore_VkPipelineBinaryKHR_state(const GvkStateTrackedObject& restorePointObject, const GvkPipelineBinaryRestoreInfoKHR& restoreInfo)
+{
+    (void)restorePointObject;
+    (void)restoreInfo;
+    return VK_ERROR_INITIALIZATION_FAILED;
+}
+
+void Applier::destroy_VkPipelineBinaryKHR(const GvkStateTrackedObject& restorePointObject)
+{
+    (void)restorePointObject;
+}
+
 } // namespace restore_point
 } // namespace gvk
