@@ -3,7 +3,7 @@
 include_guard(GLOBAL)
 gvk_enable_target(stb)
 
-set(stb_VERSION f75e8d1cad7d90d72ef7a4661f1b994ef78b4e31)
+set(stb_VERSION 2e2bef463a5b53ddf8bb788e25da6b8506314c08)
 FetchContent_Declare(
     stb
     GIT_REPOSITORY "https://github.com/nothings/stb.git"

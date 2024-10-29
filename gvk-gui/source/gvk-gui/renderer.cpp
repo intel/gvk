@@ -725,7 +725,7 @@ VkResult Renderer::allocate_and_update_descriptor_set(const VkAllocationCallback
         const auto& dispatchTable = get<Device>().get<DispatchTable>();
         assert(dispatchTable.gvkUpdateDescriptorSets);
         dispatchTable.gvkUpdateDescriptorSets(get<Device>(), 1, &writeDescriptorSet, 0, nullptr);
-        ImGui::GetIO().Fonts->SetTexID(mReference->mFontDescriptorSet);
+        ImGui::GetIO().Fonts->SetTexID((uint64_t)(VkDescriptorSet)mReference->mFontDescriptorSet);
     } gvk_result_scope_end;
     return gvkResult;
 }

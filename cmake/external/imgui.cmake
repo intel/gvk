@@ -3,7 +3,7 @@
 include_guard(GLOBAL)
 gvk_enable_target(imgui)
 
-set(imgui_VERSION 3232070d3abaec531d75e060fab14a26cb36ab55) # 1.91.0 + NOTE : This commit is ahead of the latest tagged release, it clears a GCC warning for format-truncation
+set(imgui_VERSION 99109c0b3b052cffa154a9295440f68868a39f74) # 1.91.4
 FetchContent_Declare(
     imgui
     GIT_REPOSITORY "https://github.com/ocornut/imgui.git"

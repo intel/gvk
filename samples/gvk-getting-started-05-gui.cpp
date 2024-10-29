@@ -567,7 +567,7 @@ int main(int, const char*[])
                     ImGui::DragFloat("zRotation", &zRotation, 0.1f);
                     ImGui::DragFloat("guiImageScale", &guiImageScale, 0.005f, 0.01f, 0.5f);
                     ImVec2 guiImageExtent { renderTargetCreateInfo.extent.width * guiImageScale, renderTargetCreateInfo.extent.height * guiImageScale };
-                    ImGui::Image(guiDescriptorSets[0], guiImageExtent);
+                    ImGui::Image((uint64_t)(VkDescriptorSet)guiDescriptorSets[0], guiImageExtent);
                     guiRenderer.end_gui(acquiredImageInfo.index);
                 }
 

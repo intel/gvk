@@ -4,7 +4,7 @@ gvk_enable_target(SPIRV-Headers)
 
 set(SPIRV_HEADERS_SKIP_EXAMPLES ON CACHE BOOL "" FORCE)
 set(SPIRV_HEADERS_SKIP_INSTALL  ON CACHE BOOL "" FORCE)
-set(SPIRV-Headers_VERSION 2acb319af38d43be3ea76bfabf3998e5281d8d12) # vulkan-sdk-1.3.290.0
+set(SPIRV-Headers_VERSION 2a9b6f951c7d6b04b6c21fe1bf3f475b68b84801) # vulkan-sdk-1.3.296.0
 FetchContent_Declare(
     SPIRV-Headers
     GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Headers.git"
