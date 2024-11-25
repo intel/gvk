@@ -296,7 +296,7 @@ private:
                                     }
                                 }
                                 file << "            gvk_result(process_GvkCommandStructure" << string::strip_vk(createCommand.name) << "(restorePointObject, restoreInfo, commandStructure));" << std::endl;
-                                file << "            update_command_structure_handles(mApplyInfo.gvkRestorePoint->objectMap.get_restored_objects(), commandStructure);" << std::endl;
+                                file << "            gvk_result(update_command_structure_handles(mApplyInfo.gvkRestorePoint->objectMap.get_restored_objects(), commandStructure));" << std::endl;
                                 file << "            " << handle.name << " handle = restoreInfo.handle;" << std::endl;
                                 file << "            commandStructure." << outHandleParameterName << " = &handle;" << std::endl;
                                 file << "            gvk_result(detail::execute_command_structure(mApplyInfo.dispatchTable, commandStructure));" << std::endl;

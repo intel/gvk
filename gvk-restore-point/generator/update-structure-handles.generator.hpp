@@ -63,8 +63,8 @@ private:
             const auto& command = commandItr.second;
             CompileGuardGenerator compileGuardGenerator(file, command.compileGuards);
             auto commandStructureName = "GvkCommandStructure" + string::strip_vk(command.name);
-            file << "void update_command_structure_handles(const std::map<GvkStateTrackedObject, GvkStateTrackedObject>& restorePointObjects, const " << commandStructureName << "& commandStructure);" << std::endl;
-            file << "void update_command_structure_handles(const std::map<GvkStateTrackedObject, GvkStateTrackedObject>& restorePointObjects, uint64_t parentHandle, const " << commandStructureName << "& commandStructure);" << std::endl;
+            file << "VkResult update_command_structure_handles(const std::map<GvkStateTrackedObject, GvkStateTrackedObject>& restorePointObjects, const " << commandStructureName << "& commandStructure);" << std::endl;
+            file << "VkResult update_command_structure_handles(const std::map<GvkStateTrackedObject, GvkStateTrackedObject>& restorePointObjects, uint64_t parentHandle, const " << commandStructureName << "& commandStructure);" << std::endl;
         }
         file << std::endl;
     }
@@ -85,11 +85,12 @@ private:
             }
             CompileGuardGenerator compileGuardGenerator(file, command.compileGuards);
             auto commandStructureName = "GvkCommandStructure" + string::strip_vk(command.name);
-            file << "void update_command_structure_handles(const std::map<GvkStateTrackedObject, GvkStateTrackedObject>& restorePointObjects, const " << commandStructureName << "& commandStructure)" << std::endl;
+            file << "VkResult update_command_structure_handles(const std::map<GvkStateTrackedObject, GvkStateTrackedObject>& restorePointObjects, const " << commandStructureName << "& commandStructure)" << std::endl;
             file << "{" << std::endl;
             const auto& dispatchableHandleItr = manifest.handles.find(command.parameters[0].unqualifiedType);
             if (dispatchableHandleItr != manifest.handles.end()) {
                 const auto& dispatchableHandle = dispatchableHandleItr->second;
+                file << "    auto vkResult = VK_SUCCESS;" << std::endl;
                 file << "    GvkStateTrackedObject dispatchableRestorePointObject{ };" << std::endl;
                 file << "    dispatchableRestorePointObject.type = " << dispatchableHandle.vkObjectType << ";" << std::endl;
                 file << "    dispatchableRestorePointObject.handle = (uint64_t)commandStructure." << command.parameters[0].name << ";" << std::endl;
@@ -104,20 +105,26 @@ private:
                 file << "                restorePointObject.handle = handle;" << std::endl;
                 file << "                restorePointObject.dispatchableHandle = dispatchableRestorePointObject.handle;" << std::endl;
                 file << "                auto itr = restorePointObjects.find(restorePointObject);" << std::endl;
-                file << "                assert(itr != restorePointObjects.end());" << std::endl;
-                file << "                const_cast<uint64_t&>(handle) = itr->second.handle;" << std::endl;
+                file << "                if (itr != restorePointObjects.end()) {" << std::endl;
+                file << "                    const_cast<uint64_t&>(handle) = itr->second.handle;" << std::endl;
+                file << "                } else {" << std::endl;
+                file << "                    vkResult = VK_INCOMPLETE;" << std::endl;
+                file << "                }" << std::endl;
                 file << "            }" << std::endl;
                 file << "        }" << std::endl;
                 file << "    );" << std::endl;
+                file << "    return vkResult;" << std::endl;
             } else {
                 file << "    (void)restorePointObjects;" << std::endl;
                 file << "    (void)commandStructure;" << std::endl;
+                file << "    return VK_SUCCESS;" << std::endl;
             }
             file << "}" << std::endl;
             file << std::endl;
-            file << "void update_command_structure_handles(const std::map<GvkStateTrackedObject, GvkStateTrackedObject>& restorePointObjects, uint64_t parentHandle, const " << commandStructureName << "& commandStructure)" << std::endl;
+            file << "VkResult update_command_structure_handles(const std::map<GvkStateTrackedObject, GvkStateTrackedObject>& restorePointObjects, uint64_t parentHandle, const " << commandStructureName << "& commandStructure)" << std::endl;
             file << "{" << std::endl;
             if (dispatchableHandleItr != manifest.handles.end()) {
+                file << "    auto vkResult = VK_SUCCESS;" << std::endl;
                 file << "    detail::enumerate_structure_handles(" << std::endl;
                 file << "        commandStructure," << std::endl;
                 file << "        [&](VkObjectType objectType, const uint64_t& handle)" << std::endl;
@@ -128,15 +135,20 @@ private:
                 file << "                restorePointObject.handle = handle;" << std::endl;
                 file << "                restorePointObject.dispatchableHandle = parentHandle;" << std::endl;
                 file << "                auto itr = restorePointObjects.find(restorePointObject);" << std::endl;
-                file << "                assert(itr != restorePointObjects.end());" << std::endl;
-                file << "                const_cast<uint64_t&>(handle) = itr->second.handle;" << std::endl;
+                file << "                if (itr != restorePointObjects.end()) {" << std::endl;
+                file << "                    const_cast<uint64_t&>(handle) = itr->second.handle;" << std::endl;
+                file << "                } else {" << std::endl;
+                file << "                    vkResult = VK_INCOMPLETE;" << std::endl;
+                file << "                }" << std::endl;
                 file << "            }" << std::endl;
                 file << "        }" << std::endl;
                 file << "    );" << std::endl;
+                file << "    return vkResult;" << std::endl;
             } else {
                 file << "    (void)restorePointObjects;" << std::endl;
                 file << "    (void)parentHandle;" << std::endl;
                 file << "    (void)commandStructure;" << std::endl;
+                file << "    return VK_SUCCESS;" << std::endl;
             }
             file << "}" << std::endl;
             if (manuallyImplemented.count(command.name)) {

@@ -219,7 +219,7 @@ VkResult Applier::restore_VkCommandBuffer(const GvkStateTrackedObject& restorePo
             commandStructure.device = get_dependency<VkDevice>(restoreInfo.dependencyCount, restoreInfo.pDependencies);
             commandStructure.pAllocateInfo = restoreInfo.pCommandBufferAllocateInfo;
             gvk_result(process_GvkCommandStructureAllocateCommandBuffers(restorePointObject, restoreInfo, commandStructure));
-            update_command_structure_handles(mApplyInfo.gvkRestorePoint->objectMap.get_restored_objects(), commandStructure);
+            gvk_result(update_command_structure_handles(mApplyInfo.gvkRestorePoint->objectMap.get_restored_objects(), commandStructure));
             VkCommandBuffer handle = restoreInfo.handle;
             commandStructure.pCommandBuffers = &handle;
             gvk_result(detail::execute_command_structure(mApplyInfo.dispatchTable, commandStructure));
@@ -254,8 +254,9 @@ VkResult Applier::process_GvkCommandStructureAllocateCommandBuffers(const GvkSta
     return VK_SUCCESS;
 }
 
-void update_command_structure_handles(const std::map<GvkStateTrackedObject, GvkStateTrackedObject>& restorePointObjects, const GvkCommandStructureBeginCommandBuffer& commandStructure)
+VkResult update_command_structure_handles(const std::map<GvkStateTrackedObject, GvkStateTrackedObject>& restorePointObjects, const GvkCommandStructureBeginCommandBuffer& commandStructure)
 {
+    auto vkResult = VK_SUCCESS;
     GvkStateTrackedObject dispatchableRestorePointObject{ };
     dispatchableRestorePointObject.type = VK_OBJECT_TYPE_COMMAND_BUFFER;
     dispatchableRestorePointObject.handle = (uint64_t)commandStructure.commandBuffer;
@@ -270,19 +271,22 @@ void update_command_structure_handles(const std::map<GvkStateTrackedObject, GvkS
                 restorePointObject.handle = handle;
                 restorePointObject.dispatchableHandle = dispatchableRestorePointObject.handle;
                 auto itr = restorePointObjects.find(restorePointObject);
-                if (objectType == VK_OBJECT_TYPE_FRAMEBUFFER) {
-                    const_cast<uint64_t&>(handle) = itr != restorePointObjects.end() ? itr->second.handle : 0;
-                } else {
-                    assert(itr != restorePointObjects.end());
+                if (itr != restorePointObjects.end()) {
                     const_cast<uint64_t&>(handle) = itr->second.handle;
+                } else if (objectType == VK_OBJECT_TYPE_FRAMEBUFFER) {
+                    const_cast<uint64_t&>(handle) = 0;
+                } else {
+                    vkResult = VK_INCOMPLETE;
                 }
             }
         }
     );
+    return vkResult;
 }
 
-void update_command_structure_handles(const std::map<GvkStateTrackedObject, GvkStateTrackedObject>& restorePointObjects, uint64_t parentHandle, const GvkCommandStructureBeginCommandBuffer& commandStructure)
+VkResult update_command_structure_handles(const std::map<GvkStateTrackedObject, GvkStateTrackedObject>& restorePointObjects, uint64_t parentHandle, const GvkCommandStructureBeginCommandBuffer& commandStructure)
 {
+    auto vkResult = VK_SUCCESS;
     detail::enumerate_structure_handles(
         commandStructure,
         [&](VkObjectType objectType, const uint64_t& handle)
@@ -293,15 +297,17 @@ void update_command_structure_handles(const std::map<GvkStateTrackedObject, GvkS
                 restorePointObject.handle = handle;
                 restorePointObject.dispatchableHandle = parentHandle;
                 auto itr = restorePointObjects.find(restorePointObject);
-                if (objectType == VK_OBJECT_TYPE_FRAMEBUFFER) {
-                    const_cast<uint64_t&>(handle) = itr != restorePointObjects.end() ? itr->second.handle : 0;
-                } else {
-                    assert(itr != restorePointObjects.end());
+                if (itr != restorePointObjects.end()) {
                     const_cast<uint64_t&>(handle) = itr->second.handle;
+                } else if (objectType == VK_OBJECT_TYPE_FRAMEBUFFER) {
+                    const_cast<uint64_t&>(handle) = 0;
+                } else {
+                    vkResult = VK_INCOMPLETE;
                 }
             }
         }
     );
+    return vkResult;
 }
 
 } // namespace restore_point

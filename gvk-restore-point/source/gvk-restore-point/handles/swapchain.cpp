@@ -123,7 +123,7 @@ VkResult Applier::restore_VkSwapchainKHR(const GvkStateTrackedObject& restorePoi
         commandStructure.pCreateInfo = restoreInfo.pSwapchainCreateInfoKHR;
         auto surface = restoreInfo.pSwapchainCreateInfoKHR->surface;
         const_cast<VkSwapchainCreateInfoKHR*>(commandStructure.pCreateInfo)->surface = VK_NULL_HANDLE;
-        update_command_structure_handles(mApplyInfo.gvkRestorePoint->objectMap.get_restored_objects(), commandStructure);
+        gvk_result(update_command_structure_handles(mApplyInfo.gvkRestorePoint->objectMap.get_restored_objects(), commandStructure));
 
         auto surfaceRestorePointObject = restorePointObject;
         surfaceRestorePointObject.type = VK_OBJECT_TYPE_SURFACE_KHR;

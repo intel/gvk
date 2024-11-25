@@ -77,7 +77,7 @@ public:
                 file << "                    deserialize(cmdsFile, nullptr, commandStructure);" << std::endl;
                 file << "                    auto commandBuffer = (VkCommandBuffer)get_restored_object(restorePointObject).handle;" << std::endl;
                 file << "                    const_cast<GvkCommandStructure" << string::strip_vk(command.name) << "&>(*commandStructure).commandBuffer = VK_NULL_HANDLE;" << std::endl;
-                file << "                    update_command_structure_handles(mApplyInfo.gvkRestorePoint->objectMap.get_restored_objects(), (uint64_t)device, *commandStructure);" << std::endl;
+                file << "                    gvk_result(update_command_structure_handles(mApplyInfo.gvkRestorePoint->objectMap.get_restored_objects(), (uint64_t)device, *commandStructure));" << std::endl;
                 file << "                    const_cast<GvkCommandStructure" << string::strip_vk(command.name) << "&>(*commandStructure).commandBuffer = commandBuffer;" << std::endl;
                 file << "                    detail::execute_command_structure(mApplyInfo.dispatchTable, commandStructure);" << std::endl;
                 file << "                } break;" << std::endl;
