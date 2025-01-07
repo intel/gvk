@@ -97,6 +97,7 @@ int main(int, const char*[])
         apiElements.manuallyImplemented.insert("VkShaderModuleCreateInfo");
         apiElements.manuallyImplemented.insert("VkSpecializationInfo");
         apiElements.manuallyImplemented.insert("VkTransformMatrixKHR");
+        apiElements.manuallyImplemented.insert("VkWriteDescriptorSet");
         // Unions
         apiElements.manuallyImplemented.insert("VkAccelerationStructureGeometryDataKHR");
         apiElements.manuallyImplemented.insert("VkAccelerationStructureMotionInstanceDataNV");

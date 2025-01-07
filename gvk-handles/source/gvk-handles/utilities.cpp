@@ -110,26 +110,40 @@ VkFormat get_max_depth_format(const PhysicalDevice& physicalDevice, VkFormat req
     uint32_t selectedDepthBits = 0;
     auto requestedDepthBits = get_depth_bits(requestedFormat);
     if (requestedDepthBits) {
-        const auto& dispatchTable = physicalDevice.get<DispatchTable>();
-        enumerate_formats(
-            dispatchTable.gvkGetPhysicalDeviceFormatProperties2,
-            physicalDevice,
-            imageTiling,
-            VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT,
-            [&](VkFormat availableDepthFormat)
-            {
-                if (availableDepthFormat == requestedFormat) {
-                    selectedDepthFormat = requestedFormat;
-                } else {
-                    auto availableDepthBits = get_depth_bits(availableDepthFormat);
-                    if (selectedDepthBits < availableDepthBits && availableDepthBits <= requestedDepthBits) {
-                        selectedDepthFormat = availableDepthFormat;
-                        selectedDepthBits = availableDepthBits;
-                    }
+
+        // Prepare processFormat callback
+        auto processFormat = [&](VkFormat availableDepthFormat)
+        {
+            if (availableDepthFormat == requestedFormat) {
+                selectedDepthFormat = requestedFormat;
+            } else {
+                auto availableDepthBits = get_depth_bits(availableDepthFormat);
+                if (selectedDepthBits < availableDepthBits && availableDepthBits <= requestedDepthBits) {
+                    selectedDepthFormat = availableDepthFormat;
+                    selectedDepthBits = availableDepthBits;
                 }
-                return selectedDepthFormat != requestedFormat;
             }
-        );
+            return selectedDepthFormat != requestedFormat;
+        };
+
+        // Check API version to select vkGetPhysicalDeviceFormatProperties() or vkGetPhysicalDeviceFormatProperties2()
+        if (Instance(physicalDevice.get<VkInstance>()).get<VkInstanceCreateInfo>().pApplicationInfo->apiVersion < VK_API_VERSION_1_1) {
+            enumerate_formats(
+                physicalDevice.get<DispatchTable>().gvkGetPhysicalDeviceFormatProperties,
+                physicalDevice,
+                imageTiling,
+                VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                processFormat
+            );
+        } else {
+            enumerate_formats(
+                physicalDevice.get<DispatchTable>().gvkGetPhysicalDeviceFormatProperties2,
+                physicalDevice,
+                imageTiling,
+                VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT,
+                processFormat
+            );
+        }
     }
     return selectedDepthFormat;
 }

@@ -81,6 +81,51 @@ uint32_t get_depth_bits(VkFormat format);
 Executes a given function for every VkFormat the fulfills the provided criteria
 @typename <ProcessFormatFunctionType> The type of function to execute for each VkFormat the fulfills the provided criteria
     @note The function type must accept a single VkFormat argument and return a bool indicating whether or not to continue enumerating
+@param [in] pfnGetPhysicalDeviceFormatProperties A pointer to vkGetPhysicalDeviceFormatProperties
+@param [in] vkPhysicalDevice The VkPhysicalDevice to get VkFormat properties from
+@param [in] imageTiling The VkImageTiling features to check for support
+@param [in] featureFlags The VkFormatFeatureFlags2 to check for support
+@param [in] processFormat The function to execute for each VkFormat that fulfills the provided criteria
+*/
+template <typename ProcessFormatFunctionType>
+inline void enumerate_formats(
+    PFN_vkGetPhysicalDeviceFormatProperties pfnGetPhysicalDeviceFormatProperties,
+    VkPhysicalDevice vkPhysicalDevice,
+    VkImageTiling imageTiling,
+    VkFormatFeatureFlags featureFlags,
+    ProcessFormatFunctionType processFormat
+)
+{
+    assert(pfnGetPhysicalDeviceFormatProperties);
+    assert(vkPhysicalDevice);
+    enumerate_formats(
+        [&](VkFormat format)
+        {
+            auto formatProperties = get_default<VkFormatProperties>();
+            pfnGetPhysicalDeviceFormatProperties(vkPhysicalDevice, format, &formatProperties);
+            switch (imageTiling) {
+            case VK_IMAGE_TILING_OPTIMAL: {
+                if (formatProperties.optimalTilingFeatures & featureFlags) {
+                    return processFormat(format);
+                }
+            } break;
+            case VK_IMAGE_TILING_LINEAR: {
+                if (formatProperties.linearTilingFeatures & featureFlags) {
+                    return processFormat(format);
+                }
+            } break;
+            default: {
+            } break;
+            }
+            return true;
+        }
+    );
+}
+
+/**
+Executes a given function for every VkFormat the fulfills the provided criteria
+@typename <ProcessFormatFunctionType> The type of function to execute for each VkFormat the fulfills the provided criteria
+    @note The function type must accept a single VkFormat argument and return a bool indicating whether or not to continue enumerating
 @param [in] pfnVkGetPhysicalDeviceFormatProperties2 A pointer to vkGetPhysicalDeviceFormatProperties2
 @param [in] vkPhysicalDevice The VkPhysicalDevice to get VkFormat properties from
 @param [in] imageTiling The VkImageTiling features to check for support

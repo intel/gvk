@@ -48,6 +48,7 @@ TEST(spirv, Context)
     // Compile a shader from GLSL...
     gvk::spirv::ShaderInfo shaderInfo{
         /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
+        /* .version    = */ gvk::spirv::Version::SPIRV_1_4,
         /* .stage      = */ VK_SHADER_STAGE_VERTEX_BIT,
         /* .lineOffset = */ __LINE__,
         /* .source     = */ R"(
@@ -63,11 +64,11 @@ TEST(spirv, Context)
                 gl_Position = vec4(0, 0, 0, 1);
             }
         )",
-        /* .spirv  = */ { },
+        /* .bytecode = */ { },
         /* .errors = */ { }
     };
     EXPECT_EQ(spirvContext.compile(&shaderInfo), VK_SUCCESS);
-    EXPECT_FALSE(shaderInfo.spirv.empty());
+    EXPECT_FALSE(shaderInfo.bytecode.empty());
     EXPECT_TRUE(shaderInfo.errors.empty());
 
     // Fail to compile a shader from GLSL...
@@ -87,7 +88,7 @@ TEST(spirv, Context)
         }
     )";
     EXPECT_EQ(spirvContext.compile(&shaderInfo), VK_ERROR_UNKNOWN);
-    EXPECT_TRUE(shaderInfo.spirv.empty());
+    EXPECT_TRUE(shaderInfo.bytecode.empty());
     EXPECT_FALSE(shaderInfo.errors.empty());
 }
 
@@ -97,6 +98,7 @@ TEST(spirv, BindingInfo_UniformBuffer)
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
+                /* .version    = */ gvk::spirv::Version::SPIRV_1_4,
                 /* .stage      = */ VK_SHADER_STAGE_VERTEX_BIT,
                 /* .lineOffset = */ __LINE__,
                 /* .source     = */ R"(
@@ -112,7 +114,7 @@ TEST(spirv, BindingInfo_UniformBuffer)
                     {
                     }
                 )",
-                /* .spirv  = */ { },
+                /* .bytecode = */ { },
                 /* .errors = */ { }
             },
         },
@@ -140,6 +142,7 @@ TEST(spirv, BindingInfo_StorageBuffer)
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
+                /* .version    = */ gvk::spirv::Version::SPIRV_1_4,
                 /* .stage      = */ VK_SHADER_STAGE_VERTEX_BIT,
                 /* .lineOffset = */ __LINE__,
                 /* .source     = */ R"(
@@ -155,7 +158,7 @@ TEST(spirv, BindingInfo_StorageBuffer)
                     {
                     }
                 )",
-                /* .spirv  = */ { },
+                /* .bytecode = */ { },
                 /* .errors = */ { }
             },
         },
@@ -183,6 +186,7 @@ TEST(spirv, BindingInfo_StorageImage)
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
+                /* .version    = */ gvk::spirv::Version::SPIRV_1_4,
                 /* .stage      = */ VK_SHADER_STAGE_FRAGMENT_BIT,
                 /* .lineOffset = */ __LINE__,
                 /* .source     = */ R"(
@@ -198,7 +202,7 @@ TEST(spirv, BindingInfo_StorageImage)
                     {
                     }
                 )",
-                /* .spirv  = */ { },
+                /* .bytecode = */ { },
                 /* .errors = */ { }
             },
         },
@@ -237,6 +241,7 @@ TEST(spirv, BindingInfo_CombinedImageSampler)
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
+                /* .version    = */ gvk::spirv::Version::SPIRV_1_4,
                 /* .stage      = */ VK_SHADER_STAGE_FRAGMENT_BIT,
                 /* .lineOffset = */ __LINE__,
                 /* .source     = */ R"(
@@ -252,7 +257,7 @@ TEST(spirv, BindingInfo_CombinedImageSampler)
                     {
                     }
                 )",
-                /* .spirv  = */ { },
+                /* .bytecode = */ { },
                 /* .errors = */ { }
             },
         },
@@ -287,6 +292,7 @@ TEST(spirv, BindingInfo_AccelerationStructure)
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
+                /* .version    = */ gvk::spirv::Version::SPIRV_1_4,
                 /* .stage      = */ VK_SHADER_STAGE_RAYGEN_BIT_KHR,
                 /* .lineOffset = */ __LINE__,
                 /* .source     = */ R"(
@@ -310,7 +316,7 @@ TEST(spirv, BindingInfo_AccelerationStructure)
                        imageStore(image, ivec2(gl_LaunchIDEXT.xy), col);
                     }
                 )",
-                /* .spirv  = */ { },
+                /* .bytecode = */ { },
                 /* .errors = */ { }
             },
         },
@@ -345,6 +351,7 @@ TEST(spirv, BindingInfo_PushConstants)
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
+                /* .version    = */ gvk::spirv::Version::SPIRV_1_4,
                 /* .stage      = */ VK_SHADER_STAGE_VERTEX_BIT,
                 /* .lineOffset = */ __LINE__,
                 /* .source     = */ R"(
@@ -364,7 +371,7 @@ TEST(spirv, BindingInfo_PushConstants)
                         matrix = pc.matrix;
                     }
                 )",
-                /* .spirv  = */ { },
+                /* .bytecode = */ { },
                 /* .errors = */ { }
             },
         },

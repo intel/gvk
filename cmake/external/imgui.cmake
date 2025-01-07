@@ -3,7 +3,7 @@
 include_guard(GLOBAL)
 gvk_enable_target(imgui)
 
-set(imgui_VERSION f401021d5a5d56fe2304056c391e78f81c8d4b8f) # 1.91.5
+set(imgui_VERSION 993fa347495860ed44b83574254ef2a317d0c14f) # 1.91.6
 FetchContent_Declare(
     imgui
     GIT_REPOSITORY "https://github.com/ocornut/imgui.git"
@@ -16,8 +16,11 @@ FetchContent_GetProperties(imgui SOURCE_DIR imgui_SOURCE_DIR)
 gvk_add_static_library(
     TARGET imgui
     FOLDER "external/"
-    INCLUDE_DIRECTORIES "${imgui_SOURCE_DIR}"
+    INCLUDE_DIRECTORIES
+        "${imgui_SOURCE_DIR}"
+        "${imgui_SOURCE_DIR}/misc/"
     INCLUDE_FILES
+        "${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.h"
         "${imgui_SOURCE_DIR}/imconfig.h"
         "${imgui_SOURCE_DIR}/imgui.h"
         "${imgui_SOURCE_DIR}/imgui_internal.h"
@@ -25,6 +28,7 @@ gvk_add_static_library(
         "${imgui_SOURCE_DIR}/imstb_textedit.h"
         "${imgui_SOURCE_DIR}/imstb_truetype.h"
     SOURCE_FILES
+        "${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.cpp"
         "${imgui_SOURCE_DIR}/imgui.cpp"
         "${imgui_SOURCE_DIR}/imgui_demo.cpp"
         "${imgui_SOURCE_DIR}/imgui_draw.cpp"
@@ -41,8 +45,10 @@ endif()
 if(gvk-imgui_INSTALL_HEADERS)
     install(
         FILES
+            "${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.h"
             "${imgui_SOURCE_DIR}/imconfig.h"
             "${imgui_SOURCE_DIR}/imgui.h"
+            "${imgui_SOURCE_DIR}/imgui_internal.h"
         DESTINATION
             include/
     )

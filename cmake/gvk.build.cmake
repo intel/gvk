@@ -259,8 +259,26 @@ function(gvk_install_headers)
 endfunction()
 
 function(gvk_install_layer)
-    cmake_parse_arguments(ARGS "" "TARGET" "" ${ARGN})
-    gvk_install_artifacts(${ARGV})
+    cmake_parse_arguments(ARGS "" "TARGET;VERSION" "" ${ARGN})
+    if(NOT ARGS_VERSION)
+        get_target_property(ARGS_VERSION ${ARGS_TARGET} VERSION)
+        if(NOT ARGS_VERSION)
+            gvk_get_commit_hash(ARGS_VERSION)
+        endif()
+    endif()
+    install(
+        TARGETS ${ARGS_TARGET}
+        EXPORT ${ARGS_TARGET}Targets
+        LIBRARY DESTINATION lib/$<CONFIG>/
+        ARCHIVE DESTINATION lib/$<CONFIG>/
+        RUNTIME DESTINATION bin/$<CONFIG>/
+    )
+    set(configVersion "${CMAKE_BINARY_DIR}/cmake/${ARGS_TARGET}ConfigVersion.cmake")
+    write_basic_package_version_file("${configVersion}" VERSION ${ARGS_VERSION} COMPATIBILITY ExactVersion)
+    set(configTemplate "${gvkBuildModuleDirectory}/gvk-target.config.cmake.in")
+    set(config "${CMAKE_BINARY_DIR}/cmake/${ARGS_TARGET}Config.cmake")
+    configure_package_config_file("${configTemplate}" "${config}" INSTALL_DESTINATION {CMAKE_BINARY_DIR}/cmake/)
+    install(FILES "${config}" "${configVersion}" DESTINATION cmake/${ARGS_TARGET}/)
     install(FILES "$<TARGET_FILE_DIR:${ARGS_TARGET}>/${ARGS_TARGET}.json" DESTINATION bin/$<CONFIG>/)
 endfunction()
 
@@ -271,7 +289,12 @@ function(gvk_install_package)
         string(REPLACE "Config.cmake" "" exportedTargetName "${exportedConfigFileName}")
         list(APPEND exportedTargets ${exportedTargetName})
     endforeach()
-    list(REMOVE_ITEM exportedTargets gvk)
+    list(REMOVE_ITEM exportedTargets
+        gvk
+        VK_LAYER_INTEL_gvk_restore_point
+        VK_LAYER_INTEL_gvk_state_tracker
+        VK_LAYER_INTEL_gvk_virtual_swapchain
+    )
     gvk_get_commit_hash(version)
     set(configVersion "${CMAKE_BINARY_DIR}/cmake/gvkConfigVersion.cmake")
     write_basic_package_version_file("${configVersion}" VERSION ${version} COMPATIBILITY ExactVersion)

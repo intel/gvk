@@ -254,7 +254,7 @@ void Renderer::begin_gui(const BeginInfo& beginInfo)
         // NOTE : https://github.com/ocornut/imgui/issues/4921
         imGuiIo.AddMousePosEvent(beginInfo.pInput->mouse.position.current[0], beginInfo.pInput->mouse.position.current[1]);
         imGuiIo.AddMouseButtonEvent(0, beginInfo.pInput->mouse.buttons.down(system::Mouse::Button::Left));
-        imGuiIo.AddMouseButtonEvent(1, beginInfo.pInput->mouse.buttons.down(system::Mouse::Button::Left));
+        imGuiIo.AddMouseButtonEvent(1, beginInfo.pInput->mouse.buttons.down(system::Mouse::Button::Right));
         imGuiIo.AddMouseWheelEvent(beginInfo.pInput->mouse.scroll.delta()[0], beginInfo.pInput->mouse.scroll.delta()[1]);
         imGuiIo.AddKeyEvent(ImGuiMod_Ctrl, beginInfo.pInput->keyboard.down(system::Key::LeftControl) || beginInfo.pInput->keyboard.down(system::Key::RightControl));
         imGuiIo.AddKeyEvent(ImGuiMod_Shift, beginInfo.pInput->keyboard.down(system::Key::LeftShift) || beginInfo.pInput->keyboard.down(system::Key::RightShift));
@@ -379,7 +379,8 @@ void Renderer::begin_gui(const BeginInfo& beginInfo)
 VkResult Renderer::end_gui(uint32_t resourceId)
 {
     assert(mReference);
-    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+    gvk_result_scope_begin(VK_SUCCESS) {
+        ImGui::EndFrame();
         ImGui::Render();
         auto pImDrawData = ImGui::GetDrawData();
         assert(pImDrawData);
@@ -474,6 +475,7 @@ VkResult Renderer::create_pipeline(const RenderPass& renderPass, const VkAllocat
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         auto vertexShaderInfo = get_default<spirv::ShaderInfo>();
         vertexShaderInfo.language = spirv::ShadingLanguage::Glsl;
+        vertexShaderInfo.version = spirv::Version::SPIRV_1_0;
         vertexShaderInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
         vertexShaderInfo.lineOffset = __LINE__;
         vertexShaderInfo.source = R"(
@@ -506,6 +508,7 @@ VkResult Renderer::create_pipeline(const RenderPass& renderPass, const VkAllocat
         )";
         auto fragmentShaderInfo = get_default<spirv::ShaderInfo>();
         fragmentShaderInfo.language = spirv::ShadingLanguage::Glsl;
+        fragmentShaderInfo.version = spirv::Version::SPIRV_1_0;
         fragmentShaderInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
         fragmentShaderInfo.lineOffset = __LINE__;
         fragmentShaderInfo.source = R"(
@@ -533,8 +536,8 @@ VkResult Renderer::create_pipeline(const RenderPass& renderPass, const VkAllocat
         gvk_result(fsVkResult);
 
         auto vertexShaderModuleCreateInfo = get_default<VkShaderModuleCreateInfo>();
-        vertexShaderModuleCreateInfo.codeSize = vertexShaderInfo.spirv.size() * sizeof(uint32_t);
-        vertexShaderModuleCreateInfo.pCode = !vertexShaderInfo.spirv.empty() ? vertexShaderInfo.spirv.data() : nullptr;
+        vertexShaderModuleCreateInfo.codeSize = vertexShaderInfo.bytecode.size() * sizeof(uint32_t);
+        vertexShaderModuleCreateInfo.pCode = !vertexShaderInfo.bytecode.empty() ? vertexShaderInfo.bytecode.data() : nullptr;
         ShaderModule vertexShaderModule;
         gvk_result(ShaderModule::create(get<Device>(), &vertexShaderModuleCreateInfo, nullptr, &vertexShaderModule));
         auto vertexPipelineShaderStageCreateInfo = get_default<VkPipelineShaderStageCreateInfo>();
@@ -542,8 +545,8 @@ VkResult Renderer::create_pipeline(const RenderPass& renderPass, const VkAllocat
         vertexPipelineShaderStageCreateInfo.module = vertexShaderModule;
 
         auto fragmentShaderModuleCreateInfo = gvk::get_default<VkShaderModuleCreateInfo>();
-        fragmentShaderModuleCreateInfo.codeSize = fragmentShaderInfo.spirv.size() * sizeof(uint32_t);
-        fragmentShaderModuleCreateInfo.pCode = !fragmentShaderInfo.spirv.empty() ? fragmentShaderInfo.spirv.data() : nullptr;
+        fragmentShaderModuleCreateInfo.codeSize = fragmentShaderInfo.bytecode.size() * sizeof(uint32_t);
+        fragmentShaderModuleCreateInfo.pCode = !fragmentShaderInfo.bytecode.empty() ? fragmentShaderInfo.bytecode.data() : nullptr;
         ShaderModule fragmentShaderModule;
         gvk_result(ShaderModule::create(get<Device>(), &fragmentShaderModuleCreateInfo, nullptr, &fragmentShaderModule));
         auto fragmentPipelineShaderStageCreateInfo = get_default<VkPipelineShaderStageCreateInfo>();
@@ -563,14 +566,17 @@ VkResult Renderer::create_pipeline(const RenderPass& renderPass, const VkAllocat
         pipelineVertexInputStateCreateInfo.vertexAttributeDescriptionCount = (uint32_t)vertexInputAttributeDescriptions.size();
         pipelineVertexInputStateCreateInfo.pVertexAttributeDescriptions = vertexInputAttributeDescriptions.data();
 
-        auto pipelineColorBlendAttachmentState = get_default<VkPipelineColorBlendAttachmentState>();
-        pipelineColorBlendAttachmentState.blendEnable = VK_TRUE;
-        auto pipelineColorBlendStateCreateInfo = get_default<VkPipelineColorBlendStateCreateInfo>();
-        pipelineColorBlendStateCreateInfo.pAttachments = &pipelineColorBlendAttachmentState;
+        auto pipelineRasterizationStateCreateInfo = get_default<VkPipelineRasterizationStateCreateInfo>();
+        pipelineRasterizationStateCreateInfo.cullMode = VK_CULL_MODE_NONE;
 
         auto pipelineMultisampleStateCreateInfo = get_default<VkPipelineMultisampleStateCreateInfo>();
         pipelineMultisampleStateCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
         auto pipelineDepthStencilStateCreateInfo = get_default<VkPipelineDepthStencilStateCreateInfo>();
+
+        auto pipelineColorBlendAttachmentState = get_default<VkPipelineColorBlendAttachmentState>();
+        pipelineColorBlendAttachmentState.blendEnable = VK_TRUE;
+        auto pipelineColorBlendStateCreateInfo = get_default<VkPipelineColorBlendStateCreateInfo>();
+        pipelineColorBlendStateCreateInfo.pAttachments = &pipelineColorBlendAttachmentState;
 
         const auto& renderPassCreateInfo = renderPass.get<VkRenderPassCreateInfo>();
         if (renderPassCreateInfo.sType == get_stype<VkRenderPassCreateInfo>()) {
@@ -597,9 +603,10 @@ VkResult Renderer::create_pipeline(const RenderPass& renderPass, const VkAllocat
         graphicsPipelineCreateInfo.stageCount = (uint32_t)pipelineShaderStageCreateInfos.size();
         graphicsPipelineCreateInfo.pStages = pipelineShaderStageCreateInfos.data();
         graphicsPipelineCreateInfo.pVertexInputState = &pipelineVertexInputStateCreateInfo;
-        graphicsPipelineCreateInfo.pColorBlendState = &pipelineColorBlendStateCreateInfo;
+        graphicsPipelineCreateInfo.pRasterizationState = &pipelineRasterizationStateCreateInfo;
         graphicsPipelineCreateInfo.pMultisampleState = &pipelineMultisampleStateCreateInfo;
         graphicsPipelineCreateInfo.pDepthStencilState = &pipelineDepthStencilStateCreateInfo;
+        graphicsPipelineCreateInfo.pColorBlendState = &pipelineColorBlendStateCreateInfo;
         graphicsPipelineCreateInfo.layout = pipelineLayout;
         graphicsPipelineCreateInfo.renderPass = renderPass;
         gvk_result(Pipeline::create(get<Device>(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, pAllocator, &mReference->mPipeline));
@@ -678,7 +685,10 @@ VkResult Renderer::create_image_view_and_sampler(VkQueue vkQueue, VkCommandBuffe
         imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
         imageViewCreateInfo.format = imageCreateInfo.format;
         gvk_result(ImageView::create(get<Device>(), &imageViewCreateInfo, pAllocator, &mReference->mFontImageView));
-        gvk_result(Sampler::create(get<Device>(), &get_default<VkSamplerCreateInfo>(), pAllocator, &mReference->mFontSampler));
+
+        auto samplerCreateInfo = get_default<VkSamplerCreateInfo>();
+        samplerCreateInfo.anisotropyEnable = VK_FALSE;
+        gvk_result(Sampler::create(get<Device>(), &samplerCreateInfo, pAllocator, &mReference->mFontSampler));
     } gvk_result_scope_end;
     return gvkResult;
 }

@@ -148,7 +148,7 @@ VkResult Buffer::create(const Device& device, const VkBufferCreateInfo* pBufferC
             bufferControlBlock.mBufferCreateInfo = *pBufferCreateInfo;
             bufferControlBlock.mVmaAllocation = vmaAllocation;
             bufferControlBlock.mVmaAllocationCreateInfo = *pAllocationCreateInfo;
-            gvk_result(detail::initialize_control_block(bufferControlBlock));
+            gvk_result(detail::initialize_control_block(*pBuffer));
         }
     } gvk_result_scope_end;
     return gvkResult;
@@ -174,7 +174,7 @@ VkResult Image::create(const Device& device, const VkImageCreateInfo* pImageCrea
             imageControlBlock.mImageCreateInfo = *pImageCreateInfo;
             imageControlBlock.mVmaAllocation = vmaAllocation;
             imageControlBlock.mVmaAllocationCreateInfo = *pAllocationCreateInfo;
-            gvk_result(detail::initialize_control_block(imageControlBlock));
+            gvk_result(detail::initialize_control_block(*pImage));
         }
     } gvk_result_scope_end;
     return gvkResult;
@@ -324,12 +324,13 @@ VkResult initialize_control_block<Instance>(Instance& instance)
         gvk_result(instanceControlBlock.mDispatchTable.gvkEnumeratePhysicalDevices(instanceControlBlock.mVkInstance, &physicalDeviceCount, pVkPhysicalDevices));
         instanceControlBlock.mPhysicalDevices.resize(physicalDeviceCount);
         for (uint32_t i = 0; i < physicalDeviceCount; ++i) {
-            instanceControlBlock.mPhysicalDevices[i].mReference.reset(newref, pVkPhysicalDevices[i]);
-            auto& physicalDeviceControlBlock = instanceControlBlock.mPhysicalDevices[i].mReference.get_obj();
+            auto& physicalDevice = instanceControlBlock.mPhysicalDevices[i];
+            physicalDevice.mReference.reset(newref, pVkPhysicalDevices[i]);
+            auto& physicalDeviceControlBlock = physicalDevice.mReference.get_obj();
             physicalDeviceControlBlock.mVkPhysicalDevice = pVkPhysicalDevices[i];
             physicalDeviceControlBlock.mVkInstance = instanceControlBlock.mVkInstance;
             physicalDeviceControlBlock.mDispatchTable = instanceControlBlock.mDispatchTable;
-            gvk_result(detail::initialize_control_block(physicalDeviceControlBlock));
+            gvk_result(detail::initialize_control_block(physicalDevice));
         }
     } gvk_result_scope_end;
     return gvkResult;
@@ -356,13 +357,14 @@ VkResult initialize_control_block<Device>(Device& device)
                 VkQueue vkQueue = VK_NULL_HANDLE;
                 assert(deviceControlBlock.mDispatchTable.gvkGetDeviceQueue);
                 deviceControlBlock.mDispatchTable.gvkGetDeviceQueue(deviceControlBlock.mVkDevice, deviceQueueCreateInfo.queueFamilyIndex, queue_i, &vkQueue);
-                queueFamily.queues[queue_i].mReference.reset(newref, vkQueue);
-                auto& queueControlBlock = queueFamily.queues[queue_i].mReference.get_obj();
+                auto& queue = queueFamily.queues[queue_i];
+                queue.mReference.reset(newref, vkQueue);
+                auto& queueControlBlock = queue.mReference.get_obj();
                 queueControlBlock.mVkQueue = vkQueue;
                 queueControlBlock.mVkDevice = deviceControlBlock.mVkDevice;
                 queueControlBlock.mDeviceQueueCreateInfo = deviceQueueCreateInfo;
                 queueControlBlock.mDispatchTable = deviceControlBlock.mDispatchTable;
-                gvk_result(detail::initialize_control_block(queueControlBlock));
+                gvk_result(detail::initialize_control_block(queue));
             }
             deviceControlBlock.mQueueFamilies.push_back(queueFamily);
         }
@@ -419,6 +421,16 @@ VkResult initialize_control_block<Device>(Device& device)
         gvk_result(vmaCreateAllocator(&allocatorCreateInfo, &deviceControlBlock.mVmaAllocator));
     } gvk_result_scope_end;
     return gvkResult;
+}
+
+template <>
+VkResult initialize_control_block<Queue>(Queue& queue)
+{
+    auto& queueControlBlock = queue.mReference.get_obj();
+    // NOTE : This initializes the queue's dispatch table.
+    //  See the note in initialize_control_block<CommandBuffer>() for more info.
+    *(void**)queueControlBlock.mVkQueue = *(void**)queueControlBlock.mVkDevice;
+    return VK_SUCCESS;
 }
 
 template <>
@@ -530,7 +542,7 @@ VkResult initialize_control_block<SwapchainKHR>(SwapchainKHR& swapchain)
             imageControlBlock.mDevice = swapchainControlBlock.mDevice;
             imageControlBlock.mVkSwapchainKHR = swapchainControlBlock.mVkSwapchainKHR;
             imageControlBlock.mImageCreateInfo = imageCreateInfo;
-            gvk_result(detail::initialize_control_block(imageControlBlock));
+            gvk_result(detail::initialize_control_block(images[i]));
         }
     } gvk_result_scope_end;
     return gvkResult;

@@ -77,11 +77,22 @@ VkResult create_instance(const VkInstanceCreateInfo* pCreateInfo, const VkAlloca
     assert(pInstance);
     std::lock_guard<std::mutex> lock(Registry::get().mutex);
     auto vkResult = VK_ERROR_INITIALIZATION_FAILED;
-    auto pLayerInstanceCreateInfo = get_instance_chain_info(pCreateInfo, VK_LAYER_LINK_INFO);
-    auto pfn_vkGetInstanceProcAddr = (pLayerInstanceCreateInfo && pLayerInstanceCreateInfo->u.pLayerInfo) ? pLayerInstanceCreateInfo->u.pLayerInfo->pfnNextGetInstanceProcAddr : nullptr;
-    auto pfn_vkCreateInstance = pfn_vkGetInstanceProcAddr ? (PFN_vkCreateInstance)pfn_vkGetInstanceProcAddr(VK_NULL_HANDLE, "vkCreateInstance") : nullptr;
+    auto pLayerLinkInfo = get_instance_chain_info(pCreateInfo, VK_LAYER_LINK_INFO);
+    Registry::get().pfn_vkGetInstanceProcAddr = (pLayerLinkInfo && pLayerLinkInfo->u.pLayerInfo) ? pLayerLinkInfo->u.pLayerInfo->pfnNextGetInstanceProcAddr : nullptr;
+    auto pfn_vkCreateInstance = Registry::get().pfn_vkGetInstanceProcAddr ? (PFN_vkCreateInstance)Registry::get().pfn_vkGetInstanceProcAddr(VK_NULL_HANDLE, "vkCreateInstance") : nullptr;
     if (pfn_vkCreateInstance) {
-        pLayerInstanceCreateInfo->u.pLayerInfo = pLayerInstanceCreateInfo->u.pLayerInfo->pNext;
+
+        // Get the VK_LOADER_LAYER_CREATE_DEVICE_CALLBACK
+        auto pLayerCreateDeviceCallback = get_instance_chain_info(pCreateInfo, VK_LOADER_LAYER_CREATE_DEVICE_CALLBACK);
+        if (pLayerCreateDeviceCallback) {
+            Registry::get().pfn_vkLayerCreateDevice = pLayerCreateDeviceCallback->u.layerDevice.pfnLayerCreateDevice;
+            Registry::get().pfn_vkLayerDestroyDevice = pLayerCreateDeviceCallback->u.layerDevice.pfnLayerDestroyDevice;
+        }
+
+        // Advance layer link info
+        pLayerLinkInfo->u.pLayerInfo = pLayerLinkInfo->u.pLayerInfo->pNext;
+
+        // Get layers and run pre vkCreateInstance() handlers
         auto& layers = Registry::get().layers;
         on_load(Registry::get());
         vkResult = VK_SUCCESS;
@@ -89,15 +100,19 @@ VkResult create_instance(const VkInstanceCreateInfo* pCreateInfo, const VkAlloca
             assert(*layerItr && "gvk::layer::Registry contains a null layer; are layers configured correctly and intialized via gvk::layer::on_load()?");
             vkResult = (*layerItr)->pre_vkCreateInstance(pCreateInfo, pAllocator, pInstance, vkResult);
         }
+
+        // Make the vkCreateInstance() call down the layer chain
         vkResult = pfn_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
         if (vkResult == VK_SUCCESS) {
             DispatchTable instanceDispatchTable { };
-            instanceDispatchTable.gvkGetInstanceProcAddr = pfn_vkGetInstanceProcAddr;
+            instanceDispatchTable.gvkGetInstanceProcAddr = Registry::get().pfn_vkGetInstanceProcAddr;
             DispatchTable::load_instance_entry_points(*pInstance, &instanceDispatchTable);
             Registry::get().instance = *pInstance;
             Registry::get().apiVersion = pCreateInfo->pApplicationInfo ? pCreateInfo->pApplicationInfo->apiVersion : VK_API_VERSION_1_0;
             Registry::get().VkInstanceDispatchTables.insert({ get_dispatch_key(*pInstance), instanceDispatchTable });
         }
+
+        // Run post vkCreateInstance() handlers
         for (auto layerItr = layers.rbegin(); layerItr != layers.rend(); ++layerItr) {
             assert(*layerItr && "gvk::layer::Registry contains a null layer; are layers configured correctly and intialized via gvk::layer::on_load()?");
             vkResult = (*layerItr)->post_vkCreateInstance(pCreateInfo, pAllocator, pInstance, vkResult);

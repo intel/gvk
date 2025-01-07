@@ -385,49 +385,53 @@ VkResult Layer::post_vkAcquireFullScreenExclusiveModeEXT(VkDevice device, VkSwap
 }
 #endif // VK_USE_PLATFORM_WIN32_KHR
 
-VkResult Layer::pre_vkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex, VkResult gvkResult)
+VkResult Layer::pre_vkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex, VkResult vkResult)
 {
-    if (gvkResult == VK_SUCCESS || gvkResult == VK_SUBOPTIMAL_KHR) {
+    gvk_result_scope_begin(vkResult) {
+        gvk_result((gvkResult == VK_SUCCESS || gvkResult == VK_SUBOPTIMAL_KHR) ? VK_SUCCESS : gvkResult);
         std::lock_guard<std::mutex> lock(mMutex);
         auto itr = mSwapchains.find(swapchain);
-        assert(itr != mSwapchains.end());
-        gvkResult = itr->second.pre_vkAcquireNextImageKHR(device, swapchain, timeout, semaphore, fence, pImageIndex, gvkResult);
-    }
+        gvk_result(itr != mSwapchains.end() ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+        gvk_result(itr->second.pre_vkAcquireNextImageKHR(device, swapchain, timeout, semaphore, fence, pImageIndex, gvkResult));
+    } gvk_result_scope_end;
     return gvkResult;
 }
 
-VkResult Layer::post_vkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex, VkResult gvkResult)
+VkResult Layer::post_vkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex, VkResult vkResult)
 {
-    if (gvkResult == VK_SUCCESS || gvkResult == VK_SUBOPTIMAL_KHR) {
+    gvk_result_scope_begin(vkResult) {
+        gvk_result((gvkResult == VK_SUCCESS || gvkResult == VK_SUBOPTIMAL_KHR) ? VK_SUCCESS : gvkResult);
         std::lock_guard<std::mutex> lock(mMutex);
         auto itr = mSwapchains.find(swapchain);
-        assert(itr != mSwapchains.end());
-        gvkResult = itr->second.post_vkAcquireNextImageKHR(device, swapchain, timeout, semaphore, fence, pImageIndex, gvkResult);
-    }
+        gvk_result(itr != mSwapchains.end() ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+        gvk_result(itr->second.post_vkAcquireNextImageKHR(device, swapchain, timeout, semaphore, fence, pImageIndex, gvkResult));
+    } gvk_result_scope_end;
     return gvkResult;
 }
 
-VkResult Layer::pre_vkAcquireNextImage2KHR(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex, VkResult gvkResult)
+VkResult Layer::pre_vkAcquireNextImage2KHR(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex, VkResult vkResult)
 {
-    if (gvkResult == VK_SUCCESS || gvkResult == VK_SUBOPTIMAL_KHR) {
-        assert(pAcquireInfo);
+    gvk_result_scope_begin(vkResult) {
+        gvk_result((gvkResult == VK_SUCCESS || gvkResult == VK_SUBOPTIMAL_KHR) ? VK_SUCCESS : gvkResult);
+        gvk_result(pAcquireInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
         std::lock_guard<std::mutex> lock(mMutex);
         auto itr = mSwapchains.find(pAcquireInfo->swapchain);
-        assert(itr != mSwapchains.end());
-        gvkResult = itr->second.pre_vkAcquireNextImage2KHR(device, pAcquireInfo, pImageIndex, gvkResult);
-    }
+        gvk_result(itr != mSwapchains.end() ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+        gvk_result(itr->second.pre_vkAcquireNextImage2KHR(device, pAcquireInfo, pImageIndex, gvkResult));
+    } gvk_result_scope_end;
     return gvkResult;
 }
 
-VkResult Layer::post_vkAcquireNextImage2KHR(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex, VkResult gvkResult)
+VkResult Layer::post_vkAcquireNextImage2KHR(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex, VkResult vkResult)
 {
-    if (gvkResult == VK_SUCCESS || gvkResult == VK_SUBOPTIMAL_KHR) {
-        assert(pAcquireInfo);
+    gvk_result_scope_begin(vkResult) {
+        gvk_result((gvkResult == VK_SUCCESS || gvkResult == VK_SUBOPTIMAL_KHR) ? VK_SUCCESS : gvkResult);
+        gvk_result(pAcquireInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
         std::lock_guard<std::mutex> lock(mMutex);
         auto itr = mSwapchains.find(pAcquireInfo->swapchain);
-        assert(itr != mSwapchains.end());
-        gvkResult = itr->second.post_vkAcquireNextImage2KHR(device, pAcquireInfo, pImageIndex, gvkResult);
-    }
+        gvk_result(itr != mSwapchains.end() ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+        gvk_result(itr->second.post_vkAcquireNextImage2KHR(device, pAcquireInfo, pImageIndex, gvkResult));
+    } gvk_result_scope_end;
     return gvkResult;
 }
 

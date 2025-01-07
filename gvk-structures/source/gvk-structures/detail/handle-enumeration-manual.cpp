@@ -253,6 +253,43 @@ void enumerate_structure_handles<VkTransformMatrixKHR>(const VkTransformMatrixKH
     // NOOP : No handles
 }
 
+template <>
+void enumerate_structure_handles<VkWriteDescriptorSet>(const VkWriteDescriptorSet& obj, EnumerateHandlesCallback callback)
+{
+    (void)obj;
+    (void)callback;
+    enumerate_pnext_handles(obj.pNext, callback);
+    enumerate_handle(obj.dstSet, callback);
+    switch (obj.descriptorType) {
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC: {
+        enumerate_dynamic_structure_array_handles(obj.descriptorCount, obj.pBufferInfo, callback);
+    } break;
+    case VK_DESCRIPTOR_TYPE_SAMPLER:
+    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+    case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+    case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+    case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: {
+        enumerate_dynamic_structure_array_handles(obj.descriptorCount, obj.pImageInfo, callback);
+    } break;
+    case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+    case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER: {
+        enumerate_dynamic_handle_array(obj.descriptorCount, obj.pTexelBufferView, callback);
+    } break;
+    case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK:
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV:
+    case VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM:
+    case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:
+    case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
+    default: {
+        assert(false && "Unserviced VkDescriptorType; gvk maintenance required");
+    } break;
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Unions
 template <>

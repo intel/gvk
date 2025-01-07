@@ -652,6 +652,86 @@ inline void load(ArchiveType& archive, VkTransformMatrixKHR& obj)
     gvk::detail::decerealize_static_array<12>(archive, obj.matrix);
 }
 
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkWriteDescriptorSet& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+    gvk::detail::cerealize_handle(archive, obj.dstSet);
+    archive(obj.dstBinding);
+    archive(obj.dstArrayElement);
+    archive(obj.descriptorCount);
+    archive(obj.descriptorType);
+    switch (obj.descriptorType) {
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC: {
+        gvk::detail::cerealize_dynamic_array(archive, gvk::detail::get_count(obj.descriptorCount), obj.pBufferInfo);
+    } break;
+    case VK_DESCRIPTOR_TYPE_SAMPLER:
+    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+    case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+    case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+    case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: {
+        gvk::detail::cerealize_dynamic_array(archive, gvk::detail::get_count(obj.descriptorCount), obj.pImageInfo);
+    } break;
+    case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+    case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER: {
+        gvk::detail::cerealize_dynamic_handle_array(archive, gvk::detail::get_count(obj.descriptorCount), obj.pTexelBufferView);
+    } break;
+    case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK:
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV:
+    case VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM:
+    case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:
+    case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
+    default: {
+        assert(false && "Unserviced VkDescriptorType; gvk maintenance required");
+    } break;
+    }
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkWriteDescriptorSet& obj)
+{
+    archive(obj.sType);
+    obj.pNext = (const void*)gvk::detail::decerealize_pnext(archive);
+    obj.dstSet = gvk::detail::decerealize_handle<VkDescriptorSet>(archive);
+    archive(obj.dstBinding);
+    archive(obj.dstArrayElement);
+    archive(obj.descriptorCount);
+    archive(obj.descriptorType);
+    switch (obj.descriptorType) {
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC: {
+        obj.pBufferInfo = gvk::detail::decerealize_dynamic_array<VkDescriptorBufferInfo>(archive);
+    } break;
+    case VK_DESCRIPTOR_TYPE_SAMPLER:
+    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+    case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+    case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+    case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: {
+        obj.pImageInfo = gvk::detail::decerealize_dynamic_array<VkDescriptorImageInfo>(archive);
+    } break;
+    case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+    case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER: {
+        obj.pTexelBufferView = gvk::detail::decerealize_dynamic_handle_array<VkBufferView>(archive);
+    } break;
+    case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK:
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV:
+    case VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM:
+    case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:
+    case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
+    default: {
+        assert(false && "Unserviced VkDescriptorType; gvk maintenance required");
+    } break;
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Unions
 template <typename ArchiveType>

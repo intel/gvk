@@ -35,11 +35,11 @@ static void create_descriptor_set_layouts(const gvk::Device& device, gvk::spirv:
     gvk::spirv::Context spirvContext;
     ASSERT_EQ(gvk::spirv::Context::create(&gvk::get_default<gvk::spirv::Context::CreateInfo>(), &spirvContext), VK_SUCCESS);
     ASSERT_EQ(spirvContext.compile(&shaderInfo), VK_SUCCESS);
-    ASSERT_FALSE(shaderInfo.spirv.empty());
+    ASSERT_FALSE(shaderInfo.bytecode.empty());
 
     auto shaderMoudleCreateInfo = gvk::get_default<VkShaderModuleCreateInfo>();
-    shaderMoudleCreateInfo.codeSize = (uint32_t)shaderInfo.spirv.size() * sizeof(uint32_t);
-    shaderMoudleCreateInfo.pCode = shaderInfo.spirv.data();
+    shaderMoudleCreateInfo.codeSize = (uint32_t)shaderInfo.bytecode.size() * sizeof(uint32_t);
+    shaderMoudleCreateInfo.pCode = shaderInfo.bytecode.data();
     gvk::ShaderModule shaderModule;
     ASSERT_EQ(gvk::ShaderModule::create(device, &shaderMoudleCreateInfo, nullptr, &shaderModule), VK_SUCCESS);
 

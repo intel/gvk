@@ -41,12 +41,27 @@ namespace gvk {
 namespace spirv {
 
 /**
-Enumeration of high level shading languages
+Enumeration of shading languages
 */
 enum class ShadingLanguage
 {
     Glsl,
     Hlsl,
+    SpirV,
+};
+
+/**
+Enumeration of SPIR-V versions
+*/
+enum class Version
+{
+    SPIRV_1_0 = (1 << 16),
+    SPIRV_1_1 = (1 << 16) | (1 << 8),
+    SPIRV_1_2 = (1 << 16) | (2 << 8),
+    SPIRV_1_3 = (1 << 16) | (3 << 8),
+    SPIRV_1_4 = (1 << 16) | (4 << 8),
+    SPIRV_1_5 = (1 << 16) | (5 << 8),
+    SPIRV_1_6 = (1 << 16) | (6 << 8),
 };
 
 /**
@@ -56,10 +71,11 @@ class ShaderInfo final
 {
 public:
     ShadingLanguage language{ ShadingLanguage::Glsl };
+    Version version{ Version::SPIRV_1_4 };
     VkShaderStageFlagBits stage{ VK_SHADER_STAGE_ALL };
     uint32_t lineOffset{ };
     std::string source;
-    std::vector<uint32_t> spirv;
+    std::vector<uint32_t> bytecode;
     std::vector<std::string> errors;
 };
 
@@ -80,10 +96,18 @@ public:
     ~Context();
 
     /**
-    Compiles SPIR-V from a given spirv::ShaderInfo
+    Compiles SPIR-V bytecode from a given spirv::ShaderInfo
     @param [in] pShaderInfo
+    @return the VkResult
     */
     VkResult compile(ShaderInfo* pShaderInfo);
+
+    /**
+    Decompiles SPIR-V bytecode from a given spirv::ShaderInfo
+    @param [in] pShaderInfo
+    @return the VkResult
+    */
+    VkResult decompile(ShaderInfo* pShaderInfo);
 
 private:
     class ControlBlock final

@@ -51,11 +51,11 @@ TEST(Pipeline, ComputePipelineResourceLifetime)
     gvk::spirv::Context spirvContext;
     ASSERT_EQ(gvk::spirv::Context::create(&gvk::get_default<gvk::spirv::Context::CreateInfo>(), &spirvContext), VK_SUCCESS);
     ASSERT_EQ(spirvContext.compile(&shaderInfo), VK_SUCCESS);
-    ASSERT_FALSE(shaderInfo.spirv.empty());
+    ASSERT_FALSE(shaderInfo.bytecode.empty());
 
     auto shaderMoudleCreateInfo = gvk::get_default<VkShaderModuleCreateInfo>();
-    shaderMoudleCreateInfo.codeSize = (uint32_t)shaderInfo.spirv.size() * sizeof(uint32_t);
-    shaderMoudleCreateInfo.pCode = shaderInfo.spirv.data();
+    shaderMoudleCreateInfo.codeSize = (uint32_t)shaderInfo.bytecode.size() * sizeof(uint32_t);
+    shaderMoudleCreateInfo.pCode = shaderInfo.bytecode.data();
     gvk::ShaderModule shaderModule;
     ASSERT_EQ(gvk::ShaderModule::create(context.get<gvk::Devices>()[0], &shaderMoudleCreateInfo, nullptr, &shaderModule), VK_SUCCESS);
     ASSERT_TRUE(create_state_tracked_object_record(shaderModule, shaderModule.get<VkShaderModuleCreateInfo>(), expectedInstanceObjects));
@@ -226,20 +226,20 @@ TEST(Pipeline, GraphicsPipelineResourceLifetime)
     gvk::spirv::Context spirvContext;
     ASSERT_EQ(gvk::spirv::Context::create(&gvk::get_default<gvk::spirv::Context::CreateInfo>(), &spirvContext), VK_SUCCESS);
     ASSERT_EQ(spirvContext.compile(&vertexShaderInfo), VK_SUCCESS);
-    ASSERT_FALSE(vertexShaderInfo.spirv.empty());
+    ASSERT_FALSE(vertexShaderInfo.bytecode.empty());
     ASSERT_EQ(spirvContext.compile(&fragmentShaderInfo), VK_SUCCESS);
-    ASSERT_FALSE(fragmentShaderInfo.spirv.empty());
+    ASSERT_FALSE(fragmentShaderInfo.bytecode.empty());
 
     auto vertexShaderModuleCreateInfo = gvk::get_default<VkShaderModuleCreateInfo>();
-    vertexShaderModuleCreateInfo.codeSize = (uint32_t)vertexShaderInfo.spirv.size() * sizeof(uint32_t);
-    vertexShaderModuleCreateInfo.pCode = vertexShaderInfo.spirv.data();
+    vertexShaderModuleCreateInfo.codeSize = (uint32_t)vertexShaderInfo.bytecode.size() * sizeof(uint32_t);
+    vertexShaderModuleCreateInfo.pCode = vertexShaderInfo.bytecode.data();
     gvk::ShaderModule vertexShaderModule;
     ASSERT_EQ(gvk::ShaderModule::create(context.get<gvk::Devices>()[0], &vertexShaderModuleCreateInfo, nullptr, &vertexShaderModule), VK_SUCCESS);
     ASSERT_TRUE(create_state_tracked_object_record(vertexShaderModule, vertexShaderModule.get<VkShaderModuleCreateInfo>(), expectedInstanceObjects));
 
     auto fragmentShaderModuleCreateInfo = gvk::get_default<VkShaderModuleCreateInfo>();
-    fragmentShaderModuleCreateInfo.codeSize = (uint32_t)fragmentShaderInfo.spirv.size() * sizeof(uint32_t);
-    fragmentShaderModuleCreateInfo.pCode = fragmentShaderInfo.spirv.data();
+    fragmentShaderModuleCreateInfo.codeSize = (uint32_t)fragmentShaderInfo.bytecode.size() * sizeof(uint32_t);
+    fragmentShaderModuleCreateInfo.pCode = fragmentShaderInfo.bytecode.data();
     gvk::ShaderModule fragmentShaderModule;
     ASSERT_EQ(gvk::ShaderModule::create(context.get<gvk::Devices>()[0], &fragmentShaderModuleCreateInfo, nullptr, &fragmentShaderModule), VK_SUCCESS);
     ASSERT_TRUE(create_state_tracked_object_record(fragmentShaderModule, fragmentShaderModule.get<VkShaderModuleCreateInfo>(), expectedInstanceObjects));

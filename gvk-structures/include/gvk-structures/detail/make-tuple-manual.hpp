@@ -387,6 +387,56 @@ inline auto make_tuple(const VkTransformMatrixKHR& obj)
     );
 }
 
+inline auto make_tuple(const VkWriteDescriptorSet& obj)
+{
+    detail::ArrayTupleElementWrapper<VkDescriptorBufferInfo> bufferInfos;
+    detail::ArrayTupleElementWrapper<VkDescriptorImageInfo> imageInfos;
+    detail::ArrayTupleElementWrapper<VkBufferView> texelBufferViews;
+    switch (obj.descriptorType) {
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC: {
+        bufferInfos.count = obj.descriptorCount;
+        bufferInfos.ptr = obj.pBufferInfo;
+    } break;
+    case VK_DESCRIPTOR_TYPE_SAMPLER:
+    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+    case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+    case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+    case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: {
+        imageInfos.count = obj.descriptorCount;
+        imageInfos.ptr = obj.pImageInfo;
+    } break;
+    case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+    case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER: {
+        texelBufferViews.count = obj.descriptorCount;
+        texelBufferViews.ptr = obj.pTexelBufferView;
+    } break;
+    case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK:
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV:
+    case VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM:
+    case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:
+    case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
+    default: {
+        assert(false && "Unserviced VkDescriptorType; gvk maintenance required");
+    } break;
+    }
+    return std::make_tuple(
+        obj.sType,
+        detail::PNextTupleElementWrapper{ obj.pNext },
+        obj.dstSet,
+        obj.dstBinding,
+        obj.dstArrayElement,
+        obj.descriptorCount,
+        obj.descriptorType,
+        bufferInfos,
+        imageInfos,
+        texelBufferViews
+    );
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Unions
 inline auto make_tuple(const VkAccelerationStructureGeometryDataKHR& obj)

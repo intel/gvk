@@ -92,7 +92,7 @@ VkResult Context::compile(ShaderInfo* pShaderInfo)
 {
     assert(pShaderInfo);
     assert(pShaderInfo->language == ShadingLanguage::Glsl && "TODO : ShadingLanguage::Hlsl");
-    pShaderInfo->spirv.clear();
+    pShaderInfo->bytecode.clear();
     pShaderInfo->errors.clear();
     EShLanguage eshStage{ };
     switch (pShaderInfo->stage) {
@@ -116,7 +116,7 @@ VkResult Context::compile(ShaderInfo* pShaderInfo)
         glsl.insert(0, pShaderInfo->lineOffset, '\n');
     }
     auto pGlsl = glsl.c_str();
-    shader.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_4);
+    shader.setEnvTarget(glslang::EShTargetSpv, (glslang::EShTargetLanguageVersion)pShaderInfo->version);
     shader.setStrings(&pGlsl, 1);
     auto messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
     auto pDefaultResources = GetDefaultResources();
@@ -125,7 +125,7 @@ VkResult Context::compile(ShaderInfo* pShaderInfo)
         glslang::TProgram program;
         program.addShader(&shader);
         if (program.link(messages)) {
-            glslang::GlslangToSpv(*program.getIntermediate(eshStage), pShaderInfo->spirv);
+            glslang::GlslangToSpv(*program.getIntermediate(eshStage), pShaderInfo->bytecode);
         } else {
             pShaderInfo->errors.push_back(program.getInfoLog());
             pShaderInfo->errors.push_back(program.getInfoDebugLog());
@@ -133,6 +133,42 @@ VkResult Context::compile(ShaderInfo* pShaderInfo)
     } else {
         pShaderInfo->errors.push_back(shader.getInfoLog());
         pShaderInfo->errors.push_back(shader.getInfoDebugLog());
+    }
+    return pShaderInfo->errors.empty() ? VK_SUCCESS : VK_ERROR_UNKNOWN;
+}
+
+VkResult Context::decompile(ShaderInfo* pShaderInfo)
+{
+    assert(pShaderInfo);
+    pShaderInfo->source.clear();
+    pShaderInfo->errors.clear();
+    switch (pShaderInfo->language) {
+    case ShadingLanguage::Glsl: {
+        spirv_cross::CompilerGLSL compiler(pShaderInfo->bytecode.data(), pShaderInfo->bytecode.size());
+        try {
+            auto options = compiler.get_common_options();
+            options.vulkan_semantics = true;
+            options.separate_shader_objects = true;
+            compiler.set_common_options(options);
+            pShaderInfo->source = compiler.compile();
+        } catch (...) {
+            pShaderInfo->source = compiler.get_partial_source();
+            pShaderInfo->errors.push_back("Failed to convert SPIR-V bytecode to GLSL");
+            if (!pShaderInfo->source.empty()) {
+                pShaderInfo->errors.push_back("Parital source provided");
+            }
+        }
+    } break;
+    case ShadingLanguage::SpirV: {
+        spvtools::SpirvTools disassembler(spv_target_env::SPV_ENV_UNIVERSAL_1_0);
+        auto options = SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES;
+        if (!disassembler.Disassemble(pShaderInfo->bytecode.data(), pShaderInfo->bytecode.size(), &pShaderInfo->source, options)) {
+            pShaderInfo->errors.push_back("Failed to convert SPIR-V bytecode to SPIR-V text");
+        }
+    } break;
+    default: {
+        pShaderInfo->errors.push_back("Unsupported shading language");
+    } break;
     }
     return pShaderInfo->errors.empty() ? VK_SUCCESS : VK_ERROR_UNKNOWN;
 }
@@ -149,7 +185,7 @@ Context::ControlBlock::~ControlBlock()
 
 void BindingInfo::add_shader(const ShaderInfo& shaderInfo)
 {
-    spirv_cross::CompilerGLSL compilerGlsl(shaderInfo.spirv.data(), shaderInfo.spirv.size());
+    spirv_cross::CompilerGLSL compilerGlsl(shaderInfo.bytecode.data(), shaderInfo.bytecode.size());
     auto createBinding =
     [&](VkDescriptorType descriptorType, const spirv_cross::Resource& resource)
     {

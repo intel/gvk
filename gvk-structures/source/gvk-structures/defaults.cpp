@@ -62,6 +62,38 @@ const VkInstanceCreateInfo& get_default<VkInstanceCreateInfo>()
 }
 
 template <>
+const VkDeviceQueueCreateInfo& get_default<VkDeviceQueueCreateInfo>()
+{
+    static const float DefaultDeviceQueuePriority { 0 };
+    static const VkDeviceQueueCreateInfo DefaultDeviceQueueCreateInfo {
+        /* .sType            = */ get_stype<VkDeviceQueueCreateInfo>(),
+        /* .pNext            = */ nullptr,
+        /* .flags            = */ 0,
+        /* .uint32_t         = */ 0,
+        /* .uint32_t         = */ 1,
+        /* .pQueuePriorities = */ &DefaultDeviceQueuePriority,
+    };
+    return DefaultDeviceQueueCreateInfo;
+}
+
+template <> const VkDeviceCreateInfo& get_default<VkDeviceCreateInfo>()
+{
+    static const VkDeviceCreateInfo DefaultDeviceCreateInfo{
+        /* sType                   = */ get_stype<VkDeviceCreateInfo>(),
+        /* pNext                   = */ nullptr,
+        /* flags                   = */ 0,
+        /* queueCreateInfoCount    = */ 1,
+        /* pQueueCreateInfos       = */ &get_default<VkDeviceQueueCreateInfo>(),
+        /* enabledLayerCount       = */ 0,
+        /* ppEnabledLayerNames     = */ 0,
+        /* enabledExtensionCount   = */ 0,
+        /* ppEnabledExtensionNames = */ 0,
+        /* pEnabledFeatures        = */ 0,
+    };
+    return DefaultDeviceCreateInfo;
+}
+
+template <>
 const VkAttachmentDescription& get_default<VkAttachmentDescription>()
 {
     static const VkAttachmentDescription DefaultAttachmentDescription {
@@ -154,21 +186,6 @@ const VkDebugUtilsMessengerCreateInfoEXT& get_default<VkDebugUtilsMessengerCreat
         /* .pUserData       = */ nullptr,
     };
     return DefaultDebugUtilsMessengerCreateInfo;
-}
-
-template <>
-const VkDeviceQueueCreateInfo& get_default<VkDeviceQueueCreateInfo>()
-{
-    static const float DefaultDeviceQueuePriority { 0 };
-    static const VkDeviceQueueCreateInfo DefaultDeviceQueueCreateInfo {
-        /* .sType            = */ get_stype<VkDeviceQueueCreateInfo>(),
-        /* .pNext            = */ nullptr,
-        /* .flags            = */ 0,
-        /* .uint32_t         = */ 0,
-        /* .uint32_t         = */ 1,
-        /* .pQueuePriorities = */ &DefaultDeviceQueuePriority,
-    };
-    return DefaultDeviceQueueCreateInfo;
 }
 
 template <>

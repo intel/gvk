@@ -60,13 +60,14 @@ inline const StructureType& get_default()
 
 template <> const VkApplicationInfo& get_default<VkApplicationInfo>();
 template <> const VkInstanceCreateInfo& get_default<VkInstanceCreateInfo>();
+template <> const VkDeviceQueueCreateInfo& get_default<VkDeviceQueueCreateInfo>();
+template <> const VkDeviceCreateInfo& get_default<VkDeviceCreateInfo>();
 template <> const VkAttachmentDescription& get_default<VkAttachmentDescription>();
 template <> const VkAttachmentDescription2& get_default<VkAttachmentDescription2>();
 template <> const VkBufferImageCopy& get_default<VkBufferImageCopy>();
 template <> const VkDescriptorBufferInfo& get_default<VkDescriptorBufferInfo>();
 template <> const VkDescriptorPoolCreateInfo& get_default<VkDescriptorPoolCreateInfo>();
 template <> const VkDebugUtilsMessengerCreateInfoEXT& get_default<VkDebugUtilsMessengerCreateInfoEXT>();
-template <> const VkDeviceQueueCreateInfo& get_default<VkDeviceQueueCreateInfo>();
 template <> const VkFramebufferCreateInfo& get_default<VkFramebufferCreateInfo>();
 template <> const VkImageCreateInfo& get_default<VkImageCreateInfo>();
 template <> const VkBufferMemoryBarrier& get_default<VkBufferMemoryBarrier>();

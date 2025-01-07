@@ -177,7 +177,7 @@ VkResult StateTracker::post_vkCreateDescriptorSetLayout(VkDevice device, const V
         DescriptorSetLayout gvkDescriptorSetLayout({ device, *pSetLayout });
         assert(gvkDescriptorSetLayout);
         assert(pCreateInfo);
-        assert(!pCreateInfo->bindingCount == !pCreateInfo->pBindings);
+        assert(!pCreateInfo->bindingCount || pCreateInfo->pBindings);
         for (uint32_t binding_i = 0; binding_i < pCreateInfo->bindingCount; ++binding_i) {
             const auto& binding = pCreateInfo->pBindings[binding_i];
             switch (binding.descriptorType) {

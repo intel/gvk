@@ -86,6 +86,9 @@ public:
     using ApplicationVkPhysicalDevice = VkPhysicalDevice;
     using LoaderVkPhysicalDevice = VkPhysicalDevice;
     std::unordered_map<ApplicationVkPhysicalDevice, LoaderVkPhysicalDevice> VkPhysicalDevices;
+    PFN_vkGetInstanceProcAddr pfn_vkGetInstanceProcAddr{ nullptr };
+    PFN_vkLayerCreateDevice pfn_vkLayerCreateDevice{ nullptr };
+    PFN_vkLayerDestroyDevice pfn_vkLayerDestroyDevice{ nullptr };
 
 private:
     Registry() = default;

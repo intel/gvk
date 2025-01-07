@@ -107,6 +107,9 @@ int32_t Surface::create(const CreateInfo* pCreateInfo, Surface* pSurface)
         nullptr
     );
     if (pGlfwWindow) {
+        if (pCreateInfo->position[0] || pCreateInfo->position[1]) {
+            glfwSetWindowPos(pGlfwWindow, pCreateInfo->position[0], pCreateInfo->position[1]);
+        }
         glfwSetWindowUserPointer(pGlfwWindow, &reference.get_obj());
         glfwSetWindowCloseCallback(pGlfwWindow, glfw_window_close_callback);
         glfwSetWindowSizeCallback(pGlfwWindow, glfw_window_size_callback);
@@ -148,6 +151,34 @@ void Surface::update()
             glfwPollEvents();
         }
     );
+}
+
+void Surface::get_window_position(int32_t* pX, int32_t* pY) const
+{
+    assert(mReference);
+    int x = 0;
+    int y = 0;
+    glfwGetWindowPos((GLFWwindow*)mReference->mpWindowHandle, &x, &y);
+    if (pX) {
+        *pX = x;
+    }
+    if (pY) {
+        *pY = y;
+    }
+}
+
+void Surface::get_window_extent(int32_t* pWidth, int32_t* pHeight) const
+{
+    assert(mReference);
+    int width = 0;
+    int height = 0;
+    glfwGetWindowSize((GLFWwindow*)mReference->mpWindowHandle, &width, &height);
+    if (pWidth) {
+        *pWidth = width;
+    }
+    if (pHeight) {
+        *pHeight = height;
+    }
 }
 
 void Surface::set_window_extent(const std::array<int32_t, 2>& extent)

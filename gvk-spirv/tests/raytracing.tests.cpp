@@ -41,6 +41,7 @@ TEST(spirv, RayGen_stage)
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
+                /* .version    = */ gvk::spirv::Version::SPIRV_1_4,
                 /* .stage      = */ VK_SHADER_STAGE_RAYGEN_BIT_KHR,
                 /* .lineOffset = */ __LINE__,
                 /* .source     = */ R"(
@@ -64,7 +65,7 @@ TEST(spirv, RayGen_stage)
                        imageStore(image, ivec2(gl_LaunchIDEXT.xy), col);
                     }
                 )",
-                /* .spirv  = */ { },
+                /* .bytecode = */ { },
                 /* .errors = */ { }
             },
         },
@@ -100,44 +101,45 @@ TEST(spirv, ClosestHit_stage)
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
+                /* .version    = */ gvk::spirv::Version::SPIRV_1_4,
                 /* .stage      = */ VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
                 /* .lineOffset = */ __LINE__,
                 /* .source     = */ R"(
-            
-                       /* Copyright (c) 2023, Sascha Willems
-                         * SPDX-License-Identifier: MIT
-                         */
-                        #version 460
-            
-                        #extension GL_EXT_ray_tracing : require
-                        #extension GL_EXT_nonuniform_qualifier : require
-                        #extension GL_EXT_buffer_reference2 : require
-                        #extension GL_EXT_scalar_block_layout : require
-                        #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
-            
-                        struct GeometryNode {
-                            uint64_t vertexBufferDeviceAddress;
-                            uint64_t indexBufferDeviceAddress;
-                            int textureIndexBaseColor;
-                            int textureIndexOcclusion;
-                        };
-            
-                        layout(location = 0) rayPayloadInEXT vec3 hitValue;
-                        layout(location = 3) rayPayloadInEXT uint payloadSeed;
-                        layout(binding = 4, set = 0) buffer GeometryNodes { GeometryNode nodes[]; } geometryNodes;
-                        layout(binding = 5, set = 0) uniform sampler2D textures[];
-            
-                        layout(buffer_reference, scalar) buffer Vertices {vec4 v[]; };
-                        layout(buffer_reference, scalar) buffer Indices {uint i[]; };
-                        layout(buffer_reference, scalar) buffer Data {vec4 f[]; };                  
-            
-                        void main()
-                        {
-                            GeometryNode geometryNode = geometryNodes.nodes[gl_GeometryIndexEXT];
-                            vec4 color = texture(textures[nonuniformEXT(geometryNode.textureIndexBaseColor)], vec2(0.5));
-                        }
-                    )",
-                /* .spirv  = */ { },
+                    /* Copyright (c) Sascha Willems
+                     * SPDX-License-Identifier: MIT
+                     */
+
+                    #version 460
+
+                    #extension GL_EXT_ray_tracing : require
+                    #extension GL_EXT_nonuniform_qualifier : require
+                    #extension GL_EXT_buffer_reference2 : require
+                    #extension GL_EXT_scalar_block_layout : require
+                    #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+
+                    struct GeometryNode {
+                        uint64_t vertexBufferDeviceAddress;
+                        uint64_t indexBufferDeviceAddress;
+                        int textureIndexBaseColor;
+                        int textureIndexOcclusion;
+                    };
+
+                    layout(location = 0) rayPayloadInEXT vec3 hitValue;
+                    layout(location = 3) rayPayloadInEXT uint payloadSeed;
+                    layout(binding = 4, set = 0) buffer GeometryNodes { GeometryNode nodes[]; } geometryNodes;
+                    layout(binding = 5, set = 0) uniform sampler2D textures[];
+        
+                    layout(buffer_reference, scalar) buffer Vertices {vec4 v[]; };
+                    layout(buffer_reference, scalar) buffer Indices {uint i[]; };
+                    layout(buffer_reference, scalar) buffer Data {vec4 f[]; };                  
+
+                    void main()
+                    {
+                        GeometryNode geometryNode = geometryNodes.nodes[gl_GeometryIndexEXT];
+                        vec4 color = texture(textures[nonuniformEXT(geometryNode.textureIndexBaseColor)], vec2(0.5));
+                    }
+                )",
+                /* .bytecode = */ { },
                 /* .errors = */ { }
             },
         },
@@ -170,71 +172,71 @@ TEST(spirv, AnyHit_stage)
 {
     gvk::validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
-        gvk::spirv::ShaderInfo{
-            /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
-            /* .stage      = */ VK_SHADER_STAGE_ANY_HIT_BIT_KHR,
-            /* .lineOffset = */ __LINE__,
-            /* .source     = */ R"(
-                /* Copyright (c) 2023, Sascha Willems
-                 *
-                 * SPDX-License-Identifier: MIT
-                 *
-                 */
-                #version 460
+            gvk::spirv::ShaderInfo{
+                /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
+                /* .version    = */ gvk::spirv::Version::SPIRV_1_4,
+                /* .stage      = */ VK_SHADER_STAGE_ANY_HIT_BIT_KHR,
+                /* .lineOffset = */ __LINE__,
+                /* .source     = */ R"(
+                    /* Copyright (c) Sascha Willems
+                     * SPDX-License-Identifier: MIT
+                     */
 
-                #extension GL_EXT_ray_tracing : require
-                #extension GL_EXT_nonuniform_qualifier : require
-                #extension GL_EXT_buffer_reference2 : require
-                #extension GL_EXT_scalar_block_layout : require
-                #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+                    #version 460
 
-                layout(location = 0) rayPayloadInEXT vec3 hitValue;
-                layout(location = 3) rayPayloadInEXT uint payloadSeed;
+                    #extension GL_EXT_ray_tracing : require
+                    #extension GL_EXT_nonuniform_qualifier : require
+                    #extension GL_EXT_buffer_reference2 : require
+                    #extension GL_EXT_scalar_block_layout : require
+                    #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
 
-                struct GeometryNode {
-                    uint64_t vertexBufferDeviceAddress;
-                    uint64_t indexBufferDeviceAddress;
-                    int textureIndexBaseColor;
-                    int textureIndexOcclusion;
-                };
-                layout(binding = 4, set = 0) buffer GeometryNodes { GeometryNode nodes[]; } geometryNodes;
+                    layout(location = 0) rayPayloadInEXT vec3 hitValue;
+                    layout(location = 3) rayPayloadInEXT uint payloadSeed;
 
-                layout(binding = 5, set = 0) uniform sampler2D textures[];
+                    struct GeometryNode {
+                        uint64_t vertexBufferDeviceAddress;
+                        uint64_t indexBufferDeviceAddress;
+                        int textureIndexBaseColor;
+                        int textureIndexOcclusion;
+                    };
+                    layout(binding = 4, set = 0) buffer GeometryNodes { GeometryNode nodes[]; } geometryNodes;
 
-                void main()
-                {
+                    layout(binding = 5, set = 0) uniform sampler2D textures[];
 
-                    GeometryNode geometryNode = geometryNodes.nodes[gl_GeometryIndexEXT];
-                    vec4 color = texture(textures[nonuniformEXT(geometryNode.textureIndexBaseColor)], vec2(0.5));
+                    void main()
+                    {
 
-                }
+                        GeometryNode geometryNode = geometryNodes.nodes[gl_GeometryIndexEXT];
+                        vec4 color = texture(textures[nonuniformEXT(geometryNode.textureIndexBaseColor)], vec2(0.5));
+
+                    }
                 )",
-            /* .spirv  = */ { },
-            /* .errors = */ { }
+                /* .bytecode = */ { },
+                /* .errors = */ { }
+            },
         },
-    },
-    std::vector<std::vector<VkDescriptorSetLayoutBinding>>{
-        std::vector<VkDescriptorSetLayoutBinding>{
+        std::vector<std::vector<VkDescriptorSetLayoutBinding>>{
             std::vector<VkDescriptorSetLayoutBinding>{
-                VkDescriptorSetLayoutBinding{
-                    /* .binding            = */ 4,
-                    /* .descriptorType     = */ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                    /* .descriptorCount    = */ 1,
-                    /* .stageFlags         = */ VK_SHADER_STAGE_ANY_HIT_BIT_KHR,
-                    /* .pImmutableSamplers = */ nullptr
-                },
+                std::vector<VkDescriptorSetLayoutBinding>{
                     VkDescriptorSetLayoutBinding{
-                    /* .binding            = */ 5,
-                    /* .descriptorType     = */ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                    /* .descriptorCount    = */ 1,
-                    /* .stageFlags         = */ VK_SHADER_STAGE_ANY_HIT_BIT_KHR,
-                    /* .pImmutableSamplers = */ nullptr
+                        /* .binding            = */ 4,
+                        /* .descriptorType     = */ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                        /* .descriptorCount    = */ 1,
+                        /* .stageFlags         = */ VK_SHADER_STAGE_ANY_HIT_BIT_KHR,
+                        /* .pImmutableSamplers = */ nullptr
+                    },
+                        VkDescriptorSetLayoutBinding{
+                        /* .binding            = */ 5,
+                        /* .descriptorType     = */ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                        /* .descriptorCount    = */ 1,
+                        /* .stageFlags         = */ VK_SHADER_STAGE_ANY_HIT_BIT_KHR,
+                        /* .pImmutableSamplers = */ nullptr
+                    },
                 },
             },
         },
-    },
-    std::vector<VkPushConstantRange>{
-    }
+        std::vector<VkPushConstantRange>{
+        }
     );
 }
 
@@ -244,10 +246,11 @@ TEST(spirv, MissHit_stage)
         std::vector<gvk::spirv::ShaderInfo>{
         gvk::spirv::ShaderInfo{
             /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
+            /* .version    = */ gvk::spirv::Version::SPIRV_1_4,
             /* .stage      = */ VK_SHADER_STAGE_MISS_BIT_KHR,
             /* .lineOffset = */ __LINE__,
             /* .source     = */ R"(
-                 /* Copyright (c) 2023, Sascha Willems
+                /* Copyright (c) Sascha Willems
                  * SPDX-License-Identifier: MIT
                  */
 
@@ -260,8 +263,8 @@ TEST(spirv, MissHit_stage)
                 {
                     hitValue = vec3(1.0);
                 }
-                )",
-            /* .spirv  = */ { },
+            )",
+            /* .bytecode = */ { },
             /* .errors = */ { }
         },
     },
@@ -276,50 +279,51 @@ TEST(spirv, IntersectionBit_stage)
 {
     gvk::validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
-        gvk::spirv::ShaderInfo{
-            /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
-            /* .stage      = */ VK_SHADER_STAGE_INTERSECTION_BIT_KHR,
-            /* .lineOffset = */ __LINE__,
-            /* .source     = */ R"(
-                /* Copyright (c) 2023, Sascha Willems
-                 * SPDX-License-Identifier: MIT
-                 */
+            gvk::spirv::ShaderInfo{
+                /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
+                /* .version    = */ gvk::spirv::Version::SPIRV_1_4,
+                /* .stage      = */ VK_SHADER_STAGE_INTERSECTION_BIT_KHR,
+                /* .lineOffset = */ __LINE__,
+                /* .source     = */ R"(
+                    /* Copyright (c) Sascha Willems
+                     * SPDX-License-Identifier: MIT
+                     */
 
-                #version 460
-                #extension GL_EXT_ray_tracing : require
+                    #version 460
+                    #extension GL_EXT_ray_tracing : require
 
-                struct Sphere {
-                    vec3 center;
-                    float radius;
-                    vec4 color;
-                };
-                layout(binding = 3, set = 0) buffer Spheres { Sphere s[]; } spheres;
+                    struct Sphere {
+                        vec3 center;
+                        float radius;
+                        vec4 color;
+                    };
+                    layout(binding = 3, set = 0) buffer Spheres { Sphere s[]; } spheres;
 
-                void main() {
-                    Sphere sphere = spheres.s[gl_PrimitiveID];
-                    float hit = sphere.radius;
-                    reportIntersectionEXT(hit, 0);
-                }
+                    void main() {
+                        Sphere sphere = spheres.s[gl_PrimitiveID];
+                        float hit = sphere.radius;
+                        reportIntersectionEXT(hit, 0);
+                    }
                 )",
-            /* .spirv  = */ { },
-            /* .errors = */ { }
+                /* .bytecode = */ { },
+                /* .errors = */ { }
+            },
         },
-    },
-    std::vector<std::vector<VkDescriptorSetLayoutBinding>>{
-        std::vector<VkDescriptorSetLayoutBinding>{
+        std::vector<std::vector<VkDescriptorSetLayoutBinding>>{
             std::vector<VkDescriptorSetLayoutBinding>{
-                VkDescriptorSetLayoutBinding{
-                    /* .binding            = */ 3,
-                    /* .descriptorType     = */ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                    /* .descriptorCount    = */ 1,
-                    /* .stageFlags         = */ VK_SHADER_STAGE_INTERSECTION_BIT_KHR,
-                    /* .pImmutableSamplers = */ nullptr
+                std::vector<VkDescriptorSetLayoutBinding>{
+                    VkDescriptorSetLayoutBinding{
+                        /* .binding            = */ 3,
+                        /* .descriptorType     = */ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                        /* .descriptorCount    = */ 1,
+                        /* .stageFlags         = */ VK_SHADER_STAGE_INTERSECTION_BIT_KHR,
+                        /* .pImmutableSamplers = */ nullptr
+                    },
                 },
             },
         },
-    },
-    std::vector<VkPushConstantRange>{
-    }
+        std::vector<VkPushConstantRange>{
+        }
     );
 }
 
@@ -327,28 +331,29 @@ TEST(spirv, CallableBit_stage)
 {
     gvk::validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
-        gvk::spirv::ShaderInfo{
-            /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
-            /* .stage      = */ VK_SHADER_STAGE_CALLABLE_BIT_KHR,
-            /* .lineOffset = */ __LINE__,
-            /* .source     = */ R"(
-               #version 460 core
-                #extension GL_EXT_ray_tracing : enable
+            gvk::spirv::ShaderInfo{
+                /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
+                /* .version    = */ gvk::spirv::Version::SPIRV_1_4,
+                /* .stage      = */ VK_SHADER_STAGE_CALLABLE_BIT_KHR,
+                /* .lineOffset = */ __LINE__,
+                /* .source     = */ R"(
+                    #version 460 core
+                    #extension GL_EXT_ray_tracing : enable
 
-                layout(location = 0) callableDataInEXT vec3 outColor;
+                    layout(location = 0) callableDataInEXT vec3 outColor;
 
-                void main()
-                {
-                    outColor = vec3(0.0, 1.0, 0.0);
-                }
+                    void main()
+                    {
+                        outColor = vec3(0.0, 1.0, 0.0);
+                    }
                 )",
-            /* .spirv  = */ { },
-            /* .errors = */ { }
+                /* .bytecode = */ { },
+                /* .errors = */ { }
+            },
         },
-    },
-    std::vector<std::vector<VkDescriptorSetLayoutBinding>>{
-    },
-    std::vector<VkPushConstantRange>{
-    }
+        std::vector<std::vector<VkDescriptorSetLayoutBinding>>{
+        },
+        std::vector<VkPushConstantRange>{
+        }
     );
 }

@@ -53,7 +53,7 @@ public:
             "        ",
             "((const VkBaseInStructure*)pNext)->sType",
             "printer.print_field(\"pNext\", *(const {structureType}*)pNext);",
-            "printer.print_field(\"pNext\", (const char*)\"VK_STRUCTURE_TYPE_UNKNOWN\");"
+            "printer.print_field(\"pNext\", *(const VkBaseInStructure*)pNext);"
         );
         file << "    } else {" << std::endl;
         file << "        printer.print_pointer(\"pNext\", (const VkBaseInStructure*)pNext);" << std::endl;

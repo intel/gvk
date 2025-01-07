@@ -329,12 +329,19 @@ VkResult Context::create_render_pass(RenderPass* pRenderPass) const
         subpassDescription.pDepthStencilAttachment = depthAttachmentDescription.format ? &depthAttachmentReference : nullptr;
 
         // Create gvk::RenderPass
-        auto renderPassCreateInfo = get_default<VkRenderPassCreateInfo2>();
-        renderPassCreateInfo.attachmentCount = attachmentCount;
-        renderPassCreateInfo.pAttachments = pAttachmentDescriptions;
-        renderPassCreateInfo.subpassCount = 1;
-        renderPassCreateInfo.pSubpasses = &subpassDescription;
-        gvk_result(RenderPass::create(get<Device>(), &renderPassCreateInfo, nullptr, pRenderPass));
+        auto renderPassCreateInfo2 = get_default<VkRenderPassCreateInfo2>();
+        renderPassCreateInfo2.attachmentCount = attachmentCount;
+        renderPassCreateInfo2.pAttachments = pAttachmentDescriptions;
+        renderPassCreateInfo2.subpassCount = 1;
+        renderPassCreateInfo2.pSubpasses = &subpassDescription;
+
+        // Check API version to select vkCreateRenderPass() or vkCreateRenderPass2()
+        if (get<Device>().get<Instance>().get<VkInstanceCreateInfo>().pApplicationInfo->apiVersion < VK_API_VERSION_1_2) {
+            auto renderPassCreateInfo = convert<VkRenderPassCreateInfo2, VkRenderPassCreateInfo>(renderPassCreateInfo2);
+            gvk_result(RenderPass::create(get<Device>(), &*renderPassCreateInfo, nullptr, pRenderPass));
+        } else {
+            gvk_result(RenderPass::create(get<Device>(), &renderPassCreateInfo2, nullptr, pRenderPass));
+        }
     } gvk_result_scope_end;
     return gvkResult;
 }
@@ -369,9 +376,17 @@ VkResult Context::create_render_targets(std::vector<RenderTarget>* pRenderTarget
             }
 
             // Create gvk::RenderTarget
+            const auto& renderPass = get<RenderPass>();
+            const auto& renderPassCreateInfo = renderPass.get<VkRenderPassCreateInfo>();
+            const auto& renderPassCreateInfo2 = renderPass.get<VkRenderPassCreateInfo2>();
             auto renderTargetCreateInfo = get_default<VkFramebufferCreateInfo>();
-            renderTargetCreateInfo.renderPass = get<RenderPass>();
-            renderTargetCreateInfo.attachmentCount = get<RenderPass>().get<VkRenderPassCreateInfo2>().attachmentCount;
+            renderTargetCreateInfo.renderPass = renderPass;
+            if (renderPassCreateInfo.sType == get_stype<VkRenderPassCreateInfo>()) {
+                renderTargetCreateInfo.attachmentCount = renderPassCreateInfo.attachmentCount;
+            } else {
+                gvk_result(renderPassCreateInfo2.sType == get_stype<VkRenderPassCreateInfo2>() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+                renderTargetCreateInfo.attachmentCount = renderPassCreateInfo2.attachmentCount;
+            }
             renderTargetCreateInfo.pAttachments = attachments.data();
             renderTargetCreateInfo.width = images[i].get<VkImageCreateInfo>().extent.width;
             renderTargetCreateInfo.height = images[i].get<VkImageCreateInfo>().extent.height;
@@ -399,7 +414,17 @@ VkResult Context::create_render_targets(std::vector<RenderTarget>* pRenderTarget
         }
         if (depthImageView) {
             auto& imageMemoryBarrier = imageMemoryBarriers[imageMemoryBarrierCount++];
-            auto attachmentIndex = get<RenderPass>().get<VkRenderPassCreateInfo2>().attachmentCount - 1;
+            uint32_t attachmentIndex = UINT32_MAX;
+            const auto& renderPass = get<RenderPass>();
+            const auto& renderPassCreateInfo = renderPass.get<VkRenderPassCreateInfo>();
+            const auto& renderPassCreateInfo2 = renderPass.get<VkRenderPassCreateInfo2>();
+            if (renderPassCreateInfo.sType == get_stype<VkRenderPassCreateInfo>()) {
+                attachmentIndex = renderPassCreateInfo.attachmentCount - 1;
+            } else {
+                gvk_result(renderPassCreateInfo2.sType == get_stype<VkRenderPassCreateInfo2>() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+                attachmentIndex = renderPassCreateInfo2.attachmentCount - 1;
+            }
+            gvk_result(attachmentIndex != UINT32_MAX ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
             imageMemoryBarrier = get<RenderTargets>()[0].get<VkImageMemoryBarrier>(attachmentIndex);
             imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         }
