@@ -26,9 +26,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#ifndef VK_NO_PROTOTYPES
-#define VK_NO_PROTOTYPES
-#endif
 #include "gvk-defines.hpp"
 #include "gvk-format-info.hpp"
 #include "gvk-gui.hpp"
@@ -80,9 +77,19 @@ private:
         return VK_FALSE;
     }
 
+    static VkBool32 process_gvk_error(VkResult vkResult, const char* pFileLine, const char* pGvkCall)
+    {
+        std::cerr << pFileLine << std::endl;
+        std::cerr << pGvkCall << std::endl;
+        std::cerr << gvk::to_string(vkResult, gvk::Printer::Default & ~gvk::Printer::EnumValue) << std::endl;
+        return VK_TRUE; // NOTE : In Debug configurations, return VK_FALSE to assert(false)
+    }
+
 public:
     static VkResult create(const char* pApplicationName, GvkSampleContext* pGvkSampleContext)
     {
+        gvk::gPfnGvkResultScopeCallback = process_gvk_error;
+
         assert(pApplicationName);
         assert(pGvkSampleContext);
         gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
@@ -108,15 +115,15 @@ public:
             // Populate the gvk::Context::CreateInfo and call the base implementation.
             auto contextCreateInfo = gvk::get_default<gvk::Context::CreateInfo>();
             contextCreateInfo.pInstanceCreateInfo = &instanceCreateInfo;
-            contextCreateInfo.loadApiDumpLayer = VK_FALSE;
-            contextCreateInfo.loadValidationLayer = VK_TRUE;
+            contextCreateInfo.loadApiDumpLayer = VK_FALSE;    // TODO : Check layer properties before attempting to load
+            contextCreateInfo.loadValidationLayer = VK_FALSE; // TODO : Check layer properties before attempting to load
             contextCreateInfo.loadWsiExtensions = VK_TRUE;
             contextCreateInfo.pDebugUtilsMessengerCreateInfo = &debugUtilsMessengerCreateInfo;
             contextCreateInfo.pDeviceCreateInfo = &deviceCreateInfo;
             gvk_result(gvk::Context::create(&contextCreateInfo, nullptr, pGvkSampleContext));
-    #ifdef VK_NO_PROTOTYPES
+#ifdef VK_NO_PROTOTYPES
             gvk_sample_set_entry_points(pGvkSampleContext->get<gvk::Devices>()[0]);
-    #endif
+#endif
         } gvk_result_scope_end;
         return gvkResult;
     }

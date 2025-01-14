@@ -35,7 +35,25 @@ namespace cereal {
 ////////////////////////////////////////////////////////////////////////////////
 // Linux
 #ifdef VK_USE_PLATFORM_XLIB_KHR
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkXlibSurfaceCreateInfoKHR)
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkXlibSurfaceCreateInfoKHR& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+    archive(obj.flags);
+    gvk::detail::cerealize_handle(archive, obj.dpy);
+    gvk::detail::cerealize_handle(archive, obj.window);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkXlibSurfaceCreateInfoKHR& obj)
+{
+    archive(obj.sType);
+    obj.pNext = gvk::detail::decerealize_pnext(archive);
+    archive(obj.flags);
+    obj.dpy = gvk::detail::decerealize_handle<Display*>(archive);
+    obj.window = gvk::detail::decerealize_handle<Window>(archive);
+}
 #endif // VK_USE_PLATFORM_XLIB_KHR
 
 ////////////////////////////////////////////////////////////////////////////////

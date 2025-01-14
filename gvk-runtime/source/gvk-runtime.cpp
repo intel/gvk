@@ -33,14 +33,18 @@ static void* sVulkanRuntime;
 VkResult load_vulkan_runtime()
 {
 #ifdef GVK_PLATFORM_LINUX
-    constexpr const char* const VulkanRuntimeLibraryName = "libvulkan.so.1";
+    if (!sVulkanRuntime) {
+        sVulkanRuntime = gvk_dlopen("libvulkan.so.1");
+    }
+    if (!sVulkanRuntime) {
+        sVulkanRuntime = gvk_dlopen("libvulkan.so");
+    }
 #endif
 #ifdef GVK_PLATFORM_WINDOWS
-    constexpr const char* const VulkanRuntimeLibraryName = "vulkan-1.dll";
-#endif
     if (!sVulkanRuntime) {
-        sVulkanRuntime = gvk_dlopen(VulkanRuntimeLibraryName);
+        sVulkanRuntime = gvk_dlopen("vulkan-1.dll");
     }
+#endif
     return sVulkanRuntime ? VK_SUCCESS : VK_ERROR_FEATURE_NOT_PRESENT;
 }
 
@@ -54,7 +58,7 @@ void unload_vulkan_runtime()
 
 PFN_vkGetInstanceProcAddr load_vkGetInstanceProcAddr()
 {
-    return load_vulkan_runtime() == VK_SUCCESS ? (PFN_vkGetInstanceProcAddr)gvk_dlsym(sVulkanRuntime, "vkGetInstanceProcAddr") : nullptr;
+    return (load_vulkan_runtime() == VK_SUCCESS) ? (PFN_vkGetInstanceProcAddr)gvk_dlsym(sVulkanRuntime, "vkGetInstanceProcAddr") : nullptr;
 }
 
 } // namespace gvk

@@ -167,13 +167,25 @@ VkResult Image::create(const Device& device, const VkImageCreateInfo* pImageCrea
             VkImage vkImage = VK_NULL_HANDLE;
             VmaAllocation vmaAllocation = VK_NULL_HANDLE;
             gvk_result(vmaCreateImage(device.get<VmaAllocator>(), pImageCreateInfo, pAllocationCreateInfo, &vkImage, &vmaAllocation, nullptr));
-            pImage->mReference.reset(newref, { device, vkImage });
+
+            // NOTE : Images may be reused, so use existing reference if present.
+            // NOTE : This does update outstanding references, but they are considered
+            //  invalid after destruction anyway. eg. after vkDestroySwapchainKHR().
+            *pImage = Image({ device, vkImage });
+            if (!*pImage) {
+                pImage->mReference.reset(newref, { device, vkImage });
+            }
+
             auto& imageControlBlock = pImage->mReference.get_obj();
-            imageControlBlock.mVkImage = vkImage;
+            assert(!imageControlBlock.mVmaAllocation && "Outstanding VmaAllocation, this indicates incorrect destruction handling; Possibly an unserviced extension is enabled; gvk maintenance required");
+            gvk_result(!imageControlBlock.mVmaAllocation ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+
             imageControlBlock.mDevice = device;
-            imageControlBlock.mImageCreateInfo = *pImageCreateInfo;
+            imageControlBlock.mVkImage = vkImage;
+            imageControlBlock.mVkSwapchainKHR = VK_NULL_HANDLE;
             imageControlBlock.mVmaAllocation = vmaAllocation;
             imageControlBlock.mVmaAllocationCreateInfo = *pAllocationCreateInfo;
+            imageControlBlock.mImageCreateInfo = *pImageCreateInfo;
             gvk_result(detail::initialize_control_block(*pImage));
         }
     } gvk_result_scope_end;
@@ -536,10 +548,19 @@ VkResult initialize_control_block<SwapchainKHR>(SwapchainKHR& swapchain)
         imageCreateInfo.pQueueFamilyIndices = swapchainCreateInfo.pQueueFamilyIndices;
         imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         for (uint32_t i = 0; i < swapchainImageCount; ++i) {
-            images[i].mReference.reset(newref, HandleId<VkDevice, VkImage>(swapchainControlBlock.mDevice, pVkImages[i]));
+
+            // NOTE : Images may be reused, so use existing reference if present.
+            // NOTE : This does update outstanding references, but they are considered
+            //  invalid after destruction anyway. eg. after vkDestroySwapchainKHR().
+            images[i] = Image({ swapchainControlBlock.mDevice, pVkImages[i] });
+            if (!images[i]) {
+                images[i].mReference.reset(newref, { swapchainControlBlock.mDevice, pVkImages[i] });
+            }
+
             auto& imageControlBlock = images[i].mReference.get_obj();
-            imageControlBlock.mVkImage = pVkImages[i];
+            assert(!imageControlBlock.mVmaAllocation && "Outstanding VmaAllocation, this indicates incorrect destruction handling; Possibly an unserviced extension is enabled; gvk maintenance required");
             imageControlBlock.mDevice = swapchainControlBlock.mDevice;
+            imageControlBlock.mVkImage = pVkImages[i];
             imageControlBlock.mVkSwapchainKHR = swapchainControlBlock.mVkSwapchainKHR;
             imageControlBlock.mImageCreateInfo = imageCreateInfo;
             gvk_result(detail::initialize_control_block(images[i]));
@@ -597,6 +618,25 @@ Image::ControlBlock::~ControlBlock()
             dispatchTable.gvkDestroyImage(mDevice, mVkImage, (mAllocationCallbacks.pfnFree ? &mAllocationCallbacks : nullptr));
         }
     }
+}
+
+SwapchainKHR::ControlBlock::~ControlBlock()
+{
+    for (auto& image : mImages) {
+        // NOTE : Update outstanding references.  Swapchain images are invalid after
+        //  vkDestroySwapchainKHR().  Outstanding references shouldn't be used until
+        //  retrieved again via vkGetSwapchainImagesKHR() anyway.
+        auto& imageControlBlock = image.mReference.get_obj();
+        imageControlBlock.mDevice = VK_NULL_HANDLE;
+        imageControlBlock.mAllocationCallbacks = { };
+        imageControlBlock.mVkImage = VK_NULL_HANDLE;
+        imageControlBlock.mVmaAllocation = VK_NULL_HANDLE;
+        imageControlBlock.mVmaAllocationCreateInfo = { };
+        imageControlBlock.mImageCreateInfo.reset();
+    }
+    const auto& dispatchTable = mDevice.get<DispatchTable>();
+    assert(dispatchTable.gvkDestroySwapchainKHR);
+    dispatchTable.gvkDestroySwapchainKHR(mDevice, mVkSwapchainKHR, (mAllocationCallbacks.pfnFree ? &mAllocationCallbacks : nullptr));
 }
 
 } // namespace gvk

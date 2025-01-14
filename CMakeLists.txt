@@ -48,6 +48,9 @@ option(gvk-structures_ENABLED            "" ${gvk-default_ENABLED})
 option(gvk-system_ENABLED                "" ${gvk-default_ENABLED})
 option(gvk-virtual-swapchain_ENABLED     "" OFF)
 option(gvk-xml_ENABLED                   "" ${gvk-default_ENABLED})
+
+################################################################################
+# GVK samples and tests options
 option(gvk-build-samples                 "" ${gvk-default_ENABLED})
 option(gvk-build-tests                   "" ${gvk-default_ENABLED})
 cmake_dependent_option(gvk-run-tests "Run tests as part of build and treat test failures as build failures" ON "gvk-build-tests" OFF)

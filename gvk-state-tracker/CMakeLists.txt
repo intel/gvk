@@ -130,32 +130,34 @@ endif()
 
 ################################################################################
 # VK_LAYER_INTEL_gvk_state_tracker.tests
-set(testsPath "${CMAKE_CURRENT_LIST_DIR}/tests/")
-gvk_add_target_test(
-    TARGET
-        VK_LAYER_INTEL_gvk_state_tracker
-    FOLDER
-        "VK_LAYER_INTEL_gvk_state_tracker/"
-    LINK_LIBRARIES
-        gvk-handles
-        gvk-math
-        gvk-spirv
-        gvk-system
-    INCLUDE_DIRECTORIES
-        "${includeDirectory}"
-    INCLUDE_FILES
-        "${testsPath}/state-tracker-test-utilities.hpp"
-    SOURCE_FILES
-        "${testsPath}/command-buffer.tests.cpp"
-        "${testsPath}/descriptor-set.tests.cpp"
-        "${testsPath}/device-memory-binding.tests.cpp"
-        "${testsPath}/image-layout.tests.cpp"
-        "${testsPath}/pipeline.tests.cpp"
-        "${testsPath}/state-tracker-test-utilities.cpp"
-        "${testsPath}/swapchain.tests.cpp"
-    COMPILE_DEFINITIONS
-        GVK_STATE_TRACKER_LAYER_JSON_PATH="$<TARGET_FILE_DIR:VK_LAYER_INTEL_gvk_state_tracker>"
-)
+if(WIN32) # TODO : Configure layer loading for Linux tests
+    set(testsPath "${CMAKE_CURRENT_LIST_DIR}/tests/")
+    gvk_add_target_test(
+        TARGET
+            VK_LAYER_INTEL_gvk_state_tracker
+        FOLDER
+            "VK_LAYER_INTEL_gvk_state_tracker/"
+        LINK_LIBRARIES
+            gvk-handles
+            gvk-math
+            gvk-spirv
+            gvk-system
+        INCLUDE_DIRECTORIES
+            "${includeDirectory}"
+        INCLUDE_FILES
+            "${testsPath}/state-tracker-test-utilities.hpp"
+        SOURCE_FILES
+            "${testsPath}/command-buffer.tests.cpp"
+            "${testsPath}/descriptor-set.tests.cpp"
+            "${testsPath}/device-memory-binding.tests.cpp"
+            "${testsPath}/image-layout.tests.cpp"
+            "${testsPath}/pipeline.tests.cpp"
+            "${testsPath}/state-tracker-test-utilities.cpp"
+            "${testsPath}/swapchain.tests.cpp"
+        COMPILE_DEFINITIONS
+            GVK_STATE_TRACKER_LAYER_JSON_PATH="$<TARGET_FILE_DIR:VK_LAYER_INTEL_gvk_state_tracker>"
+    )
+endif()
 
 ################################################################################
 # VK_LAYER_INTEL_gvk_state_tracker install

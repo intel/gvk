@@ -29,12 +29,9 @@ gvk_add_static_library(
 
 ################################################################################
 # gvk-system
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    # TODO : Need to revisit cmake exports on Linux
-    if(gvk-system_INSTALL_ARTIFACTS)
-        gvk_install_artifacts(TARGET gvk-system)
-    endif()
-    if(gvk-system_INSTALL_HEADERS)
-        gvk_install_headers(TARGET gvk-system)
-    endif()
+if(gvk-system_INSTALL_ARTIFACTS)
+    gvk_install_artifacts(TARGET gvk-system)
+endif()
+if(gvk-system_INSTALL_HEADERS)
+    gvk_install_headers(TARGET gvk-system)
 endif()

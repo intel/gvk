@@ -40,7 +40,7 @@ NOTE : Best practices for loading dll/so libraries (ie. full paths instead of re
 #endif
 #include <dlfcn.h>
 #ifndef gvk_dlopen
-#define gvk_dlopen(LIBRARY_NAME) (void*)dlopen(LIBRARY_NAME, RTLD_LAZY | RTLD_LOCAL)
+#define gvk_dlopen(LIBRARY_NAME) (void*)dlopen(LIBRARY_NAME, RTLD_NOW | RTLD_LOCAL)
 #endif
 #ifndef gvk_dlsym
 #define gvk_dlsym(LIBRARY_HANDLE, SYMBOL_NAME) (void*)dlsym(LIBRARY_HANDLE, SYMBOL_NAME)

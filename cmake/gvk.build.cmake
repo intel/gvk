@@ -9,6 +9,10 @@ include(FetchContent)
 
 find_package(Git REQUIRED)
 
+if(UNIX AND NOT APPLE)
+    set(LINUX TRUE)
+endif()
+
 set(gvkBuildModuleDirectory "${CMAKE_CURRENT_LIST_DIR}")
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -150,7 +154,7 @@ endfunction()
 macro(gvk_add_target_test)
     if(gvk-build-tests)
         cmake_parse_arguments(ARGS "" "TARGET;FOLDER" "LINK_LIBRARIES;INCLUDE_DIRECTORIES;INCLUDE_FILES;SOURCE_FILES;COMPILE_DEFINITIONS" ${ARGN})
-        list(APPEND ARGS_LINK_LIBRARIES gtest_main)
+        list(APPEND ARGS_LINK_LIBRARIES gtest gtest_main)
         get_target_property(type ${ARGS_TARGET} TYPE)
         if(type STREQUAL STATIC_LIBRARY)
             list(APPEND ARGS_LINK_LIBRARIES ${ARGS_TARGET})
@@ -291,6 +295,8 @@ function(gvk_install_package)
     endforeach()
     list(REMOVE_ITEM exportedTargets
         gvk
+        # NOTE : Consuming projects shouldn't need to have CMake imports for the layers.
+        #   Each layer installs a JSON configuration recognized by the Vulkan loader.
         VK_LAYER_INTEL_gvk_restore_point
         VK_LAYER_INTEL_gvk_state_tracker
         VK_LAYER_INTEL_gvk_virtual_swapchain

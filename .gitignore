@@ -13,4 +13,5 @@ _report/
 _scan-tools/
 __pycache__/
 *.hiv
+*.ini
 *.reg

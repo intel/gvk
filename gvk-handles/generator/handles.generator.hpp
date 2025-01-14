@@ -77,6 +77,7 @@ public:
             add_member(MemberInfo("VkSwapchainKHR", "mVkSwapchainKHR", "VkSwapchainKHR"));
             add_member(MemberInfo("VmaAllocation", "mVmaAllocation", "VmaAllocation"));
             add_member(MemberInfo("VmaAllocationCreateInfo", "mVmaAllocationCreateInfo", "VmaAllocationCreateInfo"));
+            add_private_declaration("friend class SwapchainKHR");
             add_manually_implemented_dtor();
         } else
         if (handle.name == "VkDeferredOperationKHR") {
@@ -90,6 +91,7 @@ public:
         } else
         if (handle.name == "VkSwapchainKHR") {
             add_member(MemberInfo("std::vector<Image>", "mImages", "std::vector<Image>"));
+            add_manually_implemented_dtor();
         }
         add_private_declaration("template <typename HandleType> friend VkResult gvk::detail::initialize_control_block(HandleType&)");
         if (handle.isDispatchable) {

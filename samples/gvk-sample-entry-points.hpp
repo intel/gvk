@@ -26,9 +26,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#ifndef VK_NO_PROTOTYPES
-#define VK_NO_PROTOTYPES
-#endif
 #include "gvk-defines.hpp"
 #include "gvk-handles/handles.hpp"
 

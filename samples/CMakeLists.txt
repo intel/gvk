@@ -29,6 +29,9 @@ macro(gvk_add_core_sample target linkLibraries)
             "${CMAKE_CURRENT_LIST_DIR}/gvk-sample-utilities.hpp"
             "${CMAKE_CURRENT_LIST_DIR}/${target}.cpp"
     )
+    if(VK_NO_PROTOTYPES)
+        target_compile_definitions(${target} PUBLIC VK_NO_PROTOTYPES=1)
+    endif()
 endmacro()
 
 if(gvkCoreSamplesEnabled)

@@ -23,45 +23,60 @@ A collection of Vulkan C++ utilities with a general focus on tools development, 
 [<img src="samples/screens/gvk-getting-started-05-gui.gif" width="320" height="180">](samples/gvk-getting-started-05-gui.cpp)
 
 # Getting Started
-Ensure the following tools are installed...
- - [CMake](https://cmake.org/download/) v3.3+ (Make sure to select "Add to PATH" when prompted)
- - [Git](https://git-scm.com/)
- - [Python](https://www.python.org/downloads/) v3+ (Make sure to select "Add to PATH" when prompted)
- - [Visual Studio](https://visualstudio.microsoft.com/vs/community/) 2022 (Make sure to select "Desktop development with C++" when prompted)
- - [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) v1.3.296.0
-
-The following command lines are for configuring a Visual Studio solution using a  `bash` like terminal (Git Bash comes with the Git install by default on Windows) in a directory called `gitrepos/intel` on drive `C:`...
+### Install Dependencies
+###### Windows 11
+- [CMake](https://cmake.org/download/) v3.3+ (Make sure to select "Add to PATH" when prompted)
+- [Git](https://git-scm.com/)
+- [Python](https://www.python.org/downloads/) v3+ (Make sure to select "Add to PATH" when prompted)
+- [Visual Studio](https://visualstudio.microsoft.com/vs/community/) 2022 (Make sure to select "Desktop development with C++" when prompted)
+- [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) v1.3.296.0 (optional, GVK will download the correct version during configuration if necessary)
+    - The GVK build will not set Vulkan SDK environment variables, system path, or Windows Vulkan layer registry entries
+    - If you need Vulkan SDK environment variables, system path, or Windows Vulkan layer registry entries set, it is recommended to install the Vulkan SDK before building GVK
+###### Ubuntu 22.04
 ```
-cd c:
-cd gitrepos/intel
+sudo apt update && sudo apt upgrade
+sudo apt install cmake
+sudo apt install git
+sudo apt install python3
+sudo apt install libwayland-dev
+sudo apt install libxkbcommon-dev
+sudo apt install xorg-dev
+```
+Configure your environment to use an installed Vulkan SDK (optional, GVK will download the correct version during configuration if necessary)
+```
+source <vulkan/sdk/path>/setup-env.sh
+```
+
+### Configure and Build
+###### ~15-40 min depending on options/configuration
+```
 git clone https://github.com/intel/gvk.git
-cd gvk/
+cd gvk
+```
+###### Windows 11
+```
 cmake -G "Visual Studio 17 2022" -A x64 -B build
 cmake --build build
 ```
-...open `gvk/build/gvk.sln` in Visual Studio, navigate to `gvk/samples/getting-started-00-triangle`, right click and select "Set as Startup Project", run.
+On Windows, a build can be run from the command line using `cmake --build build` or from Visual Studio by opening `gvk/build/gvk.sln`.
+To run the first sample, navigate to `gvk/samples/getting-started-00-triangle` in Visual Studio, right click and select "Set as Startup Project", then run the project.
+###### Ubuntu 22.04
+```
+cmake -B build
+cmake --build build
+./build/samples/gvk-getting-started-00-triangle
+```
+To use Vulkan SDK layers downloaded at configure time...
+```
+source build/_deps/vulkan-sdk-src/setup-env.sh
+```
 
-For Linux, replace `cmake -G "Visual Studio 17 2022" -A x64 ..` with `cmake ..` for the default Makefile generator.  See CMake's documentation for other generators.  Note that Windows support is further along than Linux, ymmv.
-
-# External use
-Somewhere in your CMakeLists, add the following with options configured as necessary, all avaialable options can be found in gvk's root CMakeLists.txt...
+# External Use
+Somewhere in your CMakeLists, add the following...
 ```
 include(FetchContent)
-
-set(gvk-default_ENABLED           OFF CACHE BOOL "" FORCE)
-set(gvk-default_INSTALL_ARTIFACTS OFF CACHE BOOL "" FORCE)
-set(gvk-default_INSTALL_HEADERS   OFF CACHE BOOL "" FORCE)
-set(gvk-gui_ENABLED               ON  CACHE BOOL "" FORCE)
-set(gvk-handles_ENABLED           ON  CACHE BOOL "" FORCE)
-set(gvk-math_ENABLED              ON  CACHE BOOL "" FORCE)
-set(gvk-runtime_ENABLED           ON  CACHE BOOL "" FORCE)
-set(gvk-spirv_ENABLED             ON  CACHE BOOL "" FORCE)
-set(gvk-structures_ENABLED        ON  CACHE BOOL "" FORCE)
-set(gvk-system_ENABLED            ON  CACHE BOOL "" FORCE)
-set(gvk-stb_ENABLED               ON  CACHE BOOL "" FORCE)
-set(gvk-build-tests               OFF CACHE BOOL "" FORCE)
-set(gvk-build-samples             OFF CACHE BOOL "" FORCE)
-
+# Full list of available options can be found in gvk/CMakeLists.txt
+set(gvk-build-tests OFF CACHE BOOL "" FORCE) 
 FetchContent_Declare(
     gvk
     GIT_REPOSITORY "https://github.com/intel/gvk.git"
@@ -69,7 +84,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(gvk)
 ```
-...and the enabled gvk components are avaialable for linking...
+...enabled gvk components and dependencies are avaialable for linking...
 ```
 target_link_libraries(
     someTarget
@@ -84,3 +99,4 @@ target_link_libraries(
         stb
 )
 ```
+Note that this list includes redundant entries, for example `gvk-handles` implicitly links `gvk-runtime` and `gvk-structures` so the latter two need not be explicitly listed but are for illustrative purposes.

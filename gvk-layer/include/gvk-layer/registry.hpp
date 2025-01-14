@@ -35,7 +35,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <memory>
 #include <mutex>
+#include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace gvk {

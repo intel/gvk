@@ -34,7 +34,17 @@ namespace detail {
 ////////////////////////////////////////////////////////////////////////////////
 // Linux
 #ifdef VK_USE_PLATFORM_XLIB_KHR
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkXlibSurfaceCreateInfoKHR)
+template <> VkXlibSurfaceCreateInfoKHR create_structure_copy<VkXlibSurfaceCreateInfoKHR>(const VkXlibSurfaceCreateInfoKHR& obj, const VkAllocationCallbacks* pAllocator)
+{
+    auto result = obj;
+    result.pNext = (const void*)create_pnext_copy(obj.pNext, pAllocator);
+    return result;
+}
+
+template <> void destroy_structure_copy<VkXlibSurfaceCreateInfoKHR>(const VkXlibSurfaceCreateInfoKHR& obj, const VkAllocationCallbacks* pAllocator)
+{
+    destroy_pnext_copy(obj.pNext, pAllocator);
+}
 #endif // VK_USE_PLATFORM_XLIB_KHR
 
 ////////////////////////////////////////////////////////////////////////////////

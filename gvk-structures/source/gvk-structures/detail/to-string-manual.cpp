@@ -35,7 +35,19 @@ namespace gvk {
 ////////////////////////////////////////////////////////////////////////////////
 // Linux
 #ifdef VK_USE_PLATFORM_XLIB_KHR
-GVK_STUB_TO_STRING_DEFINITION(VkXlibSurfaceCreateInfoKHR)
+template <> void print<VkXlibSurfaceCreateInfoKHR>(Printer& printer, const VkXlibSurfaceCreateInfoKHR& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            detail::print_pnext(printer, obj.pNext);
+            printer.print_field("flags", obj.flags);
+            printer.print_field("dpy", obj.dpy);
+            printer.print_field("window", obj.window);
+        }
+    );
+}
 #endif // VK_USE_PLATFORM_XLIB_KHR
 
 ////////////////////////////////////////////////////////////////////////////////

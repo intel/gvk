@@ -57,7 +57,7 @@ gvk_add_executable(
     COMPILE_DEFINITIONS
         GVK_XML_FILE_PATH="${Vulkan_XML}"
 )
-add_custom_target(gvk-xml-to-json.runner ALL COMMAND gvk-xml-to-json > gvk.json)
+add_custom_target(gvk-xml-to-json.runner ALL COMMAND gvk-xml-to-json "${Vulkan_XML}" > gvk.json)
 set_target_properties(gvk-xml-to-json.runner PROPERTIES FOLDER "${GVK_IDE_FOLDER}/gvk-xml/")
 
 ################################################################################

@@ -27,6 +27,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 #include <cassert>
+#include <cstdint>
 #include <iterator>
 #include <iomanip>
 #include <ostream>
