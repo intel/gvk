@@ -32,7 +32,7 @@ A collection of Vulkan C++ utilities with a general focus on tools development, 
 - [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) v1.3.296.0 (optional, GVK will download the correct version during configuration if necessary)
     - The GVK build will not set Vulkan SDK environment variables, system path, or Windows Vulkan layer registry entries
     - If you need Vulkan SDK environment variables, system path, or Windows Vulkan layer registry entries set, it is recommended to install the Vulkan SDK before building GVK
-###### Ubuntu 22.04
+###### Ubuntu 24.04
 ```
 sudo apt update && sudo apt upgrade
 sudo apt install cmake
@@ -60,7 +60,7 @@ cmake --build build
 ```
 On Windows, a build can be run from the command line using `cmake --build build` or from Visual Studio by opening `gvk/build/gvk.sln`.
 To run the first sample, navigate to `gvk/samples/getting-started-00-triangle` in Visual Studio, right click and select "Set as Startup Project", then run the project.
-###### Ubuntu 22.04
+###### Ubuntu 24.04
 ```
 cmake -B build
 cmake --build build

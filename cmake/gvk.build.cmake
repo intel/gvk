@@ -236,11 +236,27 @@ function(gvk_install_artifacts)
     write_basic_package_version_file("${configVersion}" VERSION ${ARGS_VERSION} COMPATIBILITY ExactVersion)
     set(configTemplate "${gvkBuildModuleDirectory}/gvk-target.config.cmake.in")
     set(config "${CMAKE_BINARY_DIR}/cmake/${ARGS_TARGET}Config.cmake")
+    
+    # NOTE : Get INTERFACE_LINK_LIBRARIES and use it to create a list of targets
+    #   the current target depends on.  Remove CMake syntax, system libraries, and
+    #   Vulkan.  The resulting list is used on import to ensure all dependencies of
+    #   the current target that are defined by the GVK build are imported.
+    # NOTE : Kinda kludgy, but INTERFACE_LINK_LIBRARIES seems to be the best option
     get_target_property(interfaceLinkLibraries ${ARGS_TARGET} INTERFACE_LINK_LIBRARIES)
     string(REPLACE "$" "" interfaceLinkLibraries "${interfaceLinkLibraries}")
     string(REPLACE "<LINK_ONLY:" "" interfaceLinkLibraries "${interfaceLinkLibraries}")
     string(REPLACE ">" "" interfaceLinkLibraries "${interfaceLinkLibraries}")
-    list(REMOVE_ITEM interfaceLinkLibraries ${CMAKE_DL_LIBS} rt Threads::Threads Vulkan::Vulkan)
+    list(REMOVE_ITEM interfaceLinkLibraries ${CMAKE_DL_LIBS} m rt Threads::Threads Vulkan::Vulkan)
+    foreach(interfaceLinkLibrary IN LISTS interfaceLinkLibraries)
+        string(FIND "${interfaceLinkLibrary}" "libm.a" i0)
+        string(FIND "${interfaceLinkLibrary}" "libm.so" i1)
+        string(FIND "${interfaceLinkLibrary}" "librt.a" i2)
+        string(FIND "${interfaceLinkLibrary}" "librt.so" i3)
+        if(i0 GREATER_EQUAL 0 OR i1 GREATER_EQUAL 0 OR i2 GREATER_EQUAL 0 OR i3 GREATER_EQUAL 0)
+            list(REMOVE_ITEM interfaceLinkLibraries "${interfaceLinkLibrary}")
+        endif()
+    endforeach()
+
     configure_package_config_file("${configTemplate}" "${config}" INSTALL_DESTINATION {CMAKE_BINARY_DIR}/cmake/)
     install(FILES "${config}" "${configVersion}" DESTINATION cmake/${ARGS_TARGET}/)
 endfunction()
