@@ -436,16 +436,6 @@ VkResult initialize_control_block<Device>(Device& device)
 }
 
 template <>
-VkResult initialize_control_block<Queue>(Queue& queue)
-{
-    auto& queueControlBlock = queue.mReference.get_obj();
-    // NOTE : This initializes the queue's dispatch table.
-    //  See the note in initialize_control_block<CommandBuffer>() for more info.
-    *(void**)queueControlBlock.mVkQueue = *(void**)queueControlBlock.mVkDevice;
-    return VK_SUCCESS;
-}
-
-template <>
 VkResult initialize_control_block<CommandBuffer>(CommandBuffer& commandBuffer)
 {
     auto& commandBufferControlBlock = commandBuffer.mReference.get_obj();
