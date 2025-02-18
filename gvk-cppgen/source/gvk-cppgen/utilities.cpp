@@ -36,10 +36,12 @@ bool is_static_const_value(const std::string& apiElementName)
 {
     static const std::set<std::string> sStaticConstValues {
         "VkAccessFlagBits2",
+        "VkBufferUsageFlagBits2",
         "VkBufferUsageFlagBits2KHR",
         "VkFormatFeatureFlagBits2",
         "VkMemoryDecompressionMethodFlagBitsNV",
         "VkPhysicalDeviceSchedulingControlsFlagBitsARM",
+        "VkPipelineCreateFlagBits2",
         "VkPipelineCreateFlagBits2KHR",
         "VkPipelineStageFlagBits2",
     };

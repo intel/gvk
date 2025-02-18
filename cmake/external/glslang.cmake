@@ -9,7 +9,7 @@ set(ENABLE_GLSLANG_INSTALL  OFF CACHE BOOL "" FORCE)
 set(ENABLE_GLSLANG_JS       OFF CACHE BOOL "" FORCE)
 set(ENABLE_GLSLANG_WEBMIN   OFF CACHE BOOL "" FORCE)
 set(SKIP_GLSLANG_INSTALL    ON  CACHE BOOL "" FORCE)
-set(glslang_VERSION 46ef757e048e760b46601e6e77ae0cb72c97bd2f) # vulkan-sdk-1.3.296.0
+set(glslang_VERSION b3a6aa7b03c51ba976e4f4e96b1e31f77f43f312) # vulkan-sdk-1.4.304.0
 FetchContent_Declare(
     glslang
     GIT_REPOSITORY "https://github.com/KhronosGroup/glslang.git"
