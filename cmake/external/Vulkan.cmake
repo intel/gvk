@@ -2,7 +2,7 @@
 include_guard(GLOBAL)
 
 ################################################################################
-# Vulkan SDK version, URLs, and hashes
+# Set Vulkan SDK version, URLs, and hashes
 set(Vulkan-SDK_VERSION 1.4.304.0)
 set(Vulkan-SDK_LINUX_URL "https://sdk.lunarg.com/sdk/download/${Vulkan-SDK_VERSION}/linux/vulkansdk-linux-x86_64-${Vulkan-SDK_VERSION}.tar.xz")
 set(Vulkan-SDK_LINUX_SHA256 d9f9246353a38e432548d866758d11381ebfc208a3e4d80921988b1533a344f7)
@@ -10,40 +10,29 @@ set(Vulkan-SDK_WINDOWS_URL "https://sdk.lunarg.com/sdk/download/${Vulkan-SDK_VER
 set(Vulkan-SDK_WINDOWS_SHA256 6a25ee4f2fa880eee3e1b3ac47ac93d10ac1ba459cca3bbbdad049f42d5469f5)
 
 ################################################################################
-# Check for installed Vulkan SDK
+# Check installed Vulkan SDK version
 if(DEFINED ENV{VULKAN_SDK})
-    # NOTE : It's kinda cumbersome to be using REGEX to find the Vulkan SDK version
-    #   in random files in the SDK that aren't defined by any schema/specification.
-    #   On Linux the README is used and on Windows the Qt installer components.xml
-    #   is used.  Unfortunately there doesn't really seem to be a reliable way to
-    #   ascertain what version of the Vulkan SDK is in use.  It is possible to get
-    #   the value of VK_HEADER_VERSION_COMPLETE from vulkan_core.h, but this isn't
-    #   the full SDK version, for example...
-    #       For Vulkan SDK 1.4.304.0, VK_HEADER_VERSION_COMPLETE yields 0.1.4.304
-    #       (note that a non-zero leading digit indicates a variant, eg. Vulkan SC)
-    if(LINUX)
-        set(Vulkan-SDK_README "$ENV{VULKAN_SDK}/README.txt")
-        if(EXISTS "${Vulkan-SDK_README}")
-            file(STRINGS "${Vulkan-SDK_README}" Vulkan-SDK_FOUND_VERSION REGEX "release_notes.html")
-            string(REPLACE "Release Notes: https://vulkan.lunarg.com/doc/sdk/" "" Vulkan-SDK_FOUND_VERSION ${Vulkan-SDK_FOUND_VERSION})
-            string(REPLACE "/linux/release_notes.html" "" Vulkan-SDK_FOUND_VERSION ${Vulkan-SDK_FOUND_VERSION})
-            string(STRIP ${Vulkan-SDK_FOUND_VERSION} Vulkan-SDK_FOUND_VERSION)
+    # FROM : https://github.com/Kitware/CMake/blob/master/Modules/FindVulkan.cmake
+    set(VULKAN_CORE_H "$ENV{VULKAN_SDK}/include/vulkan/vulkan_core.h")
+    if(EXISTS ${VULKAN_CORE_H})
+        file(STRINGS  ${VULKAN_CORE_H} VulkanHeaderVersionLine REGEX "^#define VK_HEADER_VERSION ")
+        string(REGEX MATCHALL "[0-9]+" VulkanHeaderVersion "${VulkanHeaderVersionLine}")
+        file(STRINGS  ${VULKAN_CORE_H} VulkanHeaderVersionLine2 REGEX "^#define VK_HEADER_VERSION_COMPLETE ")
+        string(REGEX MATCHALL "[0-9]+" VulkanHeaderVersion2 "${VulkanHeaderVersionLine2}")
+        list(LENGTH VulkanHeaderVersion2 _len)
+        #  versions >= 1.2.175 have an additional numbers in front of e.g. '0, 1, 2' instead of '1, 2'
+        if(_len EQUAL 3)
+            list(REMOVE_AT VulkanHeaderVersion2 0)
         endif()
-    elseif(WIN32)
-        set(Vulkan-SDK_COMPONENTS_XML "$ENV{VULKAN_SDK}/components.xml")
-        if(EXISTS "${Vulkan-SDK_COMPONENTS_XML}")
-            file(STRINGS "${Vulkan-SDK_COMPONENTS_XML}" Vulkan-SDK_FOUND_VERSION REGEX "<ApplicationName>")
-            string(REPLACE "<ApplicationName>" "" Vulkan-SDK_FOUND_VERSION ${Vulkan-SDK_FOUND_VERSION})
-            string(REPLACE "Vulkan SDK" "" Vulkan-SDK_FOUND_VERSION ${Vulkan-SDK_FOUND_VERSION})
-            string(REPLACE "</ApplicationName>" "" Vulkan-SDK_FOUND_VERSION ${Vulkan-SDK_FOUND_VERSION})
-            string(STRIP ${Vulkan-SDK_FOUND_VERSION} Vulkan-SDK_FOUND_VERSION)
-        endif()
+        list(APPEND VulkanHeaderVersion2 ${VulkanHeaderVersion})
+        list(JOIN VulkanHeaderVersion2 "." Vulkan-SDK_FOUND_VERSION)
     endif()
+    unset(VULKAN_CORE_H)
 endif()
 
 ################################################################################
 # Download Vulkan SDK if the required version isn't installed
-if(NOT Vulkan-SDK_VERSION STREQUAL Vulkan-SDK_FOUND_VERSION)
+if(NOT Vulkan-SDK_VERSION VERSION_EQUAL Vulkan-SDK_FOUND_VERSION)
     if(LINUX)
         FetchContent_Declare(Vulkan-SDK URL ${Vulkan-SDK_LINUX_URL} URL_HASH SHA256=${Vulkan-SDK_LINUX_SHA256})
         FetchContent_MakeAvailable(Vulkan-SDK)
@@ -59,14 +48,16 @@ if(NOT Vulkan-SDK_VERSION STREQUAL Vulkan-SDK_FOUND_VERSION)
         endif()
         set(ENV{VULKAN_SDK} "${Vulkan-SDK_SOURCE_DIR}/${Vulkan-SDK_VERSION}/")
     endif()
-    set(VULKAN_SDK "$ENV{VULKAN_SDK}")
-    string(REPLACE "\\" "/" VULKAN_SDK "${VULKAN_SDK}")
-    string(REPLACE "//" "/" VULKAN_SDK "${VULKAN_SDK}")
-    set(ENV{VULKAN_SDK} "${VULKAN_SDK}")
 endif()
+
+################################################################################
+# Normalize SDK path
+set(VULKAN_SDK "$ENV{VULKAN_SDK}")
+string(REPLACE "\\" "/" VULKAN_SDK "${VULKAN_SDK}")
+string(REPLACE "//" "/" VULKAN_SDK "${VULKAN_SDK}")
+set(ENV{VULKAN_SDK} "${VULKAN_SDK}")
 
 ################################################################################
 # Find package and set Vulkan_XML
 find_package(Vulkan ${Vulkan-SDK_VERSION} EXACT)
 set(Vulkan_XML "$ENV{VULKAN_SDK}/share/vulkan/registry/vk.xml" CACHE STRING "" FORCE)
-string(REPLACE "//" "/" Vulkan_XML "${Vulkan_XML}")

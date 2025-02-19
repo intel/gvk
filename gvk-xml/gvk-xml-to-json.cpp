@@ -410,7 +410,7 @@ void gvk::print<gvk::xml::Manifest>(gvk::Printer& printer, const gvk::xml::Manif
 int main(int argc, const char* ppArgv[])
 {
     tinyxml2::XMLDocument xmlDocument;
-    std::string xmlFileath = 1 < argc ? ppArgv[1] : GVK_XML_FILE_PATH;
+    std::string xmlFileath = 1 < argc ? ppArgv[1] : std::string();
     auto xmlResult = xmlDocument.LoadFile(xmlFileath.c_str());
     if (xmlResult == tinyxml2::XML_SUCCESS) {
         gvk::xml::Manifest manifest(xmlDocument);
