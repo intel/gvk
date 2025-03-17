@@ -2,23 +2,42 @@
 include_guard(GLOBAL)
 
 ################################################################################
-# Vulkan SDK version, URLs, and hashes
-set(Vulkan-SDK_VERSION 1.3.296.0)
+# Set Vulkan SDK version, URLs, and hashes
+set(Vulkan-SDK_VERSION 1.4.304.0)
 set(Vulkan-SDK_LINUX_URL "https://sdk.lunarg.com/sdk/download/${Vulkan-SDK_VERSION}/linux/vulkansdk-linux-x86_64-${Vulkan-SDK_VERSION}.tar.xz")
-set(Vulkan-SDK_LINUX_SHA256 79b0a1593dadc46180526250836f3e53688a9a5fb42a0e5859eb72316dc4d53e)
+set(Vulkan-SDK_LINUX_SHA256 d9f9246353a38e432548d866758d11381ebfc208a3e4d80921988b1533a344f7)
 set(Vulkan-SDK_WINDOWS_URL "https://sdk.lunarg.com/sdk/download/${Vulkan-SDK_VERSION}/windows/VulkanSDK-${Vulkan-SDK_VERSION}-Installer.exe")
-set(Vulkan-SDK_WINDOWS_SHA256 acb4ae0786fd3e558f8b3c36cc3eba91638984217ba8a6795ec64d2f9ffd8c4b)
+set(Vulkan-SDK_WINDOWS_SHA256 6a25ee4f2fa880eee3e1b3ac47ac93d10ac1ba459cca3bbbdad049f42d5469f5)
 
 ################################################################################
-# Check for installed Vulkan SDK, if not found download
-find_package(Vulkan ${Vulkan-SDK_VERSION} EXACT)
-if(NOT Vulkan_FOUND OR NOT DEFINED ENV{VULKAN_SDK})
-    unset(Vulkan_FOUND CACHE)
+# Check installed Vulkan SDK version
+if(DEFINED ENV{VULKAN_SDK})
+    # FROM : https://github.com/Kitware/CMake/blob/master/Modules/FindVulkan.cmake
+    set(VULKAN_CORE_H "$ENV{VULKAN_SDK}/include/vulkan/vulkan_core.h")
+    if(EXISTS ${VULKAN_CORE_H})
+        file(STRINGS  ${VULKAN_CORE_H} VulkanHeaderVersionLine REGEX "^#define VK_HEADER_VERSION ")
+        string(REGEX MATCHALL "[0-9]+" VulkanHeaderVersion "${VulkanHeaderVersionLine}")
+        file(STRINGS  ${VULKAN_CORE_H} VulkanHeaderVersionLine2 REGEX "^#define VK_HEADER_VERSION_COMPLETE ")
+        string(REGEX MATCHALL "[0-9]+" VulkanHeaderVersion2 "${VulkanHeaderVersionLine2}")
+        list(LENGTH VulkanHeaderVersion2 _len)
+        #  versions >= 1.2.175 have an additional numbers in front of e.g. '0, 1, 2' instead of '1, 2'
+        if(_len EQUAL 3)
+            list(REMOVE_AT VulkanHeaderVersion2 0)
+        endif()
+        list(APPEND VulkanHeaderVersion2 ${VulkanHeaderVersion})
+        list(JOIN VulkanHeaderVersion2 "." Vulkan-SDK_FOUND_VERSION)
+    endif()
+    unset(VULKAN_CORE_H)
+endif()
+
+################################################################################
+# Download Vulkan SDK if the required version isn't installed
+if(NOT Vulkan-SDK_VERSION VERSION_EQUAL Vulkan-SDK_FOUND_VERSION)
     if(LINUX)
         FetchContent_Declare(Vulkan-SDK URL ${Vulkan-SDK_LINUX_URL} URL_HASH SHA256=${Vulkan-SDK_LINUX_SHA256})
         FetchContent_MakeAvailable(Vulkan-SDK)
         FetchContent_GetProperties(Vulkan-SDK SOURCE_DIR Vulkan-SDK_SOURCE_DIR)
-        set(ENV{VULKAN_SDK} "${Vulkan-SDK_SOURCE_DIR}/x86_64")
+        set(ENV{VULKAN_SDK} "${Vulkan-SDK_SOURCE_DIR}/x86_64/")
     elseif(WIN32)
         FetchContent_Declare(Vulkan-SDK URL ${Vulkan-SDK_WINDOWS_URL} URL_HASH SHA256=${Vulkan-SDK_WINDOWS_SHA256} DOWNLOAD_NO_EXTRACT ON)
         FetchContent_MakeAvailable(Vulkan-SDK)
@@ -27,60 +46,18 @@ if(NOT Vulkan_FOUND OR NOT DEFINED ENV{VULKAN_SDK})
             set(cmd "${Vulkan-SDK_SOURCE_DIR}/VulkanSDK-${Vulkan-SDK_VERSION}-Installer.exe" --root "${Vulkan-SDK_SOURCE_DIR}/${Vulkan-SDK_VERSION}/" --accept-licenses --default-answer --confirm-command install copy_only=1)
             execute_process(COMMAND ${cmd} WORKING_DIRECTORY "${Vulkan-SDK_SOURCE_DIR}")
         endif()
-        set(ENV{VULKAN_SDK} "${Vulkan-SDK_SOURCE_DIR}/${Vulkan-SDK_VERSION}")
+        set(ENV{VULKAN_SDK} "${Vulkan-SDK_SOURCE_DIR}/${Vulkan-SDK_VERSION}/")
     endif()
-    find_package(Vulkan ${Vulkan-SDK_VERSION} EXACT REQUIRED)
 endif()
 
 ################################################################################
-# Normalize path ENV{VULKAN_SDK}
-set(VULKAN_SDK $ENV{VULKAN_SDK})
-string(REPLACE "\\" "/" VULKAN_SDK ${VULKAN_SDK})
-set(ENV{VULKAN_SDK} ${VULKAN_SDK})
+# Normalize SDK path
+set(VULKAN_SDK "$ENV{VULKAN_SDK}")
+string(REPLACE "\\" "/" VULKAN_SDK "${VULKAN_SDK}")
+string(REPLACE "//" "/" VULKAN_SDK "${VULKAN_SDK}")
+set(ENV{VULKAN_SDK} "${VULKAN_SDK}")
 
 ################################################################################
-# Set Vulkan_XML
+# Find package and set Vulkan_XML
+find_package(Vulkan ${Vulkan-SDK_VERSION} EXACT)
 set(Vulkan_XML "$ENV{VULKAN_SDK}/share/vulkan/registry/vk.xml" CACHE STRING "" FORCE)
-string(REPLACE "//" "/" Vulkan_XML ${Vulkan_XML})
-
-################################################################################
-# Set Vulkan_VERSION
-set(vulkan-api-version_SOURCE_DIR "${PROJECT_BINARY_DIR}/vulkan-api-version/")
-set(vulkan-api-version_BINARY_DIR "${vulkan-api-version_SOURCE_DIR}/bin/")
-file(WRITE "${vulkan-api-version_SOURCE_DIR}/vulkan-api-version.cpp"
-"
-#include \"vulkan/vulkan.h\"
-#include <cstdio>
-int main(int argc, char* argv[])
-{
-    printf(
-        \"%d.%d.%d\",
-        VK_VERSION_MAJOR(VK_HEADER_VERSION_COMPLETE),
-        VK_VERSION_MINOR(VK_HEADER_VERSION_COMPLETE),
-        VK_VERSION_PATCH(VK_HEADER_VERSION_COMPLETE)
-    );
-    return 0;
-}
-"
-)
-set(ENV{VK_LOADER_DEBUG} "")
-set(ENV{VK_INSTANCE_LAYERS} "")
-try_run(
-    runResult
-    compileResult
-    "${vulkan-api-version_BINARY_DIR}"
-    "${vulkan-api-version_SOURCE_DIR}/vulkan-api-version.cpp"
-    LINK_LIBRARIES Vulkan::Vulkan
-    COMPILE_OUTPUT_VARIABLE compileOutput
-    RUN_OUTPUT_VARIABLE Vulkan_VERSION
-)
-if(NOT compileResult)
-    message(FATAL_ERROR "Failed to compile vulkan-api-version\n${compileOutput}")
-endif()
-if(runResult)
-    message(FATAL_ERROR "Failed to execute vulkan-api-version\n${runResult} : ${Vulkan_VERSION}")
-endif()
-string(REPLACE "." ";" vukanVersionValues "${Vulkan_VERSION}")
-list(GET vukanVersionValues 0 Vulkan_VERSION_MAJOR)
-list(GET vukanVersionValues 1 Vulkan_VERSION_MINOR)
-list(GET vukanVersionValues 2 Vulkan_VERSION_PATCH)

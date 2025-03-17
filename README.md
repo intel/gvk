@@ -29,7 +29,7 @@ A collection of Vulkan C++ utilities with a general focus on tools development, 
 - [Git](https://git-scm.com/)
 - [Python](https://www.python.org/downloads/) v3+ (Make sure to select "Add to PATH" when prompted)
 - [Visual Studio](https://visualstudio.microsoft.com/vs/community/) 2022 (Make sure to select "Desktop development with C++" when prompted)
-- [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) v1.3.296.0 (optional, GVK will download the correct version during configuration if necessary)
+- [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) v1.4.304.0 (optional, GVK will download the correct version during configuration if necessary)
     - The GVK build will not set Vulkan SDK environment variables, system path, or Windows Vulkan layer registry entries
     - If you need Vulkan SDK environment variables, system path, or Windows Vulkan layer registry entries set, it is recommended to install the Vulkan SDK before building GVK
 ###### Ubuntu 24.04

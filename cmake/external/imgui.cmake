@@ -3,7 +3,7 @@
 include_guard(GLOBAL)
 gvk_enable_target(imgui)
 
-set(imgui_VERSION 993fa347495860ed44b83574254ef2a317d0c14f) # 1.91.6
+set(imgui_VERSION dbb5eeaadffb6a3ba6a60de1290312e5802dba5a) # 1.91.8
 FetchContent_Declare(
     imgui
     GIT_REPOSITORY "https://github.com/ocornut/imgui.git"
