@@ -149,6 +149,11 @@ protected:
         return "printer.print_flags<{memberFlagBitsType}>(\"{memberName}\", obj.{memberName});";
     }
 
+    std::string generate_bit_field_processor() const override final
+    {
+        return "printer.print_field(\"{memberName}\", obj.{memberName});";
+    }
+
     std::string generate_primitive_processor() const override final
     {
         return "printer.print_field(\"{memberName}\", obj.{memberName});";

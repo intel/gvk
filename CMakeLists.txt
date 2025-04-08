@@ -6,10 +6,32 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/")
 include(gvk.build)
 
 ################################################################################
-# Default option
-option(gvk-default_ENABLED           "" ON)
-option(gvk-default_INSTALL_ARTIFACTS "" ON)
-option(gvk-default_INSTALL_HEADERS   "" ON)
+# Vulkan SDK options
+set(gvk-Vulkan-SDK_VERSION 1.4.309.0 CACHE STRING "")
+
+set(gvk-Vulkan-SDK_URL_LINUX     "https://sdk.lunarg.com/sdk/download/${gvk-Vulkan-SDK_VERSION}/linux"   CACHE STRING "")
+set(gvk-Vulkan-SDK_PACKAGE_LINUX "vulkansdk-linux-x86_64-${gvk-Vulkan-SDK_VERSION}.tar.xz"               CACHE STRING "")
+set(gvk-Vulkan-SDK_SHA256_LINUX  616a25a9d8b33336e83957f97ca273b8e95461649723354300d02c26ae52a1f6        CACHE STRING "")
+
+set(gvk-Vulkan-SDK_URL_WIN32     "https://sdk.lunarg.com/sdk/download/${gvk-Vulkan-SDK_VERSION}/windows" CACHE STRING "")
+set(gvk-Vulkan-SDK_PACKAGE_WIN32 "VulkanSDK-${gvk-Vulkan-SDK_VERSION}-Installer.exe"                     CACHE STRING "")
+set(gvk-Vulkan-SDK_SHA256_WIN32  48b132169b64fe65cdb0f20970195335a65354e73f1ea5373032c2a8bbad4297        CACHE STRING "")
+
+if(UNIX AND NOT APPLE)
+    set(gvk-Vulkan-SDK_URL     "${gvk-Vulkan-SDK_URL_LINUX}"     CACHE STRING "")
+    set(gvk-Vulkan-SDK_PACKAGE "${gvk-Vulkan-SDK_PACKAGE_LINUX}" CACHE STRING "")
+    set(gvk-Vulkan-SDK_SHA256  ${gvk-Vulkan-SDK_SHA256_LINUX}    CACHE STRING "")
+elseif(WIN32)
+    set(gvk-Vulkan-SDK_URL     "${gvk-Vulkan-SDK_URL_WIN32}"     CACHE STRING "")
+    set(gvk-Vulkan-SDK_PACKAGE "${gvk-Vulkan-SDK_PACKAGE_WIN32}" CACHE STRING "")
+    set(gvk-Vulkan-SDK_SHA256  ${gvk-Vulkan-SDK_SHA256_WIN32}    CACHE STRING "")
+endif()
+
+################################################################################
+# Default options
+option(gvk-default_ENABLED               "" ON)
+option(gvk-default_INSTALL_ARTIFACTS     "" ON)
+option(gvk-default_INSTALL_HEADERS       "" ON)
 
 ################################################################################
 # Dependency options

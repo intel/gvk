@@ -149,6 +149,11 @@ protected:
         return std::string();
     }
 
+    std::string generate_bit_field_processor() const override final
+    {
+        return std::string();
+    }
+
     std::string generate_primitive_processor() const override final
     {
         return std::string();

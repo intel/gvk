@@ -1,17 +1,13 @@
 
 [Bb]uild/
-[_-][Bb]uild/
 [Cc][Mm]ake[Bb]uild/
 [Cc][Mm]ake[_-][Bb]uild/
 [Ii]nstall/
-[_-][Ii]nstall/
-build-options.cmake
 documentation/html/
 documentation/latex/
-_deps/
-_report/
-_scan-tools/
-__pycache__/
+build-options.cmake
 *.hiv
 *.ini
 *.reg
+_*
+-*

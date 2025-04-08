@@ -72,7 +72,7 @@ Parameter::Parameter(const tinyxml2::XMLElement& xmlElement)
             dimensionCount = (int)std::count(length.begin(), length.end(), ']');
         } else if (value == "[") {
         } else if (value == "]") {
-        } else if (value == ":24" || value == ":8") {
+        } else if (string::starts_with(value, ":") && string::is_number(string::remove(value, ":"))) {
             bitField = string::to_number<int>(string::remove(value, ":"));
         } else if (value == "struct") {
         } else if (value == "type") {
