@@ -2,7 +2,7 @@
 include_guard(GLOBAL)
 gvk_enable_target(tinyxml2)
 
-set(tinyxml2_VERSION 321ea883b7190d4e85cae5512a12e5eaa8f8731f) # 10.0.0
+set(tinyxml2_VERSION 9148bdf719e997d1f474be6bcc7943881046dba1) # 11.0.0
 FetchContent_Declare(
     tinyxml2
     GIT_REPOSITORY "https://github.com/leethomason/tinyxml2.git"

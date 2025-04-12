@@ -148,6 +148,14 @@ protected:
         return "archive(obj.{memberName});";
     }
 
+    std::string generate_bit_field_processor() const override final
+    {
+        std::string source;
+        source += "{memberType} {memberName}Value = obj.{memberName};\n";
+        source += "archive({memberName}Value);";
+        return source;
+    }
+
     std::string generate_primitive_processor() const override final
     {
         return "archive(obj.{memberName});";
@@ -185,8 +193,7 @@ void StructureCerealizationGenerator::generate(
             for (size_t i = 0; i < structure.members.size(); ++i) {
                 const auto& member = structure.members[i];
                 CompileGuardGenerator memberCompileGuardGenerator(file, get_inner_scope_compile_guards(structure.compileGuards, member.compileGuards));
-                auto source = CerealizeStructureMemberGenerator().generate(manifest, member);
-                if (!source.empty()) {
+                for (const auto& source : string::split(CerealizeStructureMemberGenerator().generate(manifest, member), "\n")) {
                     file << "    " << source << std::endl;
                 }
             }

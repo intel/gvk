@@ -92,6 +92,8 @@ std::string BasicStructureMemberProcessorGenerator::generate(const xml::Manifest
                 source = generate_enumeration_processor();
             } else if (is_strongly_typed_bitmask(manifest, member.type)) {
                 source = generate_flags_processor();
+            } else if (member.bitField) {
+                source = generate_bit_field_processor();
             } else {
                 source = generate_primitive_processor();
             }
@@ -212,6 +214,11 @@ std::string BasicStructureMemberProcessorGenerator::generate_enumeration_process
 }
 
 std::string BasicStructureMemberProcessorGenerator::generate_flags_processor() const
+{
+    return std::string();
+}
+
+std::string BasicStructureMemberProcessorGenerator::generate_bit_field_processor() const
 {
     return std::string();
 }

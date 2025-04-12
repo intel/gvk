@@ -62,6 +62,7 @@ protected:
     virtual std::string generate_structure_processor() const;
     virtual std::string generate_enumeration_processor() const;
     virtual std::string generate_flags_processor() const;
+    virtual std::string generate_bit_field_processor() const;
     virtual std::string generate_primitive_processor() const;
 
     xml::Parameter mMember;
@@ -178,6 +179,11 @@ protected:
     }
 
     inline std::string generate_flags_processor() const override final
+    {
+        return "// {memberName}";
+    }
+
+    inline std::string generate_bit_field_processor() const override final
     {
         return "// {memberName}";
     }

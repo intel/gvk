@@ -1,0 +1,288 @@
+
+#[[#############################################################################
+
+MIT License
+
+Copyright (c) Intel Corporation
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+#############################################################################]]#
+
+include_guard(GLOBAL)
+include(CMakeParseArguments)
+
+set(gvk-Vulkan-SDK_VERSION @gvk-Vulkan-SDK_VERSION@ CACHE STRING "")
+
+set(gvk-Vulkan-SDK_URL_LINUX "https://sdk.lunarg.com/sdk/download/${gvk-Vulkan-SDK_VERSION}/linux" CACHE STRING "")
+set(gvk-Vulkan-SDK_PACKAGE_LINUX "vulkansdk-linux-x86_64-${gvk-Vulkan-SDK_VERSION}.tar.xz" CACHE STRING "")
+set(gvk-Vulkan-SDK_SHA256_LINUX @gvk-Vulkan-SDK_SHA256_LINUX@ CACHE STRING "")
+
+set(gvk-Vulkan-SDK_URL_WIN32 "https://sdk.lunarg.com/sdk/download/${gvk-Vulkan-SDK_VERSION}/windows" CACHE STRING "")
+set(gvk-Vulkan-SDK_PACKAGE_WIN32 "VulkanSDK-${gvk-Vulkan-SDK_VERSION}-Installer.exe" CACHE STRING "")
+set(gvk-Vulkan-SDK_SHA256_WIN32 @gvk-Vulkan-SDK_SHA256_WIN32@ CACHE STRING "")
+
+if(UNIX AND NOT APPLE)
+    set(gvk-Vulkan-SDK_URL "${gvk-Vulkan-SDK_URL_LINUX}" CACHE STRING "")
+    set(gvk-Vulkan-SDK_PACKAGE "${gvk-Vulkan-SDK_PACKAGE_LINUX}" CACHE STRING "")
+    set(gvk-Vulkan-SDK_SHA256 ${gvk-Vulkan-SDK_SHA256_LINUX} CACHE STRING "")
+elseif(WIN32)
+    set(gvk-Vulkan-SDK_URL "${gvk-Vulkan-SDK_URL_WIN32}" CACHE STRING "")
+    set(gvk-Vulkan-SDK_PACKAGE "${gvk-Vulkan-SDK_PACKAGE_WIN32}" CACHE STRING "")
+    set(gvk-Vulkan-SDK_SHA256 ${gvk-Vulkan-SDK_SHA256_WIN32} CACHE STRING "")
+endif()
+
+function(gvk_vulkan_sdk_print_help)
+    execute_process(COMMAND ${CMAKE_COMMAND} -E echo
+"
+GVK Vulkan SDK @gvk-Vulkan-SDK_VERSION@ utility
+
+This file can either be used as a module in a CMake project, or standalone as a
+script using CMake's script mode.
+
+In either case, all of the variables prefixed `gvk-Vulkan-SDK` can be overridden
+via CMake initial cache file using the `-C` option.  Providing multiple URLs
+will result in each one being tried until download is successful.  This can be
+useful for specifying a different Vulkan SDK version, fetching custom Vulkan SDK
+builds, or for environments that cache dependencies (ie.CI/validation).
+Example : VulkanSDK-options.cmake
+
+    set(gvk-Vulkan-SDK_VERSION @gvk-Vulkan-SDK_VERSION@ CACHE STRING \"\" FORCE)
+    set(gvk-Vulkan-SDK_URL_LINUX
+        \"https://dependency.server.com/custom/vulkan/sdk/linux\"
+        \"https://sdk.lunarg.com/sdk/download/@gvk-Vulkan-SDK_VERSION@/linux\"
+        CACHE STRING \"\" FORCE
+    )
+    set(gvk-Vulkan-SDK_URL_WIN32
+        \"https://dependency.server.com/custom/vulkan/sdk/windows\"
+        \"https://sdk.lunarg.com/sdk/download/@gvk-Vulkan-SDK_VERSION@/windows\"
+        CACHE STRING \"\" FORCE
+    )
+
+NOTE : See the following for more info regarding CMake's initial-cache option
+https://cmake.org/cmake/help/latest/manual/cmake.1.html#cmdoption-cmake-C
+
+================================================================================
+
+Using this file as a CMake module
+
+When included in a CMake project, this module will check for an existing Vulkan
+SDK installation, download the required Vulkan SDK version if necessary, then
+call `find_package(Vulkan ${gvk-Vulkan-SDK_VERSION} EXACT REQUIRED)`.
+
+NOTE : If included in a CMake project, this module MUST be included BEFORE any
+other call to `find_package(Vulkan)`, and any subsequent call must not specify
+a version different from the version specified by this module.
+
+NOTE : If included in a CMake project, this module will set the `VULKAN_SDK`
+environment variable for the configuration environment.  The system environment
+and Windows layer registry are not impacted.  Depending on individual project
+needs, further configuration may be required.
+
+NOTE : See the following for more info regarding CMake module search paths
+https://cmake.org/cmake/help/latest/variable/CMAKE_MODULE_PATH.html
+
+    include(gvk-vulkan-sdk)
+
+================================================================================
+
+Using this file as a standalone script
+
+NOTE : See the following for more info regarding CMake's script mode
+https://cmake.org/cmake/help/latest/manual/cmake.1.html#cmdoption-cmake-P
+https://cmake.org/cmake/help/latest/prop_gbl/CMAKE_ROLE.html#prop_gbl:CMAKE_ROLE
+
+--------------------------------------------------------------------------------
+
+Arguments :
+
+HELP
+    Outputs this help text
+
+PACKAGE
+    Outputs the target Vulkan SDK package
+
+VERSION
+    Outputs the target Vulkan SDK version
+
+WORKING_DIRECTORY <working/directory>
+    Downloads the Vulkan SDK to a given directory
+
+EXTRACT <extract/directory>
+    Extracts the Vulkan SDK to a given directory
+    NOTE : This argument depends on, and is relative to, the WORKING_DIRECTORY argument
+    NOTE : The given directory must be empty or nonexistent
+    NOTE : If '.' is provided, the Vulkan SDK will be extracted to '<working/directory>/${gvk-Vulkan-SDK_VERSION}'
+
+URL
+    List of URLs to try before trying the default
+
+--------------------------------------------------------------------------------
+
+Examples :
+
+To output the target Vulkan SDK package to stdout
+
+    cmake -P gvk-vulkan-sdk.cmake PACKAGE
+
+To output the target Vulkan SDK version to stdout
+
+    cmake -P gvk-vulkan-sdk.cmake VERSION
+
+To download and extract the Vulkan SDK to a given directory
+
+    cmake -P gvk-vulkan-sdk.cmake WORKING_DIRECTORY <working/directory> EXTRACT .
+
+To download the Vulkan SDK using a cache file to override the Vulkan SDK URL
+
+    cmake -C <cache/file.cmake> gvk-vulkan-sdk.cmake -P WORKING_DIRECTORY <working/directory>
+"
+        )
+endfunction()
+
+function(gvk_download_vulkan_sdk)
+    cmake_parse_arguments(ARG "" "WORKING_DIRECTORY" "URL" ${ARGN})
+    get_filename_component(ARG_WORKING_DIRECTORY "${ARG_WORKING_DIRECTORY}" ABSOLUTE)
+    foreach(URL IN LISTS ARG_URL)
+        set(URL "${URL}/${gvk-Vulkan-SDK_PACKAGE}")
+        file(DOWNLOAD "${URL}" RANGE_END 1 STATUS status)
+        message("Downloading '${gvk-Vulkan-SDK_PACKAGE}'")
+        message("    origin: '${URL}'")
+        list(GET status 0 result)
+        if(result EQUAL 0)
+            message("    output: '${ARG_WORKING_DIRECTORY}/${gvk-Vulkan-SDK_PACKAGE}'")
+            set(package "${ARG_WORKING_DIRECTORY}/${gvk-Vulkan-SDK_PACKAGE}")
+            file(DOWNLOAD "${URL}" "${package}" EXPECTED_HASH SHA256=${gvk-Vulkan-SDK_SHA256} STATUS status SHOW_PROGRESS)
+        endif()
+        message("    status: [${status}]")
+        list(GET status 0 result)
+        if(result EQUAL 0)
+            break()
+        endif()
+    endforeach()
+endfunction()
+
+function(gvk_extract_vulkan_sdk)
+    cmake_parse_arguments(ARG "" "WORKING_DIRECTORY;EXTRACT" "" ${ARGN})
+    get_filename_component(ARG_WORKING_DIRECTORY "${ARG_WORKING_DIRECTORY}" ABSOLUTE)
+    if(ARG_EXTRACT STREQUAL .)
+        set(ARG_EXTRACT "${ARG_WORKING_DIRECTORY}/${gvk-Vulkan-SDK_VERSION}")
+    else()
+        set(ARG_EXTRACT "${ARG_WORKING_DIRECTORY}/${ARG_EXTRACT}")
+    endif()
+    get_filename_component(ARG_EXTRACT "${ARG_EXTRACT}" ABSOLUTE)
+    set(package "${ARG_WORKING_DIRECTORY}/${gvk-Vulkan-SDK_PACKAGE}")
+    message("Extracting '${gvk-Vulkan-SDK_PACKAGE}'")
+    message("    origin: '${package}'")
+    message("    output: '${ARG_EXTRACT}'")
+    if(NOT EXISTS "${ARG_EXTRACT}")
+        string(FIND ${gvk-Vulkan-SDK_PACKAGE} ".tar." tar)
+        string(FIND ${gvk-Vulkan-SDK_PACKAGE} ".exe" exe)
+        if(tar GREATER 0)
+            file(MAKE_DIRECTORY "${ARG_WORKING_DIRECTORY}/temp")
+            set(cmd ${CMAKE_COMMAND} -E tar xvf "${package}" WORKING_DIRECTORY "${ARG_WORKING_DIRECTORY}/temp")
+            execute_process(COMMAND ${cmd} RESULT_VARIABLE result)
+            file(RENAME "${ARG_WORKING_DIRECTORY}/temp/${gvk-Vulkan-SDK_VERSION}" "${ARG_EXTRACT}")
+        elseif(exe GREATER 0)
+            set(cmd "${package}" --root "${ARG_EXTRACT}" --accept-licenses --default-answer --confirm-command install copy_only=1)
+            execute_process(COMMAND ${cmd} RESULT_VARIABLE result)
+        endif()
+        if(result)
+            message("    result: [\"${result}\"]")
+        else()
+            message("    result: [0;\"No error\"]")
+        endif()
+    else()
+        message("    result: [0;\"skipping extraction as '${ARG_EXTRACT}' already exists\"]")
+    endif()
+endfunction()
+
+function(gvk_set_vulkan_sdk_env_var)
+    cmake_parse_arguments(ARG "" "VULKAN_SDK" "" ${ARGN})
+    get_filename_component(ARG "${VULKAN_SDK}" ABSOLUTE)
+    if(UNIX AND NOT APPLE)
+        set(ENV{VULKAN_SDK} "${ARG_VULKAN_SDK}/x86_64/")
+    elseif(WIN32)
+        set(ENV{VULKAN_SDK} "${ARG_VULKAN_SDK}/")
+    endif()
+    file(TO_CMAKE_PATH "$ENV{VULKAN_SDK}" ARG_VULKAN_SDK)
+    set(ENV{VULKAN_SDK} "${ARG_VULKAN_SDK}")
+endfunction()
+
+if(CMAKE_SCRIPT_MODE_FILE)
+    ################################################################################
+    # Script mode logic
+    foreach(ARG_INDEX RANGE ${CMAKE_ARGC})
+        list(APPEND ARGS ${CMAKE_ARGV${ARG_INDEX}})
+    endforeach()
+    cmake_parse_arguments(ARG "HELP;PACKAGE;VERSION;" "WORKING_DIRECTORY;EXTRACT" "URL" ${ARGS})
+    get_filename_component(ARG_WORKING_DIRECTORY "${ARG_WORKING_DIRECTORY}" ABSOLUTE)
+    if(ARG_HELP)
+        gvk_vulkan_sdk_print_help()
+    else()
+        if(ARG_PACKAGE OR ARG_VERSION)
+            if(ARG_PACKAGE)
+                execute_process(COMMAND ${CMAKE_COMMAND} -E echo ${gvk-Vulkan-SDK_PACKAGE})
+            endif()
+            if(ARG_VERSION)
+                execute_process(COMMAND ${CMAKE_COMMAND} -E echo ${gvk-Vulkan-SDK_VERSION})
+            endif()
+        else()
+            list(APPEND ARG_URL "${gvk-Vulkan-SDK_URL}")
+            gvk_download_vulkan_sdk(WORKING_DIRECTORY "${ARG_WORKING_DIRECTORY}" URL "${ARG_URL}")
+            if(ARG_EXTRACT)
+                gvk_extract_vulkan_sdk(WORKING_DIRECTORY "${ARG_WORKING_DIRECTORY}" EXTRACT "${ARG_EXTRACT}")
+            endif()
+        endif()
+    endif()
+else()
+    ################################################################################
+    # CMake module logic
+
+    # Get installed Vulkan SDK version
+    if(DEFINED ENV{VULKAN_SDK})
+        # FROM : https://github.com/Kitware/CMake/blob/master/Modules/FindVulkan.cmake
+        set(VULKAN_CORE_H "$ENV{VULKAN_SDK}/include/vulkan/vulkan_core.h")
+        if(EXISTS ${VULKAN_CORE_H})
+            file(STRINGS ${VULKAN_CORE_H} VulkanHeaderVersionLine REGEX "^#define VK_HEADER_VERSION ")
+            string(REGEX MATCHALL "[0-9]+" VulkanHeaderVersion "${VulkanHeaderVersionLine}")
+            file(STRINGS ${VULKAN_CORE_H} VulkanHeaderVersionLine2 REGEX "^#define VK_HEADER_VERSION_COMPLETE ")
+            string(REGEX MATCHALL "[0-9]+" VulkanHeaderVersion2 "${VulkanHeaderVersionLine2}")
+            list(LENGTH VulkanHeaderVersion2 _len)
+            # versions >= 1.2.175 have an additional numbers in front of e.g. '0, 1, 2' instead of '1, 2'
+            if(_len EQUAL 3)
+                list(REMOVE_AT VulkanHeaderVersion2 0)
+            endif()
+            list(APPEND VulkanHeaderVersion2 ${VulkanHeaderVersion})
+            list(JOIN VulkanHeaderVersion2 "." Vulkan-SDK_INSTALLED_VERSION)
+        endif()
+        unset(VULKAN_CORE_H)
+    endif()
+
+    # Download and extract Vulkan SDK if required version isn't installed
+    if(NOT gvk-Vulkan-SDK_VERSION VERSION_EQUAL Vulkan-SDK_INSTALLED_VERSION)
+        set(workingDirectory "${CMAKE_BINARY_DIR}/_deps/VulkanSDK/")
+        gvk_download_vulkan_sdk(WORKING_DIRECTORY "${workingDirectory}" URL "${gvk-Vulkan-SDK_URL}")
+        gvk_extract_vulkan_sdk(WORKING_DIRECTORY "${workingDirectory}" EXTRACT .)
+        gvk_set_vulkan_sdk_env_var(VULKAN_SDK "${workingDirectory}/${gvk-Vulkan-SDK_VERSION}")
+    endif()
+
+    # Make Vulkan targets available for linking
+    find_package(Vulkan ${gvk-Vulkan-SDK_VERSION} EXACT REQUIRED)
+    set(Vulkan_XML "$ENV{VULKAN_SDK}/share/vulkan/registry/vk.xml" CACHE STRING "" FORCE)
+endif()
