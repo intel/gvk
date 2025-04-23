@@ -362,7 +362,7 @@ VkResult initialize_control_block<Device>(Device& device)
         const auto& deviceCreateInfo = *deviceControlBlock.mDeviceCreateInfo;
         for (uint32_t queueCreateInfo_i = 0; queueCreateInfo_i < deviceCreateInfo.queueCreateInfoCount; ++queueCreateInfo_i) {
             const auto& deviceQueueCreateInfo = deviceCreateInfo.pQueueCreateInfos[queueCreateInfo_i];
-            QueueFamily queueFamily { };
+            QueueFamily queueFamily{ };
             queueFamily.index = deviceQueueCreateInfo.queueFamilyIndex;
             queueFamily.queues.resize(deviceQueueCreateInfo.queueCount);
             for (uint32_t queue_i = 0; queue_i < deviceQueueCreateInfo.queueCount; ++queue_i) {
@@ -381,7 +381,7 @@ VkResult initialize_control_block<Device>(Device& device)
             deviceControlBlock.mQueueFamilies.push_back(queueFamily);
         }
 
-        VmaVulkanFunctions vulkanFunctions { };
+        VmaVulkanFunctions vulkanFunctions{ };
         vulkanFunctions.vkGetInstanceProcAddr = deviceControlBlock.mInstance.get<DispatchTable>().gvkGetInstanceProcAddr;
         vulkanFunctions.vkGetDeviceProcAddr = deviceControlBlock.mDispatchTable.gvkGetDeviceProcAddr;
         vulkanFunctions.vkGetPhysicalDeviceProperties = physicalDeviceDispatchTable.gvkGetPhysicalDeviceProperties;
@@ -423,9 +423,30 @@ VkResult initialize_control_block<Device>(Device& device)
         vulkanFunctions.vkGetDeviceImageMemoryRequirements = deviceControlBlock.mDispatchTable.gvkGetDeviceImageMemoryRequirements;
 #endif
 
+        VmaAllocatorCreateInfo allocatorCreateInfo{ };
+
+        // Check if bufferDeviceAddress is enabled
+        auto pNext = (const VkBaseInStructure*)deviceCreateInfo.pNext;
+        while (pNext) {
+            switch (pNext->sType) {
+            case gvk::get_stype<VkPhysicalDeviceBufferDeviceAddressFeaturesEXT>(): {
+                if (((const VkPhysicalDeviceBufferDeviceAddressFeaturesEXT*)pNext)->bufferDeviceAddress) {
+                    allocatorCreateInfo.flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+                }
+            } break;
+            case gvk::get_stype<VkPhysicalDeviceBufferDeviceAddressFeatures>(): {
+                if (((const VkPhysicalDeviceBufferDeviceAddressFeatures*)pNext)->bufferDeviceAddress) {
+                    allocatorCreateInfo.flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+                }
+            } break;
+            default: {
+            } break;
+            }
+            pNext = pNext->pNext;
+        }
+
         const auto& instanceCreateInfo = deviceControlBlock.mInstance.get<VkInstanceCreateInfo>();
-        VmaAllocatorCreateInfo allocatorCreateInfo { };
-        allocatorCreateInfo.vulkanApiVersion = instanceCreateInfo.pApplicationInfo ? instanceCreateInfo.pApplicationInfo->apiVersion : VK_API_VERSION_1_3;
+        allocatorCreateInfo.vulkanApiVersion = instanceCreateInfo.pApplicationInfo ? instanceCreateInfo.pApplicationInfo->apiVersion : VK_API_VERSION_1_4;
         allocatorCreateInfo.instance = deviceControlBlock.mInstance;
         allocatorCreateInfo.physicalDevice = deviceControlBlock.mPhysicalDevice;
         allocatorCreateInfo.device = deviceControlBlock.mVkDevice;

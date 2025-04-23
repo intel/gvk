@@ -67,6 +67,15 @@ typedef struct GvkStateTrackedObjectEnumerateInfo {
     void* pUserData;
 } GvkStateTrackedObjectEnumerateInfo;
 
+typedef struct GvkAccelerationStructureGeometryRequestInfo {
+    uint32_t placeholderValue;
+} GvkAccelerationStructureGeometryRequestInfo;
+
+typedef struct GvkAcclerationstructureGeometryResultInfo {
+    VkDeviceSize placeholderDataSize;
+    const uint8_t* pPlaceholderData;
+} GvkAcclerationstructureGeometryResultInfo;
+
 typedef void(VKAPI_PTR* PFN_gvkGetStateTrackerPhysicalDevice)(VkInstance instance, VkPhysicalDevice physicalDevice, VkPhysicalDevice* pStateTrackerPhysicalDevice);
 typedef void(VKAPI_PTR* PFN_gvkEnumerateStateTrackedObjects)(const GvkStateTrackedObject* pStateTrackedObject, const GvkStateTrackedObjectEnumerateInfo* pEnumerateInfo);
 typedef void(VKAPI_PTR* PFN_gvkEnumerateStateTrackedObjectDependencies)(const GvkStateTrackedObject* pStateTrackedObject, const GvkStateTrackedObjectEnumerateInfo* pEnumerateInfo);
@@ -77,7 +86,7 @@ typedef void(VKAPI_PTR* PFN_gvkGetStateTrackedObjectCreateInfo)(const GvkStateTr
 typedef void(VKAPI_PTR* PFN_gvkGetStateTrackedObjectAllocateInfo)(const GvkStateTrackedObject* pStateTrackedObject, VkStructureType* pAllocateInfoType, VkBaseOutStructure* pAllocateInfo);
 typedef void(VKAPI_PTR* PFN_gvkGetStateTrackedImageLayouts)(const GvkStateTrackedObject* pStateTrackedImage, const VkImageSubresourceRange* pSubresourceRange, VkImageLayout* pImageLayouts);
 typedef void(VKAPI_PTR* PFN_gvkGetStateTrackedMappedMemory)(const GvkStateTrackedObject* pStateTrackedDeviceMemory, VkDeviceSize* pOffset, VkDeviceSize* pSize, VkMemoryMapFlags* pFlags, void** ppData);
-typedef void(VKAPI_PTR* PFN_gvkGetStateTrackedAcclerationStructureBuildInfo)(const GvkStateTrackedObject* pStateTrackedAcclerationStructure, VkAccelerationStructureBuildGeometryInfoKHR* pBuildGeometryInfo, VkAccelerationStructureBuildRangeInfoKHR* pBuildRangeInfos);
+typedef void(VKAPI_PTR* PFN_gvkGetStateTrackedAccelerationStructureGeometryInfo)(const GvkStateTrackedObject* pStateTrackedAcclerationStructure, const GvkAccelerationStructureGeometryRequestInfo* pRequestInfo, GvkAcclerationstructureGeometryResultInfo* pResultInfo);
 typedef void(VKAPI_PTR* PFN_gvkDisableStateTracker)();
 typedef void(VKAPI_PTR* PFN_gvkEnableStateTracker)();
 

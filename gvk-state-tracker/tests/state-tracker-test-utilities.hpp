@@ -81,9 +81,19 @@ class StateTrackerValidationContext final
 {
 public:
     static VkResult create(StateTrackerValidationContext* pContext);
+    const VkPhysicalDevice8BitStorageFeatures& get_physical_device_8_bit_storage_features() const;
+    const VkPhysicalDeviceSynchronization2Features& get_physical_device_synchronization_2_features() const;
+    const VkPhysicalDeviceAccelerationStructureFeaturesKHR& get_physical_device_acceleration_structure_features() const;
+    const VkPhysicalDeviceBufferDeviceAddressFeatures& get_physical_device_buffer_device_address_features() const;
 
 protected:
     VkResult create_devices(const VkDeviceCreateInfo* pDeviceCreateInfo, std::vector<gvk::Device>* pDevices) const override final;
+
+private:
+    VkPhysicalDevice8BitStorageFeatures mPhysicalDevice8BitStorageFeatures{ };
+    VkPhysicalDeviceSynchronization2Features mPhysicalDeviceSynchronization2Features{ };
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR mPhysicalDeviceAccelerationStructureFeatures{ };
+    VkPhysicalDeviceBufferDeviceAddressFeatures mPhysicalDeviceBufferDeviceAddressFeatures{ };
 };
 
 class ObjectRecord final

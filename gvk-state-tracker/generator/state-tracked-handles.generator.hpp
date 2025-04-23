@@ -59,9 +59,7 @@ public:
             add_member(MemberInfo("Pipeline", "mBasePipeline"));
         }
         if (handle.name == "VkAccelerationStructureKHR") {
-            add_member(MemberInfo("std::vector<Buffer>", "mBuildBuffers"));
-            add_member(MemberInfo("Auto<VkAccelerationStructureBuildGeometryInfoKHR>", "mBuildGeometryInfo"));
-            add_member(MemberInfo("std::vector<Auto<VkAccelerationStructureBuildRangeInfoKHR>>", "mBuildRangeInfos"));
+            add_member(MemberInfo("AccelerationStructureGeometryTracker", "mGeometryTracker"));
         }
         if (handle.name == "VkBuffer") {
             add_member(MemberInfo("DeviceMemory", "mDeviceMemoryRecord"));
@@ -269,8 +267,9 @@ private:
     static void generate_header(FileGenerator& file, const xml::Manifest& manifest, const std::vector<StateTrackedHandleGenerator>& generators)
     {
         file << "#include \"gvk-state-tracker/generated/forward-declarations.inl\"" << std::endl;
-        file << "#include \"gvk-state-tracker/descriptor.hpp\"" << std::endl;
+        file << "#include \"gvk-state-tracker/acceleration-structure-geometry-tracker.hpp\"" << std::endl;
         file << "#include \"gvk-state-tracker/cmd-tracker.hpp\"" << std::endl;
+        file << "#include \"gvk-state-tracker/descriptor.hpp\"" << std::endl;
         file << "#include \"gvk-state-tracker/image-layout-tracker.hpp\"" << std::endl;
         file << "#include \"gvk-state-tracker/memory-map-info.hpp\"" << std::endl;
         file << "#include \"gvk-state-tracker/object-tracker.hpp\"" << std::endl;

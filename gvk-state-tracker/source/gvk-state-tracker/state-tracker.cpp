@@ -299,24 +299,6 @@ void StateTracker::get_state_tracked_mapped_memory(const GvkStateTrackedObject* 
     }
 }
 
-void StateTracker::gvk_state_tracked_accleration_structure_build_info(const GvkStateTrackedObject* pStateTrackedAcclerationStructure, VkAccelerationStructureBuildGeometryInfoKHR* pBuildGeometryInfo, VkAccelerationStructureBuildRangeInfoKHR* pBuildRangeInfos)
-{
-    assert(pStateTrackedAcclerationStructure);
-    AccelerationStructureKHR accelerationStructure({ (VkDevice)pStateTrackedAcclerationStructure->dispatchableHandle, (VkAccelerationStructureKHR)pStateTrackedAcclerationStructure->handle });
-    if (accelerationStructure) {
-        const auto& controlBlock = accelerationStructure.mReference.get_obj();
-        if (pBuildGeometryInfo) {
-            *pBuildGeometryInfo = controlBlock.mBuildGeometryInfo;
-        }
-        if (pBuildRangeInfos) {
-            assert(controlBlock.mBuildGeometryInfo->geometryCount == controlBlock.mBuildRangeInfos.size());
-            for (uint32_t i = 0; i < controlBlock.mBuildGeometryInfo->geometryCount; ++i) {
-                pBuildRangeInfos[i] = controlBlock.mBuildRangeInfos[i];
-            }
-        }
-    }
-}
-
 } // namespace state_tracker
 } // namespace gvk
 
@@ -385,9 +367,9 @@ void VKAPI_CALL gvkGetStateTrackedMappedMemory(const GvkStateTrackedObject* pSta
     gvk::state_tracker::StateTracker::get_state_tracked_mapped_memory(pStateTrackedDeviceMemory, pOffset, pSize, pFlags, ppData);
 }
 
-void VKAPI_PTR gvkGetStateTrackedAcclerationStructureBuildInfo(const GvkStateTrackedObject* pStateTrackedAcclerationStructure, VkAccelerationStructureBuildGeometryInfoKHR* pBuildGeometryInfo, VkAccelerationStructureBuildRangeInfoKHR* pBuildRangeInfos)
+void VKAPI_PTR gvkGetStateTrackedAccelerationStructureGeometryInfo(const GvkStateTrackedObject* pStateTrackedAcclerationStructure, const GvkAccelerationStructureGeometryRequestInfo* pRequestInfo, GvkAcclerationstructureGeometryResultInfo* pResultInfo)
 {
-    gvk::state_tracker::StateTracker::gvk_state_tracked_accleration_structure_build_info(pStateTrackedAcclerationStructure, pBuildGeometryInfo, pBuildRangeInfos);
+    gvk::state_tracker::StateTracker::get_state_tracked_acceleration_structure_geometry_info(pStateTrackedAcclerationStructure, pRequestInfo, pResultInfo);
 }
 
 void VKAPI_CALL gvkDisableStateTracker()

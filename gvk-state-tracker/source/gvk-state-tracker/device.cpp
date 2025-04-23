@@ -26,6 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-state-tracker/state-tracker.hpp"
 #include "gvk-layer/registry.hpp"
+#include "gvk-handles.hpp"
 
 #include <cassert>
 
@@ -63,11 +64,17 @@ VkResult StateTracker::post_vkCreateDevice(VkPhysicalDevice physicalDevice, cons
         gvkResult = BasicStateTracker::post_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice, gvkResult);
         assert(gvkResult == VK_SUCCESS);
         assert(pDevice);
-        Device gvkDevice(*pDevice);
-        assert(gvkDevice);
+        gvk::state_tracker::Device gvkStateTrackedDevice(*pDevice);
+        assert(gvkStateTrackedDevice);
         const auto& dispatchTableItr = layer::Registry::get().VkDeviceDispatchTables.find(layer::get_dispatch_key(*pDevice));
         assert(dispatchTableItr != layer::Registry::get().VkDeviceDispatchTables.end());
         const auto& dispatchTable = dispatchTableItr->second;
+
+        gvk::Device gvkDevice;
+        gvkResult = gvk::Device::create_unmanaged(physicalDevice, pCreateInfo, nullptr, &dispatchTable, *pDevice, &gvkDevice);
+        assert(gvkResult == VK_SUCCESS);
+        mGvkDevices.insert(gvkDevice);
+
         assert(dispatchTable.gvkGetDeviceQueue);
         for (uint32_t queueCreateInfo_i = 0; queueCreateInfo_i < pCreateInfo->queueCreateInfoCount; ++queueCreateInfo_i) {
             const auto& queueCreateInfo = pCreateInfo->pQueueCreateInfos[queueCreateInfo_i];
@@ -82,7 +89,7 @@ VkResult StateTracker::post_vkCreateDevice(VkPhysicalDevice physicalDevice, cons
                 controlBlock.mVkQueue = vkQueue;
                 controlBlock.mVkDevice = *pDevice;
                 controlBlock.mDeviceQueueCreateInfo = queueCreateInfo;
-                gvkDevice.mReference.get_obj().mQueueTracker.insert(queue);
+                gvkStateTrackedDevice.mReference.get_obj().mQueueTracker.insert(queue);
             }
         }
     }

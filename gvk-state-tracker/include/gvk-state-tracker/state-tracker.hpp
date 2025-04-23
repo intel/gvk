@@ -30,6 +30,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-state-tracker/generated/basic-state-tracker.hpp"
 #define VK_LAYER_INTEL_gvk_state_tracker_hpp_OMIT_ENTRY_POINT_DECLARATIONS
 #include "VK_LAYER_INTEL_gvk_state_tracker.hpp"
+#include "gvk-spirv/gpu-memcpy.hpp"
+#include "gvk-handles.hpp"
 
 #include <unordered_map>
 
@@ -55,7 +57,7 @@ public:
     VkResult post_vkCreateAccelerationStructureKHR(VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure, VkResult gvkResult) override final;
     VkResult pre_vkBuildAccelerationStructuresKHR(VkDevice device, VkDeferredOperationKHR deferredOperation, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos, VkResult gvkResult) override final;
     VkResult post_vkBuildAccelerationStructuresKHR(VkDevice device, VkDeferredOperationKHR deferredOperation, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos, VkResult gvkResult) override final;
-    VkResult process_build_acceleration_structures(VkDevice device, VkDeferredOperationKHR deferredOperation, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos);
+    VkResult process_vkCmdBuildAccelerationStructuresKHR(VkDevice device, VkQueue queue, VkDeferredOperationKHR deferredOperation, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos);
 
     ////////////////////////////////////////////////////////////////////////////////
     // Defined in /source/gvk-state-tracker/buffer.cpp
@@ -199,10 +201,12 @@ public:
     static void get_state_tracked_object_allocate_info(const GvkStateTrackedObject* pStateTrackedObject, VkStructureType* pAllocateInfoType, VkBaseOutStructure* pAllocateInfo);
     static void get_state_tracked_image_layouts(const GvkStateTrackedObject* pStateTrackedImage, const VkImageSubresourceRange* pImageSubresourceRange, VkImageLayout* pImageLayouts);
     static void get_state_tracked_mapped_memory(const GvkStateTrackedObject* pStateTrackedDeviceMemory, VkDeviceSize* pOffset, VkDeviceSize* pSize, VkMemoryMapFlags* pFlags, void** ppData);
-    static void gvk_state_tracked_accleration_structure_build_info(const GvkStateTrackedObject* pStateTrackedAcclerationStructure, VkAccelerationStructureBuildGeometryInfoKHR* pBuildGeometryInfo, VkAccelerationStructureBuildRangeInfoKHR* pBuildRangeInfos);
+    static void get_state_tracked_acceleration_structure_geometry_info(const GvkStateTrackedObject* pStateTrackedAcclerationStructure, const GvkAccelerationStructureGeometryRequestInfo* pRequestInfo, GvkAcclerationstructureGeometryResultInfo* pResultInfo);
 
 private:
     static PhysicalDeviceEnumerationMode smPhysicalDeviceEnumerationMode;
+    gvk::Instance mGvkInstance;
+    std::set<gvk::Device> mGvkDevices;
 };
 
 } // namespace state_tracker

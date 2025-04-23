@@ -26,6 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-state-tracker/state-tracker.hpp"
 #include "gvk-layer/registry.hpp"
+#include "gvk-handles.hpp"
 
 #include <cassert>
 
@@ -48,11 +49,15 @@ VkResult StateTracker::post_vkCreateInstance(const VkInstanceCreateInfo* pCreate
         assert(gvkResult == VK_SUCCESS);
         assert(pInstance);
         mVkInstance = *pInstance;
-        Instance gvkInstance(*pInstance);
-        assert(gvkInstance);
+        gvk::state_tracker::Instance gvkStateTrackedInstance(*pInstance);
+        assert(gvkStateTrackedInstance);
         const auto& dispatchTableItr = layer::Registry::get().VkInstanceDispatchTables.find(layer::get_dispatch_key(*pInstance));
         assert(dispatchTableItr != layer::Registry::get().VkInstanceDispatchTables.end());
         const auto& dispatchTable = dispatchTableItr->second;
+
+        gvkResult = gvk::Instance::create_unmanaged(pCreateInfo, nullptr, &dispatchTable, *pInstance, &mGvkInstance);
+        assert(gvkResult == VK_SUCCESS);
+
         assert(dispatchTable.gvkEnumeratePhysicalDevices);
         uint32_t physicalDeviceCount = 0;
         gvkResult = dispatchTable.gvkEnumeratePhysicalDevices(*pInstance, &physicalDeviceCount, nullptr);
@@ -66,7 +71,7 @@ VkResult StateTracker::post_vkCreateInstance(const VkInstanceCreateInfo* pCreate
             physicalDevice.mReference.get_obj().mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKED_OBJECT_STATUS_ACTIVE_BIT;
             physicalDevice.mReference.get_obj().mVkPhysicalDevice = vkPhysicalDevice;
             physicalDevice.mReference.get_obj().mVkInstance = *pInstance;
-            gvkInstance.mReference.get_obj().mPhysicalDeviceTracker.insert(physicalDevice);
+            gvkStateTrackedInstance.mReference.get_obj().mPhysicalDeviceTracker.insert(physicalDevice);
         }
     }
     return gvkResult;
