@@ -374,6 +374,10 @@ void Renderer::begin_gui(const BeginInfo& beginInfo)
         }
     }
     ImGui::NewFrame();
+    if (beginInfo.pDragDropPath && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceExtern)) {
+        ImGui::SetDragDropPayload("external", beginInfo.pDragDropPath, strlen(beginInfo.pDragDropPath), ImGuiCond_Once);
+        ImGui::EndDragDropSource();
+    }
 }
 
 VkResult Renderer::end_gui(uint32_t resourceId)

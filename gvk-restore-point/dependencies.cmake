@@ -1,0 +1,13 @@
+
+include_guard(GLOBAL)
+gvk_enable_module(gvk-cppgen)
+gvk_enable_module(gvk-command-structures)
+gvk_enable_module(gvk-format-info)
+gvk_enable_module(gvk-handles)
+gvk_enable_module(gvk-layer)
+gvk_enable_module(gvk-reference)
+gvk_enable_module(gvk-restore-info)
+gvk_enable_module(gvk-runtime)
+gvk_enable_module(gvk-state-tracker)
+gvk_enable_external_module(boost-asio)
+gvk_enable_external_module(stb)

@@ -114,6 +114,16 @@ xml::Parameter create_parameter(const std::string& type, const std::string& name
     return parameter;
 }
 
+xml::Parameter create_const_string_parameter(const std::string& name)
+{
+    gvk::xml::Parameter parameter;
+    parameter.type = "const char*";
+    parameter.unqualifiedType = "char";
+    parameter.name = name;
+    parameter.flags = gvk::xml::Const | gvk::xml::Pointer | gvk::xml::Dynamic | gvk::xml::Array | gvk::xml::String;
+    return parameter;
+}
+
 xml::Parameter create_const_pointer_parameter(const std::string& type, const std::string& name)
 {
     xml::Parameter parameter;
@@ -127,13 +137,14 @@ xml::Parameter create_const_pointer_parameter(const std::string& type, const std
 std::pair<xml::Parameter, xml::Parameter> get_array_parameters(const std::string& countName, const std::string& arrayName, const std::string& unqualifiedType)
 {
     std::pair<xml::Parameter, xml::Parameter> parameters;
+    parameters.first.name = countName;
     parameters.first.type = "uint32_t";
     parameters.first.unqualifiedType = "uint32_t";
-    parameters.first.name = countName;
+    parameters.second.name = arrayName;
     parameters.second.type = "const " + unqualifiedType + "*";
     parameters.second.unqualifiedType = unqualifiedType;
-    parameters.second.name = arrayName;
     parameters.second.length = countName;
+    parameters.second.dimensionCount = 1;
     parameters.second.flags = gvk::xml::Dynamic | gvk::xml::Const | gvk::xml::Pointer | gvk::xml::Array;
     return parameters;
 }
@@ -143,6 +154,27 @@ void add_array_members_to_structure(const std::string& unqualifiedType, const st
     auto arrayMembers = get_array_parameters(countName, arrayName, unqualifiedType);
     structure.members.push_back(arrayMembers.first);
     structure.members.push_back(arrayMembers.second);
+}
+
+void add_string_array_members_to_structure(const std::string& countName, const std::string& arrayName, xml::Structure& structure)
+{
+    auto arrayMembers = get_array_parameters(countName, arrayName, "char");
+    arrayMembers.second.type += " const*";
+    arrayMembers.second.dimensionCount = 2;
+    arrayMembers.second.flags |= gvk::xml::String;
+    structure.members.push_back(arrayMembers.first);
+    structure.members.push_back(arrayMembers.second);
+}
+
+void add_static_array_member_to_structure(const std::string& unqualifiedType, const std::string& countName, const std::string& arrayName, xml::Structure& structure)
+{
+    xml::Parameter parameter;
+    parameter.name = arrayName;
+    parameter.type = unqualifiedType;
+    parameter.unqualifiedType = unqualifiedType;
+    parameter.length = "[" + countName + "]";
+    parameter.flags = gvk::xml::Static | gvk::xml::Array;
+    structure.members.push_back(parameter);
 }
 
 std::set<std::string> get_inner_scope_compile_guards(const std::set<std::string>& outerScopeCompileGuards, std::set<std::string> innerScopeCompileGuards)

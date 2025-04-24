@@ -34,6 +34,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-handles/utilities.hpp"
 
 #include "imgui.h"
+#include "imgui_internal.h"
+#include "imgui_stdlib.h"
 
 namespace gvk {
 namespace gui {
@@ -43,11 +45,12 @@ class Renderer final
 public:
     struct BeginInfo
     {
-        float deltaTime { 0 };
-        std::array<float, 2> extent { };
-        const system::Input* pInput { };
-        uint32_t textStreamCodePointCount { 0 };
-        const uint32_t* pTextStreamCodePoints { nullptr };
+        float deltaTime{ };
+        std::array<float, 2> extent{ };
+        const system::Input* pInput{ };
+        uint32_t textStreamCodePointCount{ };
+        const uint32_t* pTextStreamCodePoints{ };
+        const char* pDragDropPath{ };
     };
 
     static VkResult create(const Device& device, VkQueue vkQueue, VkCommandBuffer vkCommandBuffer, const RenderPass& renderPass, const VkAllocationCallbacks* pAllocator, Renderer* pRenderer);

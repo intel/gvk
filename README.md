@@ -3,7 +3,7 @@
 
 A collection of Vulkan C++ utilities with a general focus on tools development, and a specific focus on supporting [Intel Graphics Performance Analyzers Framework](https://intel.github.io/gpasdk-doc/).
 
-# Features
+## Features
  - Vulkan structure utilities (compare/copy/serialize/stringify)
  - Managed Vulkan handles
  - Managed WSI (Window System Integration)
@@ -14,7 +14,7 @@ A collection of Vulkan C++ utilities with a general focus on tools development, 
  - Vulkan XML parsing utilities (used to keep the project up to date with the vk.xml)
  - ...and more...
 
-# Samples
+## SamplesS
 [<img src="samples/screens/gvk-getting-started-00-triangle.png" width="320" height="180">](samples/gvk-getting-started-00-triangle.cpp)
 [<img src="samples/screens/gvk-getting-started-01-mesh.png" width="320" height="180">](samples/gvk-getting-started-01-mesh.cpp)
 [<img src="samples/screens/gvk-getting-started-02-uniform-buffer.gif" width="320" height="180">](samples/gvk-getting-started-02-uniform-buffer.cpp)
@@ -22,61 +22,33 @@ A collection of Vulkan C++ utilities with a general focus on tools development, 
 [<img src="samples/screens/gvk-getting-started-04-render-target.gif" width="320" height="180">](samples/gvk-getting-started-04-render-target.cpp)
 [<img src="samples/screens/gvk-getting-started-05-gui.gif" width="320" height="180">](samples/gvk-getting-started-05-gui.cpp)
 
-# Getting Started
-### Install Dependencies
-###### Windows 11
-- [CMake](https://cmake.org/download/) v3.3+ (Make sure to select "Add to PATH" when prompted)
-- [Git](https://git-scm.com/)
-- [Python](https://www.python.org/downloads/) v3+ (Make sure to select "Add to PATH" when prompted)
-- [Visual Studio](https://visualstudio.microsoft.com/vs/community/) 2022 (Make sure to select "Desktop development with C++" when prompted)
-- [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) v1.4.304.0 (optional, GVK will download the correct version during configuration if necessary)
-    - The GVK build will not set Vulkan SDK environment variables, system path, or Windows Vulkan layer registry entries
-    - If you need Vulkan SDK environment variables, system path, or Windows Vulkan layer registry entries set, it is recommended to install the Vulkan SDK before building GVK
-###### Ubuntu 24.04
-```
-sudo apt update && sudo apt upgrade
-sudo apt install cmake
-sudo apt install git
-sudo apt install python3
-sudo apt install libwayland-dev
-sudo apt install libxkbcommon-dev
-sudo apt install xorg-dev
-```
-Configure your environment to use an installed Vulkan SDK (optional, GVK will download the correct version during configuration if necessary)
-```
-source <vulkan/sdk/path>/setup-env.sh
-```
+## Getting Started
 
-### Configure and Build
-###### ~15-40 min depending on options/configuration
-```
-git clone https://github.com/intel/gvk.git
-cd gvk
-```
-###### Windows 11
-```
-cmake -G "Visual Studio 17 2022" -A x64 -B build
-cmake --build build
-```
-On Windows, a build can be run from the command line using `cmake --build build` or from Visual Studio by opening `gvk/build/gvk.sln`.
-To run the first sample, navigate to `gvk/samples/getting-started-00-triangle` in Visual Studio, right click and select "Set as Startup Project", then run the project.
-###### Ubuntu 24.04
-```
-cmake -B build
-cmake --build build
-./build/samples/gvk-getting-started-00-triangle
-```
-To use Vulkan SDK layers downloaded at configure time...
-```
-source build/_deps/vulkan-sdk-src/setup-env.sh
-```
+### Windows 11
+- For detailed instructions see [BUILD-WINDOWS.md](BUILD-WINDOWS.md)
+- Using GitBash/MinGW from the GVK root directory
+> `time cmake -G "Visual Studio 17 2022" -A x64 -B build`  
+> `time cmake --build build --target install`  
+    - Note that the `time` command isn't necessary, but is added for conveneience
+- Open the Visual Studio solution at `gvk/build/gvk.sln`
+- Navigate to `gvk/samples/gvk-getting-started-00-triangle`
+- Right click and select **Set as Startup Project**
+- Run
 
-# External Use
-Somewhere in your CMakeLists, add the following...
+### Ubuntu 24.04
+- For detailed instructions see [BUILD-LINUX.md](BUILD-LINUX.md)
+- Using Bash from the GVK root directory
+> `time cmake -B build`  
+> `time cmake --build build --target install`  
+> `./build/samples/gvk-getting-started-00-triangle`  
+    - Note that the `time` command isn't necessary, but is added for conveneience
+
+## External Use
+- Somewhere in your CMakeLists, add the following
 ```
 include(FetchContent)
-# Full list of available options can be found in gvk/CMakeLists.txt
-set(gvk-build-tests OFF CACHE BOOL "" FORCE) 
+# See GVK's root CMakeLists for all available options
+set(gvk-build-tests OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     gvk
     GIT_REPOSITORY "https://github.com/intel/gvk.git"
@@ -84,7 +56,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(gvk)
 ```
-...enabled gvk components and dependencies are avaialable for linking...
+- Link to GVK targets
 ```
 target_link_libraries(
     someTarget
@@ -99,4 +71,4 @@ target_link_libraries(
         stb
 )
 ```
-Note that this list includes redundant entries, for example `gvk-handles` implicitly links `gvk-runtime` and `gvk-structures` so the latter two need not be explicitly listed but are for illustrative purposes.
+- Note that this list includes redundant entries, for example `gvk-handles` implicitly links `gvk-runtime` and `gvk-structures` so the latter two need not be explicitly listed but are for illustrative purposes

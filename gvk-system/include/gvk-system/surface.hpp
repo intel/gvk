@@ -126,6 +126,7 @@ public:
         if constexpr (std::is_same_v<T, Input>) { assert(mReference && "Attempting to dereference nullref gvk::system::Surface"); return mReference->mInput; }
         if constexpr (std::is_same_v<T, StatusFlags>) { assert(mReference && "Attempting to dereference nullref gvk::system::Surface"); return mReference->mStatus; }
         if constexpr (std::is_same_v<T, TextStream>) { assert(mReference && "Attempting to dereference nullref gvk::system::Surface"); return mReference->mTextStream; }
+        if constexpr (std::is_same_v<T, DroppedPaths>) { assert(mReference && "Attempting to dereference nullref gvk::system::Surface"); return mReference->mDroppedPaths; }
         if constexpr (std::is_same_v<T, std::string>) { assert(mReference && "Attempting to dereference nullref gvk::system::Surface"); return get_title(); }
         if constexpr (std::is_same_v<T, CursorMode>) { assert(mReference && "Attempting to dereference nullref gvk::system::Surface"); return get_cursor_mode(); }
         if constexpr (std::is_same_v<T, PlatformInfo>) { assert(mReference && "Attempting to dereference nullref gvk::system::Surface"); return get_platform_info(); }
@@ -140,6 +141,7 @@ public:
     }
 
     using TextStream = std::vector<uint32_t>;
+    using DroppedPaths = std::vector<std::string>;
 
     class ControlBlock final
     {
@@ -150,6 +152,7 @@ public:
         std::string mTitle;
         StatusFlags mStatus{ };
         TextStream mTextStream;
+        DroppedPaths mDroppedPaths;
         CursorMode mCursorMode{ };
         void* mpWindowHandle{ nullptr };
         PlatformInfo mPlatformInfo{ };

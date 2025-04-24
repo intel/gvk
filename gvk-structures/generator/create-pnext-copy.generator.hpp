@@ -50,7 +50,8 @@ public:
             manifest,
             "        ",
             "((const VkBaseInStructure*)pNext)->sType",
-            "return create_dynamic_array_copy(1, (const {structureType}*)pNext, pAllocator);"
+            "return create_dynamic_array_copy(1, (const {structureType}*)pNext, pAllocator);",
+            "return create_dynamic_array_copy(1, (const VkBaseInStructure*)pNext, pAllocator); // assert(false && \"Unrecognized VkStructureType\"); // TODO : Need to revisit how to deal with unknown structure types...ie. VK_STRUCTURE_TYPE_LOADER_DEVICE_CREATE_INFO"
         );
         file << "    }" << std::endl;
         file << "    return nullptr;" << std::endl;

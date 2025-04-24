@@ -242,7 +242,14 @@ void enumerate_structure_handles<VkMicromapVersionInfoEXT>(const VkMicromapVersi
     enumerate_pnext_handles(obj.pNext, callback);
 }
 
-template <> void enumerate_structure_handles<VkPipelineCacheCreateInfo>(const VkPipelineCacheCreateInfo& obj, EnumerateHandlesCallback callback)
+template <>
+void enumerate_structure_handles<VkPipelineCacheCreateInfo>(const VkPipelineCacheCreateInfo& obj, EnumerateHandlesCallback callback)
+{
+    enumerate_pnext_handles(obj.pNext, callback);
+}
+
+template <>
+void enumerate_structure_handles<VkPipelineExecutableInternalRepresentationKHR>(const VkPipelineExecutableInternalRepresentationKHR& obj, EnumerateHandlesCallback callback)
 {
     enumerate_pnext_handles(obj.pNext, callback);
 }
@@ -253,7 +260,8 @@ void enumerate_structure_handles<VkPipelineMultisampleStateCreateInfo>(const VkP
     enumerate_pnext_handles(obj.pNext, callback);
 }
 
-template <> void enumerate_structure_handles<VkSpecializationInfo>(const VkSpecializationInfo& obj, EnumerateHandlesCallback callback)
+template <>
+void enumerate_structure_handles<VkSpecializationInfo>(const VkSpecializationInfo& obj, EnumerateHandlesCallback callback)
 {
     (void)obj;
     (void)callback;
@@ -313,7 +321,7 @@ void enumerate_structure_handles<VkWriteDescriptorSet>(const VkWriteDescriptorSe
     case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:
     case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
     default: {
-        assert(false && "Unserviced VkDescriptorType; gvk maintenance required");
+        // NOOP :
     } break;
     }
 }

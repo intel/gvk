@@ -28,7 +28,7 @@ gvk_add_target_test(
     FOLDER
         "gvk-reference/"
     LINK_LIBRARIES
-        asio
+        boost-asio
     SOURCE_FILES
         "${testsPath}/reference.tests.cpp"
 )

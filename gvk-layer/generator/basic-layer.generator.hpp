@@ -76,7 +76,8 @@ private:
             file << "    virtual " << command.returnType << " pre_" << command.name << "(" << get_parameter_list(command.parameters) << ");" << std::endl;
             file << "    virtual " << command.returnType << " post_" << command.name << "(" << get_parameter_list(command.parameters) << ");" << std::endl;
         }
-        file << "    bool enabled { true };" << std::endl;
+        file << "    bool wrapNonDispatchableHandles{ false };" << std::endl;
+        file << "    bool enabled{ true };" << std::endl;
         file << "};" << std::endl;
         file << std::endl;
     }

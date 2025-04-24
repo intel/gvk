@@ -65,6 +65,7 @@ gvk_add_layer(
         "VK_LAYER_INTEL_gvk_state_tracker/"
     LINK_LIBRARIES
         gvk-command-structures
+        gvk-handles
         gvk-reference
         gvk-runtime
         gvk-spirv

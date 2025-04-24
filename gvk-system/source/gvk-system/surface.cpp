@@ -85,6 +85,7 @@ static void glfw_key_callback(GLFWwindow*, int, int, int, int);
 static void glfw_cursor_pos_callback(GLFWwindow*, double, double);
 static void glfw_mouse_button_callback(GLFWwindow*, int, int, int);
 static void glfw_scroll_callback(GLFWwindow*, double, double);
+static void glfw_drop_callback(GLFWwindow*, int, const char**);
 static void glfw_window_focus_callback(GLFWwindow*, int);
 static std::unordered_map<Surface::CursorType, GLFWcursor*> sCursors;
 
@@ -99,9 +100,13 @@ int32_t Surface::create(const CreateInfo* pCreateInfo, Surface* pSurface)
     glfwWindowHint(GLFW_RESIZABLE, pCreateInfo->flags & Surface::CreateInfo::Resizable);
     glfwWindowHint(GLFW_VISIBLE, pCreateInfo->flags & Surface::CreateInfo::Visible);
     glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, pCreateInfo->flags & Surface::CreateInfo::Transparent);
+    auto extent = pCreateInfo->extent;
+    if (!extent[0] || !extent[1]) {
+        extent = { 1280, 720 };
+    }
     auto pGlfwWindow = glfwCreateWindow(
-        pCreateInfo->extent[0],
-        pCreateInfo->extent[1],
+        extent[0],
+        extent[1],
         pCreateInfo->pTitle,
         pCreateInfo->flags & Surface::CreateInfo::Fullscreen ? glfwGetPrimaryMonitor() : nullptr,
         nullptr
@@ -119,6 +124,7 @@ int32_t Surface::create(const CreateInfo* pCreateInfo, Surface* pSurface)
         glfwSetCursorPosCallback(pGlfwWindow, glfw_cursor_pos_callback);
         glfwSetMouseButtonCallback(pGlfwWindow, glfw_mouse_button_callback);
         glfwSetScrollCallback(pGlfwWindow, glfw_scroll_callback);
+        glfwSetDropCallback(pGlfwWindow, glfw_drop_callback);
         glfwSetWindowFocusCallback(pGlfwWindow, glfw_window_focus_callback);
         GlfwWindowSet::instance().access(
             [&](std::set<GLFWwindow*>& glfwWindows)
@@ -147,6 +153,7 @@ void Surface::update()
                 pSurfaceControlBlock->mStatus = 0;
                 pSurfaceControlBlock->mInput.update();
                 pSurfaceControlBlock->mTextStream.clear();
+                pSurfaceControlBlock->mDroppedPaths.clear();
             }
             glfwPollEvents();
         }
@@ -441,73 +448,86 @@ void glfw_error_callback(int error, const char* pMessage)
     assert(false);
 }
 
-void glfw_window_close_callback(GLFWwindow* glfwWindow)
+void glfw_window_close_callback(GLFWwindow* pGlfwWindow)
 {
-    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(glfwWindow);
+    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(pGlfwWindow);
     assert(pSurfaceControlBlock);
     pSurfaceControlBlock->mStatus |= Surface::CloseRequested;
 }
 
-void glfw_window_size_callback(GLFWwindow* glfwWindow, int width, int height)
+void glfw_window_size_callback(GLFWwindow* pGlfwWindow, int width, int height)
 {
     (void)width;
     (void)height;
-    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(glfwWindow);
+    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(pGlfwWindow);
     assert(pSurfaceControlBlock);
     pSurfaceControlBlock->mStatus |= Surface::Resized;
 }
 
-void glfw_framebuffer_size_callback(GLFWwindow* glfwWindow, int width, int height)
+void glfw_framebuffer_size_callback(GLFWwindow* pGlfwWindow, int width, int height)
 {
     (void)width;
     (void)height;
-    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(glfwWindow);
+    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(pGlfwWindow);
     assert(pSurfaceControlBlock);
     pSurfaceControlBlock->mStatus |= Surface::Resized;
 }
 
-void glfw_char_callback(GLFWwindow* glfwWindow, unsigned int codepoint)
+void glfw_char_callback(GLFWwindow* pGlfwWindow, unsigned int codepoint)
 {
-    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(glfwWindow);
+    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(pGlfwWindow);
     assert(pSurfaceControlBlock);
     pSurfaceControlBlock->mTextStream.push_back(codepoint);
 }
 
-void glfw_key_callback(GLFWwindow* glfwWindow, int key, int scancode, int action, int mods)
+void glfw_key_callback(GLFWwindow* pGlfwWindow, int key, int scancode, int action, int mods)
 {
     (void)scancode;
     (void)mods;
-    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(glfwWindow);
+    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(pGlfwWindow);
     assert(pSurfaceControlBlock);
     pSurfaceControlBlock->mInput.keyboard.staged[(size_t)glfw_to_gvk_key(key)] = action == GLFW_PRESS || action == GLFW_REPEAT;
 }
 
-void glfw_cursor_pos_callback(GLFWwindow* glfwWindow, double xOffset, double yOffset)
+void glfw_cursor_pos_callback(GLFWwindow* pGlfwWindow, double xOffset, double yOffset)
 {
-    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(glfwWindow);
+    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(pGlfwWindow);
     assert(pSurfaceControlBlock);
     pSurfaceControlBlock->mInput.mouse.position.staged = { (float)xOffset, (float)yOffset };
 }
 
-void glfw_mouse_button_callback(GLFWwindow* glfwWindow, int button, int action, int mods)
+void glfw_mouse_button_callback(GLFWwindow* pGlfwWindow, int button, int action, int mods)
 {
     (void)mods;
-    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(glfwWindow);
+    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(pGlfwWindow);
     assert(pSurfaceControlBlock);
     pSurfaceControlBlock->mInput.mouse.buttons.staged[(size_t)glfw_to_gvk_mouse_button(button)] = action == GLFW_PRESS || action == GLFW_REPEAT;
 }
 
-void glfw_scroll_callback(GLFWwindow* glfwWindow, double xOffset, double yOffset)
+void glfw_scroll_callback(GLFWwindow* pGlfwWindow, double xOffset, double yOffset)
 {
-    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(glfwWindow);
+    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(pGlfwWindow);
     assert(pSurfaceControlBlock);
     pSurfaceControlBlock->mInput.mouse.scroll.staged[0] += (float)xOffset;
     pSurfaceControlBlock->mInput.mouse.scroll.staged[1] += (float)yOffset;
 }
 
-void glfw_window_focus_callback(GLFWwindow* glfwWindow, int focused)
+void glfw_drop_callback(GLFWwindow* pGlfwWindow, int count, const char** ppPaths)
 {
-    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(glfwWindow);
+    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(pGlfwWindow);
+    assert(pSurfaceControlBlock);
+    if (ppPaths) {
+        for (int i = 0; i < count; ++i) {
+            if (ppPaths[i]) {
+                pSurfaceControlBlock->mDroppedPaths.push_back(ppPaths[i]);
+            }
+        }
+    }
+}
+
+void glfw_window_focus_callback(GLFWwindow* pGlfwWindow, int focused)
+{
+    auto pSurfaceControlBlock = (Surface::ControlBlock*)glfwGetWindowUserPointer(pGlfwWindow);
     assert(pSurfaceControlBlock);
     if (focused) {
         pSurfaceControlBlock->mStatus |= Surface::GainedFocus;

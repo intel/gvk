@@ -5,10 +5,12 @@ set(generatedIncludeDirectory "${CMAKE_CURRENT_BINARY_DIR}/include/")
 set(generatedIncludePath "${generatedIncludeDirectory}/gvk-layer/generated/")
 set(generatedSourcePath "${CMAKE_CURRENT_BINARY_DIR}/source/gvk-layer/generated/")
 set(generatedIncludeFiles
+    "${generatedIncludePath}/basic-api-call-handler.hpp"
     "${generatedIncludePath}/basic-layer.hpp"
     "${generatedIncludePath}/layer-hooks.hpp"
 )
 set(generatedSourceFiles
+    "${generatedSourcePath}/basic-api-call-handler.cpp"
     "${generatedSourcePath}/basic-layer.cpp"
     "${generatedSourcePath}/layer-hooks.cpp"
 )
@@ -23,6 +25,7 @@ gvk_add_code_generator(
     INCLUDE_DIRECTORIES
         "${generatorSourcePath}/"
     INCLUDE_FILES
+        "${generatorSourcePath}/basic-api-call-handler.generator.hpp"
         "${generatorSourcePath}/basic-layer.generator.hpp"
         "${generatorSourcePath}/layer-hooks.generator.hpp"
     SOURCE_FILES

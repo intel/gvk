@@ -198,23 +198,25 @@ void StructureDestroyCopyGenerator::generate_source(FileGenerator& file, const x
     file << std::endl;
     NamespaceGenerator namespaceGenerator(file, "gvk::detail");
     for (const auto& structure : apiElements.structures) {
-        if (!apiElements.manuallyImplemented.count(structure.name)) {
-            file << std::endl;
-            CompileGuardGenerator compileGuardGenerator(file, structure.compileGuards);
-            file << string::replace("template <> void destroy_structure_copy<{structureType}>(const {structureType}& obj, const VkAllocationCallbacks* pAllocator)", "{structureType}", structure.name) << std::endl;
-            file << "{" << std::endl;
-            file << "    (void)obj;" << std::endl;
-            file << "    (void)pAllocator;" << std::endl;
-            for (size_t i = 0; i < structure.members.size(); ++i) {
-                const auto& member = structure.members[i];
-                CompileGuardGenerator memberCompileGuardGenerator(file, get_inner_scope_compile_guards(structure.compileGuards, member.compileGuards));
-                auto source = StructureMemberDestroyCopyGenerator().generate(manifest, member);
-                if (!source.empty()) {
-                    file << "    " << source << std::endl;
-                }
-            }
-            file << "}" << std::endl;
+        file << std::endl;
+        auto compileGuards = structure.compileGuards;
+        if (apiElements.manuallyImplemented.count(structure.name)) {
+            compileGuards.insert("GVK_MANUALLY_IMPLEMENTED");
         }
+        CompileGuardGenerator compileGuardGenerator(file, compileGuards);
+        file << string::replace("template <> void destroy_structure_copy<{structureType}>(const {structureType}& obj, const VkAllocationCallbacks* pAllocator)", "{structureType}", structure.name) << std::endl;
+        file << "{" << std::endl;
+        file << "    (void)obj;" << std::endl;
+        file << "    (void)pAllocator;" << std::endl;
+        for (size_t i = 0; i < structure.members.size(); ++i) {
+            const auto& member = structure.members[i];
+            CompileGuardGenerator memberCompileGuardGenerator(file, get_inner_scope_compile_guards(compileGuards, member.compileGuards));
+            auto source = StructureMemberDestroyCopyGenerator().generate(manifest, member);
+            if (!source.empty()) {
+                file << "    " << source << std::endl;
+            }
+        }
+        file << "}" << std::endl;
     }
     file << std::endl;
 }

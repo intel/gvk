@@ -75,41 +75,66 @@ VkResult create_instance(const VkInstanceCreateInfo* pCreateInfo, const VkAlloca
 {
     assert(pCreateInfo);
     assert(pInstance);
-    std::lock_guard<std::mutex> lock(Registry::get().mutex);
+    auto& layerRegistry = Registry::get();
+    std::lock_guard<std::mutex> lock(layerRegistry.mutex);
     auto vkResult = VK_ERROR_INITIALIZATION_FAILED;
     auto pLayerLinkInfo = get_instance_chain_info(pCreateInfo, VK_LAYER_LINK_INFO);
-    Registry::get().pfn_vkGetInstanceProcAddr = (pLayerLinkInfo && pLayerLinkInfo->u.pLayerInfo) ? pLayerLinkInfo->u.pLayerInfo->pfnNextGetInstanceProcAddr : nullptr;
-    auto pfn_vkCreateInstance = Registry::get().pfn_vkGetInstanceProcAddr ? (PFN_vkCreateInstance)Registry::get().pfn_vkGetInstanceProcAddr(VK_NULL_HANDLE, "vkCreateInstance") : nullptr;
+    layerRegistry.pfn_vkGetInstanceProcAddr = (pLayerLinkInfo && pLayerLinkInfo->u.pLayerInfo) ? pLayerLinkInfo->u.pLayerInfo->pfnNextGetInstanceProcAddr : nullptr;
+    auto pfn_vkCreateInstance = layerRegistry.pfn_vkGetInstanceProcAddr ? (PFN_vkCreateInstance)layerRegistry.pfn_vkGetInstanceProcAddr(VK_NULL_HANDLE, "vkCreateInstance") : nullptr;
     if (pfn_vkCreateInstance) {
 
         // Get the VK_LOADER_LAYER_CREATE_DEVICE_CALLBACK
         auto pLayerCreateDeviceCallback = get_instance_chain_info(pCreateInfo, VK_LOADER_LAYER_CREATE_DEVICE_CALLBACK);
         if (pLayerCreateDeviceCallback) {
-            Registry::get().pfn_vkLayerCreateDevice = pLayerCreateDeviceCallback->u.layerDevice.pfnLayerCreateDevice;
-            Registry::get().pfn_vkLayerDestroyDevice = pLayerCreateDeviceCallback->u.layerDevice.pfnLayerDestroyDevice;
+            layerRegistry.pfn_vkLayerCreateDevice = pLayerCreateDeviceCallback->u.layerDevice.pfnLayerCreateDevice;
+            layerRegistry.pfn_vkLayerDestroyDevice = pLayerCreateDeviceCallback->u.layerDevice.pfnLayerDestroyDevice;
         }
 
         // Advance layer link info
         pLayerLinkInfo->u.pLayerInfo = pLayerLinkInfo->u.pLayerInfo->pNext;
 
         // Get layers and run pre vkCreateInstance() handlers
-        auto& layers = Registry::get().layers;
-        on_load(Registry::get());
+        auto& layers = layerRegistry.layers;
+        on_load(layerRegistry);
         vkResult = VK_SUCCESS;
         for (auto layerItr = layers.begin(); layerItr != layers.end(); ++layerItr) {
             assert(*layerItr && "gvk::layer::Registry contains a null layer; are layers configured correctly and intialized via gvk::layer::on_load()?");
             vkResult = (*layerItr)->pre_vkCreateInstance(pCreateInfo, pAllocator, pInstance, vkResult);
         }
 
+        // TODO : Documentation
+        auto& apiCallHandler = layerRegistry.apiCallHandler;
+        if (apiCallHandler) {
+            vkResult = apiCallHandler->pre_execute_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
+        }
+
+#if 0
         // Make the vkCreateInstance() call down the layer chain
         vkResult = pfn_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
+#else
+        // TODO : Documentation
+        if (apiCallHandler) {
+            apiCallHandler->dispatchTable.gvkCreateInstance = pfn_vkCreateInstance;
+            vkResult = apiCallHandler->execute_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
+        } else {
+            vkResult = pfn_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
+        }
+#endif
         if (vkResult == VK_SUCCESS) {
             DispatchTable instanceDispatchTable { };
-            instanceDispatchTable.gvkGetInstanceProcAddr = Registry::get().pfn_vkGetInstanceProcAddr;
+            instanceDispatchTable.gvkGetInstanceProcAddr = layerRegistry.pfn_vkGetInstanceProcAddr;
             DispatchTable::load_instance_entry_points(*pInstance, &instanceDispatchTable);
-            Registry::get().instance = *pInstance;
-            Registry::get().apiVersion = pCreateInfo->pApplicationInfo ? pCreateInfo->pApplicationInfo->apiVersion : VK_API_VERSION_1_0;
-            Registry::get().VkInstanceDispatchTables.insert({ get_dispatch_key(*pInstance), instanceDispatchTable });
+            layerRegistry.instance = *pInstance;
+            layerRegistry.apiVersion = pCreateInfo->pApplicationInfo ? pCreateInfo->pApplicationInfo->apiVersion : VK_API_VERSION_1_0;
+            layerRegistry.VkInstanceDispatchTables[get_dispatch_key(*pInstance)] = instanceDispatchTable;
+            if (apiCallHandler) {
+                apiCallHandler->dispatchTable = instanceDispatchTable;
+            }
+        }
+
+        // TODO : Documentation
+        if (apiCallHandler) {
+            vkResult = apiCallHandler->post_execute_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
         }
 
         // Run post vkCreateInstance() handlers
@@ -124,20 +149,42 @@ VkResult create_instance(const VkInstanceCreateInfo* pCreateInfo, const VkAlloca
 void destroy_instance(VkInstance instance, const VkAllocationCallbacks* pAllocator)
 {
     assert(instance);
-    std::lock_guard<std::mutex> lock(Registry::get().mutex);
-    auto& layers = Registry::get().layers;
+    auto& layerRegistry = Registry::get();
+    std::lock_guard<std::mutex> lock(layerRegistry.mutex);
+    auto& layers = layerRegistry.layers;
     for (auto layerItr = layers.begin(); layerItr != layers.end(); ++layerItr) {
         assert(*layerItr && "gvk::layer::Registry contains a null layer; are layers configured correctly and intialized via gvk::layer::on_load()?");
         (*layerItr)->pre_vkDestroyInstance(instance, pAllocator);
     }
-    const auto& instanceDispatchTableItr = Registry::get().VkInstanceDispatchTables.find(get_dispatch_key(instance));
-    assert(instanceDispatchTableItr != Registry::get().VkInstanceDispatchTables.end() && "Failed to get gvk::layer::Registry VkInstance gvk::DispatchTable; are the Vulkan SDK, runtime, and layers configured correctly?");
+
+    // TODO : Documentation
+    auto& apiCallHandler = layerRegistry.apiCallHandler;
+    if (apiCallHandler) {
+        apiCallHandler->pre_execute_vkDestroyInstance(instance, pAllocator);
+    }
+
+    const auto& instanceDispatchTableItr = layerRegistry.VkInstanceDispatchTables.find(get_dispatch_key(instance));
+    assert(instanceDispatchTableItr != layerRegistry.VkInstanceDispatchTables.end() && "Failed to get gvk::layer::Registry VkInstance gvk::DispatchTable; are the Vulkan SDK, runtime, and layers configured correctly?");
     const auto& instanceDispatchTable = instanceDispatchTableItr->second;
     assert(instanceDispatchTable.gvkDestroyInstance && "gvk::layer::Registry VkInstance gvk::DispatchTable contains a null entry point; are the Vulkan SDK, runtime, and layers configured correctly?");
-    instanceDispatchTable.gvkDestroyInstance(instance, pAllocator);
-    Registry::get().VkInstanceDispatchTables.clear();
-    Registry::get().VkDeviceDispatchTables.clear();
-    Registry::get().VkPhysicalDevices.clear();
+
+    if (apiCallHandler) {
+        apiCallHandler->dispatchTable.gvkDestroyInstance = instanceDispatchTable.gvkDestroyInstance;
+        apiCallHandler->execute_vkDestroyInstance(instance, pAllocator);
+    } else {
+        instanceDispatchTable.gvkDestroyInstance(instance, pAllocator);
+    }
+
+#if 0
+    layerRegistry.VkInstanceDispatchTables.clear();
+    layerRegistry.VkDeviceDispatchTables.clear();
+    layerRegistry.VkPhysicalDevices.clear();
+#endif
+
+    if (apiCallHandler) {
+        apiCallHandler->post_execute_vkDestroyInstance(instance, pAllocator);
+    }
+
     for (auto layerItr = layers.rbegin(); layerItr != layers.rend(); ++layerItr) {
         assert(*layerItr && "gvk::layer::Registry contains a null layer; are layers configured correctly and intialized via gvk::layer::on_load()?");
         (*layerItr)->post_vkDestroyInstance(instance, pAllocator);
@@ -228,13 +275,38 @@ VkResult create_device(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo
             assert(*layerItr && "gvk::layer::Registry contains a null layer; are layers configured correctly and intialized via gvk::layer::on_load()?");
             vkResult = (*layerItr)->pre_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice, vkResult);
         }
-        vkResult = instanceDispatchTable.gvkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
+
+        // TODO : Documentation
+        auto& apiCallHandler = Registry::get().apiCallHandler;
+        if (apiCallHandler) {
+            vkResult = apiCallHandler->pre_execute_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
+        }
+
+        // TODO : Documentation
+        if (apiCallHandler) {
+            apiCallHandler->dispatchTable.gvkCreateDevice = instanceDispatchTable.gvkCreateDevice;
+            vkResult = apiCallHandler->execute_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
+        } else {
+            vkResult = instanceDispatchTable.gvkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
+        }
+
+        // TODO : Documentation
         if (vkResult == VK_SUCCESS) {
             DispatchTable deviceDispatchTable { };
             deviceDispatchTable.gvkGetDeviceProcAddr = pfn_vkGetDeviceProcAddr;
             DispatchTable::load_device_entry_points(*pDevice, &deviceDispatchTable);
-            Registry::get().VkDeviceDispatchTables.insert({ get_dispatch_key(*pDevice), deviceDispatchTable });
+            Registry::get().VkDeviceDispatchTables[get_dispatch_key(*pDevice)] = deviceDispatchTable;
+            if (apiCallHandler) {
+                apiCallHandler->dispatchTable = deviceDispatchTable;
+            }
         }
+
+        // TODO : Documentation
+        if (apiCallHandler) {
+            vkResult = apiCallHandler->post_execute_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
+        }
+
+        // TODO : Documentation
         for (auto layerItr = layers.rbegin(); layerItr != layers.rend(); ++layerItr) {
             assert(*layerItr && "gvk::layer::Registry contains a null layer; are layers configured correctly and intialized via gvk::layer::on_load()?");
             vkResult = (*layerItr)->post_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice, vkResult);
@@ -252,12 +324,31 @@ void destroy_device(VkDevice device, const VkAllocationCallbacks* pAllocator)
         assert(*layerItr && "gvk::layer::Registry contains a null layer; are layers configured correctly and intialized via gvk::layer::on_load()?");
         (*layerItr)->pre_vkDestroyDevice(device, pAllocator);
     }
+
+    // TODO : Documentation
+    auto& apiCallHandler = Registry::get().apiCallHandler;
+    if (apiCallHandler) {
+        apiCallHandler->pre_execute_vkDestroyDevice(device, pAllocator);
+    }
+
     const auto& deviceDispatchTableItr = Registry::get().VkDeviceDispatchTables.find(get_dispatch_key(device));
     assert(deviceDispatchTableItr != Registry::get().VkDeviceDispatchTables.end() && "Failed to get gvk::layer::Registry VkDevice gvk::DispatchTable; are the Vulkan SDK, runtime, and layers configured correctly?");
     const auto& deviceDispatchTable = deviceDispatchTableItr->second;
     assert(deviceDispatchTable.gvkDestroyDevice && "gvk::layer::Registry VkDevice gvk::DispatchTable contains a null entry point for vkDestroyDevice; are the Vulkan SDK, runtime, and layers configured correctly?");
-    deviceDispatchTable.gvkDestroyDevice(device, pAllocator);
+    
+    if (apiCallHandler) {
+        apiCallHandler->dispatchTable.gvkDestroyDevice = deviceDispatchTable.gvkDestroyDevice;
+        apiCallHandler->execute_vkDestroyDevice(device, pAllocator);
+    } else {
+        deviceDispatchTable.gvkDestroyDevice(device, pAllocator);
+    }
+
     Registry::get().VkDeviceDispatchTables.erase(get_dispatch_key(device));
+
+    if (apiCallHandler) {
+        apiCallHandler->post_execute_vkDestroyDevice(device, pAllocator);
+    }
+
     for (auto layerItr = layers.rbegin(); layerItr != layers.rend(); ++layerItr) {
         assert(*layerItr && "gvk::layer::Registry contains a null layer; are layers configured correctly and intialized via gvk::layer::on_load()?");
         (*layerItr)->post_vkDestroyDevice(device, pAllocator);

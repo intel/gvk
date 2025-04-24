@@ -5,6 +5,7 @@ set(generatedIncludeDirectory "${CMAKE_CURRENT_BINARY_DIR}/include/")
 set(generatedIncludePath "${generatedIncludeDirectory}/gvk-command-structures/generated/")
 set(generatedSourcePath "${CMAKE_CURRENT_BINARY_DIR}/source/gvk-command-structures/generated/")
 set(generatedIncludeFiles
+    "${generatedIncludePath}/basic-command-recorder.hpp"
     "${generatedIncludePath}/command.h"
     "${generatedIncludePath}/command-enumerations-to-string.hpp"
     "${generatedIncludePath}/command-structure-cerealization.hpp"
@@ -14,6 +15,7 @@ set(generatedIncludeFiles
     "${generatedIncludePath}/command-structure-deserialization.hpp"
     "${generatedIncludePath}/command-structure-destroy-copy.hpp"
     "${generatedIncludePath}/command-structure-enumerate-handles.hpp"
+    "${generatedIncludePath}/command-structure-get-ctype.hpp"
     "${generatedIncludePath}/command-structure-get-stype.hpp"
     "${generatedIncludePath}/command-structure-make-tuple.hpp"
     "${generatedIncludePath}/command-structure-serialization.hpp"
@@ -21,6 +23,7 @@ set(generatedIncludeFiles
     "${generatedIncludePath}/execute-command-structure.hpp"
 )
 set(generatedSourceFiles
+    "${generatedSourcePath}/basic-command-recorder.cpp"
     "${generatedSourcePath}/command-enumerations-to-string.cpp"
     "${generatedSourcePath}/command-structure-comparison-operators.cpp"
     "${generatedSourcePath}/command-structure-create-copy.cpp"
@@ -40,7 +43,9 @@ gvk_add_code_generator(
     LINK_LIBRARIES
         gvk-cppgen
     INCLUDE_FILES
+        "${generatorSourcePath}/basic-command-recorder.generator.hpp"
         "${generatorSourcePath}/execute-command-structure.generator.hpp"
+        "${generatorSourcePath}/get-ctype.generator.hpp"
     SOURCE_FILES
         "${generatorSourcePath}/main.cpp"
     OUTPUT_FILES

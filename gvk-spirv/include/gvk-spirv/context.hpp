@@ -222,6 +222,18 @@ bool GetReadableSPIRVfromBinarySPIRV(void* spirv, size_t binarySize, std::string
 std::string GetGLSLFromSPIRV(std::vector<uint32_t> const& spirv);
 bool GetBinarySPIRVfromReadableSPIRV(std::string const& readableSPIRV, std::vector<uint32_t>& spirv);
 void GetSPIRVFromGLSL(api_types::ShaderStageFlagBits stage, std::string const& glsl, std::vector<uint32_t>& spirv, std::string& infoLog, std::string& debugLog);
+std::string ColorToOutputGLSL(std::string const& outputValueTypeStr, std::string const& ouptutValueComponentTypeStr, uint32_t outputValueComponentCount, const float color[4]);
+void CreateUnrolledOutputsGLSL(
+    std::string const& outputValueTypeStr,
+    std::string const& ouptutValueComponentTypeStr,
+    uint32_t outputValueComponentCount,
+    std::string const& outputValueName,
+    std::string const& currentStr,
+    const float color[4],
+    size_t arraySizesCount,
+    const uint32_t* pArraySizes,
+    std::stringstream& strStr
+);
 
 } // namespace detail
 } // namespace spirv

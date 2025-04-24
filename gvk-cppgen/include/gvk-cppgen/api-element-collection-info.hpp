@@ -46,6 +46,7 @@ public:
     std::vector<std::string> declarationIncludes;
     std::vector<std::string> headerIncludes;
     std::vector<std::string> sourceIncludes;
+    std::vector<std::string> definitions;
     std::vector<xml::Enumeration> enumerations;
     std::vector<xml::Structure> structures;
     std::set<std::string> manuallyImplemented;

@@ -478,6 +478,27 @@ void print<VkPipelineCacheCreateInfo>(Printer& printer, const VkPipelineCacheCre
 }
 
 template <>
+void print<VkPipelineExecutableInternalRepresentationKHR>(Printer& printer, const VkPipelineExecutableInternalRepresentationKHR& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            detail::print_pnext(printer, obj.pNext);
+            printer.print_field("name", (const char*)obj.name);
+            printer.print_field("description", (const char*)obj.description);
+            printer.print_field("isText", obj.isText);
+            printer.print_field("dataSize", obj.dataSize);
+            if (obj.isText) {
+                printer.print_field("pData", (const char*)obj.pData);
+            } else {
+                printer.print_array("pData", obj.dataSize, (const uint8_t*)obj.pData);
+            }
+        }
+    );
+}
+
+template <>
 void print<VkPipelineMultisampleStateCreateInfo>(Printer& printer, const VkPipelineMultisampleStateCreateInfo& obj)
 {
     printer.print_object(

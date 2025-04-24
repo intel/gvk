@@ -26,6 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
+#include "gvk-layer/generated/basic-api-call-handler.hpp"
 #include "gvk-layer/generated/basic-layer.hpp"
 #include "gvk-layer/generated/layer-hooks.hpp"
 #include "gvk-layer/log.hpp"

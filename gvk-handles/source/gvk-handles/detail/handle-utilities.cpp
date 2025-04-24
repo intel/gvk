@@ -225,6 +225,49 @@ VkResult PipelineBinaryKHR::create(const Device& device, const VkPipelineBinaryC
     return VK_ERROR_INITIALIZATION_FAILED;
 }
 
+VkResult RenderPass::create(const Device& device, const VkRenderPassCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, RenderPass* pRenderPass)
+{
+    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+        gvk_result(pCreateInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result(pRenderPass ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        VkRenderPass vkRenderPass = VK_NULL_HANDLE;
+        gvk_result(device.get<DispatchTable>().gvkCreateRenderPass ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result(device.get<DispatchTable>().gvkCreateRenderPass(device, pCreateInfo, pAllocator,&vkRenderPass));
+        pRenderPass->mReference.reset(gvk::newref, gvk::HandleId<VkDevice, VkRenderPass>(device, vkRenderPass));
+        auto& controlBlock = pRenderPass->mReference.get_obj();
+        controlBlock.mVkRenderPass = vkRenderPass;
+        controlBlock.mDevice = device;
+        controlBlock.mAllocationCallbacks = pAllocator ? *pAllocator : VkAllocationCallbacks{ };
+        controlBlock.mRenderPassCreateInfo = *pCreateInfo;
+        gvk_result(gvk::detail::initialize_control_block(*pRenderPass));
+    } gvk_result_scope_end;
+    return gvkResult;
+}
+
+VkResult RenderPass::create(const Device& device, const VkRenderPassCreateInfo2* pCreateInfo, const VkAllocationCallbacks* pAllocator, RenderPass* pRenderPass)
+{
+    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+        gvk_result(pCreateInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result(pRenderPass ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        VkRenderPass vkRenderPass = VK_NULL_HANDLE;
+        if (device.get<Instance>().get<VkInstanceCreateInfo>().pApplicationInfo->apiVersion < VK_API_VERSION_1_2) {
+            gvk_result(device.get<DispatchTable>().gvkCreateRenderPass2KHR ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result(device.get<DispatchTable>().gvkCreateRenderPass2KHR(device, pCreateInfo, pAllocator, &vkRenderPass));
+        } else {
+            gvk_result(device.get<DispatchTable>().gvkCreateRenderPass2 ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result(device.get<DispatchTable>().gvkCreateRenderPass2(device, pCreateInfo, pAllocator, &vkRenderPass));
+        }
+        pRenderPass->mReference.reset(gvk::newref, gvk::HandleId<VkDevice, VkRenderPass>(device, vkRenderPass));
+        auto& controlBlock = pRenderPass->mReference.get_obj();
+        controlBlock.mVkRenderPass = vkRenderPass;
+        controlBlock.mDevice = device;
+        controlBlock.mAllocationCallbacks = pAllocator ? *pAllocator : VkAllocationCallbacks{ };
+        controlBlock.mRenderPassCreateInfo2 = *pCreateInfo;
+        gvk_result(gvk::detail::initialize_control_block(*pRenderPass));
+    } gvk_result_scope_end;
+    return gvkResult;
+}
+
 VkResult SurfaceKHR::create(const Instance& instance, const VkBaseInStructure* pCreateInfo, const VkAllocationCallbacks* pAllocator, SurfaceKHR* pSurface)
 {
     assert(instance);

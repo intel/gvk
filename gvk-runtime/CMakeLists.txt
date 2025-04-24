@@ -72,7 +72,7 @@ gvk_add_target_test(
     FOLDER
         "gvk-runtime/"
     LINK_LIBRARIES
-        asio
+        boost-asio
     SOURCE_FILES
         "${testsPath}/result-scope-callback.tests.cpp"
 )

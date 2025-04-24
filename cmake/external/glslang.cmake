@@ -1,7 +1,6 @@
 
 include_guard(GLOBAL)
-gvk_enable_target(glslang)
-include(external/SPIRV-Tools)
+gvk_enable_external_module(SPIRV-Tools)
 
 set(BUILD_TESTING           OFF CACHE BOOL "" FORCE)
 set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "" FORCE)
@@ -29,10 +28,10 @@ set_target_properties(SPIRV PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${SPIRV_IN
 macro(gvk_setup_glslang_target glslangTarget)
     list(APPEND glslangLibraries ${glslangTarget})
     set_target_properties(${glslangTarget} PROPERTIES FOLDER "${GVK_IDE_FOLDER}/external/glslang/")
-    if(gvk-glslang_INSTALL_ARTIFACTS)
+    if(glslang_INSTALL_ARTIFACTS)
         gvk_install_artifacts(TARGET ${glslangTarget} VERSION ${glslang_VERSION})
     endif()
-    if(gvk-glslang_INSTALL_HEADERS)
+    if(glslang_INSTALL_HEADERS)
         # TODO :
     endif()
 endmacro()

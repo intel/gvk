@@ -11,6 +11,7 @@ gvk_add_static_library(
         "gvk-system/"
     LINK_LIBRARIES
         gvk-reference
+        gvk-string
         glfw
     INCLUDE_DIRECTORIES
         "${includeDirectory}"
