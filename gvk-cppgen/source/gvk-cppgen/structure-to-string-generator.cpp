@@ -121,7 +121,7 @@ protected:
 
     std::string generate_static_string_processor() const override final
     {
-        return "printer.print_field(\"{memberName}\", obj.{memberName});";
+        return "printer.print_field(\"{memberName}\", (const char*)obj.{memberName});";
     }
 
     std::string generate_static_primitive_array_processor() const override final
@@ -200,23 +200,25 @@ void StructureToStringGenerator::generate_source(FileGenerator& file, const xml:
     file << std::endl;
     NamespaceGenerator namespaceGenerator(file, "gvk");
     for (const auto& structure : apiElements.structures) {
-        if (!apiElements.manuallyImplemented.count(structure.name)) {
-            file << std::endl;
-            CompileGuardGenerator compileGuardGenerator(file, structure.compileGuards);
-            file << string::replace("template <> void print<{structureType}>(Printer& printer, const {structureType}& obj)", "{structureType}", structure.name) << std::endl;
-            file << "{" << std::endl;
-            file << "    printer.print_object(" << std::endl;
-            file << "        [&]()" << std::endl;
-            file << "        {" << std::endl;
-            for (size_t i = 0; i < structure.members.size(); ++i) {
-                const auto& member = structure.members[i];
-                CompileGuardGenerator memberCompileGuardGenerator(file, get_inner_scope_compile_guards(structure.compileGuards, member.compileGuards));
-                file << "            " << StructureMemberToStringGenerator().generate(manifest, member) << std::endl;
-            }
-            file << "        }" << std::endl;
-            file << "    );" << std::endl;
-            file << "}" << std::endl;
+        file << std::endl;
+        auto compileGuards = structure.compileGuards;
+        if (apiElements.manuallyImplemented.count(structure.name)) {
+            compileGuards.insert("GVK_MANUALLY_IMPLEMENTED");
         }
+        CompileGuardGenerator compileGuardGenerator(file, compileGuards);
+        file << string::replace("template <> void print<{structureType}>(Printer& printer, const {structureType}& obj)", "{structureType}", structure.name) << std::endl;
+        file << "{" << std::endl;
+        file << "    printer.print_object(" << std::endl;
+        file << "        [&]()" << std::endl;
+        file << "        {" << std::endl;
+        for (size_t i = 0; i < structure.members.size(); ++i) {
+            const auto& member = structure.members[i];
+            CompileGuardGenerator memberCompileGuardGenerator(file, get_inner_scope_compile_guards(compileGuards, member.compileGuards));
+            file << "            " << StructureMemberToStringGenerator().generate(manifest, member) << std::endl;
+        }
+        file << "        }" << std::endl;
+        file << "    );" << std::endl;
+        file << "}" << std::endl;
     }
     file << std::endl;
 }

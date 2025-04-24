@@ -26,6 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
+#include "gvk-layer/generated/basic-api-call-handler.hpp"
 #include "gvk-layer/generated/basic-layer.hpp"
 #include "gvk-layer/generated/layer-hooks.hpp"
 #include "gvk-defines.hpp"
@@ -83,6 +84,7 @@ public:
     VkInstance instance{ };
     uint32_t apiVersion{ VK_API_VERSION_1_0 };
     std::vector<std::unique_ptr<BasicLayer>> layers;
+    std::unique_ptr<BasicApiCallHandler> apiCallHandler;
     std::unordered_map<void*, DispatchTable> VkInstanceDispatchTables;
     std::unordered_map<void*, DispatchTable> VkDeviceDispatchTables;
     using ApplicationVkPhysicalDevice = VkPhysicalDevice;

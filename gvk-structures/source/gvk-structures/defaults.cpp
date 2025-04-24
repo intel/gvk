@@ -40,7 +40,7 @@ const VkApplicationInfo& get_default<VkApplicationInfo>()
         /* .applicationVersion = */ 0,
         /* .pEngineName        = */ "Intel(R) GPA Utilities for Vulkan*",
         /* .engineVersion      = */ 0,
-        /* .apiVersion         = */ VK_API_VERSION_1_3,
+        /* .apiVersion         = */ VK_API_VERSION_1_4,
     };
     return DefaultApplicationInfo;
 }

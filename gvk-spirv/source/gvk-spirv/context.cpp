@@ -147,21 +147,43 @@ VkResult Context::decompile(ShaderInfo* pShaderInfo)
         spirv_cross::CompilerGLSL compiler(pShaderInfo->bytecode.data(), pShaderInfo->bytecode.size());
         try {
             auto options = compiler.get_common_options();
+            options.version = 460; // TODO : Is there ever a need to fallback to 450?
+            // options.force_temporary = true; // TODO : Expose this and other options in the GUI
             options.vulkan_semantics = true;
             options.separate_shader_objects = true;
             compiler.set_common_options(options);
             pShaderInfo->source = compiler.compile();
-        } catch (...) {
+        } catch (const std::exception& e) {
             pShaderInfo->source = compiler.get_partial_source();
             pShaderInfo->errors.push_back("Failed to convert SPIR-V bytecode to GLSL");
+            if (e.what()) {
+                pShaderInfo->errors.push_back(e.what());
+            }
             if (!pShaderInfo->source.empty()) {
                 pShaderInfo->errors.push_back("Parital source provided");
             }
         }
     } break;
     case ShadingLanguage::SpirV: {
-        spvtools::SpirvTools disassembler(spv_target_env::SPV_ENV_UNIVERSAL_1_0);
-        auto options = SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES;
+        auto version = spv_target_env::SPV_ENV_VULKAN_1_0;
+        switch (pShaderInfo->version) {
+        case Version::SPIRV_1_0: { version = SPV_ENV_VULKAN_1_0;           } break;
+        case Version::SPIRV_1_1: { version = SPV_ENV_VULKAN_1_0;           } break;
+        case Version::SPIRV_1_2: { version = SPV_ENV_VULKAN_1_0;           } break;
+        case Version::SPIRV_1_3: { version = SPV_ENV_VULKAN_1_1;           } break;
+        case Version::SPIRV_1_4: { version = SPV_ENV_VULKAN_1_1_SPIRV_1_4; } break;
+        case Version::SPIRV_1_5: { version = SPV_ENV_VULKAN_1_2;           } break;
+        case Version::SPIRV_1_6: { version = SPV_ENV_VULKAN_1_3;           } break;
+        default: {
+        } break;
+        }
+        spvtools::SpirvTools disassembler(version);
+        auto options =
+            SPV_BINARY_TO_TEXT_OPTION_INDENT |
+            SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES |
+            SPV_BINARY_TO_TEXT_OPTION_COMMENT |
+            SPV_BINARY_TO_TEXT_OPTION_NESTED_INDENT |
+            SPV_BINARY_TO_TEXT_OPTION_REORDER_BLOCKS; // TODO : Expose in GUI
         if (!disassembler.Disassemble(pShaderInfo->bytecode.data(), pShaderInfo->bytecode.size(), &pShaderInfo->source, options)) {
             pShaderInfo->errors.push_back("Failed to convert SPIR-V bytecode to SPIR-V text");
         }
@@ -617,6 +639,54 @@ void GetSPIRVFromGLSL(
         return;
     }
     glslang::GlslangToSpv(*program.getIntermediate(eshStage), spirv);
+}
+
+std::string ColorToOutputGLSL(std::string const& outputValueTypeStr, std::string const& ouptutValueComponentTypeStr, uint32_t outputValueComponentCount, const float color[4])
+{
+    std::stringstream strStr;
+    std::array<float, 4> colorValues{ color[0], color[1], color[2], color[3] };
+    strStr << outputValueTypeStr << "(";
+    for (size_t i = 0; i < outputValueComponentCount; ++i) {
+        auto colorValue = i < colorValues.size() ? colorValues[i] : colorValues.back();
+        strStr << ouptutValueComponentTypeStr << "(" << colorValue << ")";
+        if (i < outputValueComponentCount - 1) {
+            strStr << ", ";
+        }
+    }
+    strStr << ")";
+    return strStr.str();
+}
+
+void CreateUnrolledOutputsGLSL(
+    std::string const& outputValueTypeStr,
+    std::string const& ouptutValueComponentTypeStr,
+    uint32_t outputValueComponentCount,
+    std::string const& outputValueName,
+    std::string const& currentStr,
+    const float color[4],
+    size_t arraySizesCount,
+    const uint32_t* pArraySizes,
+    std::stringstream& strStr
+)
+{
+    if (arraySizesCount) {
+        for (size_t i = 0; i < pArraySizes[0]; ++i) {
+            CreateUnrolledOutputsGLSL(
+                outputValueTypeStr,
+                ouptutValueComponentTypeStr,
+                outputValueComponentCount,
+                outputValueName,
+                currentStr + "[" + std::to_string(i) + "]",
+                color,
+                arraySizesCount - 1,
+                pArraySizes + 1,
+                strStr);
+            if (arraySizesCount == 1) {
+                auto colorToOutput = ColorToOutputGLSL(outputValueTypeStr, ouptutValueComponentTypeStr, outputValueComponentCount, color);
+                strStr << outputValueName << currentStr + "[" + std::to_string(i) + "] = " << colorToOutput << ";" << std::endl;
+            }
+        }
+    }
 }
 
 } // namespace detail

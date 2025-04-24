@@ -97,11 +97,27 @@ R"(    auto& layers = Registry::get().layers;
             {resultAssignment}(*layerItr)->pre_{commandName}({gvkCommandArgs});
         }
     }
+
+    auto& apiCallHandler = Registry::get().apiCallHandler;
+    if (apiCallHandler) {
+        /* {resultAssignment} */apiCallHandler->pre_execute_{commandName}({vkCommandArgs});
+    }
+
     const auto& dispatchTableItr = Registry::get().{dispatchableHandleType}DispatchTables.find(get_dispatch_key({dispatchableHandle}));
     assert(dispatchTableItr != Registry::get().{dispatchableHandleType}DispatchTables.end());
     if (dispatchTableItr->second.g{commandName}) {
-        {resultAssignment}dispatchTableItr->second.g{commandName}({vkCommandArgs});
+        if (apiCallHandler) {
+            apiCallHandler->dispatchTable.g{commandName} = dispatchTableItr->second.g{commandName};
+            {resultAssignment}apiCallHandler->execute_{commandName}({vkCommandArgs});
+        } else {
+            {resultAssignment}dispatchTableItr->second.g{commandName}({vkCommandArgs});
+        }
     }
+
+    if (apiCallHandler) {
+        /* {resultAssignment} */(void)apiCallHandler->post_execute_{commandName}({vkCommandArgs});
+    }
+
     for (auto layerItr = layers.rbegin(); layerItr != layers.rend(); ++layerItr) {
         assert(*layerItr && "gvk::layer::Registry contains a null layer; are layers configured correctly and intialized via gvk::layer::on_load()?");
         if ((*layerItr)->enabled) {

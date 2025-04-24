@@ -178,15 +178,19 @@ void StructureMakeTupleGenerator::generate(
     file << std::endl;
     NamespaceGenerator namespaceGenerator(file, "gvk");
     for (const auto& structure : apiElements.structures) {
-        if (structure.alias.empty() && !apiElements.manuallyImplemented.count(structure.name)) {
+        if (structure.alias.empty()) {
             file << std::endl;
-            CompileGuardGenerator compileGuardGenerator(file, structure.compileGuards);
+            auto compileGuards = structure.compileGuards;
+            if (apiElements.manuallyImplemented.count(structure.name)) {
+                compileGuards.insert("GVK_MANUALLY_IMPLEMENTED");
+            }
+            CompileGuardGenerator compileGuardGenerator(file, compileGuards);
             file << string::replace("inline auto make_tuple(const {structureType}& obj)", "{structureType}", structure.name) << std::endl;
             file << "{" << std::endl;
             file << "    return std::make_tuple(" << std::endl;
             for (size_t i = 0; i < structure.members.size(); ++i) {
                 const auto& member = structure.members[i];
-                CompileGuardGenerator memberCompileGuardGenerator(file, get_inner_scope_compile_guards(structure.compileGuards, member.compileGuards));
+                CompileGuardGenerator memberCompileGuardGenerator(file, get_inner_scope_compile_guards(compileGuards, member.compileGuards));
                 file << "        " << StructureMemberToTupleElementGenerator().generate(manifest, member);
                 if (i < structure.members.size() - 1) {
                     file << "," << std::endl;

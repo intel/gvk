@@ -7,6 +7,8 @@
         "library_path": "@libraryPath@",
         "api_version": "@Vulkan_VERSION@",
         "implementation_version": "@ARGS_VERSION@",
-        "description": "@ARGS_DESCRIPTION@"
+        "description": "@ARGS_DESCRIPTION@",
+        "disable_environment": { "DISABLE_@ARGS_TARGET@": "1" },
+        "enable_environment": { "ENABLE_@ARGS_TARGET@": "1" }
     }
 }

@@ -1,6 +1,5 @@
 
 include_guard(GLOBAL)
-gvk_enable_target(VulkanMemoryAllocator)
 
 set(VMA_STATIC_VULKAN_FUNCTIONS OFF CACHE BOOL "" FORCE)
 set(VulkanMemoryAllocator_VERSION c788c52156f3ef7bc7ab769cb03c110a53ac8fcb) # 3.2.1
@@ -16,9 +15,9 @@ FetchContent_GetProperties(VulkanMemoryAllocator SOURCE_DIR VulkanMemoryAllocato
 add_library(VulkanMemoryAllocator INTERFACE)
 target_include_directories(VulkanMemoryAllocator INTERFACE "$<BUILD_INTERFACE:${VulkanMemoryAllocator_SOURCE_DIR}/include/>" $<INSTALL_INTERFACE:include>)
 
-if(gvk-VulkanMemoryAllocator_INSTALL_ARTIFACTS)
+if(VulkanMemoryAllocator_INSTALL_ARTIFACTS)
     gvk_install_artifacts(TARGET VulkanMemoryAllocator VERSION ${VulkanMemoryAllocator_VERSION})
 endif()
-if(gvk-VulkanMemoryAllocator_INSTALL_HEADERS)
+if(VulkanMemoryAllocator_INSTALL_HEADERS)
     gvk_install_headers(TARGET VulkanMemoryAllocator)
 endif()

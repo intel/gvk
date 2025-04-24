@@ -1,8 +1,6 @@
 
 include_guard()
 
-include(FetchContent)
-
 set(BUILD_GMOCK   OFF CACHE BOOL "" FORCE)
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
 set(googletest_VERSION 6910c9d9165801d8827d628cb72eb7ea9dd538c5) # 1.16.0

@@ -69,7 +69,7 @@ gvk_add_layer(
         gvk-restore-info
         gvk-runtime
         VK_LAYER_INTEL_gvk_state_tracker-interface
-        asio
+        boost-asio
         stb
         Threads::Threads
     INTERFACE_FILES

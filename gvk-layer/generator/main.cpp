@@ -25,6 +25,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include "gvk-xml.hpp"
+#include "basic-api-call-handler.generator.hpp"
 #include "basic-layer.generator.hpp"
 #include "layer-hooks.generator.hpp"
 
@@ -34,6 +35,7 @@ int main(int, const char*[])
     auto xmlResult = xmlDocument.LoadFile(GVK_XML_FILE_PATH);
     if (xmlResult == tinyxml2::XML_SUCCESS) {
         gvk::xml::Manifest manifest(xmlDocument);
+        gvk::cppgen::BasicApiCallHandlerGenerator::generate(manifest);
         gvk::cppgen::BasicLayerGenerator::generate(manifest);
         gvk::cppgen::LayerHooksGenerator::generate(manifest);
     }

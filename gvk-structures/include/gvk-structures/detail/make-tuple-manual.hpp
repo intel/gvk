@@ -357,6 +357,19 @@ inline auto make_tuple(const VkPipelineCacheCreateInfo& obj)
     );
 }
 
+inline auto make_tuple(const VkPipelineExecutableInternalRepresentationKHR& obj)
+{
+    return std::make_tuple(
+        obj.sType,
+        detail::PNextTupleElementWrapper{ obj.pNext },
+        detail::ArrayTupleElementWrapper<char> { VK_MAX_DESCRIPTION_SIZE, obj.name },
+        detail::ArrayTupleElementWrapper<char> { VK_MAX_DESCRIPTION_SIZE, obj.description },
+        obj.isText,
+        obj.dataSize,
+        detail::ArrayTupleElementWrapper<uint8_t> { obj.dataSize, (const uint8_t*)obj.pData }
+    );
+}
+
 inline auto make_tuple(const VkPipelineMultisampleStateCreateInfo& obj)
 {
     return std::make_tuple(
@@ -453,7 +466,7 @@ inline auto make_tuple(const VkWriteDescriptorSet& obj)
     case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:
     case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
     default: {
-        assert(false && "Unserviced VkDescriptorType; gvk maintenance required");
+        // NOOP :
     } break;
     }
     return std::make_tuple(

@@ -225,6 +225,49 @@ VkResult PipelineBinaryKHR::create(const Device& device, const VkPipelineBinaryC
     return VK_ERROR_INITIALIZATION_FAILED;
 }
 
+VkResult RenderPass::create(const Device& device, const VkRenderPassCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, RenderPass* pRenderPass)
+{
+    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+        gvk_result(pCreateInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result(pRenderPass ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        VkRenderPass vkRenderPass = VK_NULL_HANDLE;
+        gvk_result(device.get<DispatchTable>().gvkCreateRenderPass ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result(device.get<DispatchTable>().gvkCreateRenderPass(device, pCreateInfo, pAllocator,&vkRenderPass));
+        pRenderPass->mReference.reset(gvk::newref, gvk::HandleId<VkDevice, VkRenderPass>(device, vkRenderPass));
+        auto& controlBlock = pRenderPass->mReference.get_obj();
+        controlBlock.mVkRenderPass = vkRenderPass;
+        controlBlock.mDevice = device;
+        controlBlock.mAllocationCallbacks = pAllocator ? *pAllocator : VkAllocationCallbacks{ };
+        controlBlock.mRenderPassCreateInfo = *pCreateInfo;
+        gvk_result(gvk::detail::initialize_control_block(*pRenderPass));
+    } gvk_result_scope_end;
+    return gvkResult;
+}
+
+VkResult RenderPass::create(const Device& device, const VkRenderPassCreateInfo2* pCreateInfo, const VkAllocationCallbacks* pAllocator, RenderPass* pRenderPass)
+{
+    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+        gvk_result(pCreateInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result(pRenderPass ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        VkRenderPass vkRenderPass = VK_NULL_HANDLE;
+        if (device.get<Instance>().get<VkInstanceCreateInfo>().pApplicationInfo->apiVersion < VK_API_VERSION_1_2) {
+            gvk_result(device.get<DispatchTable>().gvkCreateRenderPass2KHR ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result(device.get<DispatchTable>().gvkCreateRenderPass2KHR(device, pCreateInfo, pAllocator, &vkRenderPass));
+        } else {
+            gvk_result(device.get<DispatchTable>().gvkCreateRenderPass2 ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result(device.get<DispatchTable>().gvkCreateRenderPass2(device, pCreateInfo, pAllocator, &vkRenderPass));
+        }
+        pRenderPass->mReference.reset(gvk::newref, gvk::HandleId<VkDevice, VkRenderPass>(device, vkRenderPass));
+        auto& controlBlock = pRenderPass->mReference.get_obj();
+        controlBlock.mVkRenderPass = vkRenderPass;
+        controlBlock.mDevice = device;
+        controlBlock.mAllocationCallbacks = pAllocator ? *pAllocator : VkAllocationCallbacks{ };
+        controlBlock.mRenderPassCreateInfo2 = *pCreateInfo;
+        gvk_result(gvk::detail::initialize_control_block(*pRenderPass));
+    } gvk_result_scope_end;
+    return gvkResult;
+}
+
 VkResult SurfaceKHR::create(const Instance& instance, const VkBaseInStructure* pCreateInfo, const VkAllocationCallbacks* pAllocator, SurfaceKHR* pSurface)
 {
     assert(instance);
@@ -362,7 +405,7 @@ VkResult initialize_control_block<Device>(Device& device)
         const auto& deviceCreateInfo = *deviceControlBlock.mDeviceCreateInfo;
         for (uint32_t queueCreateInfo_i = 0; queueCreateInfo_i < deviceCreateInfo.queueCreateInfoCount; ++queueCreateInfo_i) {
             const auto& deviceQueueCreateInfo = deviceCreateInfo.pQueueCreateInfos[queueCreateInfo_i];
-            QueueFamily queueFamily { };
+            QueueFamily queueFamily{ };
             queueFamily.index = deviceQueueCreateInfo.queueFamilyIndex;
             queueFamily.queues.resize(deviceQueueCreateInfo.queueCount);
             for (uint32_t queue_i = 0; queue_i < deviceQueueCreateInfo.queueCount; ++queue_i) {
@@ -381,7 +424,7 @@ VkResult initialize_control_block<Device>(Device& device)
             deviceControlBlock.mQueueFamilies.push_back(queueFamily);
         }
 
-        VmaVulkanFunctions vulkanFunctions { };
+        VmaVulkanFunctions vulkanFunctions{ };
         vulkanFunctions.vkGetInstanceProcAddr = deviceControlBlock.mInstance.get<DispatchTable>().gvkGetInstanceProcAddr;
         vulkanFunctions.vkGetDeviceProcAddr = deviceControlBlock.mDispatchTable.gvkGetDeviceProcAddr;
         vulkanFunctions.vkGetPhysicalDeviceProperties = physicalDeviceDispatchTable.gvkGetPhysicalDeviceProperties;
@@ -423,9 +466,30 @@ VkResult initialize_control_block<Device>(Device& device)
         vulkanFunctions.vkGetDeviceImageMemoryRequirements = deviceControlBlock.mDispatchTable.gvkGetDeviceImageMemoryRequirements;
 #endif
 
+        VmaAllocatorCreateInfo allocatorCreateInfo{ };
+
+        // Check if bufferDeviceAddress is enabled
+        auto pNext = (const VkBaseInStructure*)deviceCreateInfo.pNext;
+        while (pNext) {
+            switch (pNext->sType) {
+            case gvk::get_stype<VkPhysicalDeviceBufferDeviceAddressFeaturesEXT>(): {
+                if (((const VkPhysicalDeviceBufferDeviceAddressFeaturesEXT*)pNext)->bufferDeviceAddress) {
+                    allocatorCreateInfo.flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+                }
+            } break;
+            case gvk::get_stype<VkPhysicalDeviceBufferDeviceAddressFeatures>(): {
+                if (((const VkPhysicalDeviceBufferDeviceAddressFeatures*)pNext)->bufferDeviceAddress) {
+                    allocatorCreateInfo.flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+                }
+            } break;
+            default: {
+            } break;
+            }
+            pNext = pNext->pNext;
+        }
+
         const auto& instanceCreateInfo = deviceControlBlock.mInstance.get<VkInstanceCreateInfo>();
-        VmaAllocatorCreateInfo allocatorCreateInfo { };
-        allocatorCreateInfo.vulkanApiVersion = instanceCreateInfo.pApplicationInfo ? instanceCreateInfo.pApplicationInfo->apiVersion : VK_API_VERSION_1_3;
+        allocatorCreateInfo.vulkanApiVersion = instanceCreateInfo.pApplicationInfo ? instanceCreateInfo.pApplicationInfo->apiVersion : VK_API_VERSION_1_4;
         allocatorCreateInfo.instance = deviceControlBlock.mInstance;
         allocatorCreateInfo.physicalDevice = deviceControlBlock.mPhysicalDevice;
         allocatorCreateInfo.device = deviceControlBlock.mVkDevice;

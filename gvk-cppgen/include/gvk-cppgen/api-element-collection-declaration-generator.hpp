@@ -38,6 +38,7 @@ public:
     static void generate(const ApiElementCollectionInfo& apiElements);
 
 private:
+    static void generate_definition_declarations(FileGenerator& file, const ApiElementCollectionInfo& apiElements);
     static void generate_enumeration_declarations(FileGenerator& file, const ApiElementCollectionInfo& apiElements);
     static void generate_structure_declarations(FileGenerator& file, const ApiElementCollectionInfo& apiElements);
 };

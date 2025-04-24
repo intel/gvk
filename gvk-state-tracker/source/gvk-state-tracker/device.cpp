@@ -26,6 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-state-tracker/state-tracker.hpp"
 #include "gvk-layer/registry.hpp"
+#include "gvk-handles.hpp"
 
 #include <cassert>
 
@@ -38,12 +39,27 @@ VkResult StateTracker::pre_vkCreateDevice(VkPhysicalDevice physicalDevice, const
     (void)pCreateInfo;
     (void)pAllocator;
     (void)pDevice;
-    for (auto itr : layer::Registry::get().VkPhysicalDevices) {
+    auto& layerRegistry = layer::Registry::get();
+    for (auto itr : layerRegistry.VkPhysicalDevices) {
         PhysicalDevice gvkPhysicalDevice(itr.second);
-        assert(gvkPhysicalDevice);
-        auto& physicalDeviceControlBlock = gvkPhysicalDevice.mReference.get_obj();
-        assert(!physicalDeviceControlBlock.mApplicationHandle || physicalDeviceControlBlock.mApplicationHandle == (uint64_t)itr.first);
-        physicalDeviceControlBlock.mApplicationHandle = (uint64_t)itr.first;
+        // NOTE : It would be _much_ nicer to be able to assume that every tracked
+        //  VkPhysicalDevice is live, but there is a little bit of a dance that needs to
+        //  be done to keep track of the application's VkPhysicalDevice handles vs the
+        //  loader's, and on top of that have some multi-layered intialization and
+        //  deinitialization interleaved with the "actual" persistent context objects
+        //  the workload will use once it's up and running, so in one process, once a
+        //  VkPhysicalDevice is encountered it's not disposed of...we assume that an
+        //  application won't send down a bad VkPhysicalDevice (the app would be busted
+        //  if it were doing that anyway).
+        // TODO : It should be possible to setup "bulletproof" logic that would make
+        //  disposing of unused VkPhysicalDevice handles work intuitively, but it will
+        //  be time consuming and truly not much of "win" other than a cleaner context,
+        //  which is important, but certainly lower priority at the moment.
+        if (gvkPhysicalDevice) {
+            auto& physicalDeviceControlBlock = gvkPhysicalDevice.mReference.get_obj();
+            assert(!physicalDeviceControlBlock.mApplicationHandle || physicalDeviceControlBlock.mApplicationHandle == (uint64_t)itr.first);
+            physicalDeviceControlBlock.mApplicationHandle = (uint64_t)itr.first;
+        }
     }
     return gvkResult;
 }
@@ -63,11 +79,23 @@ VkResult StateTracker::post_vkCreateDevice(VkPhysicalDevice physicalDevice, cons
         gvkResult = BasicStateTracker::post_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice, gvkResult);
         assert(gvkResult == VK_SUCCESS);
         assert(pDevice);
-        Device gvkDevice(*pDevice);
-        assert(gvkDevice);
+
+        gvk::state_tracker::Device gvkStateTrackedDevice(*pDevice);
+        assert(gvkStateTrackedDevice);
+       // NOTE : This assert() is here to ensure we have a live state tracked handle
+        //  for the given VkPhysicalDevice.  See the note in the pre_vkCreateDevice()
+        //  for more info.
+        assert(gvkStateTrackedDevice.mReference->mPhysicalDevice);
+
         const auto& dispatchTableItr = layer::Registry::get().VkDeviceDispatchTables.find(layer::get_dispatch_key(*pDevice));
         assert(dispatchTableItr != layer::Registry::get().VkDeviceDispatchTables.end());
         const auto& dispatchTable = dispatchTableItr->second;
+
+        gvk::Device gvkDevice;
+        gvkResult = gvk::Device::create_unmanaged(physicalDevice, pCreateInfo, nullptr, &dispatchTable, *pDevice, &gvkDevice);
+        assert(gvkResult == VK_SUCCESS);
+        mGvkDevices.insert(gvkDevice);
+
         assert(dispatchTable.gvkGetDeviceQueue);
         for (uint32_t queueCreateInfo_i = 0; queueCreateInfo_i < pCreateInfo->queueCreateInfoCount; ++queueCreateInfo_i) {
             const auto& queueCreateInfo = pCreateInfo->pQueueCreateInfos[queueCreateInfo_i];
@@ -82,7 +110,7 @@ VkResult StateTracker::post_vkCreateDevice(VkPhysicalDevice physicalDevice, cons
                 controlBlock.mVkQueue = vkQueue;
                 controlBlock.mVkDevice = *pDevice;
                 controlBlock.mDeviceQueueCreateInfo = queueCreateInfo;
-                gvkDevice.mReference.get_obj().mQueueTracker.insert(queue);
+                gvkStateTrackedDevice.mReference.get_obj().mQueueTracker.insert(queue);
             }
         }
     }

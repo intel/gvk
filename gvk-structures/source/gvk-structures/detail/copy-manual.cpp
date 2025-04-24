@@ -381,6 +381,20 @@ template <> void destroy_structure_copy<VkPipelineCacheCreateInfo>(const VkPipel
     destroy_dynamic_array_copy(obj.initialDataSize, (const uint8_t*)obj.pInitialData, pAllocator);
 }
 
+template <> VkPipelineExecutableInternalRepresentationKHR create_structure_copy<VkPipelineExecutableInternalRepresentationKHR>(const VkPipelineExecutableInternalRepresentationKHR& obj, const VkAllocationCallbacks* pAllocator)
+{
+    auto result = obj;
+    result.pNext = (void*)create_pnext_copy(obj.pNext, pAllocator);
+    result.pData = (void*)create_dynamic_array_copy(obj.dataSize, (const uint8_t*)obj.pData, pAllocator);
+    return result;
+}
+
+template <> void destroy_structure_copy<VkPipelineExecutableInternalRepresentationKHR>(const VkPipelineExecutableInternalRepresentationKHR& obj, const VkAllocationCallbacks* pAllocator)
+{
+    destroy_pnext_copy(obj.pNext, pAllocator);
+    destroy_dynamic_array_copy(obj.dataSize, (const uint8_t*)obj.pData, pAllocator);
+}
+
 template <> VkPipelineMultisampleStateCreateInfo create_structure_copy<VkPipelineMultisampleStateCreateInfo>(const VkPipelineMultisampleStateCreateInfo& obj, const VkAllocationCallbacks* pAllocator)
 {
     auto result = obj;
@@ -479,7 +493,7 @@ template <> VkWriteDescriptorSet create_structure_copy<VkWriteDescriptorSet>(con
     case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:
     case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
     default: {
-        assert(false && "Unserviced VkDescriptorType; gvk maintenance required");
+        // NOOP :
     } break;
     }
     return result;
@@ -513,7 +527,7 @@ template <> void destroy_structure_copy<VkWriteDescriptorSet>(const VkWriteDescr
     case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:
     case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
     default: {
-        assert(false && "Unserviced VkDescriptorType; gvk maintenance required");
+        // NOOP :
     } break;
     }
 }

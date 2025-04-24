@@ -593,6 +593,30 @@ inline void load(ArchiveType& archive, VkPipelineCacheCreateInfo& obj)
 }
 
 template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkPipelineExecutableInternalRepresentationKHR& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+    gvk::detail::cerealize_static_array<VK_MAX_DESCRIPTION_SIZE>(archive, obj.name);
+    gvk::detail::cerealize_static_array<VK_MAX_DESCRIPTION_SIZE>(archive, obj.description);
+    archive(obj.isText);
+    archive(obj.dataSize);
+    gvk::detail::cerealize_dynamic_array(archive, obj.dataSize, (const uint8_t*)obj.pData);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkPipelineExecutableInternalRepresentationKHR& obj)
+{
+    archive(obj.sType);
+    obj.pNext = (void*)gvk::detail::decerealize_pnext(archive);
+    gvk::detail::decerealize_static_array<VK_MAX_DESCRIPTION_SIZE>(archive, obj.name);
+    gvk::detail::decerealize_static_array<VK_MAX_DESCRIPTION_SIZE>(archive, obj.description);
+    archive(obj.isText);
+    archive(obj.dataSize);
+    obj.pData = (void*)gvk::detail::decerealize_dynamic_array<uint8_t>(archive);
+}
+
+template <typename ArchiveType>
 inline void load(ArchiveType& archive, VkPipelineMultisampleStateCreateInfo& obj)
 {
     archive(obj.sType);
@@ -729,7 +753,7 @@ inline void save(ArchiveType& archive, const VkWriteDescriptorSet& obj)
     case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:
     case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
     default: {
-        assert(false && "Unserviced VkDescriptorType; gvk maintenance required");
+        // NOOP :
     } break;
     }
 }
@@ -769,7 +793,7 @@ inline void load(ArchiveType& archive, VkWriteDescriptorSet& obj)
     case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:
     case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
     default: {
-        assert(false && "Unserviced VkDescriptorType; gvk maintenance required");
+        // NOOP :
     } break;
     }
 }

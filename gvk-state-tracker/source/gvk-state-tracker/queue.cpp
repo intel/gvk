@@ -61,15 +61,15 @@ VkResult StateTracker::post_vkQueueSubmit(VkQueue queue, uint32_t submitCount, c
                         assert(imageReference);
                         imageReference.get_obj().mImageLayoutTracker = imageLayoutTrackerItr.second;
                     }
-                    #if 0 // TODO : Acceleration structure history
                     for (auto buildAcclerationStructureCmdIndex : commandBufferControlBlock.mCmdTracker.get_build_acceleration_sturcture_cmd_indices()) {
                         const auto& cmds = commandBufferControlBlock.mCmdTracker.get_cmds();
                         assert(buildAcclerationStructureCmdIndex < cmds.size());
                         auto pCmd = (const GvkCommandStructureCmdBuildAccelerationStructuresKHR*)cmds[buildAcclerationStructureCmdIndex];
                         assert(pCmd->sType == get_stype<GvkCommandStructureCmdBuildAccelerationStructuresKHR>());
-                        process_build_acceleration_structures(gvkDevice, VK_NULL_HANDLE, pCmd->infoCount, pCmd->pInfos, pCmd->ppBuildRangeInfos);
+                        if (gvkResult == VK_SUCCESS) {
+                            gvkResult = process_vkCmdBuildAccelerationStructuresKHR(gvkDevice, gvkQueue, VK_NULL_HANDLE, pCmd->infoCount, pCmd->pInfos, pCmd->ppBuildRangeInfos);
+                        }
                     }
-                    #endif
                     if (commandBufferControlBlock.mCommandbufferBeginInfo->flags & VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT) {
                         commandBufferControlBlock.mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKED_OBJECT_STATUS_ALL_COMMAND_BUFFER_BIT;
                         commandBufferControlBlock.mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKED_OBJECT_STATUS_INVALID_BIT;
@@ -114,15 +114,15 @@ VkResult StateTracker::post_vkQueueSubmit2(VkQueue queue, uint32_t submitCount, 
                         assert(imageReference);
                         imageReference.get_obj().mImageLayoutTracker = imageLayoutTrackerItr.second;
                     }
-                    #if 0 // TODO : Acceleration structure history
                     for (auto buildAcclerationStructureCmdIndex : commandBufferControlBlock.mCmdTracker.get_build_acceleration_sturcture_cmd_indices()) {
                         const auto& cmds = commandBufferControlBlock.mCmdTracker.get_cmds();
                         assert(buildAcclerationStructureCmdIndex < cmds.size());
                         auto pCmd = (const GvkCommandStructureCmdBuildAccelerationStructuresKHR*)cmds[buildAcclerationStructureCmdIndex];
                         assert(pCmd->sType == get_stype<GvkCommandStructureCmdBuildAccelerationStructuresKHR>());
-                        process_build_acceleration_structures(gvkDevice, VK_NULL_HANDLE, pCmd->infoCount, pCmd->pInfos, pCmd->ppBuildRangeInfos);
+                        if (gvkResult == VK_SUCCESS) {
+                            gvkResult = process_vkCmdBuildAccelerationStructuresKHR(gvkDevice, gvkQueue, VK_NULL_HANDLE, pCmd->infoCount, pCmd->pInfos, pCmd->ppBuildRangeInfos);
+                        }
                     }
-                    #endif
                     if (commandBufferControlBlock.mCommandbufferBeginInfo->flags & VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT) {
                         commandBufferControlBlock.mStateTrackedObjectInfo.flags &= ~GVK_STATE_TRACKED_OBJECT_STATUS_ALL_COMMAND_BUFFER_BIT;
                         commandBufferControlBlock.mStateTrackedObjectInfo.flags |= GVK_STATE_TRACKED_OBJECT_STATUS_INVALID_BIT;

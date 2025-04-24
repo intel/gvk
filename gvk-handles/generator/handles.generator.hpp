@@ -86,6 +86,9 @@ public:
         if (handle.name == "VkPipelineBinaryKHR") {
             generate_ctors(true, false);
         } else
+        if (handle.name == "VkRenderPass") {
+            generate_ctors(true, false);
+        } else
         if (handle.name == "VkSurfaceKHR") {
             add_manually_implemented_ctor("VkResult create(const Instance& instance, const VkBaseInStructure* pCreateInfo, const VkAllocationCallbacks* pAllocator, SurfaceKHR* pSurface)");
         } else

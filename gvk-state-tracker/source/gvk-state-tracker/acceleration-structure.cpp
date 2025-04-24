@@ -26,6 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-state-tracker/state-tracker.hpp"
 #include "gvk-layer/registry.hpp"
+#include "gvk-spirv/context.hpp"
 
 #include <cassert>
 
@@ -87,73 +88,73 @@ VkResult StateTracker::post_vkBuildAccelerationStructuresKHR(VkDevice device, Vk
     return gvkResult;
 }
 
-VkResult StateTracker::process_build_acceleration_structures(VkDevice device, VkDeferredOperationKHR deferredOperation, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos)
+VkResult StateTracker::process_vkCmdBuildAccelerationStructuresKHR(VkDevice device, VkQueue queue, VkDeferredOperationKHR deferredOperation, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos)
 {
-    assert(false && "TODO : Acceleration structure history");
-
-    (void)device;
     (void)deferredOperation;
-    (void)infoCount;
-    (void)pInfos;
-    (void)ppBuildRangeInfos;
+    gvk_result_scope_begin(VK_SUCCESS) {
+        for (uint32_t info_i = 0; info_i < infoCount; ++info_i) {
+            auto& buildGeometryInfo = pInfos[info_i];
+            auto pBuildRangeInfo = ppBuildRangeInfos[info_i];
+            (void)pBuildRangeInfo;
 
-    const auto& deviceAddressTracker = Device(device).get<DeviceAddressTracker>();
-    (void)deviceAddressTracker;
-    for (uint32_t info_i = 0; info_i < infoCount; ++info_i) {
-        auto& buildGeometryInfo = pInfos[info_i];
-        auto pBuildRangeInfo = ppBuildRangeInfos[info_i];
-        AccelerationStructureKHR accelerationStructure({ device, buildGeometryInfo.dstAccelerationStructure });
-        assert(accelerationStructure);
-        auto& controlBlock = accelerationStructure.mReference.get_obj();
+            AccelerationStructureKHR accelerationStructure({ device, buildGeometryInfo.dstAccelerationStructure });
+            assert(accelerationStructure);
+            auto& controlBlock = accelerationStructure.mReference.get_obj();
+            auto& geometryTracker = controlBlock.mGeometryTracker;
 
-        std::set<Buffer> buffers;
-        auto getBuffer = [&](VkDeviceAddress deviceAddress)
-        {
-            (void)deviceAddress;
-            #if 0
-            // TODO : Find VkBuffer using its device address and create dependency
-            Buffer buffer({ device, deviceAddressTracker.get_buffer(deviceAddress) });
-            if (buffer) {
-                buffers.insert(buffer);
+            // NOTE : These resources shouldn't really belong to individual acceleration
+            //  structures.  The GPU memcpy pipeline should be created per device when
+            //  devices are created with the necessary features enabled, and the command
+            //  pool and command buffer should be managed per device per thread.  But for
+            //  this first pass at geometry tracking it should be fine.
+            if (!geometryTracker.gpuMemcpyPipeline || !geometryTracker.gvkCommandPool || !geometryTracker.vkCommandBuffer) {
+                gvk_result(geometryTracker.create_resources(device, queue));
             }
-            #endif
-        };
+            gvk_result(geometryTracker.gpuMemcpyPipeline ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+            gvk_result(geometryTracker.gvkCommandPool ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+            gvk_result(geometryTracker.vkCommandBuffer ? VK_SUCCESS : VK_ERROR_UNKNOWN);
 
-        getBuffer(buildGeometryInfo.scratchData.deviceAddress);
-        controlBlock.mBuildGeometryInfo = buildGeometryInfo;
-        controlBlock.mBuildRangeInfos.reserve(buildGeometryInfo.geometryCount);
-        for (uint32_t geomtry_i = 0; geomtry_i < buildGeometryInfo.geometryCount; ++geomtry_i) {
-            controlBlock.mBuildRangeInfos.push_back(pBuildRangeInfo[geomtry_i]);
-            auto pGeometry = buildGeometryInfo.pGeometries ? &buildGeometryInfo.pGeometries[geomtry_i] : buildGeometryInfo.ppGeometries[geomtry_i];
-            switch (pGeometry->geometryType) {
-            case VK_GEOMETRY_TYPE_TRIANGLES_KHR: {
-                const auto& triangles = pGeometry->geometry.triangles;
-                assert(!triangles.pNext && "Unserviced pNext; gvk maintenance required");
-                getBuffer(triangles.vertexData.deviceAddress);
-                getBuffer(triangles.indexData.deviceAddress);
-                getBuffer(triangles.transformData.deviceAddress);
-            } break;
-            case VK_GEOMETRY_TYPE_AABBS_KHR: {
-                const auto& aabbs = pGeometry->geometry.aabbs;
-                assert(!aabbs.pNext && "Unserviced pNext; gvk maintenance required");
-                getBuffer(aabbs.data.deviceAddress);
-            } break;
-            case VK_GEOMETRY_TYPE_INSTANCES_KHR: {
-                const auto& instances = pGeometry->geometry.instances;
-                assert(!instances.pNext && "Unserviced pNext; gvk maintenance required");
-                getBuffer(instances.data.deviceAddress);
-            } break;
-            default: {
-                assert(false && "Unserviced VkGeometryTypeKHR; gvk maintenance required");
-            } break;
+            // Process geometry
+            for (uint32_t geomtry_i = 0; geomtry_i < buildGeometryInfo.geometryCount; ++geomtry_i) {
+                auto pGeometry = buildGeometryInfo.pGeometries ? &buildGeometryInfo.pGeometries[geomtry_i] : buildGeometryInfo.ppGeometries[geomtry_i];
+                switch (pGeometry->geometryType) {
+                case VK_GEOMETRY_TYPE_TRIANGLES_KHR: {
+                    const auto& triangles = pGeometry->geometry.triangles;
+                    assert(!triangles.pNext && "Unserviced pNext; gvk maintenance required");
+                    (void)triangles.vertexData.deviceAddress;
+                    (void)triangles.indexData.deviceAddress;
+                    (void)triangles.transformData.deviceAddress;
+                } break;
+                case VK_GEOMETRY_TYPE_AABBS_KHR: {
+                    const auto& aabbs = pGeometry->geometry.aabbs;
+                    assert(!aabbs.pNext && "Unserviced pNext; gvk maintenance required");
+                    (void)aabbs.data.deviceAddress;
+                } break;
+                case VK_GEOMETRY_TYPE_INSTANCES_KHR: {
+                    const auto& instances = pGeometry->geometry.instances;
+                    assert(!instances.pNext && "Unserviced pNext; gvk maintenance required");
+                    (void)instances.data.deviceAddress;
+                } break;
+                default: {
+                    assert(false && "Unserviced VkGeometryTypeKHR; gvk maintenance required");
+                } break;
+                }
             }
         }
-        controlBlock.mBuildBuffers.clear();
-        for (const auto& buffer : buffers) {
-            controlBlock.mBuildBuffers.push_back(buffer);
+    } gvk_result_scope_end;
+    return gvkResult;
+}
+
+void StateTracker::get_state_tracked_acceleration_structure_geometry_info(const GvkStateTrackedObject* pStateTrackedAcclerationStructure, const GvkAccelerationStructureGeometryRequestInfo* pRequestInfo, GvkAcclerationstructureGeometryResultInfo* pResultInfo)
+{
+    assert(pStateTrackedAcclerationStructure);
+    gvk::state_tracker::AccelerationStructureKHR accelerationStructure({ (VkDevice)pStateTrackedAcclerationStructure->dispatchableHandle, (VkAccelerationStructureKHR)pStateTrackedAcclerationStructure->handle });
+    if (accelerationStructure) {
+        const auto& controlBlock = accelerationStructure.mReference.get_obj();
+        if (pRequestInfo->placeholderValue && pResultInfo) {
+            pResultInfo->placeholderDataSize = controlBlock.mAccelerationStructureCreateInfoKHR->size;
         }
     }
-    return VK_SUCCESS;
 }
 
 } // namespace state_tracker

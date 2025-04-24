@@ -1,7 +1,5 @@
 
-
 include_guard(GLOBAL)
-gvk_enable_target(stb)
 
 set(stb_VERSION f0569113c93ad095470c54bf34a17b36646bbbb5) # 14 Mar 2025
 FetchContent_Declare(
@@ -59,9 +57,9 @@ gvk_add_static_library(
     SOURCE_FILES "${sourceFiles}"
 )
 
-if(gvk-stb_INSTALL_ARTIFACTS)
+if(stb_INSTALL_ARTIFACTS)
     gvk_install_artifacts(TARGET stb VERSION ${stb_VERSION})
 endif()
-if(gvk-stb_INSTALL_HEADERS)
+if(stb_INSTALL_HEADERS)
     gvk_install_headers(TARGET stb EXCLUDE "*.cpp")
 endif()

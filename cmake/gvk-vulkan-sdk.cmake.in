@@ -282,7 +282,13 @@ else()
         gvk_set_vulkan_sdk_env_var(VULKAN_SDK "${workingDirectory}/${gvk-Vulkan-SDK_VERSION}")
     endif()
 
+    # Normalize Vulkan SDK path
+    file(TO_CMAKE_PATH "$ENV{VULKAN_SDK}" VULKAN_SDK)
+    set(ENV{VULKAN_SDK} "${VULKAN_SDK}")
+
     # Make Vulkan targets available for linking
     find_package(Vulkan ${gvk-Vulkan-SDK_VERSION} EXACT REQUIRED)
-    set(Vulkan_XML "$ENV{VULKAN_SDK}/share/vulkan/registry/vk.xml" CACHE STRING "" FORCE)
+    set(Vulkan_VERSION "${Vulkan_VERSION}" CACHE STRING "" FORCE)
+    file(TO_CMAKE_PATH "$ENV{VULKAN_SDK}/share/vulkan/registry/vk.xml" Vulkan_XML)
+    set(Vulkan_XML "${Vulkan_XML}" CACHE STRING "" FORCE)
 endif()

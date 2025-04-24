@@ -12,7 +12,7 @@ terms are listed below.
 
 -------------------------------------------------------------
 1. boost.asio
-   Copyright (c) 2003-2021 Christopher M. Kohlhoff
+   Copyright (c) 2003-2023 Christopher M. Kohlhoff
 
    boost.multiprecision
    Copyright (c) 2002-2020 John Maddock and Christopher Kormanyos

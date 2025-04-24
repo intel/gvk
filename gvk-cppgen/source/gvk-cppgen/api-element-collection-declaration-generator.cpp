@@ -45,9 +45,18 @@ void ApiElementCollectionDeclarationGenerator::generate(const ApiElementCollecti
     }
     file << std::endl;
     file << "#include \"vulkan/vulkan.h\"" << std::endl;
+    generate_definition_declarations(file, apiElements);
     generate_enumeration_declarations(file, apiElements);
     generate_structure_declarations(file, apiElements);
     file << std::endl;
+}
+
+void ApiElementCollectionDeclarationGenerator::generate_definition_declarations(FileGenerator& file, const ApiElementCollectionInfo& apiElements)
+{
+    file << std::endl;
+    for (const auto& definition : apiElements.definitions) {
+        file << definition << std::endl;
+    }
 }
 
 void ApiElementCollectionDeclarationGenerator::generate_enumeration_declarations(FileGenerator& file, const ApiElementCollectionInfo& apiElements)

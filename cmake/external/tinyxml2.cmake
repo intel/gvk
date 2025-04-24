@@ -1,6 +1,5 @@
 
 include_guard(GLOBAL)
-gvk_enable_target(tinyxml2)
 
 set(tinyxml2_VERSION 9148bdf719e997d1f474be6bcc7943881046dba1) # 11.0.0
 FetchContent_Declare(
@@ -22,9 +21,9 @@ gvk_add_static_library(
     SOURCE_FILES "${tinyxml2_BINARY_DIR}/tinyxml2/tinyxml2.cpp"
 )
 
-if(gvk-tinyxml2_INSTALL_ARTIFACTS)
+if(tinyxml2_INSTALL_ARTIFACTS)
     gvk_install_artifacts(TARGET tinyxml2 VERSION ${tinyxml2_VERSION})
 endif()
-if(gvk-tinyxml2_INSTALL_HEADERS)
+if(tinyxml2_INSTALL_HEADERS)
     gvk_install_headers(TARGET tinyxml2)
 endif()

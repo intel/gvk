@@ -92,6 +92,7 @@ int main(int, const char*[])
         apiElements.manuallyImplemented.insert("VkMicromapBuildInfoEXT");
         apiElements.manuallyImplemented.insert("VkMicromapVersionInfoEXT");
         apiElements.manuallyImplemented.insert("VkPipelineCacheCreateInfo");
+        apiElements.manuallyImplemented.insert("VkPipelineExecutableInternalRepresentationKHR");
         apiElements.manuallyImplemented.insert("VkPipelineMultisampleStateCreateInfo");
         apiElements.manuallyImplemented.insert("VkShaderCreateInfoEXT");
         apiElements.manuallyImplemented.insert("VkShaderModuleCreateInfo");

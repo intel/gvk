@@ -1,6 +1,5 @@
 
 include_guard(GLOBAL)
-gvk_enable_target(glfw)
 
 set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
@@ -20,9 +19,9 @@ set(folder "${GVK_IDE_FOLDER}/external/glfw/")
 set_target_properties(glfw PROPERTIES FOLDER "${folder}")
 set_target_properties(update_mappings PROPERTIES FOLDER "${folder}")
 
-if(gvk-glfw_INSTALL_ARTIFACTS)
+if(glfw_INSTALL_ARTIFACTS)
     gvk_install_artifacts(TARGET glfw VERSION ${glfw_VERSION})
 endif()
-if(gvk-glfw_INSTALL_HEADERS)
+if(glfw_INSTALL_HEADERS)
     install(DIRECTORY "${glfw_SOURCE_DIR}/include/GLFW/" DESTINATION include/GLFW/)
 endif()

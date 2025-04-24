@@ -51,7 +51,7 @@ public:
             "        ",
             "((const VkBaseInStructure*)pNext)->sType",
             "destroy_dynamic_array_copy(1, (const {structureType}*)pNext, pAllocator);",
-            "assert(false && \"Unrecognized VkStructureType\");"
+            "destroy_dynamic_array_copy(1, (const VkBaseInStructure*)pNext, pAllocator); // assert(false && \"Unrecognized VkStructureType\"); // TODO : Need to revisit how to deal with unknown structure types...ie. VK_STRUCTURE_TYPE_LOADER_DEVICE_CREATE_INFO"
         );
         file << "    }" << std::endl;
         file << "}" << std::endl;

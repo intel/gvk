@@ -98,22 +98,84 @@ VkResult StateTrackerValidationContext::create(StateTrackerValidationContext* pC
     return gvk::Context::create(&contextCreateInfo, nullptr, pContext);
 }
 
+const VkPhysicalDevice8BitStorageFeatures& StateTrackerValidationContext::get_physical_device_8_bit_storage_features() const
+{
+    return mPhysicalDevice8BitStorageFeatures;
+}
+
+const VkPhysicalDeviceSynchronization2Features& StateTrackerValidationContext::get_physical_device_synchronization_2_features() const
+{
+    return mPhysicalDeviceSynchronization2Features;
+}
+
+const VkPhysicalDeviceAccelerationStructureFeaturesKHR& StateTrackerValidationContext::get_physical_device_acceleration_structure_features() const
+{
+    return mPhysicalDeviceAccelerationStructureFeatures;
+}
+
+const VkPhysicalDeviceBufferDeviceAddressFeatures& StateTrackerValidationContext::get_physical_device_buffer_device_address_features() const
+{
+    return mPhysicalDeviceBufferDeviceAddressFeatures;
+}
+
+// NOTE : Duplicated from gvk-pipeline-explorer
+// TODO : Move to a common location
+template <typename PhysicalDeviceFeatures>
+static inline PhysicalDeviceFeatures get_available_physical_device_features(const gvk::PhysicalDevice& gvkPhysicalDevice)
+{
+    assert(gvkPhysicalDevice);
+    auto physicalDeviceFeatures = gvk::get_default<PhysicalDeviceFeatures>();
+    auto physicalDeviceFeatures2 = gvk::get_default<VkPhysicalDeviceFeatures2>();
+    physicalDeviceFeatures2.pNext = &physicalDeviceFeatures;
+    gvkPhysicalDevice.GetPhysicalDeviceFeatures2(&physicalDeviceFeatures2);
+    return physicalDeviceFeatures;
+}
+
 VkResult StateTrackerValidationContext::create_devices(const VkDeviceCreateInfo* pDeviceCreateInfo, std::vector<gvk::Device>* pDevices) const
 {
     assert(pDeviceCreateInfo);
     gvk::state_tracker::load_layer_entry_points();
-    auto physicalDeviceSynchronization2Features = gvk::get_default<VkPhysicalDeviceSynchronization2Features>();
-    auto availablePhysicalDeviceFeatures = gvk::get_default<VkPhysicalDeviceFeatures2>();
-    availablePhysicalDeviceFeatures.pNext = &physicalDeviceSynchronization2Features;
-    const auto& dispatchTable = get<gvk::PhysicalDevices>()[0].get<gvk::DispatchTable>();
-    assert(dispatchTable.gvkGetPhysicalDeviceFeatures2);
-    dispatchTable.gvkGetPhysicalDeviceFeatures2(get<gvk::PhysicalDevices>()[0], &availablePhysicalDeviceFeatures);
+
+    const auto& gvkPhysicalDevices = get<gvk::PhysicalDevices>();
+    assert(!gvkPhysicalDevices.empty());
+    const auto& gvkPhysicalDevice = gvkPhysicalDevices[0];
+
+    // TODO : Refactor all this to use PNextChainEditor and ExtensionsCollection
+    //  from gvk-pipeline-explorer
+    std::vector<const char*> extensions(pDeviceCreateInfo->ppEnabledExtensionNames, pDeviceCreateInfo->ppEnabledExtensionNames + pDeviceCreateInfo->enabledExtensionCount);
     auto enabledPhysicalDeviceFeatures = gvk::get_default<VkPhysicalDeviceFeatures2>();
-    if (physicalDeviceSynchronization2Features.synchronization2) {
-        enabledPhysicalDeviceFeatures.pNext = &physicalDeviceSynchronization2Features;
+
+    // TODO : It is nice to have these factory functions return their result so they
+    //  can be const, but these const_cast<>() are no good...gotta take the consts
+    //  off these Context::create() functions.
+    const_cast<VkPhysicalDeviceSynchronization2Features&>(mPhysicalDeviceSynchronization2Features) = get_available_physical_device_features<VkPhysicalDeviceSynchronization2Features>(gvkPhysicalDevice);
+    if (mPhysicalDeviceSynchronization2Features.synchronization2) {
+        const_cast<VkPhysicalDeviceSynchronization2Features&>(mPhysicalDeviceSynchronization2Features).pNext = enabledPhysicalDeviceFeatures.pNext;
+        enabledPhysicalDeviceFeatures.pNext = (void*)&mPhysicalDeviceSynchronization2Features;
     }
+    const_cast<VkPhysicalDevice8BitStorageFeatures&>(mPhysicalDevice8BitStorageFeatures) = get_available_physical_device_features<VkPhysicalDevice8BitStorageFeatures>(gvkPhysicalDevice);
+    const_cast<VkPhysicalDeviceAccelerationStructureFeaturesKHR&>(mPhysicalDeviceAccelerationStructureFeatures) = get_available_physical_device_features<VkPhysicalDeviceAccelerationStructureFeaturesKHR>(gvkPhysicalDevice);
+    const_cast<VkPhysicalDeviceBufferDeviceAddressFeatures&>(mPhysicalDeviceBufferDeviceAddressFeatures) = get_available_physical_device_features<VkPhysicalDeviceBufferDeviceAddressFeatures>(gvkPhysicalDevice);
+    if (mPhysicalDevice8BitStorageFeatures.storageBuffer8BitAccess &&
+        mPhysicalDeviceAccelerationStructureFeatures.accelerationStructure &&
+        mPhysicalDeviceBufferDeviceAddressFeatures.bufferDeviceAddress
+    ) {
+        const_cast<VkPhysicalDevice8BitStorageFeatures&>(mPhysicalDevice8BitStorageFeatures).pNext = enabledPhysicalDeviceFeatures.pNext;
+        enabledPhysicalDeviceFeatures.pNext = (void*)&mPhysicalDevice8BitStorageFeatures;
+        const_cast<VkPhysicalDeviceAccelerationStructureFeaturesKHR&>(mPhysicalDeviceAccelerationStructureFeatures).pNext = enabledPhysicalDeviceFeatures.pNext;
+        enabledPhysicalDeviceFeatures.pNext = (void*)&mPhysicalDeviceAccelerationStructureFeatures;
+        const_cast<VkPhysicalDeviceBufferDeviceAddressFeatures&>(mPhysicalDeviceBufferDeviceAddressFeatures).pNext = enabledPhysicalDeviceFeatures.pNext;
+        enabledPhysicalDeviceFeatures.pNext = (void*)&mPhysicalDeviceBufferDeviceAddressFeatures;
+        extensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+        extensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+        extensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+        enabledPhysicalDeviceFeatures.features.shaderInt64 = VK_TRUE;
+    }
+
     auto deviceCreateInfo = *pDeviceCreateInfo;
     deviceCreateInfo.pNext = &enabledPhysicalDeviceFeatures;
+    deviceCreateInfo.enabledExtensionCount = (uint32_t)extensions.size();
+    deviceCreateInfo.ppEnabledExtensionNames = !extensions.empty() ? extensions.data() : nullptr;
     pDevices->push_back({ });
     return gvk::Device::create(get<gvk::PhysicalDevices>()[0], &deviceCreateInfo, nullptr, &pDevices->back());
 }

@@ -5,7 +5,7 @@
 [Ii]nstall/
 documentation/html/
 documentation/latex/
-build-options.cmake
+/build-options.cmake
 *.hiv
 *.ini
 *.reg
