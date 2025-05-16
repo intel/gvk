@@ -86,7 +86,16 @@ gvk_add_static_library(
         "${sourcePath}/detail/to-string-manual.cpp"
 )
 if(MSVC)
+    set_source_files_properties("${generatedSourcePath}/basic-command-recorder.cpp"                 PROPERTIES COMPILE_FLAGS "/bigobj")
+    set_source_files_properties("${generatedSourcePath}/command-enumerations-to-string.cpp"         PROPERTIES COMPILE_FLAGS "/bigobj")
     set_source_files_properties("${generatedSourcePath}/command-structure-comparison-operators.cpp" PROPERTIES COMPILE_FLAGS "/bigobj")
+    set_source_files_properties("${generatedSourcePath}/command-structure-create-copy.cpp"          PROPERTIES COMPILE_FLAGS "/bigobj")
+    set_source_files_properties("${generatedSourcePath}/command-structure-deserialization.cpp"      PROPERTIES COMPILE_FLAGS "/bigobj")
+    set_source_files_properties("${generatedSourcePath}/command-structure-destroy-copy.cpp"         PROPERTIES COMPILE_FLAGS "/bigobj")
+    set_source_files_properties("${generatedSourcePath}/command-structure-enumerate-handles.cpp"    PROPERTIES COMPILE_FLAGS "/bigobj")
+    set_source_files_properties("${generatedSourcePath}/command-structure-serialization.cpp"        PROPERTIES COMPILE_FLAGS "/bigobj")
+    set_source_files_properties("${generatedSourcePath}/command-structure-to-string.cpp"            PROPERTIES COMPILE_FLAGS "/bigobj")
+    set_source_files_properties("${generatedSourcePath}/execute-command-structure.cpp"              PROPERTIES COMPILE_FLAGS "/bigobj")
 endif()
 
 ################################################################################

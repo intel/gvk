@@ -2,7 +2,7 @@
 include_guard(GLOBAL)
 find_package(Threads REQUIRED)
 
-set(boost-asio_VERSION 03ae834edbace31a96157b89bf50e5ee464e5ef9) # 1.32.0
+set(boost-asio_VERSION 03ae834edbace31a96157b89bf50e5ee464e5ef9) # 1.32.0 NOTE : thread_pool::wait() behavior is preventing moving to latest version
 FetchContent_Declare(
     boost-asio
     GIT_REPOSITORY "https://github.com/chriskohlhoff/asio.git"
