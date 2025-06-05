@@ -33,11 +33,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #undef Bool
 #endif
 #include "gtest/gtest.h"
-#include "spirv-test-utilities.hpp"
+#include "spirv-validation-utilities.hpp"
 
 TEST(spirv, RayGen_stage)
 {
-    gvk::validate_pipeline_layout_creation(
+    gvk::spirv::validation::validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
@@ -97,7 +97,7 @@ TEST(spirv, RayGen_stage)
 
 TEST(spirv, ClosestHit_stage)
 {
-    gvk::validate_pipeline_layout_creation(
+    gvk::spirv::validation::validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
@@ -131,7 +131,7 @@ TEST(spirv, ClosestHit_stage)
         
                     layout(buffer_reference, scalar) buffer Vertices {vec4 v[]; };
                     layout(buffer_reference, scalar) buffer Indices {uint i[]; };
-                    layout(buffer_reference, scalar) buffer Data {vec4 f[]; };                  
+                    layout(buffer_reference, scalar) buffer Data {vec4 f[]; };
 
                     void main()
                     {
@@ -170,7 +170,7 @@ TEST(spirv, ClosestHit_stage)
 
 TEST(spirv, AnyHit_stage)
 {
-    gvk::validate_pipeline_layout_creation(
+    gvk::spirv::validation::validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
@@ -242,7 +242,7 @@ TEST(spirv, AnyHit_stage)
 
 TEST(spirv, MissHit_stage)
 {
-    gvk::validate_pipeline_layout_creation(
+    gvk::spirv::validation::validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
         gvk::spirv::ShaderInfo{
             /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
@@ -277,7 +277,7 @@ TEST(spirv, MissHit_stage)
 
 TEST(spirv, IntersectionBit_stage)
 {
-    gvk::validate_pipeline_layout_creation(
+    gvk::spirv::validation::validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
@@ -329,7 +329,7 @@ TEST(spirv, IntersectionBit_stage)
 
 TEST(spirv, CallableBit_stage)
 {
-    gvk::validate_pipeline_layout_creation(
+    gvk::spirv::validation::validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,

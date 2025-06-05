@@ -35,6 +35,7 @@ macro(gvk_add_core_sample target linkLibraries)
 endmacro()
 
 if(gvkCoreSamplesEnabled)
+    # NOTE : Samples set to 896 x 504 for screenshots
     gvk_add_core_sample(gvk-getting-started-00-triangle        "${gvkCoreSampleLinkLibraries}")
     gvk_add_core_sample(gvk-getting-started-01-mesh            "${gvkCoreSampleLinkLibraries}")
     gvk_add_core_sample(gvk-getting-started-02-uniform-buffer  "${gvkCoreSampleLinkLibraries}")
@@ -54,10 +55,16 @@ endif()
 
 if(gvk-xml_ENABLED)
     gvk_add_executable(
-        TARGET gvk-xml-comparison
+        TARGET gvk-xml-compare
         FOLDER "samples/"
         LINK_LIBRARIES gvk-xml
-        SOURCE_FILES "${CMAKE_CURRENT_LIST_DIR}/gvk-xml-comparison.cpp"
+        SOURCE_FILES "${CMAKE_CURRENT_LIST_DIR}/gvk-xml-compare.cpp"
+    )
+    gvk_add_executable(
+        TARGET gvk-xml-search
+        FOLDER "samples/"
+        LINK_LIBRARIES gvk-xml
+        SOURCE_FILES "${CMAKE_CURRENT_LIST_DIR}/gvk-xml-search.cpp"
     )
 endif()
 

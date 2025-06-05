@@ -55,22 +55,23 @@ private:
     {
         static const std::set<std::string> sCommandsRequiringCustomImplementation {
             "vkAllocateCommandBuffers",
-            "vkFreeCommandBuffers",
             "vkAllocateDescriptorSets",
-            "vkFreeDescriptorSets",
+            "vkCreateComputePipelines",
             "vkCreateDisplayModeKHR",
+            "vkCreateExecutionGraphPipelinesAMDX",
+            "vkCreateGraphicsPipelines",
+            "vkCreatePipelineBinariesKHR",
+            "vkCreateRayTracingPipelinesKHR",
+            "vkCreateRayTracingPipelinesNV",
+            "vkCreateShadersEXT",
             "vkCreateSharedSwapchainsKHR",
             "vkCreateSwapchainKHR",
             "vkCreateVideoSessionParametersKHR",
+            "vkDestroyExternalComputeQueueNV",
             "vkDestroySwapchainKHR",
             "vkDestroyVideoSessionParametersKHR",
-            "vkCreateComputePipelines",
-            "vkCreateGraphicsPipelines",
-            "vkCreateRayTracingPipelinesKHR",
-            "vkCreateRayTracingPipelinesNV",
-            "vkCreatePipelineBinariesKHR",
-            "vkCreateExecutionGraphPipelinesAMDX",
-            "vkCreateShadersEXT",
+            "vkFreeCommandBuffers",
+            "vkFreeDescriptorSets",
         };
         return sCommandsRequiringCustomImplementation.count(name);
     }
@@ -89,10 +90,10 @@ private:
         file << "{" << std::endl;
         file << "public:" << std::endl;
         for (const auto& commandItr : manifest.commands) {
-            if (command_requires_custom_implementation(commandItr.second.name)) {
-                continue;
+            auto command = append_return_result_parameter(commandItr.second);
+            if (command_requires_custom_implementation(command.name)) {
+                command.compileGuards.insert("GVK_MANUALLY_IMPLEMENTED");
             }
-            const auto& command = append_return_result_parameter(commandItr.second);
             if (command.type == xml::Command::Type::Create || command.type == xml::Command::Type::Destroy || command.type == xml::Command::Type::Cmd) {
                 CompileGuardGenerator compileGuardGenerator(file, command.compileGuards);
                 file << "    virtual " << command.returnType << " post_" << command.name << "(" << get_parameter_list(command.parameters) << ") override;" << std::endl;
@@ -111,10 +112,10 @@ private:
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk::state_tracker");
         for (const auto& commandItr : manifest.commands) {
-            if (command_requires_custom_implementation(commandItr.second.name)) {
-                continue;
+            auto command = commandItr.second;
+            if (command_requires_custom_implementation(command.name)) {
+                command.compileGuards.insert("GVK_MANUALLY_IMPLEMENTED");
             }
-            const auto& command = commandItr.second;
             auto layerHookCommand = append_return_result_parameter(command);
             if (!command.target.empty()) {
                 const auto targetHandleItr = manifest.handles.find(command.target);
@@ -155,16 +156,13 @@ private:
                 replacements.push_back({ "{handleLookupExpression}", handleLookupExpression });
 
                 switch (command.type) {
-                case xml::Command::Type::Create:
-                {
+                case xml::Command::Type::Create: {
                     generate_create_definition(file, manifest, command, replacements);
                 } break;
-                case xml::Command::Type::Destroy:
-                {
+                case xml::Command::Type::Destroy: {
                     generate_destroy_definition(file, manifest, command, replacements);
                 } break;
-                case xml::Command::Type::Cmd:
-                {
+                case xml::Command::Type::Cmd: {
                     generate_cmd_definition(file, command, replacements);
                 } break;
                 default:

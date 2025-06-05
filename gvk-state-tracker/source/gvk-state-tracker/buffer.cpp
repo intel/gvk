@@ -71,13 +71,22 @@ VkDeviceAddress StateTracker::post_vkGetBufferDeviceAddressKHR(VkDevice device, 
 void StateTracker::post_vkDestroyBuffer(VkDevice device, VkBuffer buffer, const VkAllocationCallbacks* pAllocator)
 {
     if (buffer) {
-        Buffer stateTrackedBuffer({ device, buffer });
+        gvk::state_tracker::Buffer stateTrackedBuffer({ device, buffer });
         assert(stateTrackedBuffer);
         auto& bufferControlBlock = stateTrackedBuffer.mReference.get_obj();
+
+        // TODO : Documentation
+        if (bufferControlBlock.mBufferCreateInfo->usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
+            gvk::state_tracker::Device stateTrackedDevice(device);
+            assert(stateTrackedDevice);
+            stateTrackedDevice.mReference.get_obj().mDeviceAddressTracker.erase_buffer_bindings(device, buffer);
+        }
+
+        // TODO : Documentation
         if (bufferControlBlock.mBindBufferMemoryInfo->sType == VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO) {
             if (!bufferControlBlock.mVkDeviceMemoryBindings.empty()) {
                 assert(bufferControlBlock.mVkDeviceMemoryBindings.size() == 1);
-                state_tracker::DeviceMemory stateTrackedDeviceMemory({ device, *bufferControlBlock.mVkDeviceMemoryBindings.begin() });
+                gvk::state_tracker::DeviceMemory stateTrackedDeviceMemory({ device, *bufferControlBlock.mVkDeviceMemoryBindings.begin() });
                 assert(stateTrackedDeviceMemory);
                 stateTrackedDeviceMemory.mReference.get_obj().mVkBufferBindings.erase(buffer);
                 assert(!bufferControlBlock.mDeviceMemoryRecord || bufferControlBlock.mDeviceMemoryRecord == stateTrackedDeviceMemory);

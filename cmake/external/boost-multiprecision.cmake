@@ -2,7 +2,7 @@
 include_guard(GLOBAL)
 find_package(Threads REQUIRED)
 
-set(boost-multiprecision_VERSION bb0fd0306299d29392af5de259698b103d1b0889) # Boost_1_86_0
+set(boost-multiprecision_VERSION b592f36b0a1a6db83f039134577e0fa18fd9c130) # Boost_1_88_0
 FetchContent_Declare(
     boost-multiprecision
     GIT_REPOSITORY "https://github.com/boostorg/multiprecision.git"

@@ -372,6 +372,11 @@ void VKAPI_PTR gvkGetStateTrackedAccelerationStructureGeometryInfo(const GvkStat
     gvk::state_tracker::StateTracker::get_state_tracked_acceleration_structure_geometry_info(pStateTrackedAcclerationStructure, pRequestInfo, pResultInfo);
 }
 
+void VKAPI_PTR gvkGetStateTrackedBufferDeviceAddressBindings(VkDevice device, VkDeviceAddress deviceAddress, uint32_t* pBindingCount, VkBindBufferMemoryInfo* pBindings)
+{
+    gvk::state_tracker::StateTracker::get_state_tracked_buffer_device_address_bindings(device, deviceAddress, pBindingCount, pBindings);
+}
+
 void VKAPI_CALL gvkDisableStateTracker()
 {
     for (auto& layer : gvk::layer::Registry::get().layers) {

@@ -26,7 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-state-tracker/thread-safe-unordered-map.hpp"
+#include "gvk-containers/thread-safe-unordered-map.hpp"
 #include "VK_LAYER_INTEL_gvk_state_tracker.h"
 
 #include <cassert>

@@ -3,7 +3,7 @@ include_guard()
 
 set(BUILD_GMOCK   OFF CACHE BOOL "" FORCE)
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
-set(googletest_VERSION 6910c9d9165801d8827d628cb72eb7ea9dd538c5) # 1.16.0
+set(googletest_VERSION 52eb8108c5bdec04579160ae17225d66034bd723) # 1.17.0
 FetchContent_Declare(
     googletest
     GIT_REPOSITORY "https://github.com/google/googletest.git"

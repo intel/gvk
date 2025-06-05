@@ -108,24 +108,29 @@ VkResult StateTracker::post_vkAllocateMemory(VkDevice device, const VkMemoryAllo
 void StateTracker::post_vkFreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator)
 {
     if (memory) {
-        DeviceMemory gvkDeviceMemory({ device, memory });
-        assert(gvkDeviceMemory);
-        auto& deviceMemoryControlBlock = gvkDeviceMemory.mReference.get_obj();
+        gvk::state_tracker::Device stateTrackedDevice(device);
+        assert(stateTrackedDevice);
+        stateTrackedDevice.mReference.get_obj().mDeviceAddressTracker.erase_memory_bindings(device, memory);
+
+        gvk::state_tracker::DeviceMemory stateTrackedDeviceMemory({ device, memory });
+        assert(stateTrackedDeviceMemory);
+
+        auto& deviceMemoryControlBlock = stateTrackedDeviceMemory.mReference.get_obj();
         for (auto vkBuffer : deviceMemoryControlBlock.mVkBufferBindings) {
-            Buffer gvkBuffer({ device, vkBuffer });
-            assert(gvkBuffer);
-            gvkBuffer.mReference.get_obj().mVkDeviceMemoryBindings.erase(memory);
+            gvk::state_tracker::Buffer stateTrackedBuffer({ device, vkBuffer });
+            assert(stateTrackedBuffer);
+            stateTrackedBuffer.mReference.get_obj().mVkDeviceMemoryBindings.erase(memory);
 
             // TODO : Double check this logic
             if (!deviceMemoryControlBlock.mDedicatedBuffer) {
-                gvkBuffer.mReference.get_obj().mDeviceMemoryRecord = gvkDeviceMemory;
+                stateTrackedBuffer.mReference.get_obj().mDeviceMemoryRecord = stateTrackedDeviceMemory;
             }
         }
         // TODO : Treat Images the same as Buffers wrt binding tracking
         for (auto vkImage : deviceMemoryControlBlock.mVkImageBindings) {
-            Image gvkImage({ device, vkImage });
-            assert(gvkImage);
-            gvkImage.mReference.get_obj().mVkDeviceMemoryBindings.erase(memory);
+            gvk::state_tracker::Image stateTrackedImage({ device, vkImage });
+            assert(stateTrackedImage);
+            stateTrackedImage.mReference.get_obj().mVkDeviceMemoryBindings.erase(memory);
         }
         deviceMemoryControlBlock.mVkBufferBindings.clear();
         deviceMemoryControlBlock.mVkImageBindings.clear();
@@ -178,16 +183,24 @@ VkResult StateTracker::post_vkBindBufferMemory(VkDevice device, VkBuffer buffer,
 VkResult StateTracker::post_vkBindBufferMemory2(VkDevice device, uint32_t bindInfoCount, const VkBindBufferMemoryInfo* pBindInfos, VkResult gvkResult)
 {
     if (gvkResult == VK_SUCCESS && bindInfoCount && pBindInfos) {
+        gvk::state_tracker::Device stateTrackedDevice(device);
+        assert(stateTrackedDevice);
         for (uint32_t i = 0; i < bindInfoCount; ++i) {
-            Buffer gvkBuffer({ device, pBindInfos[i].buffer });
-            assert(gvkBuffer);
-            DeviceMemory gvkDeviceMemory({ device, pBindInfos[i].memory });
-            assert(gvkDeviceMemory);
-            gvkBuffer.mReference.get_obj().mBindBufferMemoryInfo = pBindInfos[i];
-            gvkBuffer.mReference.get_obj().mVkDeviceMemoryBindings.insert(gvkDeviceMemory);
-            gvkDeviceMemory.mReference.get_obj().mVkBufferBindings.insert(gvkBuffer);
+            gvk::state_tracker::Buffer stateTrackedBuffer({ device, pBindInfos[i].buffer });
+            assert(stateTrackedBuffer);
+            gvk::state_tracker::DeviceMemory stateTrackedDeviceMemory({ device, pBindInfos[i].memory });
+            assert(stateTrackedDeviceMemory);
+            stateTrackedBuffer.mReference.get_obj().mBindBufferMemoryInfo = pBindInfos[i];
+            stateTrackedBuffer.mReference.get_obj().mVkDeviceMemoryBindings.insert(stateTrackedDeviceMemory);
+            stateTrackedDeviceMemory.mReference.get_obj().mVkBufferBindings.insert(stateTrackedBuffer);
 
-            auto& bufferCreateInfo = const_cast<VkBufferCreateInfo&>(*gvkBuffer.mReference.get_obj().mBufferCreateInfo);
+            // TODO : Documentation
+            auto& bufferCreateInfo = const_cast<VkBufferCreateInfo&>(*stateTrackedBuffer.mReference.get_obj().mBufferCreateInfo);
+            if (bufferCreateInfo.usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
+                stateTrackedDevice.mReference.get_obj().mDeviceAddressTracker.add_buffer_binding(device, &pBindInfos[i]);
+            }
+
+            // TODO : Documentation
             if (bufferCreateInfo.flags & VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT) {
                 const auto& dispatchTableItr = layer::Registry::get().VkDeviceDispatchTables.find(layer::get_dispatch_key(device));
                 assert(dispatchTableItr != layer::Registry::get().VkDeviceDispatchTables.end());
@@ -202,7 +215,7 @@ VkResult StateTracker::post_vkBindBufferMemory2(VkDevice device, uint32_t bindIn
                 }
 
                 auto bufferDeviceAddressInfo = get_default<VkBufferDeviceAddressInfo>();
-                bufferDeviceAddressInfo.buffer = gvkBuffer;
+                bufferDeviceAddressInfo.buffer = stateTrackedBuffer;
                 uint64_t opaqueCaptureAddress = 0;
                 if (layer::Registry::get().apiVersion < VK_API_VERSION_1_2) {
                     opaqueCaptureAddress = dispatchTable.gvkGetBufferOpaqueCaptureAddressKHR(device, &bufferDeviceAddressInfo);

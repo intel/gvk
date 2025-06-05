@@ -1,0 +1,22 @@
+
+version:
+  schema-version: 6
+
+connection:
+  url: https://coverity.server.placeholder.com/connect
+  username: dmn\\placeholder
+
+project: "GPA Utilities for Vulkan"
+
+title-page:
+  company-name: "Intel"
+  project-name: "GPA Utilities for Vulkan"
+  project-version: 2025.2.0
+  organizational-unit-name: ""
+  organizational-unit-term: ""
+  prepared-for: ""
+  project-contact-email: "gpa.support@intel.com"
+  prepared-by: ""
+
+locale: en_US
+issue-cutoff-count: 4000

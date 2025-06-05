@@ -3,7 +3,7 @@ include_guard(GLOBAL)
 
 set(SPIRV_HEADERS_SKIP_EXAMPLES ON CACHE BOOL "" FORCE)
 set(SPIRV_HEADERS_SKIP_INSTALL  ON CACHE BOOL "" FORCE)
-set(SPIRV-Headers_VERSION 09913f088a1197aba4aefd300a876b2ebbaa3391) # vulkan-sdk-1.4.309.0
+set(SPIRV-Headers_VERSION aa6cef192b8e693916eb713e7a9ccadf06062ceb) # vulkan-sdk-1.4.313.0
 FetchContent_Declare(
     SPIRV-Headers
     GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Headers.git"

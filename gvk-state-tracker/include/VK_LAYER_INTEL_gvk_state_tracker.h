@@ -87,6 +87,7 @@ typedef void(VKAPI_PTR* PFN_gvkGetStateTrackedObjectAllocateInfo)(const GvkState
 typedef void(VKAPI_PTR* PFN_gvkGetStateTrackedImageLayouts)(const GvkStateTrackedObject* pStateTrackedImage, const VkImageSubresourceRange* pSubresourceRange, VkImageLayout* pImageLayouts);
 typedef void(VKAPI_PTR* PFN_gvkGetStateTrackedMappedMemory)(const GvkStateTrackedObject* pStateTrackedDeviceMemory, VkDeviceSize* pOffset, VkDeviceSize* pSize, VkMemoryMapFlags* pFlags, void** ppData);
 typedef void(VKAPI_PTR* PFN_gvkGetStateTrackedAccelerationStructureGeometryInfo)(const GvkStateTrackedObject* pStateTrackedAcclerationStructure, const GvkAccelerationStructureGeometryRequestInfo* pRequestInfo, GvkAcclerationstructureGeometryResultInfo* pResultInfo);
+typedef void(VKAPI_PTR* PFN_gvkGetStateTrackedBufferDeviceAddressBindings)(VkDevice device, VkDeviceAddress deviceAddress, uint32_t* pBindingCount, VkBindBufferMemoryInfo* pBindings);
 typedef void(VKAPI_PTR* PFN_gvkDisableStateTracker)();
 typedef void(VKAPI_PTR* PFN_gvkEnableStateTracker)();
 

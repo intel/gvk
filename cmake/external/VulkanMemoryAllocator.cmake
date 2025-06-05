@@ -2,7 +2,7 @@
 include_guard(GLOBAL)
 
 set(VMA_STATIC_VULKAN_FUNCTIONS OFF CACHE BOOL "" FORCE)
-set(VulkanMemoryAllocator_VERSION c788c52156f3ef7bc7ab769cb03c110a53ac8fcb) # 3.2.1
+set(VulkanMemoryAllocator_VERSION 1d8f600fd424278486eade7ed3e877c99f0846b1) # 3.3.0
 FetchContent_Declare(
     VulkanMemoryAllocator
     GIT_REPOSITORY "https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git"

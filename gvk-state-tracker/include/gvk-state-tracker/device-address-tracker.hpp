@@ -27,9 +27,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 #include "gvk-defines.hpp"
+#include "gvk-containers/interval-tree.hpp"
+#include "gvk-structures.hpp"
 
 #include <mutex>
+#include <set>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace gvk {
 namespace state_tracker {
@@ -37,16 +41,16 @@ namespace state_tracker {
 class DeviceAddressTracker final
 {
 public:
-    void reset();
-    void add(VkBuffer buffer, VkDeviceAddress deviceAddress);
-    void erase(VkBuffer buffer);
-    VkDeviceAddress get_device_address(VkBuffer buffer) const;
-    VkBuffer get_buffer(VkDeviceAddress deviceAddress) const;
+    VkResult add_buffer_binding(VkDevice device, const VkBindBufferMemoryInfo* pBinding);
+    void get_buffer_bindings(VkDeviceAddress deviceAddress, uint32_t* pBindingCount, VkBindBufferMemoryInfo* pBindings);
+    VkResult erase_buffer_bindings(VkDevice device, VkBuffer buffer);
+    VkResult erase_memory_bindings(VkDevice device, VkDeviceMemory memory);
 
 private:
-    mutable std::mutex mMutex;
-    std::unordered_map<VkDeviceAddress, VkBuffer> mBuffers;
-    std::unordered_map<VkBuffer, VkDeviceAddress> mDeviceAddresses;
+    std::mutex mMutex;
+    IntervalTree<VkDeviceAddress, std::set<gvk::Auto<VkBindBufferMemoryInfo>>> mBindings;
+    std::unordered_map<VkBuffer, std::set<Interval<VkDeviceAddress>>> mBuffers;
+    std::unordered_map<VkDeviceMemory, std::set<Interval<VkDeviceAddress>>> mMemories;
 };
 
 } // namespace state_tracker

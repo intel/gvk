@@ -56,7 +56,7 @@ if ($args[0] -eq "update") {
 } elseif ($args[0] -eq "save") {
     $filePath = Get-FilePath($args[1], $DefaultHivFilePath)
     echo "saving $filePath"
-    reg save  $LayerRegistryPath $filePath /y
+    reg save $LayerRegistryPath $filePath /y
 
 ################################################################################
 } elseif ($args[0] -eq "restore") {

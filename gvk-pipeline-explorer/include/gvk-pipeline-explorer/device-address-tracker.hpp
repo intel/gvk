@@ -26,60 +26,32 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include <unordered_map>
+#include "gvk-defines.hpp"
+#include "gvk-containers/interval-tree.hpp"
+#include "gvk-structures.hpp"
+
 #include <mutex>
-#include <utility>
+#include <set>
+#include <unordered_map>
+#include <unordered_set>
 
 namespace gvk {
-namespace state_tracker {
+namespace pipeline_explorer {
 
-template <typename Key, typename T>
-class ThreadSafeUnorderedMap final
+class DeviceAddressTracker final
 {
 public:
-    using base_type = std::unordered_map<Key, T>;
-
-    template <typename ProcessIteratorFunctionType>
-    inline bool enumerate(ProcessIteratorFunctionType processIterator) const
-    {
-        std::lock_guard<std::mutex> lock(mMutex);
-        for (const auto& itr : mMap) {
-            if (!processIterator(itr)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    inline std::pair<typename base_type::iterator, bool> insert(const typename base_type::value_type& value)
-    {
-        std::lock_guard<std::mutex> lock(mMutex);
-        return mMap.insert(value);
-    }
-
-    inline T get(const Key& key) const
-    {
-        std::lock_guard<std::mutex> lock(mMutex);
-        const auto& itr = mMap.find(key);
-        return itr != mMap.end() ? itr->second : T { };
-    }
-
-    inline typename base_type::size_type erase(const Key& key)
-    {
-        std::lock_guard<std::mutex> lock(mMutex);
-        return mMap.erase(key);
-    }
-
-    inline void clear()
-    {
-        std::lock_guard<std::mutex> lock(mMutex);
-        mMap.clear();
-    }
+    VkResult add_buffer_binding(VkDevice device, const VkBindBufferMemoryInfo* pBinding);
+    void get_buffer_bindings(VkDeviceAddress deviceAddress, uint32_t* pBindingCount, VkBindBufferMemoryInfo* pBindings);
+    VkResult erase_buffer_bindings(VkDevice device, VkBuffer buffer);
+    VkResult erase_memory_bindings(VkDevice device, VkDeviceMemory memory);
 
 private:
-    base_type mMap;
-    mutable std::mutex mMutex;
+    std::mutex mMutex;
+    IntervalTree<VkDeviceAddress, std::set<gvk::Auto<VkBindBufferMemoryInfo>>> mBindings;
+    std::unordered_map<VkBuffer, std::set<Interval<VkDeviceAddress>>> mBuffers;
+    std::unordered_map<VkDeviceMemory, std::set<Interval<VkDeviceAddress>>> mMemories;
 };
 
-} // namespace state_tracker
+} // namespace pipeline_explorer
 } // namespace gvk

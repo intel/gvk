@@ -189,7 +189,13 @@ std::string BasicHandleGenerator::get_member_assignment_expression(const xml::Ma
                 if (parameterStructureItr != manifest.structures.end()) {
                     for (const auto& parameterMember : parameterStructureItr->second.members) {
                         if (memberVkType == parameterMember.unqualifiedType) {
-                            assert(!memberHandle.isDispatchable);
+
+                            // NOTE : Generating code to lookup handles wouldn't be difficult here, but the
+                            //  only need for it currenlty is VkExternalComputeQueueNV.  If new handles are
+                            //  introduced that follow this pattern, or VkExternalComputeQueueNV support
+                            //  becomes necessary, this will need to be revisted.
+                            assert(!memberHandle.isDispatchable || command.name == "vkCreateExternalComputeQueueNV");
+
                             auto parameterDereference = string::replace(
                                 "{parameterName}{dereference}", {
                                     { "{parameterName}", parameter.name },

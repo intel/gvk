@@ -14,6 +14,7 @@
 - [Update APT (Advanced Package Tool)](#Update-APT)
 - [Install Build Tools](#Install-Build-Tools)
 - [Setup Git SSH](#Setup-Git-SSH)
+- [Setup Git Proxy](#Setup-Git-Proxy)
 - [Clone Repository](#Clone-Repository)
 - [Configure and Build](#Configure-and-Build)
 - [Configure Vulkan SDK](#Configure-Vulkan-SDK)
@@ -68,6 +69,13 @@ FROM : https://git-scm.com/book/ms/v2/Git-on-the-Server-Generating-Your-SSH-Publ
 - Click **[Configure SSO]** and select any private organization you're authorized to access, and you'd like to access via this SSH key
 - Configure Git to access repositories using SSH instead of HTTPS
 > `git config --global url."git@github.com:".insteadOf "https://github.com/"`
+
+--------------------------------------------------------------------------------
+### Setup Git Proxy
+*Note that <your-proxy-host>:<your-proxy-port> should be replaced with you proxy host and port, ie. proxy.company.com:8080*
+> `sudo apt install connect-proxy`  
+> `echo "host github.com" >> ~/.ssh/config`  
+> `echo "    ProxyCommand connect -a none -S <your-proxy-host>:<your-proxy-port> %h %p" >> ~/.ssh/config`
 
 --------------------------------------------------------------------------------
 ### Clone Repository

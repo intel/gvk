@@ -77,5 +77,12 @@ VkResult StateTracker::post_vkCreateInstance(const VkInstanceCreateInfo* pCreate
     return gvkResult;
 }
 
+void StateTracker::pre_vkDestroyInstance(VkInstance instance, const VkAllocationCallbacks* pAllocator)
+{
+    (void)instance;
+    (void)pAllocator;
+    mGvkInstance.reset();
+}
+
 } // namespace state_tracker
 } // namespace gvk

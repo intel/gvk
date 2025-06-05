@@ -19,10 +19,12 @@ gvk_add_static_library(
         "${includeDirectory}"
     INCLUDE_FILES
         "${includePath}/context.hpp"
+        "${includePath}/gpu-address-map.hpp"
         "${includePath}/gpu-memcpy.hpp"
         "${includeDirectory}/gvk-spirv.hpp"
     SOURCE_FILES
         "${sourcePath}/context.cpp"
+        "${sourcePath}/gpu-address-map.cpp"
         "${sourcePath}/gpu-memcpy.cpp"
 )
 
@@ -34,12 +36,16 @@ gvk_add_target_test(
         gvk-spirv
     FOLDER
         "gvk-spirv/"
+    LINK_LIBRARIES
+        boost-multiprecision
     SOURCE_FILES
         "${testsPath}/context.tests.cpp"
+        "${testsPath}/gpu-address-map.tests.cpp"
         "${testsPath}/gpu-memcpy.tests.cpp"
         "${testsPath}/raytracing.tests.cpp"
     INCLUDE_FILES
-        "${testsPath}/spirv-test-utilities.hpp"
+        "${testsPath}/spirv-validation-context.hpp"
+        "${testsPath}/spirv-validation-utilities.hpp"
 )
 
 ################################################################################

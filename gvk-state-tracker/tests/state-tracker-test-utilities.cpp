@@ -153,23 +153,27 @@ VkResult StateTrackerValidationContext::create_devices(const VkDeviceCreateInfo*
         const_cast<VkPhysicalDeviceSynchronization2Features&>(mPhysicalDeviceSynchronization2Features).pNext = enabledPhysicalDeviceFeatures.pNext;
         enabledPhysicalDeviceFeatures.pNext = (void*)&mPhysicalDeviceSynchronization2Features;
     }
+
     const_cast<VkPhysicalDevice8BitStorageFeatures&>(mPhysicalDevice8BitStorageFeatures) = get_available_physical_device_features<VkPhysicalDevice8BitStorageFeatures>(gvkPhysicalDevice);
-    const_cast<VkPhysicalDeviceAccelerationStructureFeaturesKHR&>(mPhysicalDeviceAccelerationStructureFeatures) = get_available_physical_device_features<VkPhysicalDeviceAccelerationStructureFeaturesKHR>(gvkPhysicalDevice);
-    const_cast<VkPhysicalDeviceBufferDeviceAddressFeatures&>(mPhysicalDeviceBufferDeviceAddressFeatures) = get_available_physical_device_features<VkPhysicalDeviceBufferDeviceAddressFeatures>(gvkPhysicalDevice);
-    if (mPhysicalDevice8BitStorageFeatures.storageBuffer8BitAccess &&
-        mPhysicalDeviceAccelerationStructureFeatures.accelerationStructure &&
-        mPhysicalDeviceBufferDeviceAddressFeatures.bufferDeviceAddress
-    ) {
+    if (mPhysicalDevice8BitStorageFeatures.storageBuffer8BitAccess) {
         const_cast<VkPhysicalDevice8BitStorageFeatures&>(mPhysicalDevice8BitStorageFeatures).pNext = enabledPhysicalDeviceFeatures.pNext;
         enabledPhysicalDeviceFeatures.pNext = (void*)&mPhysicalDevice8BitStorageFeatures;
+        enabledPhysicalDeviceFeatures.features.shaderInt64 = VK_TRUE;
+    }
+
+    const_cast<VkPhysicalDeviceAccelerationStructureFeaturesKHR&>(mPhysicalDeviceAccelerationStructureFeatures) = get_available_physical_device_features<VkPhysicalDeviceAccelerationStructureFeaturesKHR>(gvkPhysicalDevice);
+    if (mPhysicalDeviceAccelerationStructureFeatures.accelerationStructure) {
         const_cast<VkPhysicalDeviceAccelerationStructureFeaturesKHR&>(mPhysicalDeviceAccelerationStructureFeatures).pNext = enabledPhysicalDeviceFeatures.pNext;
         enabledPhysicalDeviceFeatures.pNext = (void*)&mPhysicalDeviceAccelerationStructureFeatures;
+        extensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+        extensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+    }
+
+    const_cast<VkPhysicalDeviceBufferDeviceAddressFeatures&>(mPhysicalDeviceBufferDeviceAddressFeatures) = get_available_physical_device_features<VkPhysicalDeviceBufferDeviceAddressFeatures>(gvkPhysicalDevice);
+    if (mPhysicalDeviceBufferDeviceAddressFeatures.bufferDeviceAddress) {
         const_cast<VkPhysicalDeviceBufferDeviceAddressFeatures&>(mPhysicalDeviceBufferDeviceAddressFeatures).pNext = enabledPhysicalDeviceFeatures.pNext;
         enabledPhysicalDeviceFeatures.pNext = (void*)&mPhysicalDeviceBufferDeviceAddressFeatures;
-        extensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
         extensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
-        extensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
-        enabledPhysicalDeviceFeatures.features.shaderInt64 = VK_TRUE;
     }
 
     auto deviceCreateInfo = *pDeviceCreateInfo;

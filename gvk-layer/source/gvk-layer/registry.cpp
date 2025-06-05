@@ -175,7 +175,10 @@ void destroy_instance(VkInstance instance, const VkAllocationCallbacks* pAllocat
         instanceDispatchTable.gvkDestroyInstance(instance, pAllocator);
     }
 
-#if 0
+#if 1
+    // NOTE : Some AAA workloads with numerous create/destroy during startup can get
+    //  things into a funky state wrt VkPhysicalDevice mappings...this needs more
+    //  investigation.
     layerRegistry.VkInstanceDispatchTables.clear();
     layerRegistry.VkDeviceDispatchTables.clear();
     layerRegistry.VkPhysicalDevices.clear();
