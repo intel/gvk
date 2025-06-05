@@ -19,6 +19,9 @@
 - [Configure and Build](#Configure-and-Build)
 - [Configure Vulkan SDK](#Configure-Vulkan-SDK)
 
+#### Tips & Tricks
+- [Restart Graphics Driver](#Restart-Graphics-Driver)
+
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 ## Detailed Instructions
@@ -65,3 +68,11 @@
     - For downloading and extracting the required Vulkan SDK
         - `gvk/build/cmake/gvk-vulkan-sdk.cmake`
         - `gvk/install/cmake/gvk-vulkan-sdk.cmake`
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+## Tips & Tricks
+--------------------------------------------------------------------------------
+### Restart Graphics Driver
+- Sometimes when doing graphics development/debugging things can go wrong!
+- [Win]+[Ctrl]+[Shift]+[B]

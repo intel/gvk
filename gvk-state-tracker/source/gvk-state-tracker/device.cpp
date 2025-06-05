@@ -30,11 +30,27 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <cassert>
 
+#include <string>
+
+#if 0
+// Turn this on and hook it up to gPfnGvkResultScopeCallback for debugging
+VkBool32 GvkResultScopeCallback(VkResult gvkResult, const char* pFileLine, const char* pGvkCall)
+{
+    std::string message = gvk::to_string(gvkResult, gvk::Printer::Default & ~gvk::Printer::EnumValue) + "@" + pFileLine + " - " + pGvkCall;
+    MessageBox(0, message.c_str(), 0, 0);
+    return VK_FALSE;
+}
+#endif
+
 namespace gvk {
 namespace state_tracker {
 
 VkResult StateTracker::pre_vkCreateDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice, VkResult gvkResult)
 {
+#if 0
+    gvk::gPfnGvkResultScopeCallback = GvkResultScopeCallback;
+#endif
+
     (void)physicalDevice;
     (void)pCreateInfo;
     (void)pAllocator;
@@ -115,6 +131,12 @@ VkResult StateTracker::post_vkCreateDevice(VkPhysicalDevice physicalDevice, cons
         }
     }
     return gvkResult;
+}
+
+void StateTracker::pre_vkDestroyDevice(VkDevice device, const VkAllocationCallbacks* pAllocator)
+{
+    (void)pAllocator;
+    mGvkDevices.erase(device);
 }
 
 } // namespace state_tracker

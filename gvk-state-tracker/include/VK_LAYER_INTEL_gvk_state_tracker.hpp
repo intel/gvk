@@ -47,6 +47,7 @@ extern PFN_gvkGetStateTrackedObjectAllocateInfo gvkGetStateTrackedObjectAllocate
 extern PFN_gvkGetStateTrackedImageLayouts gvkGetStateTrackedImageLayouts;
 extern PFN_gvkGetStateTrackedMappedMemory gvkGetStateTrackedMappedMemory;
 extern PFN_gvkGetStateTrackedAccelerationStructureGeometryInfo gvkGetStateTrackedAccelerationStructureGeometryInfo;
+extern PFN_gvkGetStateTrackedBufferDeviceAddressBindings gvkGetStateTrackedBufferDeviceAddressBindings;
 extern PFN_gvkDisableStateTracker gvkDisableStateTracker;
 extern PFN_gvkEnableStateTracker gvkEnableStateTracker;
 #endif // VK_LAYER_INTEL_gvk_state_tracker_hpp_DECLARE_ENTRY_POINTS
@@ -121,6 +122,7 @@ PFN_gvkGetStateTrackedObjectAllocateInfo gvkGetStateTrackedObjectAllocateInfo;
 PFN_gvkGetStateTrackedImageLayouts gvkGetStateTrackedImageLayouts;
 PFN_gvkGetStateTrackedMappedMemory gvkGetStateTrackedMappedMemory;
 PFN_gvkGetStateTrackedAccelerationStructureGeometryInfo gvkGetStateTrackedAccelerationStructureGeometryInfo;
+PFN_gvkGetStateTrackedBufferDeviceAddressBindings gvkGetStateTrackedBufferDeviceAddressBindings;
 PFN_gvkDisableStateTracker gvkDisableStateTracker;
 PFN_gvkEnableStateTracker gvkEnableStateTracker;
 #define VK_LAYER_INTEL_LOAD_GVK_STATE_TRACKER_LAYER_ENTRY_POINT(GVK_STATE_TRACKER_LAYER_ENTRY_POINT_NAME)                                                 \
@@ -148,6 +150,7 @@ VkResult load_layer_entry_points()
         VK_LAYER_INTEL_LOAD_GVK_STATE_TRACKER_LAYER_ENTRY_POINT(gvkGetStateTrackedImageLayouts);
         VK_LAYER_INTEL_LOAD_GVK_STATE_TRACKER_LAYER_ENTRY_POINT(gvkGetStateTrackedMappedMemory);
         VK_LAYER_INTEL_LOAD_GVK_STATE_TRACKER_LAYER_ENTRY_POINT(gvkGetStateTrackedAccelerationStructureGeometryInfo);
+        VK_LAYER_INTEL_LOAD_GVK_STATE_TRACKER_LAYER_ENTRY_POINT(gvkGetStateTrackedBufferDeviceAddressBindings);
         VK_LAYER_INTEL_LOAD_GVK_STATE_TRACKER_LAYER_ENTRY_POINT(gvkDisableStateTracker);
         VK_LAYER_INTEL_LOAD_GVK_STATE_TRACKER_LAYER_ENTRY_POINT(gvkEnableStateTracker);
     } gvk_result_scope_end;

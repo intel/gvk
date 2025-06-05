@@ -25,104 +25,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include "gvk-spirv/gpu-memcpy.hpp"
-#include "gvk-environment.hpp"
-
-#ifdef VK_USE_PLATFORM_XLIB_KHR
-#undef None
-#undef Bool
-#endif
-#include "gtest/gtest.h"
+#include "spirv-validation-context.hpp"
+#include "spirv-validation-utilities.hpp"
 
 #include <cstdint>
 #include <cstring>
 #include <random>
 #include <vector>
-
-// NOTE : Duplicated from gvk-pipeline-explorer
-// TODO : Move to a common location
-template <typename PhysicalDeviceFeatures>
-static inline PhysicalDeviceFeatures get_available_physical_device_features(const gvk::PhysicalDevice& gvkPhysicalDevice)
-{
-    assert(gvkPhysicalDevice);
-    auto physicalDeviceFeatures = gvk::get_default<PhysicalDeviceFeatures>();
-    auto physicalDeviceFeatures2 = gvk::get_default<VkPhysicalDeviceFeatures2>();
-    physicalDeviceFeatures2.pNext = &physicalDeviceFeatures;
-    gvkPhysicalDevice.GetPhysicalDeviceFeatures2(&physicalDeviceFeatures2);
-    return physicalDeviceFeatures;
-}
-
-class SpirvValidationContext final
-    : public gvk::Context
-{
-public:
-    static VkResult create(SpirvValidationContext* pContext)
-    {
-        assert(pContext);
-#if defined(_WIN32) || defined(_WIN64)
-        auto vkLayerPath = gvk::get_env_var("VK_LAYER_PATH");
-        if (vkLayerPath.empty()) {
-            gvk::set_vk_layer_path_from_windows_registry();
-        }
-#endif
-        auto instanceCreateInfo = gvk::get_default<VkInstanceCreateInfo>();
-        auto contextCreateInfo = gvk::get_default<gvk::Context::CreateInfo>();
-#if defined(_WIN32) || defined(_WIN64)
-        contextCreateInfo.loadValidationLayer = VK_TRUE;
-#endif
-        contextCreateInfo.pInstanceCreateInfo = &instanceCreateInfo;
-        return gvk::Context::create(&contextCreateInfo, nullptr, pContext);
-    }
-
-    const VkPhysicalDevice8BitStorageFeatures& get_physical_device_8_bit_storage_features() const
-    {
-        return mPhysicalDevice8BitStorageFeatures;
-    }
-
-    const VkPhysicalDeviceBufferDeviceAddressFeatures& get_physical_device_buffer_device_address_features() const
-    {
-        return mPhysicalDeviceBufferDeviceAddressFeatures;
-    }
-
-protected:
-    VkResult create_devices(const VkDeviceCreateInfo* pDeviceCreateInfo, std::vector<gvk::Device>* pDevices) const override final
-    {
-        assert(pDeviceCreateInfo);
-
-        const auto& gvkPhysicalDevices = get<gvk::PhysicalDevices>();
-        assert(!gvkPhysicalDevices.empty());
-        const auto& gvkPhysicalDevice = gvkPhysicalDevices[0];
-
-        // TODO : Refactor all this to use PNextChainEditor and ExtensionsCollection
-        //  from gvk-pipeline-explorer
-        std::vector<const char*> extensions(pDeviceCreateInfo->ppEnabledExtensionNames, pDeviceCreateInfo->ppEnabledExtensionNames + pDeviceCreateInfo->enabledExtensionCount);
-        auto enabledPhysicalDeviceFeatures = gvk::get_default<VkPhysicalDeviceFeatures2>();
-
-        // TODO : It is nice to have these factory functions return their result so they
-        //  can be const, but these const_cast<>() are no good...gotta take the consts
-        //  off these Context::create() functions.
-        const_cast<VkPhysicalDevice8BitStorageFeatures&>(mPhysicalDevice8BitStorageFeatures) = get_available_physical_device_features<VkPhysicalDevice8BitStorageFeatures>(gvkPhysicalDevice);
-        const_cast<VkPhysicalDeviceBufferDeviceAddressFeatures&>(mPhysicalDeviceBufferDeviceAddressFeatures) = get_available_physical_device_features<VkPhysicalDeviceBufferDeviceAddressFeatures>(gvkPhysicalDevice);
-        if (mPhysicalDevice8BitStorageFeatures.storageBuffer8BitAccess && mPhysicalDeviceBufferDeviceAddressFeatures.bufferDeviceAddress) {
-            const_cast<VkPhysicalDevice8BitStorageFeatures&>(mPhysicalDevice8BitStorageFeatures).pNext = enabledPhysicalDeviceFeatures.pNext;
-            enabledPhysicalDeviceFeatures.pNext = (void*)&mPhysicalDevice8BitStorageFeatures;
-            const_cast<VkPhysicalDeviceBufferDeviceAddressFeatures&>(mPhysicalDeviceBufferDeviceAddressFeatures).pNext = enabledPhysicalDeviceFeatures.pNext;
-            enabledPhysicalDeviceFeatures.pNext = (void*)&mPhysicalDeviceBufferDeviceAddressFeatures;
-            extensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
-            enabledPhysicalDeviceFeatures.features.shaderInt64 = VK_TRUE;
-        }
-
-        auto deviceCreateInfo = *pDeviceCreateInfo;
-        deviceCreateInfo.pNext = &enabledPhysicalDeviceFeatures;
-        deviceCreateInfo.enabledExtensionCount = (uint32_t)extensions.size();
-        deviceCreateInfo.ppEnabledExtensionNames = !extensions.empty() ? extensions.data() : nullptr;
-        pDevices->push_back({ });
-        return gvk::Device::create(get<gvk::PhysicalDevices>()[0], &deviceCreateInfo, nullptr, &pDevices->back());
-    }
-
-private:
-    VkPhysicalDevice8BitStorageFeatures mPhysicalDevice8BitStorageFeatures{ };
-    VkPhysicalDeviceBufferDeviceAddressFeatures mPhysicalDeviceBufferDeviceAddressFeatures{ };
-};
 
 static VkResult create_buffer(const gvk::Device& gvkDevice, VkDeviceSize size, const uint8_t* pData, gvk::Buffer* pGvkBuffer)
 {
@@ -166,21 +75,11 @@ static bool data_is_equal(const std::vector<uint8_t>& testData, const gvk::Buffe
     return buffersAreEqual;
 }
 
-static VkDeviceAddress get_buffer_device_address(const gvk::Device& gvkDevice, const gvk::Buffer& gvkBuffer)
-{
-    assert(gvkDevice);
-    assert(gvkBuffer);
-    auto bufferDeviceAddressInfo = gvk::get_default<VkBufferDeviceAddressInfoKHR>();
-    bufferDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
-    bufferDeviceAddressInfo.buffer = gvkBuffer;
-    return gvkDevice.GetBufferDeviceAddressKHR(&bufferDeviceAddressInfo);
-}
-
 TEST(spirv, GpuMemcpy)
 {
-    // Create gvk::Context
-    SpirvValidationContext context;
-    ASSERT_EQ(SpirvValidationContext::create(&context), VK_SUCCESS);
+    // Create gvk::spirv::validation::Context and check features
+    gvk::spirv::validation::Context context;
+    ASSERT_EQ(gvk::spirv::validation::Context::create(&context), VK_SUCCESS);
     if (context.get_physical_device_8_bit_storage_features().storageBuffer8BitAccess &&
         context.get_physical_device_buffer_device_address_features().bufferDeviceAddress
     ) {
@@ -219,8 +118,8 @@ TEST(spirv, GpuMemcpy)
 
             // Execute the GPU memcpy
             auto gpuMemcpyInfo = gvk::get_default<gvk::GpuMemcpyInfo>();
-            gpuMemcpyInfo.dst = get_buffer_device_address(gvkDevice, dstBuffer);
-            gpuMemcpyInfo.src = get_buffer_device_address(gvkDevice, srcBuffer);
+            gpuMemcpyInfo.dst = gvk::spirv::validation::get_buffer_device_address(gvkDevice, dstBuffer);
+            gpuMemcpyInfo.src = gvk::spirv::validation::get_buffer_device_address(gvkDevice, srcBuffer);
             gpuMemcpyInfo.size = data.size();
             ASSERT_EQ(gvk::execute_gpu_memcpy(gvkDevice, gvkQueue, gvkCommandBuffer, VK_NULL_HANDLE, &gpuMemcpyInfo, gpuMemcpyPipeline), VK_SUCCESS);
 

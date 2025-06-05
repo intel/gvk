@@ -1,0 +1,28 @@
+
+function(execute_sample samplesDirectory sampleName)
+    execute_process(WORKING_DIRECTORY "${samplesDirectory}/" COMMAND "${sampleName}" RESULT_VARIABLE result TIMEOUT 4)
+    message("${samplesDirectory}/${sampleName} returned : ${result}")
+endfunction()
+
+if(CMAKE_ARGC LESS_EQUAL 3)
+    message("Usage : cmake -P samples-smoke-test.cmake <samples directory>")
+else()
+    set(samplesDirectory "${CMAKE_ARGV3}")
+    get_filename_component(samplesDirectory "${samplesDirectory}" REALPATH)
+
+    execute_sample(${samplesDirectory} gvk-getting-started-00-triangle.exe)
+    execute_sample(${samplesDirectory} gvk-getting-started-01-mesh.exe)
+    execute_sample(${samplesDirectory} gvk-getting-started-02-uniform-buffer.exe)
+    execute_sample(${samplesDirectory} gvk-getting-started-03-texture-mapping.exe)
+    execute_sample(${samplesDirectory} gvk-getting-started-04-render-target.exe)
+    execute_sample(${samplesDirectory} gvk-getting-started-05-gui.exe)
+
+    set(ENV{VK_LAYER_PATH} "${samplesDirectory}")
+    set(ENV{VK_INSTANCE_LAYERS} "VK_LAYER_INTEL_gvk_sample")
+    execute_sample(${samplesDirectory} gvk-getting-started-00-triangle.exe)
+    execute_sample(${samplesDirectory} gvk-getting-started-01-mesh.exe)
+    execute_sample(${samplesDirectory} gvk-getting-started-02-uniform-buffer.exe)
+    execute_sample(${samplesDirectory} gvk-getting-started-03-texture-mapping.exe)
+    execute_sample(${samplesDirectory} gvk-getting-started-04-render-target.exe)
+    execute_sample(${samplesDirectory} gvk-getting-started-05-gui.exe)
+endif()

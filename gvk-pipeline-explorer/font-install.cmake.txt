@@ -1,0 +1,80 @@
+
+################################################################################
+gvk\gvk-pipeline-explorer\CMakeLists.txt
+--------------------------------------------------------------------------------
+add_custom_command(
+    TARGET gvk-pipeline-explorer-gui POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE_DIR:imgui>/Cousine-Regular.ttf" "$<TARGET_FILE_DIR:gvk-pipeline-explorer-gui>"
+)
+add_custom_command(
+    TARGET gvk-pipeline-explorer-gui POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE_DIR:imgui>/DroidSans.ttf" "$<TARGET_FILE_DIR:gvk-pipeline-explorer-gui>"
+)
+add_custom_command(
+    TARGET gvk-pipeline-explorer-gui POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE_DIR:imgui>/Karla-Regular.ttf" "$<TARGET_FILE_DIR:gvk-pipeline-explorer-gui>"
+)
+add_custom_command(
+    TARGET gvk-pipeline-explorer-gui POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE_DIR:imgui>/ProggyClean.ttf" "$<TARGET_FILE_DIR:gvk-pipeline-explorer-gui>"
+)
+add_custom_command(
+    TARGET gvk-pipeline-explorer-gui POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE_DIR:imgui>/ProggyTiny.ttf" "$<TARGET_FILE_DIR:gvk-pipeline-explorer-gui>"
+)
+add_custom_command(
+    TARGET gvk-pipeline-explorer-gui POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE_DIR:imgui>/Roboto-Medium.ttf" "$<TARGET_FILE_DIR:gvk-pipeline-explorer-gui>"
+)
+--------------------------------------------------------------------------------
+install(
+    FILES
+        "$<TARGET_FILE_DIR:imgui>/Cousine-Regular.ttf"
+        "$<TARGET_FILE_DIR:imgui>/DroidSans.ttf"
+        "$<TARGET_FILE_DIR:imgui>/Karla-Regular.ttf"
+        "$<TARGET_FILE_DIR:imgui>/ProggyClean.ttf"
+        "$<TARGET_FILE_DIR:imgui>/ProggyTiny.ttf"
+        "$<TARGET_FILE_DIR:imgui>/Roboto-Medium.ttf"
+    DESTINATION
+        bin/$<CONFIG>/
+)
+################################################################################
+gvk\cmake\external\imgui.cmake
+--------------------------------------------------------------------------------
+add_custom_command(
+    TARGET imgui POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${imgui_SOURCE_DIR}/misc/fonts/Cousine-Regular.ttf" "$<TARGET_FILE_DIR:imgui>"
+)
+add_custom_command(
+    TARGET imgui POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${imgui_SOURCE_DIR}/misc/fonts/DroidSans.ttf" "$<TARGET_FILE_DIR:imgui>"
+)
+add_custom_command(
+    TARGET imgui POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${imgui_SOURCE_DIR}/misc/fonts/Karla-Regular.ttf" "$<TARGET_FILE_DIR:imgui>"
+)
+add_custom_command(
+    TARGET imgui POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${imgui_SOURCE_DIR}/misc/fonts/ProggyClean.ttf" "$<TARGET_FILE_DIR:imgui>"
+)
+add_custom_command(
+    TARGET imgui POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${imgui_SOURCE_DIR}/misc/fonts/ProggyTiny.ttf" "$<TARGET_FILE_DIR:imgui>"
+)
+add_custom_command(
+    TARGET imgui POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${imgui_SOURCE_DIR}/misc/fonts/Roboto-Medium.ttf" "$<TARGET_FILE_DIR:imgui>"
+)
+--------------------------------------------------------------------------------
+install(
+    FILES
+        "$<TARGET_FILE_DIR:imgui>/Cousine-Regular.ttf"
+        "$<TARGET_FILE_DIR:imgui>/DroidSans.ttf"
+        "$<TARGET_FILE_DIR:imgui>/Karla-Regular.ttf"
+        "$<TARGET_FILE_DIR:imgui>/ProggyClean.ttf"
+        "$<TARGET_FILE_DIR:imgui>/ProggyTiny.ttf"
+        "$<TARGET_FILE_DIR:imgui>/Roboto-Medium.ttf"
+    DESTINATION
+        bin/$<CONFIG>/
+)
+################################################################################

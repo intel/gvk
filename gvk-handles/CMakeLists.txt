@@ -63,6 +63,7 @@ gvk_add_static_library(
         "${includePath}/detail/handle-utilities.hpp"
         "${includePath}/context.hpp"
         "${includePath}/defines.hpp"
+        "${includePath}/handle-info.hpp"
         "${includePath}/handles.hpp"
         "${includePath}/mesh.hpp"
         "${includePath}/render-target.hpp"

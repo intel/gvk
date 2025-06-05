@@ -1,0 +1,272 @@
+
+bdba = load "${env.WORKSPACE}/ci/jenkins/bdba-scan.groovy"
+utilities = load "${env.WORKSPACE}/ci/jenkins/utilities.groovy"
+
+enum OS { Windows, Linux }
+
+def upload_to_dependency_server(file, url) {
+    def uploadSpec = """{
+        "files": [
+            {
+                "pattern": "${file}",
+                "target": "dependencies/${url}/"
+            }
+        ]
+    }"""
+    def dependencyServer = Dependency.server 'gvk'
+    dependencyServer.upload(uploadSpec)
+}
+
+def build_linux(configuration) {
+    try {
+        gitlib.checkout(utilities.get_current_branch(), GIT_URL, GIT_CREDENTIALS)
+        def buildRoot = "ci/docker/"
+        def dockerFile = "Dockerfile-Ubuntu-24.04"
+        def image = docker.build("gvk-build-u2404", "--build-arg PROXY_URL=${PROXY_URL} --build-arg NO_PROXY=${NO_PROXY} -f ${buildRoot}/${dockerFile} ${buildRoot}")
+        image.inside("-v $WORKSPACE:/build") {
+            def cmakeDir = "${env.WORKSPACE}/" + deps.download_dependency('cmake', "${OS.Linux}")
+            def environment = []
+            withEnv(environment) {
+                sh "chmod +x ${cmakeDir}/bin/*"
+                sh "${cmakeDir}/bin/cmake -B build -C ci/build-options.cmake -D CMAKE_BUILD_TYPE=" + configuration + " -D VK_NO_PROTOTYPES=ON"
+                def vulkanSdkPackage = sh(script:"${cmakeDir}/bin/cmake -P build/cmake/gvk-vulkan-sdk.cmake PACKAGE", returnStdout:true).trim()
+                upload_to_dependency_server("build/_deps/VulkanSDK/${vulkanSdkPackage}", "vulkan/sdk/linux/")
+                sh "${cmakeDir}/bin/cmake --build build --target install"
+            }
+        }
+        stash name: utilities.get_stash_name('gvk-test-package'), includes: 'build/gvk-test-package/'
+        stash name: utilities.get_stash_name('gvk-install-package'), includes: 'install/'
+    } catch (Exception e) {
+        utilities.report_failure(e)
+    }
+}
+
+def build_windows(configuration) {
+    try {
+        gitlib.checkout(utilities.get_current_branch(), GIT_URL, GIT_CREDENTIALS)
+        def cmakeDir = "${env.WORKSPACE}\\" + deps.download_dependency('cmake', "${OS.Windows}")
+        def pythonDir = "${env.WORKSPACE}\\" + deps.download_dependency('python', "${OS.Windows}")
+        def environment = []
+        environment.add("PATH+PATH=${cmakeDir}\\bin\\;${pythonDir}")
+        environment.add("PYTHONPATH=${pythonDir}")
+        withEnv(environment) {
+            sh 'cmake -G "Visual Studio 17 2022" -A x64 -B build -C ci/build-options.cmake'
+            def vulkanSdkPackage = sh(script:'cmake -P build/cmake/gvk-vulkan-sdk.cmake PACKAGE', returnStdout:true).trim()
+            upload_to_dependency_server("build/_deps/VulkanSDK/${vulkanSdkPackage}", "vulkan/sdk/windows/")
+            sh 'cmake --build build --target install --config ' + configuration
+        }
+        stash name: utilities.get_stash_name('gvk-test-package'), includes: 'build/gvk-test-package/'
+        stash name: utilities.get_stash_name('gvk-install-package'), includes: 'install/'
+    } catch (Exception e) {
+        utilities.report_failure(e)
+    }
+}
+
+def test_linux() {
+    try {
+        unstash utilities.get_stash_name('gvk-test-package')
+        dir('build/gvk-test-package/') {
+            def environment = []
+            withEnv(environment) {
+                def tests = findFiles(glob: '*.tests*')
+                for (int i = 0; i < tests.size(); ++i) {
+                    // NOTE : Linux tests need to be reconfigured
+                    if (!tests[i].name.contains("VK_LAYER_INTEL_gvk_state_tracker") &&
+                        !tests[i].name.contains("gvk-handles")) {
+                        sh "./${tests[i]}"
+                    }
+                }
+            }
+        }
+    } catch (Exception e) {
+        utilities.report_failure(e)
+    }
+}
+
+def test_windows() {
+    try {
+        unstash utilities.get_stash_name('gvk-test-package')
+        def cmakeDir = "${env.WORKSPACE}\\" + deps.download_dependency('cmake', "${OS.Windows}")
+        def gvkVulkanSdk = "${env.WORKSPACE}\\build\\gvk-test-package\\gvk-vulkan-sdk.cmake"
+        def vulkanSdkDependencyServerUrl = "https://dependency.server.com/gvk/vulkan/sdk/windows"
+        bat "${cmakeDir}\\bin\\cmake -P ${env.WORKSPACE}\\build\\gvk-test-package\\gvk-vulkan-sdk.cmake URL ${vulkanSdkDependencyServerUrl} WORKING_DIRECTORY _deps EXTRACT VulkanSDK"
+        def gvkLayerPath = "${env.WORKSPACE}\\build\\gvk-test-package\\"
+        dir('build/gvk-test-package/') {
+            def environment = []
+            environment.add("VK_LAYER_PATH=DISABLED")
+            environment.add("VULKAN_SDK=${env.WORKSPACE}\\_deps\\VulkanSDK\\")
+            environment.add("GVK_LAYER_PATH=${gvkLayerPath}")
+            withEnv(environment) {
+                utilities.powershell("gvk-windows-layer-registry.ps1 save")
+                utilities.powershell("gvk-windows-layer-registry.ps1 clear")
+                utilities.powershell("gvk-windows-layer-registry.ps1 update")
+                def tests = findFiles(glob: '*.tests*')
+                for (int i = 0; i < tests.size(); ++i) {
+                    bat "${tests[i]}"
+                }
+                utilities.powershell("gvk-windows-layer-registry.ps1 restore")
+            }
+        }
+    } catch (Exception e) {
+        utilities.report_failure(e)
+    }
+}
+
+def publish(installPackage) {
+    unstash 'gvk-install-package-' + installPackage + '-Debug'
+    unstash 'gvk-install-package-' + installPackage + '-Release'
+    def archive = installPackage
+    if (installPackage.contains('Windows')) {
+        archive += '.zip'
+        zip archive: true, dir: 'install/', glob: '', zipFile: archive
+    } else {
+        archive += '.tar.gz'
+        tar file: archive, dir: 'install/'
+    }
+    def version = readFile('install/cmake/gvkVersion.cmake')
+    upload_to_dependency_server("${archive}", "gvk/${version}/")
+    echo "commit ${version}"
+    sh "md5sum ${archive}"
+}
+
+pipeline {
+    agent none
+    stages {
+        stage('Report Pending Commit') {
+            agent any
+            steps {
+                script {
+                    gitlib.report_pending_commit_status("Build #${env.BUILD_NUMBER}")
+                }
+            }
+        }
+        stage('Build') {
+            parallel {
+                stage('Ubuntu 24.04 Clang Debug') {
+                    agent { label "${UBUNTU_24_04_BUILDER}" }
+                    steps { script {
+                        utilities.start_stage()
+                        def environment = []
+                        environment.add("CC=/usr/bin/clang")
+                        environment.add("CXX=/usr/bin/clang++")
+                        withEnv(environment) {
+                            build_linux('Debug')
+                        }
+                    }}
+                }
+                stage('Ubuntu 24.04 Clang Release') {
+                    agent { label "${UBUNTU_24_04_BUILDER}" }
+                    steps { script {
+                        utilities.start_stage()
+                        def environment = []
+                        environment.add("CC=/usr/bin/clang")
+                        environment.add("CXX=/usr/bin/clang++")
+                        withEnv(environment) {
+                            build_linux('Release')
+                        }
+                    }}
+                }
+                stage('Ubuntu 24.04 GCC Debug') {
+                    agent { label "${UBUNTU_24_04_BUILDER}" }
+                    steps { script {
+                        utilities.start_stage()
+                        build_linux('Debug')
+                    }}
+                }
+                stage('Ubuntu 24.04 GCC Release') {
+                    agent { label "${UBUNTU_24_04_BUILDER}" }
+                    steps { script {
+                        utilities.start_stage()
+                        build_linux('Release')
+                    }}
+                }
+                stage('Windows 10 MSVC Debug') {
+                    agent { label "${WINDOWS_BUILDER}" }
+                    steps { script {
+                        utilities.start_stage()
+                        build_windows('Debug')
+                    }}
+                }
+                stage('Windows 10 MSVC Release') {
+                    agent { label "${WINDOWS_BUILDER}" }
+                    steps { script {
+                        utilities.start_stage()
+                        build_windows('Release')
+                    }}
+                }
+            }
+        }
+        stage('Test') {
+            parallel {
+                stage('Ubuntu 24.04 Clang Release') {
+                    agent { label "${UBUNTU_24_04_TESTER}" }
+                    steps { script {
+                        utilities.start_stage()
+                        test_linux()
+                    }}
+                }
+                stage('Ubuntu 24.04 GCC Release') {
+                    agent { label "${UBUNTU_24_04_TESTER}" }
+                    steps { script {
+                        utilities.start_stage()
+                        test_linux()
+                    }}
+                }
+                stage('Windows 10 MSVC Release') {
+                    agent { label "${WINDOWS_TESTER}" }
+                    steps { script {
+                        utilities.start_stage()
+                        test_windows()
+                    }}
+                }
+            }
+        }
+        stage('Publish') {
+            when { expression { return "${env.JOB_NAME}" == "GVK_Publish" || "${env.JOB_NAME}" == "GVK_Triggered" } }
+            parallel {
+                stage('Ubuntu 24.04 GCC Publish') {
+                    agent { label "${UBUNTU_24_04_TESTER}" }
+                    steps { script {
+                        utilities.start_stage()
+                        publish('Ubuntu-24.04-GCC')
+                    }}
+                }
+                stage('Windows 10 MSVC Publish') {
+                    agent { label "${WINDOWS_TESTER}" }
+                    steps { script {
+                        utilities.start_stage()
+                        publish('Windows-10-MSVC')
+                    }}
+                }
+            }
+        }
+        stage('Scan') {
+            when { expression { return "${env.JOB_NAME}" == "GVK_Daily" } }
+            parallel {
+                stage('BDBA') {
+                    agent { label "${WINDOWS_TESTER}" }
+                    steps { script {
+                        utilities.start_stage()
+                        bdba.scan('gvk-test-package-Ubuntu-24.04-Clang-Release', 'build/gvk-test-package/')
+                        bdba.scan('gvk-test-package-Ubuntu-24.04-GCC-Release', 'build/gvk-test-package/')
+                        bdba.scan('gvk-test-package-Windows-10-MSVC-Release', 'build/gvk-test-package/')
+                    }}
+                }
+                stage('Coverity') {
+                    agent none
+                    steps { script {
+                        build job: 'GVK_Coverity', parameters: [string(name: 'GIT_BRANCH', value: utilities.get_current_branch())], propagate: true, wait: true
+                    }}
+                }
+            }
+        }
+        stage('Report Success') {
+            agent any
+            steps {
+                script {
+                    gitlib.report_success_commit_status("Build #${env.BUILD_NUMBER}")
+                }
+            }
+        }
+    }
+}

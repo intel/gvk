@@ -14,7 +14,7 @@ A collection of Vulkan C++ utilities with a general focus on tools development, 
  - Vulkan XML parsing utilities (used to keep the project up to date with the vk.xml)
  - ...and more...
 
-## SamplesS
+## Samples
 [<img src="samples/screens/gvk-getting-started-00-triangle.png" width="320" height="180">](samples/gvk-getting-started-00-triangle.cpp)
 [<img src="samples/screens/gvk-getting-started-01-mesh.png" width="320" height="180">](samples/gvk-getting-started-01-mesh.cpp)
 [<img src="samples/screens/gvk-getting-started-02-uniform-buffer.gif" width="320" height="180">](samples/gvk-getting-started-02-uniform-buffer.cpp)

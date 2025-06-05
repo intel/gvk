@@ -27,7 +27,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-spirv/context.hpp"
 #include "gvk-handles/context.hpp"
 #include "gvk-structures/defaults.hpp"
-#include "spirv-test-utilities.hpp"
+#include "spirv-validation-utilities.hpp"
 
 #ifdef VK_USE_PLATFORM_XLIB_KHR
 #undef None
@@ -94,7 +94,7 @@ TEST(spirv, Context)
 
 TEST(spirv, BindingInfo_UniformBuffer)
 {
-    gvk::validate_pipeline_layout_creation(
+    gvk::spirv::validation::validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
@@ -138,7 +138,7 @@ TEST(spirv, BindingInfo_UniformBuffer)
 
 TEST(spirv, BindingInfo_StorageBuffer)
 {
-    gvk::validate_pipeline_layout_creation(
+    gvk::spirv::validation::validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
@@ -182,7 +182,7 @@ TEST(spirv, BindingInfo_StorageBuffer)
 
 TEST(spirv, BindingInfo_StorageImage)
 {
-    gvk::validate_pipeline_layout_creation(
+    gvk::spirv::validation::validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
@@ -237,7 +237,7 @@ TEST(spirv, BindingInfo_StorageImage)
 
 TEST(spirv, BindingInfo_CombinedImageSampler)
 {
-    gvk::validate_pipeline_layout_creation(
+    gvk::spirv::validation::validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
@@ -288,7 +288,7 @@ TEST(spirv, BindingInfo_CombinedImageSampler)
 
 TEST(spirv, BindingInfo_AccelerationStructure)
 {
-    gvk::validate_pipeline_layout_creation(
+    gvk::spirv::validation::validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,
@@ -347,7 +347,7 @@ TEST(spirv, BindingInfo_AccelerationStructure)
 
 TEST(spirv, BindingInfo_PushConstants)
 {
-    gvk::validate_pipeline_layout_creation(
+    gvk::spirv::validation::validate_pipeline_layout_creation(
         std::vector<gvk::spirv::ShaderInfo>{
             gvk::spirv::ShaderInfo{
                 /* .language   = */ gvk::spirv::ShadingLanguage::Glsl,

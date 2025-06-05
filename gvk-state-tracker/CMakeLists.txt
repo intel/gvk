@@ -65,6 +65,7 @@ gvk_add_layer(
         "VK_LAYER_INTEL_gvk_state_tracker/"
     LINK_LIBRARIES
         gvk-command-structures
+        gvk-containers
         gvk-handles
         gvk-reference
         gvk-runtime
@@ -85,7 +86,6 @@ gvk_add_layer(
         "${includePath}/memory-map-info.hpp"
         "${includePath}/object-tracker.hpp"
         "${includePath}/state-tracker.hpp"
-        "${includePath}/thread-safe-unordered-map.hpp"
     SOURCE_FILES
         "${generatedSourceFiles}"
         "${sourcePath}/acceleration-structure.cpp"
@@ -124,6 +124,7 @@ gvk_add_layer(
         gvkGetStateTrackedImageLayouts
         gvkGetStateTrackedMappedMemory
         gvkGetStateTrackedAccelerationStructureGeometryInfo
+        gvkGetStateTrackedBufferDeviceAddressBindings
         gvkDisableStateTracker
         gvkEnableStateTracker
 )
@@ -154,6 +155,7 @@ if(WIN32) # TODO : Configure layer loading for Linux tests
             "${testsPath}/acceleration-structure.tests.cpp"
             "${testsPath}/command-buffer.tests.cpp"
             "${testsPath}/descriptor-set.tests.cpp"
+            "${testsPath}/device-address-tracker.tests.cpp"
             "${testsPath}/device-memory-binding.tests.cpp"
             "${testsPath}/image-layout.tests.cpp"
             "${testsPath}/pipeline.tests.cpp"

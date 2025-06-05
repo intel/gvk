@@ -37,6 +37,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gtest/gtest.h"
 
 namespace gvk {
+namespace spirv {
+namespace validation {
 
 inline void validate_pipeline_layout_creation(
     std::vector<gvk::spirv::ShaderInfo> shaderInfos,
@@ -89,4 +91,16 @@ inline void validate_pipeline_layout_creation(
     }
 }
 
+inline VkDeviceAddress get_buffer_device_address(const gvk::Device& gvkDevice, const gvk::Buffer& gvkBuffer)
+{
+    assert(gvkDevice);
+    assert(gvkBuffer);
+    auto bufferDeviceAddressInfo = gvk::get_default<VkBufferDeviceAddressInfoKHR>();
+    bufferDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+    bufferDeviceAddressInfo.buffer = gvkBuffer;
+    return gvkDevice.GetBufferDeviceAddressKHR(&bufferDeviceAddressInfo);
+}
+
+} // namespace validation
+} // namespace spirv
 } // namespace gvk

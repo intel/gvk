@@ -95,6 +95,7 @@ public:
     // Defined in /source/gvk-state-tracker/device.cpp
     VkResult pre_vkCreateDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice, VkResult gvkResult) override final;
     VkResult post_vkCreateDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice, VkResult gvkResult) override final;
+    void pre_vkDestroyDevice(VkDevice device, const VkAllocationCallbacks* pAllocator) override final;
 
     ////////////////////////////////////////////////////////////////////////////////
     // Defined in /source/gvk-state-tracker/device-memory.cpp
@@ -127,6 +128,7 @@ public:
     ////////////////////////////////////////////////////////////////////////////////
     // Defined in /source/gvk-state-tracker/instance.cpp
     VkResult post_vkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance, VkResult gvkResult) override final;
+    void pre_vkDestroyInstance(VkInstance instance, const VkAllocationCallbacks* pAllocator) override final;
 
     ////////////////////////////////////////////////////////////////////////////////
     // Defined in /source/gvk-state-tracker/pipeline.cpp
@@ -202,6 +204,7 @@ public:
     static void get_state_tracked_image_layouts(const GvkStateTrackedObject* pStateTrackedImage, const VkImageSubresourceRange* pImageSubresourceRange, VkImageLayout* pImageLayouts);
     static void get_state_tracked_mapped_memory(const GvkStateTrackedObject* pStateTrackedDeviceMemory, VkDeviceSize* pOffset, VkDeviceSize* pSize, VkMemoryMapFlags* pFlags, void** ppData);
     static void get_state_tracked_acceleration_structure_geometry_info(const GvkStateTrackedObject* pStateTrackedAcclerationStructure, const GvkAccelerationStructureGeometryRequestInfo* pRequestInfo, GvkAcclerationstructureGeometryResultInfo* pResultInfo);
+    static void get_state_tracked_buffer_device_address_bindings(VkDevice device, VkDeviceAddress deviceAddress, uint32_t* pBindingCount, VkBindBufferMemoryInfo* pBindings);
 
 private:
     static PhysicalDeviceEnumerationMode smPhysicalDeviceEnumerationMode;

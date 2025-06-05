@@ -130,7 +130,7 @@ int main(int argc, const char* ppArgv[])
     } else {
         std::cout << "Provide any number of filepaths to different versions of vk.xml to compare sequentially" << std::endl;
         std::cout << "Usage:" << std::endl;
-        std::cout << "    ./gvk-xml-parser <filepath0/vk.xml> <filepath1/vk.xml> <...>" << std::endl;
+        std::cout << "    ./gvk-xml-compare <filepath0/vk.xml> <filepath1/vk.xml> <...>" << std::endl;
     }
     return 0;
 }

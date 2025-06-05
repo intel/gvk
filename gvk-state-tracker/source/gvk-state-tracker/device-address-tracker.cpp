@@ -25,48 +25,88 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include "gvk-state-tracker/device-address-tracker.hpp"
+#include "gvk-state-tracker/state-tracker.hpp"
 
 namespace gvk {
 namespace state_tracker {
 
-void DeviceAddressTracker::reset()
+VkResult DeviceAddressTracker::add_buffer_binding(VkDevice device, const VkBindBufferMemoryInfo* pBinding)
 {
     std::lock_guard<std::mutex> lock(mMutex);
-    mBuffers.clear();
-    mDeviceAddresses.clear();
+    gvk_result_scope_begin(VK_SUCCESS) {
+
+        // TODO : Documentation
+        gvk::Device gvkDevice(device);
+        gvk_result(gvkDevice ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result(pBinding ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk::state_tracker::Buffer stateTrackedBuffer({ device, pBinding->buffer });
+        gvk_result(stateTrackedBuffer ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result(!pBinding->pNext ? VK_SUCCESS : VK_ERROR_FEATURE_NOT_PRESENT);
+
+        // TODO : Documentation
+        auto bufferDeviceAddressInfo = gvk::get_default<VkBufferDeviceAddressInfo>();
+        bufferDeviceAddressInfo.buffer = pBinding->buffer;
+        auto deviceAddress = gvkDevice.GetBufferDeviceAddressKHR(&bufferDeviceAddressInfo);
+        Interval<VkDeviceAddress> interval{ deviceAddress, deviceAddress + stateTrackedBuffer.get<VkBufferCreateInfo>().size - 1 };
+
+        // TODO : Documentation
+        mBindings[interval].insert(*pBinding);
+        mBuffers[pBinding->buffer].insert(interval);
+        mMemories[pBinding->memory].insert(interval);
+
+    } gvk_result_scope_end;
+    return gvkResult;
 }
 
-void DeviceAddressTracker::add(VkBuffer buffer, VkDeviceAddress deviceAddress)
+void DeviceAddressTracker::get_buffer_bindings(VkDeviceAddress deviceAddress, uint32_t* pBindingCount, VkBindBufferMemoryInfo* pBindings)
 {
     std::lock_guard<std::mutex> lock(mMutex);
-    mBuffers[deviceAddress] = buffer;
-    mDeviceAddresses[buffer] = deviceAddress;
-}
-
-void DeviceAddressTracker::erase(VkBuffer buffer)
-{
-    std::lock_guard<std::mutex> lock(mMutex);
-    auto deviceAddressItr = mDeviceAddresses.find(buffer);
-    if (deviceAddressItr != mDeviceAddresses.end()) {
-        auto bufferItr = mBuffers.find(deviceAddressItr->second);
-        assert(bufferItr != mBuffers.end());
-        mBuffers.erase(bufferItr);
-        mDeviceAddresses.erase(deviceAddressItr);
+    if (deviceAddress && pBindingCount) {
+        uint32_t binding_i = 0;
+        mBindings.enumerate(deviceAddress,
+            [&](auto, const auto& bindings)
+            {
+                if (pBindings) {
+                    auto bindingItr = bindings.begin();
+                    for (; binding_i < *pBindingCount && bindingItr != bindings.end(); ++binding_i, ++bindingItr) {
+                        pBindings[binding_i] = *bindingItr;
+                    }
+                } else {
+                    *pBindingCount += (uint32_t)bindings.size();
+                }
+            }
+        );
     }
 }
 
-VkDeviceAddress DeviceAddressTracker::get_device_address(VkBuffer buffer) const
+VkResult DeviceAddressTracker::erase_buffer_bindings(VkDevice device, VkBuffer buffer)
 {
     std::lock_guard<std::mutex> lock(mMutex);
-    auto deviceAddressItr = mDeviceAddresses.find(buffer);
-    return deviceAddressItr != mDeviceAddresses.end() ? deviceAddressItr->second : VkDeviceAddress{ };
+    gvk_result_scope_begin(VK_SUCCESS) {
+        gvk_result(device ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result(buffer ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        // TODO :
+    } gvk_result_scope_end;
+    return gvkResult;
 }
 
-VkBuffer DeviceAddressTracker::get_buffer(VkDeviceAddress deviceAddress) const
+VkResult DeviceAddressTracker::erase_memory_bindings(VkDevice device, VkDeviceMemory memory)
 {
     std::lock_guard<std::mutex> lock(mMutex);
-    auto bufferItr = mBuffers.find(deviceAddress);
-    return bufferItr != mBuffers.end() ? bufferItr->second : VkBuffer{ };
+    gvk_result_scope_begin(VK_SUCCESS) {
+        gvk_result(device ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result(memory ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        // TODO :
+    } gvk_result_scope_end;
+    return gvkResult;
+}
+
+void StateTracker::get_state_tracked_buffer_device_address_bindings(VkDevice device, VkDeviceAddress deviceAddress, uint32_t* pBindingCount, VkBindBufferMemoryInfo* pBindings)
+{
+    gvk::state_tracker::Device stateTrackedDevice(device);
+    if (stateTrackedDevice) {
+        stateTrackedDevice.mReference.get_obj().mDeviceAddressTracker.get_buffer_bindings(deviceAddress, pBindingCount, pBindings);
+    }
 }
 
 } // namespace state_tracker

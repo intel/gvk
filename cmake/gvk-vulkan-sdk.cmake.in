@@ -276,7 +276,7 @@ else()
 
     # Download and extract Vulkan SDK if required version isn't installed
     if(NOT gvk-Vulkan-SDK_VERSION VERSION_EQUAL Vulkan-SDK_INSTALLED_VERSION)
-        set(workingDirectory "${CMAKE_BINARY_DIR}/_deps/VulkanSDK/")
+        set(workingDirectory "${FETCHCONTENT_BASE_DIR}/VulkanSDK/")
         gvk_download_vulkan_sdk(WORKING_DIRECTORY "${workingDirectory}" URL "${gvk-Vulkan-SDK_URL}")
         gvk_extract_vulkan_sdk(WORKING_DIRECTORY "${workingDirectory}" EXTRACT .)
         gvk_set_vulkan_sdk_env_var(VULKAN_SDK "${workingDirectory}/${gvk-Vulkan-SDK_VERSION}")

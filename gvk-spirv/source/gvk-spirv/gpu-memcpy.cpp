@@ -50,12 +50,17 @@ VkResult create_gpu_memcpy_pipeline(const gvk::Device& gvkDevice, gvk::Pipeline*
             #extension GL_EXT_shader_explicit_arithmetic_types_int8 : require
             #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
 
+            // #define DEBUG
+            #ifdef DEBUG
+            #extension GL_EXT_debug_printf : require
+            #endif
+
             // TODO : Query GPU to create shader with ideal workgroup size
             layout(local_size_x = 16) in;
             layout(buffer_reference, scalar) writeonly buffer Dst { uint8_t data[]; };
             layout(buffer_reference, scalar) readonly buffer Src { uint8_t data[]; };
 
-            layout(push_constant) uniform PushConstants {
+            layout(push_constant, scalar) uniform PushConstants {
                 uint64_t dst;
                 uint64_t src;
                 uint64_t size;
@@ -64,6 +69,15 @@ VkResult create_gpu_memcpy_pipeline(const gvk::Device& gvkDevice, gvk::Pipeline*
             void main()
             {
                 if (gl_GlobalInvocationID.x < pc.size) {
+
+                    #ifdef DEBUG
+                    if (gl_GlobalInvocationID.x == 0) {
+                        debugPrintfEXT("dst : %lu", pc.dst);
+                        debugPrintfEXT("src : %lu", pc.src);
+                        debugPrintfEXT("size : %lu", pc.size);
+                    }
+                    #endif
+
                     Dst(pc.dst).data[gl_GlobalInvocationID.x] = Src(pc.src).data[gl_GlobalInvocationID.x];
                 }
             }
