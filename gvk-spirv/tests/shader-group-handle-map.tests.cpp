@@ -24,12 +24,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "gvk-spirv/gpu-address-map.hpp"
 #include "gvk-spirv/gpu-memcpy.hpp"
+#include "gvk-spirv/shader-group-handle-map.hpp"
 #include "spirv-validation-context.hpp"
 #include "spirv-validation-utilities.hpp"
-
-#include "boost/multiprecision/cpp_int.hpp"
 
 #ifdef VK_USE_PLATFORM_XLIB_KHR
 #undef None
@@ -43,18 +41,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <random>
 #include <vector>
 
-using ShaderGroupHandle = boost::multiprecision::uint256_t;
-using ShaderGroupHandleBytes = std::array<uint8_t, 32>;
-constexpr auto ShaderGroupHandleSize = sizeof(ShaderGroupHandleBytes);
-
 class ShaderBindingTableEntry final
 {
 public:
     bool operator==(const ShaderBindingTableEntry& other) const
     {
-        return
-            shaderGroupHandle == other.shaderGroupHandle &&
-            data              == other.data;
+        return handle == other.handle && data == other.data;
     }
 
     bool operator!=(const ShaderBindingTableEntry& other) const
@@ -64,52 +56,28 @@ public:
 
     VkDeviceSize get_stride() const
     {
-        return (VkDeviceSize)ShaderGroupHandleSize + data.size();
+        return handle.size() + data.size();
     }
 
-    ShaderGroupHandle shaderGroupHandle{ };
+    std::vector<uint8_t> handle;
     std::vector<uint8_t> data;
 };
 
-static ShaderGroupHandle get_random_shader_group_handle(std::uniform_int_distribution<uint32_t>& distribution, std::mt19937& rng)
+static VkDeviceSize get_shader_group_handle_size(const gvk::Device& gvkDevice)
 {
-    ShaderGroupHandleBytes shaderGroupHandleBytes{ };
-    for (auto& byte : shaderGroupHandleBytes) {
-        /*
-        NOTE : Converting 0 to 1 since it doesn't round trip as expected.  It seems if
-            there's a leading 0 in the import bits, it gets placed at the end when
-            exporting.  Likely due to how boost::multiprecision stores significant bits.
-            More investigation is needed.  Until this is addressed, the shader will use
-            a linear search.
+    auto physicalDeviceRayTracingProperties = gvk::get_default<VkPhysicalDeviceRayTracingPipelinePropertiesKHR>();
+    auto physicalDeviceProperties2 = gvk::get_default<VkPhysicalDeviceProperties2>();
+    physicalDeviceProperties2.pNext = &physicalDeviceRayTracingProperties;
+    gvkDevice.get<gvk::PhysicalDevice>().GetPhysicalDeviceProperties2(&physicalDeviceProperties2);
+    return physicalDeviceRayTracingProperties.shaderGroupHandleSize;
+}
 
-        EXPECT_EQ(shaderGroupHandleBytes, exportedBytes);
-        error: Expected equality of these values:
-          shaderGroupHandleBytes
-            Which is: { '\0', '\x7F' (127), '\xEC' (236), '\xDB' (219), '\x84' (132), '\xAF' (175), '[' (91, 0x5B), '\b' (8), '\x1C' (28), '\x93' (147), '|' (124, 0x7C), 'R' (82, 0x52), '\xE3' (227), 'q' (113, 0x71), '\xA9' (169), '\xEA' (234), '\xCF' (207), '\xE7' (231), '\xB4' (180), '\xCB' (203), '\xE2' (226), '\xE' (14), '\x17' (23), ']' (93, 0x5D), '<' (60, 0x3C), '-' (45, 0x2D), '\xD7' (215), '*' (42, 0x2A), '\xF9' (249), '%' (37, 0x25), '\t' (9), 'p' (112, 0x70) }
-          exportedBytes
-            Which is: { '\x7F' (127), '\xEC' (236), '\xDB' (219), '\x84' (132), '\xAF' (175), '[' (91, 0x5B), '\b' (8), '\x1C' (28), '\x93' (147), '|' (124, 0x7C), 'R' (82, 0x52), '\xE3' (227), 'q' (113, 0x71), '\xA9' (169), '\xEA' (234), '\xCF' (207), '\xE7' (231), '\xB4' (180), '\xCB' (203), '\xE2' (226), '\xE' (14), '\x17' (23), ']' (93, 0x5D), '<' (60, 0x3C), '-' (45, 0x2D), '\xD7' (215), '*' (42, 0x2A), '\xF9' (249), '%' (37, 0x25), '\t' (9), 'p' (112, 0x70), '\0' }
-
-        EXPECT_EQ(shaderGroupHandleBytes, exportedBytes);
-        error: Expected equality of these values:
-          shaderGroupHandleBytes
-            Which is: { '\0', '\x5' (5), '\x83' (131), '\xC2' (194), '\xCD' (205), 'k' (107, 0x6B), '.' (46, 0x2E), '\x83' (131), ')' (41, 0x29), '\xA8' (168), '"' (34, 0x22), '|' (124, 0x7C), 'u' (117, 0x75), '\xF6' (246), '\xFF' (255), '\xF' (15), 'o' (111, 0x6F), 'C' (67, 0x43), '\x82' (130), '\xF0' (240), '\xE9' (233), '\xAB' (171), ';' (59, 0x3B), 'A' (65, 0x41), '^' (94, 0x5E), '\x8E' (142), '\x1' (1), '%' (37, 0x25), '7' (55, 0x37), '\xED' (237), 'O' (79, 0x4F), 'G' (71, 0x47) }
-          exportedBytes
-            Which is: { '\x5' (5), '\x83' (131), '\xC2' (194), '\xCD' (205), 'k' (107, 0x6B), '.' (46, 0x2E), '\x83' (131), ')' (41, 0x29), '\xA8' (168), '"' (34, 0x22), '|' (124, 0x7C), 'u' (117, 0x75), '\xF6' (246), '\xFF' (255), '\xF' (15), 'o' (111, 0x6F), 'C' (67, 0x43), '\x82' (130), '\xF0' (240), '\xE9' (233), '\xAB' (171), ';' (59, 0x3B), 'A' (65, 0x41), '^' (94, 0x5E), '\x8E' (142), '\x1' (1), '%' (37, 0x25), '7' (55, 0x37), '\xED' (237), 'O' (79, 0x4F), 'G' (71, 0x47), '\0' }
-
-        */
+static std::vector<uint8_t> get_random_shader_group_handle(const gvk::Device& gvkDevice, std::uniform_int_distribution<uint32_t>& distribution, std::mt19937& rng)
+{
+    std::vector<uint8_t> shaderGroupHandle(get_shader_group_handle_size(gvkDevice));
+    for (auto& byte : shaderGroupHandle) {
         byte = (uint8_t)distribution(rng);
-        if (!byte) {
-            byte = 1;
-        }
     }
-    ShaderGroupHandle shaderGroupHandle{ };
-    boost::multiprecision::import_bits(shaderGroupHandle, shaderGroupHandleBytes.begin(), shaderGroupHandleBytes.end());
-
-    // Validate round trip
-    ShaderGroupHandleBytes exportedBytes{ };
-    boost::multiprecision::export_bits(shaderGroupHandle, exportedBytes.data(), 8);
-    EXPECT_EQ(shaderGroupHandleBytes, exportedBytes);
-
     return shaderGroupHandle;
 }
 
@@ -120,6 +88,7 @@ static VkResult create_buffer(const gvk::Device& gvkDevice, VkDeviceSize size, c
         gvk_result(size ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
         gvk_result(pGvkBuffer ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
 
+        // Create a buffer of the specified size
         auto bufferCreateInfo = gvk::get_default<VkBufferCreateInfo>();
         bufferCreateInfo.size = size;
         bufferCreateInfo.usage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
@@ -128,6 +97,7 @@ static VkResult create_buffer(const gvk::Device& gvkDevice, VkDeviceSize size, c
         allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
         gvk_result(gvk::Buffer::create(gvkDevice, &bufferCreateInfo, &allocationCreateInfo, pGvkBuffer));
 
+        // If data was provided, write that data to the buffer
         if (pData) {
             uint8_t* pMappedData = nullptr;
             gvk_result(vmaMapMemory(gvkDevice.get<VmaAllocator>(), pGvkBuffer->get<VmaAllocation>(), (void**)&pMappedData));
@@ -145,16 +115,18 @@ static VkResult write_shader_binding_table_to_buffer(const gvk::Device& gvkDevic
         gvk_result(!shaderBindingTable.empty() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
         gvk_result(pGvkBuffer ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
 
+        // Loop through shader binding table entries and write each entry's handle and
+        //  data to a std::vector<>
         std::vector<uint8_t> shaderBindingTableData;
         auto stride = shaderBindingTable[0].get_stride();
         shaderBindingTableData.reserve(shaderBindingTable.size() * stride);
         for (const auto& entry : shaderBindingTable) {
-            ShaderGroupHandleBytes shaderGroupHandleBytes{ };
-            boost::multiprecision::export_bits(entry.shaderGroupHandle, shaderGroupHandleBytes.data(), 8);
-            shaderBindingTableData.insert(shaderBindingTableData.end(), shaderGroupHandleBytes.begin(), shaderGroupHandleBytes.end());
+            shaderBindingTableData.insert(shaderBindingTableData.end(), entry.handle.begin(), entry.handle.end());
             gvk_result(entry.get_stride() == stride ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
             shaderBindingTableData.insert(shaderBindingTableData.end(), entry.data.begin(), entry.data.end());
         }
+
+        // Create a buffer and intialize it with the shader binding table data
         gvk_result((shaderBindingTableData.size() == shaderBindingTable.size() * stride) ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
         gvk_result(create_buffer(gvkDevice, shaderBindingTableData.size(), shaderBindingTableData.data(), pGvkBuffer));
     } gvk_result_scope_end;
@@ -169,34 +141,43 @@ static VkResult read_shader_binding_table_from_buffer(const gvk::Device& gvkDevi
         gvk_result(pShaderBindingTable ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
         pShaderBindingTable->clear();
 
+        // Map the given buffer and the contents into a std::vector<>
         uint8_t* pMappedData = nullptr;
         gvk_result(vmaMapMemory(gvkDevice.get<VmaAllocator>(), gvkBuffer.get<VmaAllocation>(), (void**)&pMappedData));
-        std::vector<uint8_t> data(stride * count);
-        gvk_result(data.size() == gvkBuffer.get<VkBufferCreateInfo>().size ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-        auto pData = data.data();
-        memcpy(pData, pMappedData, gvkBuffer.get<VkBufferCreateInfo>().size);
-        vmaUnmapMemory(gvkDevice.get<VmaAllocator>(), gvkBuffer.get<VmaAllocation>());
+        gvk_result(stride * count == gvkBuffer.get<VkBufferCreateInfo>().size ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
 
+        // Populate shader binding table
         pShaderBindingTable->resize(count);
-        auto dataSize = stride - ShaderGroupHandleSize;
+        auto shaderGroupHandleSize = get_shader_group_handle_size(gvkDevice);
+        auto dataSize = stride - shaderGroupHandleSize;
         for (auto& entry : *pShaderBindingTable) {
-            boost::multiprecision::import_bits(entry.shaderGroupHandle, pData, pData + ShaderGroupHandleSize);
-            pData += ShaderGroupHandleSize;
-            entry.data.insert(entry.data.end(), pData, pData + dataSize);
-            pData += dataSize;
+
+            // Populate handle
+            entry.handle.resize(shaderGroupHandleSize);
+            memcpy(entry.handle.data(), pMappedData, shaderGroupHandleSize);
+            pMappedData += shaderGroupHandleSize;
+
+            // Populate data
+            entry.data.resize(dataSize);
+            memcpy(entry.data.data(), pMappedData, dataSize);
+            pMappedData += dataSize;
         }
+
+        // Unmap the buffer
+        vmaUnmapMemory(gvkDevice.get<VmaAllocator>(), gvkBuffer.get<VmaAllocation>());
     } gvk_result_scope_end;
     return gvkResult;
 }
 
-TEST(spirv, GpuAddressMap)
+TEST(spirv, ShaderGroupHandleMap)
 {
     // Create gvk::spirv::validation::Context and check features
     gvk::spirv::validation::Context context;
     ASSERT_EQ(gvk::spirv::validation::Context::create(&context), VK_SUCCESS);
-    if (context.get_physical_device_8_bit_storage_features().storageBuffer8BitAccess &&
-        context.get_physical_device_shader_float_16_int_8_features().shaderInt8 &&
-        context.get_physical_device_buffer_device_address_features().bufferDeviceAddress
+    if (get_shader_group_handle_size(context.get<gvk::Devices>()[0]) &&
+        context.get_physical_device_8_bit_storage_features().storageBuffer8BitAccess &&
+        context.get_physical_device_buffer_device_address_features().bufferDeviceAddress &&
+        context.get_physical_device_shader_float_16_int_8_features().shaderInt8
     ) {
         const auto& gvkDevice = context.get<gvk::Devices>()[0];
         const auto& gvkQueue = gvk::get_queue_family(context.get<gvk::Devices>()[0], 0).queues[0];
@@ -204,7 +185,7 @@ TEST(spirv, GpuAddressMap)
 
         // Create GPU address map pipeline
         gvk::Pipeline gpuAddressMapPipeline;
-        ASSERT_EQ(gvk::create_gpu_address_map_pipeline(gvkDevice, &gpuAddressMapPipeline), VK_SUCCESS);
+        ASSERT_EQ(gvk::create_shader_group_handle_map_pipeline(gvkDevice, &gpuAddressMapPipeline), VK_SUCCESS);
 
         // Create GPU memcpy pipeline
         gvk::Pipeline gpuMemcpyPipeline;
@@ -215,40 +196,49 @@ TEST(spirv, GpuAddressMap)
         std::uniform_int_distribution<size_t> sizeDistribution(4, 32);
         std::uniform_int_distribution<uint32_t> valueDistribution(0, 255);
 
-        // TODO : Documentation
+        // Loop TestCount times, each time creating a synthetic shader binding table
+        //  witth randomly sized handles and data, and populated with randomized data
         const size_t TestCount = 32;
         for (size_t i = 0; i < TestCount; ++i) {
 
             // Create Src shader binding table and shader group handle map
             auto dataSize = sizeDistribution(rng);
-            std::map<ShaderGroupHandle, ShaderGroupHandle> shaderGroupHandleMap;
+            std::map<std::vector<uint8_t>, std::vector<uint8_t>> keyValuePairs;
             std::vector<ShaderBindingTableEntry> srcShaderBindingTable(sizeDistribution(rng));
             for (auto& entry : srcShaderBindingTable) {
-                auto shaderGroupHandle = get_random_shader_group_handle(valueDistribution, rng);
-                shaderGroupHandleMap[shaderGroupHandle] = get_random_shader_group_handle(valueDistribution, rng);
-                entry.shaderGroupHandle = shaderGroupHandle;
+                auto shaderGroupHandle = get_random_shader_group_handle(gvkDevice, valueDistribution, rng);
+                keyValuePairs[shaderGroupHandle] = get_random_shader_group_handle(gvkDevice, valueDistribution, rng);
+                entry.handle = shaderGroupHandle;
                 entry.data.resize(i ? dataSize : 0);
                 for (auto& byte : entry.data) {
                     byte = (uint8_t)valueDistribution(rng);
                 }
             }
 
-            // TODO : Documentation
+            // Validate that ShaderBindingTable copmares for equality correctly
             auto dstShaderBindingTable = srcShaderBindingTable;
             EXPECT_EQ(dstShaderBindingTable, srcShaderBindingTable);
-            ASSERT_EQ(srcShaderBindingTable.size(), shaderGroupHandleMap.size());
 
-            // TODO : Documentation
+            // Validate that the keyValuePairs std::map<> and srcShaderBindingTable have the
+            //  same number of entries
+            ASSERT_EQ(srcShaderBindingTable.size(), keyValuePairs.size());
+
+            // Loop over dstShaderBindingTable, which is equal to srcShaderBindingTable
+            //  before this loop.  Look up the handle, and replace it with the handle
+            //  value from the keyValuePairs std::map<>.
             for (auto& entry : dstShaderBindingTable) {
-                auto shaderGroupHandleItr = shaderGroupHandleMap.find(entry.shaderGroupHandle);
-                ASSERT_NE(shaderGroupHandleItr, shaderGroupHandleMap.end());
-                entry.shaderGroupHandle = shaderGroupHandleItr->second;
+                auto shaderGroupHandleItr = keyValuePairs.find(entry.handle);
+                ASSERT_NE(shaderGroupHandleItr, keyValuePairs.end());
+                entry.handle = shaderGroupHandleItr->second;
             }
 
-            // TODO : Documentation
+            // Validate dstShaderBindingTable and srcShaderBindingTable are no longer equal
             EXPECT_NE(dstShaderBindingTable, srcShaderBindingTable);
 
-            // TODO : Documentation
+            // Create two buffers, write srcShaderBindingTable to srcBuffer and leave
+            //  dstBuffer empty.
+            // NOTE : That dstShaderBindingTable _is not_ written to a buffer...it's used to
+            //  compare the result of the shader group handle mapping at the end of the test
             gvk::Buffer srcBuffer;
             gvk::Buffer dstBuffer;
             ASSERT_EQ(write_shader_binding_table_to_buffer(gvkDevice, srcShaderBindingTable, &srcBuffer), VK_SUCCESS);
@@ -273,39 +263,37 @@ TEST(spirv, GpuAddressMap)
 
             // Create the shader group handle map data
             std::vector<uint8_t> keys;
-            keys.reserve(shaderGroupHandleMap.size() * ShaderGroupHandleSize);
+            keys.reserve(keyValuePairs.size() * get_shader_group_handle_size(gvkDevice));
             std::vector<uint8_t> values;
             values.reserve(keys.size());
-            for (const auto& shaderGroupHandleItr : shaderGroupHandleMap) {
-                ShaderGroupHandleBytes shaderGroupHandleBytes{ };
-                boost::multiprecision::export_bits(shaderGroupHandleItr.first, shaderGroupHandleBytes.data(), 8);
-                keys.insert(keys.end(), shaderGroupHandleBytes.begin(), shaderGroupHandleBytes.end());
-                boost::multiprecision::export_bits(shaderGroupHandleItr.second, shaderGroupHandleBytes.data(), 8);
-                values.insert(values.end(), shaderGroupHandleBytes.begin(), shaderGroupHandleBytes.end());
+            for (const auto& shaderGroupHandleItr : keyValuePairs) {
+                keys.insert(keys.end(), shaderGroupHandleItr.first.begin(), shaderGroupHandleItr.first.end());
+                values.insert(values.end(), shaderGroupHandleItr.second.begin(), shaderGroupHandleItr.second.end());
             }
 
-            // TODO : Documentation
-            gvk::Buffer keysBuffer;
-            gvk::Buffer valuesBuffer;
-            ASSERT_EQ(create_buffer(gvkDevice, keys.size(), keys.data(), &keysBuffer), VK_SUCCESS);
-            ASSERT_EQ(create_buffer(gvkDevice, values.size(), values.data(), &valuesBuffer), VK_SUCCESS);
+            // Create the gvk::ShaderGroupHandleMap
+            auto shaderGroupHandleMapCreateInfo = gvk::get_default<gvk::ShaderGroupHandleMapCreateInfo>();
+            shaderGroupHandleMapCreateInfo.pShaderGroupHandleKeys = keys.data();
+            shaderGroupHandleMapCreateInfo.pShaderGroupHandleValues = values.data();
+            shaderGroupHandleMapCreateInfo.shaderGroupHandleCount = (uint32_t)keyValuePairs.size();
+            gvk::ShaderGroupHandleMap shaderGroupHandleMap;
+            ASSERT_EQ(gvk::create_shader_group_handle_map(gvkDevice, &shaderGroupHandleMapCreateInfo, &shaderGroupHandleMap), VK_SUCCESS);
 
-            // Execute the GPU address map
+            // Execute shader group map, this will run through dstBuffer and replace the
+            //  srcBuffer shader group key handles with the value handles
             auto gpuAddressMapInfo = gvk::get_default<gvk::GpuAddressMapInfo>();
             gpuAddressMapInfo.dst = gvk::spirv::validation::get_buffer_device_address(gvkDevice, dstBuffer);
             gpuAddressMapInfo.src = gvk::spirv::validation::get_buffer_device_address(gvkDevice, srcBuffer);
             gpuAddressMapInfo.stride = srcShaderBindingTable[0].get_stride();
             gpuAddressMapInfo.count = srcShaderBindingTable.size();
-            gpuAddressMapInfo.keys = gvk::spirv::validation::get_buffer_device_address(gvkDevice, keysBuffer);
-            gpuAddressMapInfo.values = gvk::spirv::validation::get_buffer_device_address(gvkDevice, valuesBuffer);
-            gpuAddressMapInfo.kvpCount = keys.size();
-            ASSERT_EQ(gvk::execute_gpu_address_map(gvkDevice, gvkQueue, gvkCommandBuffer, VK_NULL_HANDLE, &gpuAddressMapInfo, gpuAddressMapPipeline), VK_SUCCESS);
+            gpuAddressMapInfo.keys = shaderGroupHandleMap.keys;
+            gpuAddressMapInfo.values = shaderGroupHandleMap.values;
+            gpuAddressMapInfo.kvpCount = shaderGroupHandleMap.kvpCount;
+            ASSERT_EQ(gvk::execute_shader_group_handle_map(gvkDevice, gvkQueue, gvkCommandBuffer, VK_NULL_HANDLE, &gpuAddressMapInfo, gpuAddressMapPipeline), VK_SUCCESS);
 
-            // TODO : Documentation
+            // Validate that contents of dstBuffer are equivalent to dstShaderBindingTable
             validateShaderBindingTableReadback.clear();
             ASSERT_EQ(read_shader_binding_table_from_buffer(gvkDevice, dstBuffer, dstShaderBindingTable[0].get_stride(), dstShaderBindingTable.size(), &validateShaderBindingTableReadback), VK_SUCCESS);
-            ShaderGroupHandleBytes validateShaderGroupHandleBytes{ };
-            boost::multiprecision::export_bits(validateShaderBindingTableReadback[0].shaderGroupHandle, validateShaderGroupHandleBytes.data(), 8);
             EXPECT_EQ(dstShaderBindingTable, validateShaderBindingTableReadback);
         }
     }

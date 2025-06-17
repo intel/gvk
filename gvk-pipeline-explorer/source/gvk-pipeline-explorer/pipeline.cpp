@@ -718,38 +718,29 @@ VkResult PipelineExplorer::create_replacement_pipeline(VkDevice device, VkPipeli
 
 VkResult PipelineExplorer::create_replacement_shader_binding_table(const gvk::Device& gvkDevice, pipeline_explorer::QueueInfo queueInfo, VkCommandBuffer vkCommandBuffer, pipeline_explorer::PipelineInfo pipelineInfo, VkStridedDeviceAddressRegionKHR* pShaderBindingTable)
 {
-    (void)vkCommandBuffer;
     gvk_result_scope_begin(VK_SUCCESS) {
         if (pShaderBindingTable && pShaderBindingTable->deviceAddress && pShaderBindingTable->stride && pShaderBindingTable->size) {
             gvk_result(gvkDevice ? VK_SUCCESS : VK_ERROR_UNKNOWN);
             gvk_result(queueInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
             gvk_result(pipelineInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
 
-            // TODO : Documentation
+            // Get the buffer containing the application's shader binding table so that a
+            //  barrier can be recorded before reading from it
             uint32_t bindingCount = 1;
             auto binding = gvk::get_default<VkBindBufferMemoryInfo>();
             queueInfo->deviceInfo->deviceAddressTracker.get_buffer_bindings(pShaderBindingTable->deviceAddress, &bindingCount, &binding);
-
-            // TODO : Documentation
             pipeline_explorer::BufferInfo shaderBindingTableBufferInfo({ gvkDevice, binding.buffer });
             gvk_result(shaderBindingTableBufferInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
 
-            // TODO : Documentation
+            // The application's shader binding table may not be at the beginning of the
+            //  buffer, so calculate the offset into the buffer it's at
             auto bufferDeviceAddressInfo = gvk::get_default<VkBufferDeviceAddressInfo>();
             bufferDeviceAddressInfo.buffer = binding.buffer;
             auto shaderBindingTableDeviceAddress = gvkDevice.GetBufferDeviceAddressKHR(&bufferDeviceAddressInfo);
             auto shaderBindingTableOffset = shaderBindingTableDeviceAddress - pShaderBindingTable->deviceAddress;
 
-            // TODO : Documentation
-            gvk::Buffer replacementShaderBindingTableBuffer;
-            auto size = pShaderBindingTable->size + queueInfo->deviceInfo->physicalDeviceInfo->physicalDeviceRayTracingPipelineProperties->shaderGroupHandleAlignment;
-            gvk_result(queueInfo->shaderBindingTableReplacementResources.get_buffer(gvkDevice, size, &replacementShaderBindingTableBuffer));
-            bufferDeviceAddressInfo.buffer = replacementShaderBindingTableBuffer;
-            auto replacementShaderBindingTableDeviceAddress = gvkDevice.GetBufferDeviceAddressKHR(&bufferDeviceAddressInfo);
-
-            // TODO : Handle alignment
-
-            // TODO : Documentation
+            // Record barrier to ensure any writes are complete before reading from the
+            //  application's shader binding table
             {
                 auto bufferMemoryBarrier = gvk::get_default<VkBufferMemoryBarrier>();
                 bufferMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
@@ -767,7 +758,24 @@ VkResult PipelineExplorer::create_replacement_shader_binding_table(const gvk::De
                 );
             }
 
-            // TODO : Documentation
+            // Prepare a buffer for the replacement shader binding table
+            gvk::Buffer replacementShaderBindingTableBuffer;
+            auto shaderBindingTableSize = pShaderBindingTable->size;
+            auto shaderGroupBaseAlignment = queueInfo->deviceInfo->physicalDeviceInfo->physicalDeviceRayTracingPipelineProperties->shaderGroupBaseAlignment;
+            if (shaderGroupBaseAlignment) {
+                shaderBindingTableSize += shaderGroupBaseAlignment - 1;
+            }
+            gvk_result(queueInfo->shaderBindingTableReplacementResources.get_buffer(gvkDevice, shaderBindingTableSize, &replacementShaderBindingTableBuffer));
+            bufferDeviceAddressInfo.buffer = replacementShaderBindingTableBuffer;
+            auto replacementShaderBindingTableDeviceAddress = gvkDevice.GetBufferDeviceAddressKHR(&bufferDeviceAddressInfo);
+            auto misalignment = replacementShaderBindingTableDeviceAddress % shaderGroupBaseAlignment;
+            if (misalignment) {
+                replacementShaderBindingTableDeviceAddress += shaderGroupBaseAlignment - misalignment;
+            }
+
+            // Record barrier to prepare replacement buffer for write.  It's very likely
+            //  that this barrier is unnecessary, but since the buffer comes from a pool of
+            //  utility buffers, it's here for safe measure.
             {
                 auto bufferMemoryBarrier = gvk::get_default<VkBufferMemoryBarrier>();
                 bufferMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
@@ -783,7 +791,7 @@ VkResult PipelineExplorer::create_replacement_shader_binding_table(const gvk::De
                 );
             }
 
-            // TODO : Documentation
+            // Copy the application's shader binding table to the replacement buffer
             {
                 auto gpuMemcpyInfo = gvk::get_default<GpuMemcpyInfo>();
                 gpuMemcpyInfo.dst = replacementShaderBindingTableDeviceAddress;
@@ -799,7 +807,7 @@ VkResult PipelineExplorer::create_replacement_shader_binding_table(const gvk::De
                 gvkDevice.get<DispatchTable>().gvkCmdDispatch(vkCommandBuffer, workgroupSize, 1, 1);
             }
 
-            // TODO : Documentation
+            // Record barrier ensuring copy is done before patching shader group handles
             {
                 auto bufferMemoryBarrier = gvk::get_default<VkBufferMemoryBarrier>();
                 bufferMemoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
@@ -816,7 +824,25 @@ VkResult PipelineExplorer::create_replacement_shader_binding_table(const gvk::De
                 );
             }
 
-            // TODO : Documentation
+            // Record barrier ensuring shader group handle map is written before using it
+            {
+                auto bufferMemoryBarrier = gvk::get_default<VkBufferMemoryBarrier>();
+                bufferMemoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+                bufferMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                bufferMemoryBarrier.buffer = pipelineInfo->shaderGroupHandleMap.gvkBuffer;
+                gvkDevice.get<DispatchTable>().gvkCmdPipelineBarrier(
+                    vkCommandBuffer,
+                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                    0,
+                    0, nullptr,
+                    1, &bufferMemoryBarrier,
+                    0, nullptr
+                );
+            }
+
+            // Execute shader group map, this will run through the replacement buffer and
+            //  replace the application's shader group handles with the replacment handles
             {
                 auto gpuAddressMapInfo = gvk::get_default<GpuAddressMapInfo>();
                 gpuAddressMapInfo.dst = replacementShaderBindingTableDeviceAddress;
@@ -836,7 +862,8 @@ VkResult PipelineExplorer::create_replacement_shader_binding_table(const gvk::De
                 gvkDevice.get<DispatchTable>().gvkCmdDispatch(vkCommandBuffer, workgroupSize, 1, 1);
             }
 
-            // TODO : Documentation
+            // Record barrier to ensure shader group handle patching is complete before
+            //  ray tracing shader stage begins
             {
                 auto bufferMemoryBarrier = gvk::get_default<VkBufferMemoryBarrier>();
                 bufferMemoryBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
@@ -853,7 +880,7 @@ VkResult PipelineExplorer::create_replacement_shader_binding_table(const gvk::De
                 );
             }
 
-            // TODO : Documentation
+            // Point the shader binding table address at the replacement
             pShaderBindingTable->deviceAddress = replacementShaderBindingTableDeviceAddress;
         }
     } gvk_result_scope_end;
@@ -868,9 +895,6 @@ VkResult PipelineExplorer::create_replacement_shader_binding_tables(pipeline_exp
         gvk_result(pCmd ? VK_SUCCESS : VK_ERROR_UNKNOWN);
         gvk::Device gvkDevice = queueInfo->deviceInfo->vkHandle;
         gvk_result(gvkDevice ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-
-        // TODO : Documentation
-        gvk_result(queueInfo->deviceInfo->physicalDeviceInfo->physicalDeviceRayTracingPipelineProperties->shaderGroupHandleSize == 32 ? VK_SUCCESS : VK_ERROR_FEATURE_NOT_PRESENT);
         gvk_result(create_replacement_shader_binding_table(gvkDevice, queueInfo, pCmd->commandBuffer, pipelineInfo, const_cast<VkStridedDeviceAddressRegionKHR*>(pCmd->pRaygenShaderBindingTable)));
         gvk_result(create_replacement_shader_binding_table(gvkDevice, queueInfo, pCmd->commandBuffer, pipelineInfo, const_cast<VkStridedDeviceAddressRegionKHR*>(pCmd->pMissShaderBindingTable)));
         gvk_result(create_replacement_shader_binding_table(gvkDevice, queueInfo, pCmd->commandBuffer, pipelineInfo, const_cast<VkStridedDeviceAddressRegionKHR*>(pCmd->pHitShaderBindingTable)));
@@ -889,44 +913,14 @@ VkResult PipelineExplorer::create_experiment_pipeline(VkDevice device, VkPipelin
         read_pipeline_info(device, pipeline, path, &shaderSource);
         if (shaderSource.size() == pipelineInfo->shaderModuleInfos.size()) {
             (void)create_replacement_pipeline(device, pipeline, shaderSource, &pipelineInfo->experimentPipeline);
-
-            // TODO : Documentation
             if (pipelineInfo->experimentPipeline && pipelineInfo->bindPoint == VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR) {
-
-                // TODO : Documentation
-                auto shaderGroupHandleSize = pipelineInfo->deviceInfo->physicalDeviceInfo->physicalDeviceRayTracingPipelineProperties->shaderGroupHandleSize;
-                // TODO : Route errors to GUI
-                assert(shaderGroupHandleSize == 32 && "Shader group handle support currently hardcoded to 32 bytes; gvk maintenance required");
-
-                auto createShaderGroupHandleBuffer = [&](VkPipeline vkPipeline, gvk::Buffer* pGvkBuffer)
-                {
-                    auto bufferCreateInfo = gvk::get_default<VkBufferCreateInfo>();
-                    bufferCreateInfo.size = pipelineInfo->rayTracingPipelineCreateInfo->groupCount * shaderGroupHandleSize;
-                    bufferCreateInfo.usage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-                    auto allocationCreateInfo = gvk::get_default<VmaAllocationCreateInfo>();
-                    allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
-                    allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
-                    auto gvkResult = gvk::Buffer::create(gvkDevice, &bufferCreateInfo, &allocationCreateInfo, pGvkBuffer);
-                    (void)gvkResult;
-                    assert(gvkResult == VK_SUCCESS);
-                    uint8_t* pMappedData = nullptr;
-                    gvkResult = vmaMapMemory(gvkDevice.get<VmaAllocator>(), pGvkBuffer->get<VmaAllocation>(), (void**)&pMappedData);
-                    (void)gvkResult;
-                    assert(gvkResult == VK_SUCCESS);
-                    gvkResult = gvkDevice.GetRayTracingShaderGroupHandlesKHR(vkPipeline, 0, pipelineInfo->rayTracingPipelineCreateInfo->groupCount, bufferCreateInfo.size, pMappedData);
-                    assert(gvkResult == VK_SUCCESS);
-                    vmaUnmapMemory(gvkDevice.get<VmaAllocator>(), pGvkBuffer->get<VmaAllocation>());
-                };
-                createShaderGroupHandleBuffer(pipelineInfo->vkHandle, &pipelineInfo->shaderGroupHandleMap.keysBuffer);
-                createShaderGroupHandleBuffer(pipelineInfo->experimentPipeline, &pipelineInfo->shaderGroupHandleMap.valuesBuffer);
-
-                // TODO : Documentation
-                auto bufferDeviceAddressInfo = gvk::get_default<VkBufferDeviceAddressInfo>();
-                bufferDeviceAddressInfo.buffer = pipelineInfo->shaderGroupHandleMap.keysBuffer;
-                pipelineInfo->shaderGroupHandleMap.keys = gvkDevice.GetBufferDeviceAddressKHR(&bufferDeviceAddressInfo);
-                bufferDeviceAddressInfo.buffer = pipelineInfo->shaderGroupHandleMap.valuesBuffer;
-                pipelineInfo->shaderGroupHandleMap.values = gvkDevice.GetBufferDeviceAddressKHR(&bufferDeviceAddressInfo);
-                pipelineInfo->shaderGroupHandleMap.kvpCount = pipelineInfo->rayTracingPipelineCreateInfo->groupCount;
+                auto shaderGroupHandleMapCreateInfo = gvk::get_default<gvk::ShaderGroupHandleMapCreateInfo>();
+                shaderGroupHandleMapCreateInfo.keysPipeline = pipelineInfo->vkHandle;
+                shaderGroupHandleMapCreateInfo.valuesPipeline = pipelineInfo->experimentPipeline;
+                shaderGroupHandleMapCreateInfo.shaderGroupHandleCount = pipelineInfo->rayTracingPipelineCreateInfo->groupCount;
+                auto gvkResult = gvk::create_shader_group_handle_map(gvkDevice, &shaderGroupHandleMapCreateInfo, &pipelineInfo->shaderGroupHandleMap);
+                (void)gvkResult;
+                assert(gvkResult == VK_SUCCESS);
             }
         }
     }

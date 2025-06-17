@@ -30,6 +30,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-pipeline-explorer/handle-info.hpp"
 #include "gvk-pipeline-explorer.hpp"
 
+#include "gvk-containers/thread-safe-unordered-map.hpp"
 #include "gvk-command-structures.hpp"
 #include "gvk-defines.hpp"
 #include "gvk-handles.hpp"
@@ -230,17 +231,17 @@ public:
     GvkPipelineExplorerToolCommandBufferCallbackInfo toolCommandBufferCallbackInfo{ };
 
     pipeline_explorer::InstanceInfo instanceInfo;
-    pipeline_explorer::ThreadSafeUnorderedMap<pipeline_explorer::DeviceInfo::HandleId, pipeline_explorer::DeviceInfo> deviceInfos;
-    pipeline_explorer::ThreadSafeUnorderedMap<pipeline_explorer::CommandPoolInfo::HandleId, pipeline_explorer::CommandPoolInfo> commandPoolInfos;
-    pipeline_explorer::ThreadSafeUnorderedMap<pipeline_explorer::CommandBufferInfo::HandleId, pipeline_explorer::CommandBufferInfo> commandBufferInfos;
-    pipeline_explorer::ThreadSafeUnorderedMap<pipeline_explorer::SamplerInfo::HandleId, pipeline_explorer::SamplerInfo> samplerInfos;
-    pipeline_explorer::ThreadSafeUnorderedMap<pipeline_explorer::DescriptorSetLayoutInfo::HandleId, pipeline_explorer::DescriptorSetLayoutInfo> descriptorSetLayoutInfos;
-    pipeline_explorer::ThreadSafeUnorderedMap<pipeline_explorer::PipelineLayoutInfo::HandleId, pipeline_explorer::PipelineLayoutInfo> pipelineLayoutInfos;
-    pipeline_explorer::ThreadSafeUnorderedMap<pipeline_explorer::ShaderModuleInfo::HandleId, pipeline_explorer::ShaderModuleInfo> shaderModuleInfos;
-    pipeline_explorer::ThreadSafeUnorderedMap<pipeline_explorer::RenderPassInfo::HandleId, pipeline_explorer::RenderPassInfo> renderPassInfos;
-    pipeline_explorer::ThreadSafeUnorderedMap<pipeline_explorer::PipelineInfo::HandleId, pipeline_explorer::PipelineInfo> pipelineInfos;
-    pipeline_explorer::ThreadSafeUnorderedMap<pipeline_explorer::BufferInfo::HandleId, pipeline_explorer::BufferInfo> bufferInfos;
-    pipeline_explorer::ThreadSafeUnorderedMap<pipeline_explorer::DeviceMemoryInfo::HandleId, pipeline_explorer::DeviceMemoryInfo> deviceMemoryInfos;
+    gvk::ThreadSafeUnorderedMap<pipeline_explorer::DeviceInfo::HandleId, pipeline_explorer::DeviceInfo> deviceInfos;
+    gvk::ThreadSafeUnorderedMap<pipeline_explorer::CommandPoolInfo::HandleId, pipeline_explorer::CommandPoolInfo> commandPoolInfos;
+    gvk::ThreadSafeUnorderedMap<pipeline_explorer::CommandBufferInfo::HandleId, pipeline_explorer::CommandBufferInfo> commandBufferInfos;
+    gvk::ThreadSafeUnorderedMap<pipeline_explorer::SamplerInfo::HandleId, pipeline_explorer::SamplerInfo> samplerInfos;
+    gvk::ThreadSafeUnorderedMap<pipeline_explorer::DescriptorSetLayoutInfo::HandleId, pipeline_explorer::DescriptorSetLayoutInfo> descriptorSetLayoutInfos;
+    gvk::ThreadSafeUnorderedMap<pipeline_explorer::PipelineLayoutInfo::HandleId, pipeline_explorer::PipelineLayoutInfo> pipelineLayoutInfos;
+    gvk::ThreadSafeUnorderedMap<pipeline_explorer::ShaderModuleInfo::HandleId, pipeline_explorer::ShaderModuleInfo> shaderModuleInfos;
+    gvk::ThreadSafeUnorderedMap<pipeline_explorer::RenderPassInfo::HandleId, pipeline_explorer::RenderPassInfo> renderPassInfos;
+    gvk::ThreadSafeUnorderedMap<pipeline_explorer::PipelineInfo::HandleId, pipeline_explorer::PipelineInfo> pipelineInfos;
+    gvk::ThreadSafeUnorderedMap<pipeline_explorer::BufferInfo::HandleId, pipeline_explorer::BufferInfo> bufferInfos;
+    gvk::ThreadSafeUnorderedMap<pipeline_explorer::DeviceMemoryInfo::HandleId, pipeline_explorer::DeviceMemoryInfo> deviceMemoryInfos;
 
     PipelineExplorer() = default;
     PipelineExplorer(const PipelineExplorer&) = delete;

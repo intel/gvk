@@ -30,8 +30,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-pipeline-explorer/device-address-tracker.hpp"
 #include "gvk-pipeline-explorer/utilities.hpp"
 #include "gvk-pipeline-explorer.hpp"
-#include "gvk-spirv/gpu-address-map.hpp"
 #include "gvk-spirv/gpu-memcpy.hpp"
+#include "gvk-spirv/shader-group-handle-map.hpp"
 #include "gvk-defines.hpp"
 #include "gvk-environment.hpp"
 #include "gvk-handles.hpp"
@@ -191,7 +191,7 @@ public:
                 gvk_result(gvkDevice ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
                 gvk_result(pGvkPipeline ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
                 if (!mGpuAddressMapPipeline) {
-                    gvk_result(gvk::create_gpu_address_map_pipeline(gvkDevice, &mGpuAddressMapPipeline));
+                    gvk_result(gvk::create_shader_group_handle_map_pipeline(gvkDevice, &mGpuAddressMapPipeline));
                 }
                 *pGvkPipeline = mGpuAddressMapPipeline;
             } gvk_result_scope_end;
@@ -362,16 +362,6 @@ class PipelineInfo::ControlBlock final
     : public BasicControlBlock<VkPipeline>
 {
 public:
-    class ShaderGroupHandleMap final
-    {
-    public:
-        gvk::Buffer keysBuffer;
-        gvk::Buffer valuesBuffer;
-        VkDeviceAddress keys{ };
-        VkDeviceAddress values{ };
-        VkDeviceSize kvpCount{ };
-    };
-
     DeviceInfo deviceInfo;
     VkPipelineBindPoint bindPoint{ };
     gvk::Auto<VkComputePipelineCreateInfo> computePipelineCreateInfo;
@@ -389,7 +379,7 @@ public:
     std::set<std::string> labels;
     VkBool32 experimentEnabled{ };
     gvk::Pipeline experimentPipeline;
-    ShaderGroupHandleMap shaderGroupHandleMap;
+    gvk::ShaderGroupHandleMap shaderGroupHandleMap;
     gvk::Pipeline highlightPipeline;
     VkBool32 highlightEnabled{ };
     float highlightColor[4]{ };
@@ -541,168 +531,6 @@ inline UUID get_uuid(VkDevice device, const gvk::Auto<CreateInfoType>& createInf
 
     return uuid;
 }
-
-template<typename Key, typename T>
-class ThreadSafeUnorderedMap final
-{
-public:
-    using base_type = std::unordered_map<Key, T>;
-
-    template<typename ProcessIteratorFunctionType>
-    inline bool enumerate(ProcessIteratorFunctionType processIterator) const
-    {
-        std::lock_guard<std::mutex> lock(mMutex);
-        for (const auto& itr : mMap) {
-            if (!processIterator(itr)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    inline std::pair<typename base_type::iterator, bool> insert(const typename base_type::value_type& value)
-    {
-        std::lock_guard<std::mutex> lock(mMutex);
-        return mMap.insert(value);
-    }
-
-    inline T get(const Key& key) const
-    {
-        std::lock_guard<std::mutex> lock(mMutex);
-        const auto& itr = mMap.find(key);
-        return itr != mMap.end() ? itr->second : T{};
-    }
-
-    inline typename base_type::size_type erase(const Key& key)
-    {
-        std::lock_guard<std::mutex> lock(mMutex);
-        return mMap.erase(key);
-    }
-
-    inline void clear()
-    {
-        std::lock_guard<std::mutex> lock(mMutex);
-        mMap.clear();
-    }
-
-private:
-    base_type mMap;
-    mutable std::mutex mMutex;
-};
-
-/**
-@brief A sorted container of unique elements with contiguous storage
-@param <T> The type of eleemnts to store
-*/
-template<typename T>
-class ContiguousSet final
-{
-public:
-    /**
-    @brief Constructs an instance of ContiguousSet<>
-    */
-    ContiguousSet() = default;
-
-    /**
-    @brief Gets an iterator to this ContiguousSet<>'s first element
-    @return An iterator to this ContiguousSet<>'s first element
-    */
-    inline typename std::vector<T>::const_iterator begin() const
-    {
-        return mElements.begin();
-    }
-
-    /**
-    @brief Gets an iterator to this ContiguousSet<>'s last element
-    @return An iterator to this ContiguousSet<>'s last element
-    */
-    inline typename std::vector<T>::const_iterator end() const
-    {
-        return mElements.end();
-    }
-
-    /**
-    @brief Gets a value indicating whether or not this ContiguousSet<> is empty
-    @return Whether or not this ContiguousSet<> is empty
-    */
-    inline bool empty() const
-    {
-        return mElements.empty();
-    }
-
-    /**
-    @brief Gets the number of elements in this ContiguousSet<>
-    @return The number of elements in this ContiguousSet<>
-    */
-    inline size_t size() const
-    {
-        return mElements.size();
-    }
-
-    /**
-    @brief Clears all elements from this ContiguousSet<>
-    */
-    inline void clear()
-    {
-        mElements.clear();
-    }
-
-    /**
-    @brief Inserts an element into this ContiguousSet<> if the element is not already present
-    @param [in] element The element to insert
-    @return An std::pair<> consisting of an iterator to the inserted element and a value indicating whether or not an insertion occured
-    */
-    inline std::pair<typename std::vector<T>::const_iterator, bool> insert(const T& element)
-    {
-        auto itr = std::lower_bound(mElements.begin(), mElements.end(), element);
-        if (itr == mElements.end() || *itr != element) {
-            itr = mElements.insert(itr, element);
-            return {itr, true};
-        }
-        return {itr, false};
-    }
-
-    /**
-    TODO : Documentation
-    @brief Inserts a range of elements into this ContiguousSet<>
-    @param [in] element The element to insert
-    @return An std::pair<> consisting of an iterator to the inserted element and a value indicating whether or not an insertion occured
-    */
-    template<typename InputIt>
-    inline void insert(InputIt first, InputIt last)
-    {
-        while (first != last) {
-            insert(*first);
-            ++first;
-        }
-    }
-
-    /**
-    @brief Finds the given element if it is present in this ContiguousSet<>
-    @param [in] element The element to find
-    @return An iterator to the element or end() if the element isn't found
-    */
-    inline typename std::vector<T>::const_iterator find(const T& element) const
-    {
-        auto itr = std::lower_bound(mElements.begin(), mElements.end(), element);
-        if (itr != mElements.end() && *itr == element) {
-            return itr;
-        }
-        return mElements.end();
-    }
-
-    /**
-    @brief Gets a pointer to this ContiguousSet<> object's underlying storage
-    @return A pointer to this ContiguousSet<> object's underlying storage
-    */
-    inline const T* data() const
-    {
-        return mElements.data();
-    }
-
-private:
-    std::vector<T> mElements;
-};
 
 class NamedEntryCollection final
 {
