@@ -93,7 +93,7 @@ VkResult create_shader_group_handle_map(const gvk::Device& gvkDevice, const gvk:
         bufferCreateInfo.size = shaderGroupHandleCount * shaderGroupHandleSize * 2;
         bufferCreateInfo.usage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
         auto allocationCreateInfo = gvk::get_default<VmaAllocationCreateInfo>();
-        allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
+        allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
         allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
         gvk_result(gvk::Buffer::create(gvkDevice, &bufferCreateInfo, &allocationCreateInfo, &pShaderGroupHandleMap->gvkBuffer));
 

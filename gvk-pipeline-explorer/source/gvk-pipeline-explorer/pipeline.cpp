@@ -791,6 +791,7 @@ VkResult PipelineExplorer::create_replacement_shader_binding_table(const gvk::De
                 );
             }
 
+#if 1 // DEBUGGING
             // Copy the application's shader binding table to the replacement buffer
             {
                 auto gpuMemcpyInfo = gvk::get_default<GpuMemcpyInfo>();
@@ -806,6 +807,7 @@ VkResult PipelineExplorer::create_replacement_shader_binding_table(const gvk::De
                 auto workgroupSize = (uint32_t)((gpuMemcpyInfo.size + local_size_x - 1) / (uint64_t)local_size_x);
                 gvkDevice.get<DispatchTable>().gvkCmdDispatch(vkCommandBuffer, workgroupSize, 1, 1);
             }
+#endif
 
             // Record barrier ensuring copy is done before patching shader group handles
             {
@@ -832,7 +834,7 @@ VkResult PipelineExplorer::create_replacement_shader_binding_table(const gvk::De
                 bufferMemoryBarrier.buffer = pipelineInfo->shaderGroupHandleMap.gvkBuffer;
                 gvkDevice.get<DispatchTable>().gvkCmdPipelineBarrier(
                     vkCommandBuffer,
-                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                    VK_PIPELINE_STAGE_HOST_BIT,
                     VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                     0,
                     0, nullptr,
@@ -841,6 +843,7 @@ VkResult PipelineExplorer::create_replacement_shader_binding_table(const gvk::De
                 );
             }
 
+#if 1 // DEBUGGING
             // Execute shader group map, this will run through the replacement buffer and
             //  replace the application's shader group handles with the replacment handles
             {
@@ -861,6 +864,7 @@ VkResult PipelineExplorer::create_replacement_shader_binding_table(const gvk::De
                 auto workgroupSize = (uint32_t)((gpuAddressMapInfo.count + local_size_x - 1) / (uint64_t)local_size_x);
                 gvkDevice.get<DispatchTable>().gvkCmdDispatch(vkCommandBuffer, workgroupSize, 1, 1);
             }
+#endif
 
             // Record barrier to ensure shader group handle patching is complete before
             //  ray tracing shader stage begins
@@ -880,8 +884,10 @@ VkResult PipelineExplorer::create_replacement_shader_binding_table(const gvk::De
                 );
             }
 
+#if 1 // DEBUGGING
             // Point the shader binding table address at the replacement
             pShaderBindingTable->deviceAddress = replacementShaderBindingTableDeviceAddress;
+#endif
         }
     } gvk_result_scope_end;
     return gvkResult;

@@ -415,39 +415,23 @@ VkResult PipelineExplorer::tool_command_buffer(GvkPipelineExplorerToolCommandBuf
         // TODO : Documentation
         gvk_result(handle_pre_process_command_buffer_callback(toolCommandBufferInfo));
 
-        // TODO : Documentation
+        // Data that needs to be cached to restore after modifying/inserting cmds
+        VkPushConstantsInfo pushConstantsInfo{ };
+        std::vector<uint8_t> pushConstantsData;
         pipeline_explorer::PipelineInfo computePipelineInfo;
         pipeline_explorer::PipelineInfo graphicsPipelineInfo;
         pipeline_explorer::PipelineInfo raytracingPipelineInfo;
-#if 0
-        const VkStridedDeviceAddressRegionKHR* pRaygenShaderBindingTable = nullptr;
-        const VkStridedDeviceAddressRegionKHR* pMissShaderBindingTable = nullptr;
-        const VkStridedDeviceAddressRegionKHR* pHitShaderBindingTable = nullptr;
-        const VkStridedDeviceAddressRegionKHR* pCallableShaderBindingTable = nullptr;
-#endif
-        const GvkCommandStructureCmdPushConstants* pComputeCmdPushConstants = nullptr;
-        const GvkCommandStructureCmdPushConstants2* pComputeCmdPushConstants2 = nullptr;
 
         // TODO : Documentation
         toolCommandBufferInfo.collectionRangeIndex = 0;
         pipeline_explorer::CommandBufferInfo commandBufferInfo;
         for (toolCommandBufferInfo.cmdIndex = 0; toolCommandBufferInfo.cmdIndex < toolCommandBufferInfo.cmdCount; ++toolCommandBufferInfo.cmdIndex) {
             auto pCmd = toolCommandBufferInfo.ppCmds[toolCommandBufferInfo.cmdIndex];
-
-#if 0
-            // TODO : Documentation
-            if (!commandBufferInfo || commandBufferInfo->vkHandle != pCmd->commandBuffer) {
-                commandBufferInfo = pCmd->commandBuffer;
-                gvk_result(commandBufferInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-            }
-#else
             if (pCmd->sType == gvk::get_stype<GvkCommandStructureBeginCommandBuffer>()) {
                 commandBufferInfo = pCmd->commandBuffer;
-                gvk_result(commandBufferInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
             }
-#endif
+            gvk_result(commandBufferInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
 
-            // TODO : Documentation
             // NOTE : Currently, both commandBufferInfo->experimentCommandBuffer 
             //  and commandBufferInfo->experimentEnabled should always be true.
             // TODO : Optionally disabling these requires a bit of a refactor, but it is
@@ -456,50 +440,25 @@ VkResult PipelineExplorer::tool_command_buffer(GvkPipelineExplorerToolCommandBuf
             if (commandBufferInfo->experimentCommandBuffer && commandBufferInfo->experimentEnabled) {
                 ((GvkCommandCmdBaseStructure*)pCmd)->commandBuffer = commandBufferInfo->experimentCommandBuffer;
 
-                // TODO : Documentation
+                // Cache pipeline to restore it after highlighting/experiment replacement
+                VkPipeline pipeline = VK_NULL_HANDLE;
+
+                // GvkCommandStructureCmdTraceRaysKHR copy for VKRT experiment modification
+                // NOTE : Using gvk::Auto<> here so that the VkStridedDeviceAddressRegionKHRs
+                //  for the shader binding tables are deep copied when doing VKRT experiments.
+                // TODO : Route this to a scratchpad allocator
                 gvk::Auto<GvkCommandStructureCmdTraceRaysKHR> cmdTraceRays{ };
 
-                // TODO : Documentation
-                #if 0
-                VkPipeline pipeline = VK_NULL_HANDLE;
-                if (pCmd->sType == gvk::get_stype<GvkCommandStructureCmdBindPipeline>()) {
-
-                    // TODO : Documentation
-                    auto pCmdBindPipeline = (GvkCommandStructureCmdBindPipeline*)pCmd;
-                    pipeline_explorer::PipelineInfo pipelineInfo({ toolCommandBufferInfo.device, pCmdBindPipeline->pipeline });
-                    gvk_result(pipelineInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-                    pipeline = pCmdBindPipeline->pipeline;
-                    #if 0
-                    // TODO : Documentation
-                    auto currentlySamplingMetrics = layerResources.sampleMetricsPipelineInfo && layerResources.sampleMetricsPipelineInfo->vkHandle;
-                    if (pipelineInfo->highlightPipelineEnabled && pipelineInfo->highlightPipeline && !currentlySamplingMetrics) {
-                        pipeline = pCmdBindPipeline->pipeline;
-                        pCmdBindPipeline->pipeline = pipelineInfo->highlightPipeline;
-                    } else if (pipelineInfo->experimentPipelineEnabled && pipelineInfo->experimentalPipeline) {
-                        pipeline = pCmdBindPipeline->pipeline;
-                        pCmdBindPipeline->pipeline = pipelineInfo->experimentalPipeline;
-                    }
-                    #else
-                    // TODO : Documentation
-                    if (requestInfo->sType != gvk::get_stype<GvkPipelineExplorerRequestInfo>() && pipelineInfo->highlightEnabled && pipelineInfo->highlightPipeline) {
-                        pCmdBindPipeline->pipeline = pipelineInfo->highlightPipeline;
-                    } else if (pipelineInfo->experimentEnabled && pipelineInfo->experimentPipeline) {
-                        pCmdBindPipeline->pipeline = pipelineInfo->experimentPipeline;
-                    }
-                    #endif
-                }
-                #else
-                VkPipeline pipeline = VK_NULL_HANDLE;
                 switch (pCmd->sType) {
                 case gvk::get_stype<GvkCommandStructureCmdBindPipeline>(): {
 
-                    // TODO : Documentation
+                    // Get the PipelineInfo
                     auto pCmdBindPipeline = (GvkCommandStructureCmdBindPipeline*)pCmd;
                     pipeline_explorer::PipelineInfo pipelineInfo({ toolCommandBufferInfo.device, pCmdBindPipeline->pipeline });
                     gvk_result(pipelineInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
                     pipeline = pCmdBindPipeline->pipeline;
 
-                    // TODO : Documentation
+                    // Cache the pipeline being bound
                     switch (pCmdBindPipeline->pipelineBindPoint) {
                     case VK_PIPELINE_BIND_POINT_COMPUTE: {
                         computePipelineInfo = pipelineInfo;
@@ -514,7 +473,12 @@ VkResult PipelineExplorer::tool_command_buffer(GvkPipelineExplorerToolCommandBuf
                     } break;
                     }
 
-                    // TODO : Documentation
+                    // If there's no active metrics request and highlighting is enabled for the
+                    //  pipeline, replace the pipeline with the highlighting pipeline, otherwise
+                    //  replace the pipeline with the experiment pipeline if enabled.
+                    // NOTE : The way this works out, a user can have highlighting enabled and
+                    //  an experiment enabled...during a metrics request, the experiment pipeline
+                    //  takes precedence, otherwise the highlighting pipeline takes precendence.
                     if (requestInfo->sType != gvk::get_stype<GvkPipelineExplorerRequestInfo>() && pipelineInfo->highlightEnabled && pipelineInfo->highlightPipeline) {
                         pCmdBindPipeline->pipeline = pipelineInfo->highlightPipeline;
                     } else if (pipelineInfo->experimentEnabled && pipelineInfo->experimentPipeline) {
@@ -522,34 +486,62 @@ VkResult PipelineExplorer::tool_command_buffer(GvkPipelineExplorerToolCommandBuf
                     }
                 } break;
                 case gvk::get_stype<GvkCommandStructureCmdPushConstants>(): {
-                    if (((const GvkCommandStructureCmdPushConstants*)pCmd)->stageFlags & VK_SHADER_STAGE_COMPUTE_BIT) {
-                        pComputeCmdPushConstants = (const GvkCommandStructureCmdPushConstants*)pCmd;
-                        pComputeCmdPushConstants2 = nullptr;
+                    // Cache push constant data so that it can be restored
+                    // NOTE : This is only actually necessary if an experiment uses push constants,
+                    //  ie. for creating replacement shader binding tables.  If it ever becomes an
+                    //  issue some tracking can be added to determine if any experiments are active
+                    //  that require this caching and disable it otherwise.
+                    // TODO : Route this to a scratchpad allocator
+                    auto pCmdPushConstants = (const GvkCommandStructureCmdPushConstants*)pCmd;
+                    pushConstantsInfo.sType = gvk::get_stype<VkPushConstantsInfo>();
+                    pushConstantsInfo.layout = pCmdPushConstants->layout;
+                    pushConstantsInfo.stageFlags = pCmdPushConstants->stageFlags;
+                    if (pushConstantsData.size() < pCmdPushConstants->offset + pCmdPushConstants->size) {
+                        pushConstantsData.resize(pCmdPushConstants->offset + pCmdPushConstants->size);
                     }
+                    memcpy(pushConstantsData.data() + pCmdPushConstants->offset, pCmdPushConstants->pValues, pCmdPushConstants->size);
+                    pushConstantsInfo.size = (uint32_t)pushConstantsData.size();
+                    pushConstantsInfo.pValues = !pushConstantsData.empty() ? pushConstantsData.data() : nullptr;
                 } break;
                 case gvk::get_stype<GvkCommandStructureCmdPushConstants2>(): {
-                    if (((const GvkCommandStructureCmdPushConstants2*)pCmd)->pPushConstantsInfo &&
-                        ((const GvkCommandStructureCmdPushConstants2*)pCmd)->pPushConstantsInfo->stageFlags & VK_SHADER_STAGE_COMPUTE_BIT) {
-                        pComputeCmdPushConstants2 = (const GvkCommandStructureCmdPushConstants2*)pCmd;
-                        pComputeCmdPushConstants = nullptr;
+                    // Cache push constant data so that it can be restored
+                    // NOTE : See comment above
+                    // TODO : Route this to a scratchpad allocator
+                    auto pCmdPushConstants2 = (const GvkCommandStructureCmdPushConstants2*)pCmd;
+                    gvk_result(pCmdPushConstants2->pPushConstantsInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+                    gvk_result(pCmdPushConstants2->pPushConstantsInfo->pNext ? VK_SUCCESS : VK_ERROR_FEATURE_NOT_PRESENT);
+                    pushConstantsInfo.sType = gvk::get_stype<VkPushConstantsInfo>();
+                    pushConstantsInfo.layout = pCmdPushConstants2->pPushConstantsInfo->layout;
+                    pushConstantsInfo.stageFlags = pCmdPushConstants2->pPushConstantsInfo->stageFlags;
+                    if (pushConstantsData.size() < pCmdPushConstants2->pPushConstantsInfo->offset + pCmdPushConstants2->pPushConstantsInfo->size) {
+                        pushConstantsData.resize(pCmdPushConstants2->pPushConstantsInfo->offset + pCmdPushConstants2->pPushConstantsInfo->size);
                     }
+                    memcpy(pushConstantsData.data() + pCmdPushConstants2->pPushConstantsInfo->offset, pCmdPushConstants2->pPushConstantsInfo->pValues, pCmdPushConstants2->pPushConstantsInfo->size);
+                    pushConstantsInfo.size = (uint32_t)pushConstantsData.size();
+                    pushConstantsInfo.pValues = !pushConstantsData.empty() ? pushConstantsData.data() : nullptr;
                 } break;
                 case gvk::get_stype<GvkCommandStructureCmdTraceRaysKHR>(): {
                     gvk_result(raytracingPipelineInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
                     if (raytracingPipelineInfo->experimentEnabled && raytracingPipelineInfo->experimentPipeline) {
                         cmdTraceRays = *(GvkCommandStructureCmdTraceRaysKHR*)pCmd;
                         gvk_result(create_replacement_shader_binding_tables(queueInfo, raytracingPipelineInfo, &const_cast<GvkCommandStructureCmdTraceRaysKHR&>(*cmdTraceRays)));
+
+                        // create_replacement_shader_binding_tables() utilizes compute pipelines, so
+                        //  if there was a previously bound compute pipeline restore the binding
                         if (computePipelineInfo) {
-                            auto cmdBindPipeline = gvk::get_default<GvkCommandStructureCmdBindPipeline>();
-                            cmdBindPipeline.commandBuffer = pCmd->commandBuffer;
-                            cmdBindPipeline.pipelineBindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
-                            cmdBindPipeline.pipeline = computePipelineInfo->vkHandle;
-                            gvk::detail::execute_command_structure(dispatchTable, cmdBindPipeline);
-                            if (pComputeCmdPushConstants) {
-                                gvk::detail::execute_command_structure(dispatchTable, *pComputeCmdPushConstants);
-                            } else if (pComputeCmdPushConstants2) {
-                                gvk::detail::execute_command_structure(dispatchTable, *pComputeCmdPushConstants2);
-                            }
+                            dispatchTable.gvkCmdBindPipeline(pCmd->commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineInfo->vkHandle);
+                        }
+
+                        // create_replacement_shader_binding_tables() utilizes push constants, so if
+                        //  there was any previous push constant data pushed restore it
+                        // NOTE : The approach used here is to copy all push constant data, then push it
+                        //  with the VkPipelineLayout and VkShaderStageFlags used by the application's
+                        //  last push.  There's only one push constant buffer per command buffer, so
+                        //  there's a good chance this approach will always work, but if there's ever an
+                        //  issue with VkPipelineLayout compatibility, it may be necessary to map push
+                        //  constant ranges to particular VkPipelineLayouts.
+                        if (pushConstantsInfo.sType == gvk::get_stype<VkPushConstantsInfo>()) {
+                            dispatchTable.gvkCmdPushConstants(pCmd->commandBuffer, pushConstantsInfo.layout, pushConstantsInfo.stageFlags, 0, pushConstantsInfo.size, pushConstantsInfo.pValues);
                         }
                     }
                 } break;
@@ -559,7 +551,6 @@ VkResult PipelineExplorer::tool_command_buffer(GvkPipelineExplorerToolCommandBuf
                 default: {
                 } break;
                 }
-                #endif
 
                 ////////////////////////////////////////////////////////////////////////////////
                 // TODO : Wrangle QueryManager
@@ -625,35 +616,18 @@ VkResult PipelineExplorer::tool_command_buffer(GvkPipelineExplorerToolCommandBuf
                 }
                 ////////////////////////////////////////////////////////////////////////////////
 
-                // TODO : Documentation
-                #if 0
-                if (pCmd->sType == gvk::get_stype<GvkCommandStructureCmdBindPipeline>() && pipeline) {
-                    ((GvkCommandStructureCmdBindPipeline*)pCmd)->pipeline = pipeline;
-                }
-                #else
                 switch (pCmd->sType) {
                 case gvk::get_stype<GvkCommandStructureCmdBindPipeline>(): {
                     if (pipeline) {
+                        // Revert the pipeline
                         ((GvkCommandStructureCmdBindPipeline*)pCmd)->pipeline = pipeline;
                     }
-                } break;
-                case gvk::get_stype<GvkCommandStructureCmdTraceRaysKHR>(): {
-#if 0
-                    ((GvkCommandStructureCmdTraceRaysKHR*)pCmd)->pRaygenShaderBindingTable = pRaygenShaderBindingTable;
-                    ((GvkCommandStructureCmdTraceRaysKHR*)pCmd)->pMissShaderBindingTable = pMissShaderBindingTable;
-                    ((GvkCommandStructureCmdTraceRaysKHR*)pCmd)->pHitShaderBindingTable = pHitShaderBindingTable;
-                    ((GvkCommandStructureCmdTraceRaysKHR*)pCmd)->pCallableShaderBindingTable = pCallableShaderBindingTable;
-#endif
-                } break;
-                case gvk::get_stype<GvkCommandStructureCmdTraceRaysIndirectKHR>(): {
-                    gvk_result(VK_ERROR_FEATURE_NOT_PRESENT);
                 } break;
                 default: {
                 } break;
                 }
-                #endif
 
-                // TODO : Documentation
+                // Revert the command buffer
                 ((GvkCommandCmdBaseStructure*)pCmd)->commandBuffer = commandBufferInfo->vkHandle;
             }
         }

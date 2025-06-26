@@ -152,6 +152,10 @@ public:
     std::vector<ImGuiTableColumnSortSpecs> pipelineSortSpecs;
     std::unordered_map<gvk::HandleId<VkDevice, VkPipeline>, PipelineInfo> pipelineInfos;
     std::map<uint32_t, std::vector<gvk::Auto<GvkPipelineExplorerMetricInfo>>> availableMetrics;
+    std::map<uint32_t, std::vector<gvk::Auto<GvkPipelineExplorerMetricInfo>>> filteredMetrics;
+    std::vector<std::pair<std::string, uint32_t>> metricsFilters;
+    std::string metricsAnyOfFilter;
+    std::string metricsAllOfFilter;
     gvk::HandleId<VkDevice, VkPipeline> selectedPipeline;
     uint32_t enabledMetricsGroup{ };
     bool buildDefaultDockSpace{ true };
