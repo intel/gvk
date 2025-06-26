@@ -26,6 +26,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-pipeline-explorer/gui/metrics-window.hpp"
 
+#include <functional>
+
 namespace gvk {
 namespace pipeline_explorer {
 namespace gui {
@@ -62,11 +64,58 @@ void MetricsWindow::on_gui(GuiInfo& guiInfo)
 
     // TODO : Documentation
     ImGui::Separator();
-    ImGui::Separator();
+    auto applyMetricsFilter = ImGui::Button("Apply Metrics Filter");
+    ImGui::SameLine();
+    ImGui::Text("Case sensitive, ';' delimited");
+    ImGui::InputText("Any Of", &guiInfo.metricsAnyOfFilter);
+    ImGui::InputText("All Of", &guiInfo.metricsAllOfFilter);
+    if (applyMetricsFilter) {
+        if (guiInfo.metricsAnyOfFilter.empty() && guiInfo.metricsAllOfFilter.empty()) {
+            guiInfo.filteredMetrics = guiInfo.availableMetrics;
+        } else {
+            guiInfo.filteredMetrics.clear();
+            const auto& anyFilterTokens = gvk::string::split(guiInfo.metricsAnyOfFilter, ";");
+            const auto& allFilterTokens = gvk::string::split(guiInfo.metricsAllOfFilter, ";");
+            for (const auto& metricsFilterItr : guiInfo.metricsFilters) {
+                bool anyFound = false;
+                for (const auto& anyFilterToken : anyFilterTokens) {
+                    std::boyer_moore_searcher searcher(anyFilterToken.begin(), anyFilterToken.end());
+                    if (std::search(metricsFilterItr.first.begin(), metricsFilterItr.first.end(), searcher) != metricsFilterItr.first.end()) {
+                        anyFound = true;
+                        break;
+                    }
+                }
+                bool allFound = false;
+                if (!anyFound) {
+                    for (const auto& allFilterToken : allFilterTokens) {
+                        std::boyer_moore_searcher searcher(allFilterToken.begin(), allFilterToken.end());
+                        if (std::search(metricsFilterItr.first.begin(), metricsFilterItr.first.end(), searcher) == metricsFilterItr.first.end()) {
+                            allFound = false;
+                            break;
+                        }
+                        allFound = true;
+                    }
+                }
+                if (anyFound || allFound) {
+                    auto availableMettricsItr = guiInfo.availableMetrics.find(metricsFilterItr.second);
+                    if (availableMettricsItr != guiInfo.availableMetrics.end()) {
+                        guiInfo.filteredMetrics.insert(*availableMettricsItr);
+                    }
+                }
+            }
+        }
+    }
 
     // TODO : Documentation
+    ImGui::Separator();
+    ImGui::Separator();
+
+    // TODO : Setup clipper...
+
+    // TODO : Documentation
+    ImGui::Text("%zu available metrics groups", guiInfo.filteredMetrics.size());
     if (ImGui::BeginChild("##Metrics Table")) {
-        for (const auto& metricsGroup : guiInfo.availableMetrics) {
+        for (const auto& metricsGroup : guiInfo.filteredMetrics) {
             ImGui::PushID(metricsGroup.first);
             ImGui::BeginDisabled(!guiInfo.selectedPipeline.get_handle());
             {

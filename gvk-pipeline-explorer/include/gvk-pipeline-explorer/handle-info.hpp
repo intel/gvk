@@ -230,7 +230,7 @@ public:
                     availableBuffers.erase(availableBuffers.begin());
                 } else {
                     auto allocationCreateInfo = gvk::get_default<VmaAllocationCreateInfo>();
-                    allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
+                    allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
                     allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
                     gvk_result(gvk::Buffer::create(gvkDevice, &bufferCreateInfo, &allocationCreateInfo, &gvkBuffer));
                 }

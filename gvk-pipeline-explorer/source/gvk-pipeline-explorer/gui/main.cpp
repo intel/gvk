@@ -182,6 +182,23 @@ inline void process_incoming_messages(GuiInfo& guiInfo)
             const auto& pipelineExplorerMetricInfo = pipelineExplorerAvailableMetricsInfo->pMetricInfos[metric_i];
             guiInfo.availableMetrics[(uint32_t)pipelineExplorerMetricInfo.id.x].push_back(pipelineExplorerMetricInfo);
         }
+
+        // TODO : Documentation
+        for (const auto& metricsGroupItr : guiInfo.availableMetrics) {
+            std::stringstream tokens;
+            std::set<std::string> uniqueTokens;
+            for (const auto& metricsInfo : metricsGroupItr.second) {
+                for (const auto& token : gvk::string::split(metricsInfo->pName, " ")) {
+                    if (uniqueTokens.insert(token).second) {
+                        tokens << token << ";";
+                    }
+                }
+            }
+            guiInfo.metricsFilters.push_back({ tokens.str(), metricsGroupItr.first });
+        }
+
+        // TODO : Documentation
+        guiInfo.filteredMetrics = guiInfo.availableMetrics;
     } break;
     case VK_INCOMPLETE: {
         // assert(false && "TODO : Error handling");
@@ -437,6 +454,11 @@ int main(int argc, const char* ppArgv[])
                     guiInfo.sortedPipelines.clear();
                     guiInfo.pipelineInfos.clear();
                     guiInfo.availableMetrics.clear();
+                    guiInfo.filteredMetrics.clear();
+                    guiInfo.metricsFilters.clear();
+                    guiInfo.metricsAnyOfFilter.clear();
+                    guiInfo.metricsAllOfFilter.clear();
+                    guiInfo.selectedPipeline = { };
                     guiInfo.enabledMetricsGroup = 0;
                     guiInfo.applicationInfo = { };
                     windowManager.clear();
