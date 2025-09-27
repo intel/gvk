@@ -178,7 +178,7 @@ void StructureMakeTupleGenerator::generate(
     file << std::endl;
     NamespaceGenerator namespaceGenerator(file, "gvk");
     for (const auto& structure : apiElements.structures) {
-        if (structure.alias.empty()) {
+        if (structure.alias.empty() && !apiElements.typeErasedStructures.count(structure.name)) {
             file << std::endl;
             auto compileGuards = structure.compileGuards;
             if (apiElements.manuallyImplemented.count(structure.name)) {

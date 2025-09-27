@@ -24,7 +24,7 @@ namespace gvk {
 
 /**
 A sorted container of unique elements with contiguous storage
-@param <T> The type of eleemnts to store
+@param <T> The type of elements to store
 */
 template<typename T>
 class ContiguousSet final
@@ -34,6 +34,16 @@ public:
     Constructs an instance of ContiguousSet<>
     */
     ContiguousSet() = default;
+
+    /**
+    Gets a reference to the element at a specified index
+    @param [in] The index of the element to get a reference to
+    @return A reference to the element at the specified index
+    */
+    typename std::vector<T>::const_reference operator[](typename std::vector<T>::size_type index) const
+    {
+        return mElements[index];
+    }
 
     /**
     Gets an iterator to this ContiguousSet<>'s first element
@@ -82,7 +92,7 @@ public:
     /**
     Inserts an element into this ContiguousSet<> if the element is not already present
     @param [in] element The element to insert
-    @return An std::pair<> consisting of an iterator to the inserted element and a value indicating whether or not an insertion occured
+    @return An std::pair<> consisting of an iterator to the inserted element and a value indicating whether or not an insertion occurred
     */
     std::pair<typename std::vector<T>::const_iterator, bool> insert(const T& element)
     {
@@ -95,18 +105,22 @@ public:
     }
 
     /**
-    TODO : Documentation
-    Inserts a range of elements into this ContiguousSet<>
-    @param [in] element The element to insert
-    @return An std::pair<> consisting of an iterator to the inserted element and a value indicating whether or not an insertion occured
+    Inserts elements from range [first, last) into this ContiguousSet<>
+    @param [in] fist The beginning of the range (inclusive) to insert into this ContiguousSet<>
+    @param [in] last The end of the range (exclusive) to insert into this ContiguousSet<>
+    @return A value indicating whether or not all elements of the given range were inserted
     */
-    template<typename InputIt>
-    void insert(InputIt first, InputIt last)
+    template<typename InputItr>
+    bool insert(InputItr first, InputItr last)
     {
+        bool inserted = true;
         while (first != last) {
-            insert(*first);
+            if (!insert(*first).second) {
+                inserted = false;
+            }
             ++first;
         }
+        return inserted;
     }
 
     /**

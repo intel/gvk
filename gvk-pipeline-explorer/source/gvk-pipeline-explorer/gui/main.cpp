@@ -26,8 +26,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-pipeline-explorer/gui/gui-info.hpp"
 #include "gvk-pipeline-explorer/gui/window-manager.hpp"
-#include "gvk-pipeline-explorer/utilities.hpp"
+#include "gvk-pipeline-explorer/backend/utilities.hpp"
 
+#include "gvk-command-structures.hpp"
 #include "gvk-defines.hpp"
 #include "gvk-environment.hpp"
 #include "gvk-gui.hpp"
@@ -39,6 +40,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "boost/multiprecision/integer.hpp"
 #include "imgui_internal.h"
 #include "imgui_stdlib.h"
+#include "implot.h"
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 #include <codecvt>
@@ -63,21 +65,21 @@ namespace gui {
 
 inline void process_outgoing_messages(GuiInfo& guiInfo)
 {
-    // TODO : Documentation
+    // Automatically send request to refresh available metrics on startup
     static bool sOnce;
     if (!sOnce) {
         sOnce = true;
         guiInfo.requestInfo.refreshAvailableMetrics = true;
     }
 
-    // TODO : Documentation
+    // Set report path
     std::string reportPath;
     if (guiInfo.reportEnabled) {
         reportPath = (std::filesystem::path(guiInfo.workspaceInfo.workspace) / "reports").string();
         guiInfo.requestInfo.pReportPath = reportPath.c_str();
     }
 
-    // TODO : Documentation
+    // Set selected metric ID
     guiInfo.requestInfo.device = guiInfo.selectedPipeline.get_dispatchable_handle();
     guiInfo.requestInfo.sampleMetricsPipeline = guiInfo.selectedPipeline.get_handle();
     GvkPipelineExplorerMetricId metricId{ guiInfo.enabledMetricsGroup, 0, 0, 0 };
@@ -86,7 +88,7 @@ inline void process_outgoing_messages(GuiInfo& guiInfo)
         guiInfo.requestInfo.pSampleMetricIds = &metricId;
     }
 
-    // TODO : Documentation
+    // Get paths
     auto decompilePipelinePath = get_pipeline_path(guiInfo, guiInfo.requestInfo.device, guiInfo.requestInfo.decompilePipeline);
     auto recompilePipelinePath = get_pipeline_path(guiInfo, guiInfo.requestInfo.device, guiInfo.requestInfo.recompilePipeline);
     auto experimentPipelinePath = get_pipeline_path(guiInfo, guiInfo.requestInfo.device, guiInfo.requestInfo.experimentPipeline);
@@ -96,21 +98,30 @@ inline void process_outgoing_messages(GuiInfo& guiInfo)
     guiInfo.requestInfo.pExperimentPipelinePath = !experimentPipelinePath.empty() ? experimentPipelinePath.c_str() : nullptr;
     guiInfo.requestInfo.pHighlightPipelinePath = !highlightPipelinePath.empty() ? highlightPipelinePath.c_str() : nullptr;
 
-    // TODO : Documentation
+    // Submit request
     if (guiInfo.requestInfo.refreshActivePipelines ||
         guiInfo.requestInfo.refreshAvailableMetrics ||
+        guiInfo.requestInfo.getApiCalls ||
+        guiInfo.requestInfo.getGpuCalls ||
         (guiInfo.requestInfo.decompilePipeline && guiInfo.requestInfo.pDecompilePipelinePath) ||
         (guiInfo.requestInfo.recompilePipeline && guiInfo.requestInfo.pRecompilePipelinePath) ||
         (guiInfo.requestInfo.experimentPipeline && guiInfo.requestInfo.pExperimentPipelinePath) ||
         (guiInfo.requestInfo.highlightPipeline && guiInfo.requestInfo.pHighlightPipelinePath) ||
         (guiInfo.requestInfo.sampleMetricIdCount && guiInfo.requestInfo.pSampleMetricIds)) {
-        gvk::write_serialized_structure(std::filesystem::path(guiInfo.workspaceInfo.workspace) / ".data", guiInfo.requestInfo);
+        auto vkResult = gvk::write_serialized_structure(std::filesystem::path(guiInfo.workspaceInfo.workspace) / ".data", guiInfo.requestInfo);
+        if (vkResult == VK_SUCCESS) {
+            guiInfo.resultPending = true;
+        }
         guiInfo.messages.clear();
     }
 
-    // TODO : Documentation
+    // Reset request
     guiInfo.requestInfo.pReportPath = nullptr;
     guiInfo.requestInfo.device = VK_NULL_HANDLE;
+    guiInfo.requestInfo.refreshActivePipelines = false;
+    guiInfo.requestInfo.refreshAvailableMetrics = false;
+    guiInfo.requestInfo.getApiCalls = false;
+    guiInfo.requestInfo.getGpuCalls = false;
     guiInfo.requestInfo.sampleMetricsPipeline = VK_NULL_HANDLE;
     guiInfo.requestInfo.pDecompilePipelinePath = nullptr;
     guiInfo.requestInfo.decompilePipeline = VK_FALSE;
@@ -126,9 +137,11 @@ inline void process_outgoing_messages(GuiInfo& guiInfo)
 
 inline void process_incoming_messages(GuiInfo& guiInfo)
 {
+    // TODO : Rework all query request/result logic
     gvk::Auto<GvkPipelineExplorerResultInfo> resultInfo;
     switch (gvk::read_serialized_structure(std::filesystem::path(guiInfo.workspaceInfo.workspace) / ".data", resultInfo)) {
     case VK_SUCCESS: {
+        guiInfo.resultPending = false;
         for (uint32_t message_i = 0; message_i < resultInfo->messageCount; ++message_i) {
             guiInfo.messages += std::string(resultInfo->ppMessages[message_i]) + "\n";
         }
@@ -136,6 +149,8 @@ inline void process_incoming_messages(GuiInfo& guiInfo)
             guiInfo.activePipelines.clear();
         }
         for (uint32_t pipeline_i = 0; pipeline_i < resultInfo->pipelineResultCount; ++pipeline_i) {
+
+            // Setup pipeline info
             const auto& pipelineResultInfo = resultInfo->pPipelineResults[pipeline_i];
             auto device = pipelineResultInfo.pipelineInfo.device;
             auto pipeline = pipelineResultInfo.pipelineInfo.pipeline;
@@ -145,14 +160,28 @@ inline void process_incoming_messages(GuiInfo& guiInfo)
             boost::multiprecision::import_bits(pipelineInfo.uuid, pipelineResultInfo.pipelineInfo.uuid, pipelineResultInfo.pipelineInfo.uuid + GVK_PIPELINE_EXPLORER_UUID_SIZE);
             pipelineInfo.pipeline = { device, pipeline };
             pipelineInfo.bindPoint = pipelineResultInfo.pipelineInfo.bindPoint;
-            if (pipelineInfo.bindPoint != VK_PIPELINE_BIND_POINT_GRAPHICS) {
-                pipelineInfo.highlightColor = { 0, 0, 0, 0 };
-            }
             pipelineInfo.bindPointStr = gvk::string::remove(gvk::to_string(pipelineResultInfo.pipelineInfo.bindPoint, printerFlags), "\"");
             pipelineInfo.uuidStr = uuid_to_string(pipelineResultInfo.pipelineInfo.uuid, 18);
             pipelineInfo.driverUUIDStr = uuid_to_string(pipelineResultInfo.pipelineInfo.driverUUID, 18);
             pipelineInfo.handleStr = gvk::to_hex_string(pipeline);
             pipelineInfo.name = pipelineResultInfo.pipelineInfo.pName;
+
+            // Calculate pipeline color
+            std::stringstream strStrm;
+            strStrm << std::hex << pipelineInfo.uuidStr.substr(2, 6);
+            uint32_t hexColorValue = 0;
+            strStrm >> hexColorValue;
+            pipelineInfo.highlightColor.x = (float)(hexColorValue >> 16 & 0xFF) / 255.0f;
+            pipelineInfo.highlightColor.y = (float)(hexColorValue >> 8 & 0xFF) / 255.0f;
+            pipelineInfo.highlightColor.z = (float)(hexColorValue & 0xFF) / 255.0f;
+            pipelineInfo.highlightColor.w = 1.0f;
+            if (pipelineInfo.bindPoint == VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR) {
+                pipelineInfo.highlightColor.x = std::min(pipelineInfo.highlightColor.x, 0.5f);
+                pipelineInfo.highlightColor.y = std::min(pipelineInfo.highlightColor.y, 0.5f);
+                pipelineInfo.highlightColor.z = std::min(pipelineInfo.highlightColor.z, 0.5f);
+            }
+
+            // Set metric results
             for (uint32_t metricResult_i = 0; metricResult_i < pipelineResultInfo.metricResultCount; ++metricResult_i) {
                 const auto& metricResultInfo = pipelineResultInfo.pMetricResults[metricResult_i];
                 pipelineInfo.metrics[metricResultInfo.metricInfo.id] = metricResultInfo;
@@ -174,16 +203,18 @@ inline void process_incoming_messages(GuiInfo& guiInfo)
     } break;
     }
 
+    // TODO : Rework all query request/result logic
     gvk::Auto<GvkPipelineExplorerAvailableMetricsInfo> pipelineExplorerAvailableMetricsInfo;
     switch (gvk::read_serialized_structure(std::filesystem::path(guiInfo.workspaceInfo.workspace) / ".data", pipelineExplorerAvailableMetricsInfo)) {
     case VK_SUCCESS: {
+        guiInfo.resultPending = false;
         guiInfo.availableMetrics.clear();
         for (uint32_t metric_i = 0; metric_i < pipelineExplorerAvailableMetricsInfo->metricInfoCount; ++metric_i) {
             const auto& pipelineExplorerMetricInfo = pipelineExplorerAvailableMetricsInfo->pMetricInfos[metric_i];
             guiInfo.availableMetrics[(uint32_t)pipelineExplorerMetricInfo.id.x].push_back(pipelineExplorerMetricInfo);
         }
 
-        // TODO : Documentation
+        // Get filters from available metrics
         for (const auto& metricsGroupItr : guiInfo.availableMetrics) {
             std::stringstream tokens;
             std::set<std::string> uniqueTokens;
@@ -197,8 +228,149 @@ inline void process_incoming_messages(GuiInfo& guiInfo)
             guiInfo.metricsFilters.push_back({ tokens.str(), metricsGroupItr.first });
         }
 
-        // TODO : Documentation
+        // Set filtered metrics to all available
         guiInfo.filteredMetrics = guiInfo.availableMetrics;
+    } break;
+    case VK_INCOMPLETE: {
+        // assert(false && "TODO : Error handling");
+    } break;
+    case VK_NOT_READY:
+    default: {
+        // NOOP : No file to process
+    } break;
+    }
+
+    // TODO : Rework all query request/result logic
+    gvk::Auto<GvkPipelineExplorerPerformanceCounterCollection> pipelineExplorerPerformanceCounterCollection;
+    switch (gvk::read_serialized_structure(std::filesystem::path(guiInfo.workspaceInfo.workspace) / ".data", pipelineExplorerPerformanceCounterCollection)) {
+    case VK_SUCCESS: {
+        guiInfo.resultPending = false;
+        guiInfo.performanceCountersInfo.available = pipelineExplorerPerformanceCounterCollection;
+        guiInfo.performanceCountersInfo.filters.clear();
+        guiInfo.performanceCountersInfo.scopes.clear();
+        guiInfo.performanceCountersInfo.categories.clear();
+        guiInfo.performanceCountersInfo.active.clear();
+        guiInfo.performanceCountersInfo.enabled.clear();
+        for (uint32_t i = 0; i < guiInfo.performanceCountersInfo.available->count; ++i) {
+            std::stringstream tokens;
+            std::set<std::string> uniqueTokens;
+            for (const auto& token : gvk::string::split(guiInfo.performanceCountersInfo.available->pDescriptions[i].name, " ")) {
+                if (uniqueTokens.insert(token).second) {
+                    tokens << token << ";";
+                }
+            }
+            guiInfo.performanceCountersInfo.filters.push_back({ tokens.str(), i });
+            guiInfo.performanceCountersInfo.scopes[guiInfo.performanceCountersInfo.available->pCounters[i].scope] = true;
+            guiInfo.performanceCountersInfo.categories[guiInfo.performanceCountersInfo.available->pDescriptions[i].category] = true;
+            guiInfo.performanceCountersInfo.active.push_back(i);
+            guiInfo.performanceCountersInfo.enabled.push_back(false);
+        }
+    } break;
+    case VK_INCOMPLETE: {
+        // assert(false && "TODO : Error handling");
+    } break;
+    case VK_NOT_READY:
+    default: {
+        // NOOP : No file to process
+    } break;
+    }
+
+#ifdef WIN32
+    // TODO : Rework all query request/result logic
+    gvk::Auto<GvkCommandCollection> commandCollection;
+    switch (gvk::read_serialized_structure(std::filesystem::path(guiInfo.workspaceInfo.workspace) / ".data", "GvkApiCommandCollection", commandCollection)) {
+    case VK_SUCCESS: {
+        guiInfo.resultPending = false;
+        guiInfo.workspaceInfo.streamInfo.commandCollection = std::move(commandCollection);
+        std::ofstream commandCollectionFile(std::filesystem::path(guiInfo.workspaceInfo.workspace) / "GvkApiCommandCollection.json");
+        commandCollectionFile << gvk::to_string(guiInfo.workspaceInfo.streamInfo.commandCollection, pipeline_explorer::PrinterFlags) << std::endl;
+    } break;
+    case VK_INCOMPLETE: {
+        // assert(false && "TODO : Error handling");
+    } break;
+    case VK_NOT_READY:
+    default: {
+        // NOOP : No file to process
+    } break;
+    }
+
+    // TODO : Rework all query request/result logic
+    commandCollection.reset();
+    switch (gvk::read_serialized_structure(std::filesystem::path(guiInfo.workspaceInfo.workspace) / ".data", "GvkGpuCommandCollection", commandCollection)) {
+    case VK_SUCCESS: {
+        guiInfo.resultPending = false;
+        guiInfo.workspaceInfo.streamInfo.commandCollection = std::move(commandCollection);
+        std::ofstream commandCollectionFile(std::filesystem::path(guiInfo.workspaceInfo.workspace) / "GvkGpuCommandCollection.json");
+        commandCollectionFile << gvk::to_string(guiInfo.workspaceInfo.streamInfo.commandCollection, pipeline_explorer::PrinterFlags) << std::endl;
+    } break;
+    case VK_INCOMPLETE: {
+        // assert(false && "TODO : Error handling");
+    } break;
+    case VK_NOT_READY:
+    default: {
+        // NOOP : No file to process
+    } break;
+    }
+#else
+    // TODO : Why doesn't this work on Linux?
+    // TODO : Gotta rework structure utility includes anyway
+#endif // WIN32
+
+    // TODO : Rework all query request/result logic
+    gvk::Auto<GvkPipelineExplorerAutoQueryResultInfo> autoQueryResultInfo;
+    switch (gvk::read_serialized_structure(std::filesystem::path(guiInfo.workspaceInfo.workspace) / ".data", autoQueryResultInfo)) {
+    case VK_SUCCESS: {
+        guiInfo.resultPending = false;
+
+        guiInfo.activePipelines.clear();
+        for (uint32_t pipeline_i = 0; pipeline_i < autoQueryResultInfo->pipelineResultCount; ++pipeline_i) {
+            const auto& pipelineResultInfo = autoQueryResultInfo->pPipelineResults[pipeline_i];
+            auto device = pipelineResultInfo.pipelineInfo.device;
+            auto pipeline = pipelineResultInfo.pipelineInfo.pipeline;
+            guiInfo.activePipelines.insert({ device, pipeline });
+            auto& pipelineInfo = guiInfo.pipelineInfos[{ device, pipeline }];
+            auto printerFlags = gvk::Printer::Default & ~gvk::Printer::EnumValue;
+            boost::multiprecision::import_bits(pipelineInfo.uuid, pipelineResultInfo.pipelineInfo.uuid, pipelineResultInfo.pipelineInfo.uuid + GVK_PIPELINE_EXPLORER_UUID_SIZE);
+            pipelineInfo.pipeline = { device, pipeline };
+            pipelineInfo.bindPoint = pipelineResultInfo.pipelineInfo.bindPoint;
+            pipelineInfo.bindPointStr = gvk::string::remove(gvk::to_string(pipelineResultInfo.pipelineInfo.bindPoint, printerFlags), "\"");
+            pipelineInfo.uuidStr = uuid_to_string(pipelineResultInfo.pipelineInfo.uuid, 18);
+            pipelineInfo.driverUUIDStr = uuid_to_string(pipelineResultInfo.pipelineInfo.driverUUID, 18);
+            pipelineInfo.handleStr = gvk::to_hex_string(pipeline);
+            pipelineInfo.name = pipelineResultInfo.pipelineInfo.pName;
+            std::stringstream strStrm;
+            strStrm << std::hex << pipelineInfo.uuidStr.substr(2, 6);
+            uint32_t hexColorValue = 0;
+            strStrm >> hexColorValue;
+            pipelineInfo.highlightColor.x = (float)(hexColorValue >> 16 & 0xFF) / 255.0f;
+            pipelineInfo.highlightColor.y = (float)(hexColorValue >> 8 & 0xFF) / 255.0f;
+            pipelineInfo.highlightColor.z = (float)(hexColorValue & 0xFF) / 255.0f;
+            pipelineInfo.highlightColor.w = 1.0f;
+            if (pipelineInfo.bindPoint == VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR) {
+                pipelineInfo.highlightColor.x = std::min(pipelineInfo.highlightColor.x, 0.5f);
+                pipelineInfo.highlightColor.y = std::min(pipelineInfo.highlightColor.y, 0.5f);
+                pipelineInfo.highlightColor.z = std::min(pipelineInfo.highlightColor.z, 0.5f);
+            }
+            assert(pipelineResultInfo.metricResultCount == 2);
+            for (uint32_t metricResult_i = 0; metricResult_i < pipelineResultInfo.metricResultCount; ++metricResult_i) {
+                auto metricResultInfo = pipelineResultInfo.pMetricResults[metricResult_i];
+                pipelineInfo.metrics[metricResultInfo.metricInfo.id] = metricResultInfo;
+            }
+        }
+        // TODO : Insert sorted...
+        guiInfo.sortedPipelines.clear();
+        for (auto pipeline : guiInfo.activePipelines) {
+            guiInfo.sortedPipelines.push_back(pipeline);
+        }
+        sort_pipelines(guiInfo);
+
+        guiInfo.apiCallInfo.commandCollection = autoQueryResultInfo->commands;
+        guiInfo.apiCallInfo.commandDurations.clear();
+        guiInfo.apiCallInfo.commandDurations.resize(autoQueryResultInfo->commandCount);
+        for (uint32_t cmd_i = 0; cmd_i < autoQueryResultInfo->commandCount; ++cmd_i) {
+            guiInfo.apiCallInfo.commandDurations[cmd_i] = autoQueryResultInfo->pCmdDurations[cmd_i];
+        }
+
     } break;
     case VK_INCOMPLETE: {
         // assert(false && "TODO : Error handling");
@@ -216,6 +388,8 @@ inline void load_workspace(GuiInfo& guiInfo)
 #ifdef VK_USE_PLATFORM_WIN32_KHR
     std::filesystem::path path;
     if (get_this_module_path(&path)) {
+
+        // TODO : Rework all query request/result logic
         gvk::Auto<GvkPipelineExplorerGuiInfo> pipelineExplorerGuiInfo;
         switch (gvk::read_serialized_structure(path.parent_path(), "GvkPipelineExplorerGuiInfo", pipelineExplorerGuiInfo, false)) {
         case VK_SUCCESS: {
@@ -302,20 +476,21 @@ int main(int argc, const char* ppArgv[])
     });
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
 
-        // TODO : Documentation
+        // Configure guiInfo from cmd line args
         gvk::pipeline_explorer::gui::GuiInfo guiInfo{ };
         guiInfo.windowTitle = cmdLine["-t"];
         guiInfo.workspaceInfo.workspace = cmdLine["-w"];
+        guiInfo.workspaceInfo.launch = cmdLine["-a"];
         if (!guiInfo.workspaceInfo.workspace.empty()) {
             std::filesystem::create_directories(std::filesystem::path(guiInfo.workspaceInfo.workspace) / ".data");
             guiInfo.cliProvidedWorkspace = true;
         }
 
-        // TODO : Documentation
-        guiInfo.requestInfo.warmupFrameCount = 4;
-        guiInfo.requestInfo.sampleFrameCount = 16;
+        // TODO : gvk::get_default<>()
+        guiInfo.requestInfo.warmupRangeCount = 4;
+        guiInfo.requestInfo.queryRangeCount = 16;
 
-        // TODO : Documentation
+        // Createt gvk::Context
         auto applicationInfo = gvk::get_default<VkApplicationInfo>();
         applicationInfo.pApplicationName = guiInfo.windowTitle.c_str();
         auto instanceCreateInfo = gvk::get_default<VkInstanceCreateInfo>();
@@ -326,19 +501,25 @@ int main(int argc, const char* ppArgv[])
         gvk::Context context = VK_NULL_HANDLE;
         gvk_result(gvk::Context::create(&contextCreateInfo, nullptr, &context));
 
-        // TODO : Documentation
+        // Get available layers
+        uint32_t layerPropertyCount = 0;
+        gvk_result(context.get<gvk::Instance>().get<gvk::DispatchTable>().gvkEnumerateInstanceLayerProperties(&layerPropertyCount, nullptr));
+        guiInfo.layerProperties.resize(layerPropertyCount, gvk::get_default<VkLayerProperties>());
+        gvk_result(context.get<gvk::Instance>().get<gvk::DispatchTable>().gvkEnumerateInstanceLayerProperties(&layerPropertyCount, guiInfo.layerProperties.data()));
+
+        // Get gvk::Context objects
         const auto& instance = context.get<gvk::Instance>();
         const auto& device = context.get<gvk::Devices>()[0];
         const auto& queue = gvk::get_queue_family(context.get<gvk::Devices>()[0], 0).queues[0];
         const auto& commandBuffer = context.get<gvk::CommandBuffers>()[0];
 
-        // TODO : Documentation
+        // Load workspace
         gvk::pipeline_explorer::gui::load_workspace(guiInfo);
 
-        // TODO : Documentation
+        // Declare window manager
         gvk::pipeline_explorer::gui::Window::Manager windowManager;
 
-        // TODO : Documentation
+        // Create gvk::system::Surface
         auto systemSurfaceCreateInfo = gvk::get_default<gvk::system::Surface::CreateInfo>();
         systemSurfaceCreateInfo.extent[0] = guiInfo.windowExtent.width;
         systemSurfaceCreateInfo.extent[1] = guiInfo.windowExtent.height;
@@ -348,7 +529,7 @@ int main(int argc, const char* ppArgv[])
         gvk::system::Surface systemSurface = VK_NULL_HANDLE;
         gvk_result((VkResult)gvk::system::Surface::create(&systemSurfaceCreateInfo, &systemSurface));
 
-        // TODO : Documentation
+        // Create gvk::Surface
         const VkBaseInStructure* pSurfaceCreateInfo = nullptr;
 #ifdef VK_USE_PLATFORM_WIN32_KHR
         auto win32SurfaceCreateInfo = gvk::get_default<VkWin32SurfaceCreateInfoKHR>();
@@ -378,21 +559,24 @@ int main(int argc, const char* ppArgv[])
         gvk_result(gvk::gui::Renderer::create(device, queue, commandBuffer, wsiContext.get<gvk::RenderPass>(), nullptr, &guiRenderer));
         ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-        // TODO : Documentation
+        // TODO : Automatically handle ImGui add-ons
+        ImPlot::CreateContext();
+
+        // Main loop
         gvk::system::Clock clock;
         while (!(systemSurface.get<gvk::system::Surface::StatusFlags>() & gvk::system::Surface::CloseRequested)) {
             gvk::system::Surface::update();
             clock.update();
             auto deltaTime = clock.elapsed<gvk::system::Seconds<float>>();
 
-            // TODO : Documentation
+            // Get window extent and position
             int32_t width = 0;
             int32_t height = 0;
             systemSurface.get_window_extent(&width, &height);
             guiInfo.windowExtent = { (uint32_t)width, (uint32_t)height };
             systemSurface.get_window_position(&guiInfo.windowPosition.x, &guiInfo.windowPosition.y);
 
-            // TODO : Documentation
+            // Acquire next image
             gvk::wsi::AcquiredImageInfo acquiredImageInfo{};
             gvk::RenderTarget acquiredImageRenderTarget = VK_NULL_HANDLE;
             auto wsiStatus = wsiContext.acquire_next_image(UINT64_MAX, VK_NULL_HANDLE, &acquiredImageInfo, &acquiredImageRenderTarget);
@@ -400,7 +584,7 @@ int main(int argc, const char* ppArgv[])
                 const auto& extent = wsiContext.get<gvk::SwapchainKHR>().get<VkSwapchainCreateInfoKHR>().imageExtent;
                 const auto& input = systemSurface.get<gvk::system::Input>();
 
-                // TODO : Documentation
+                // Handle ImGui io and events
                 auto imguiCursor = ImGui::GetMouseCursor();
                 if (imguiCursor == ImGuiMouseCursor_None || ImGui::GetIO().MouseDrawCursor) {
                     systemSurface.set(gvk::system::Surface::CursorMode::Hidden);
@@ -425,7 +609,7 @@ int main(int argc, const char* ppArgv[])
                     ImGui::GetIO().AddFocusEvent(false);
                 }
 
-                // TODO : Documentation
+                // Process incoming messages from backend
                 gvk::pipeline_explorer::gui::process_incoming_messages(guiInfo);
 
                 // Prepare a gvk::gui::Renderer::BeginInfo
@@ -442,14 +626,16 @@ int main(int argc, const char* ppArgv[])
                 windowManager.on_gui(guiInfo);
                 gvk_result(guiRenderer.end_gui(acquiredImageInfo.index));
 
-                // TODO : Documentation
+                // Process outgoing messages to backend
                 process_outgoing_messages(guiInfo);
 
-                // TODO : Documentation
+                // Reset on workload close
                 if (guiInfo.applicationInfo.closed) {
+                    ///////////////////////////////////////////////////////////////////////////////
+                    // TODO : Unify application shutdown and stream shutdown
                     guiInfo.requestInfo = gvk::get_default<GvkPipelineExplorerRequestInfo>();
-                    guiInfo.requestInfo.warmupFrameCount = 4;
-                    guiInfo.requestInfo.sampleFrameCount = 16;
+                    guiInfo.requestInfo.warmupRangeCount = 4;
+                    guiInfo.requestInfo.queryRangeCount = 16;
                     guiInfo.activePipelines.clear();
                     guiInfo.sortedPipelines.clear();
                     guiInfo.pipelineInfos.clear();
@@ -458,13 +644,19 @@ int main(int argc, const char* ppArgv[])
                     guiInfo.metricsFilters.clear();
                     guiInfo.metricsAnyOfFilter.clear();
                     guiInfo.metricsAllOfFilter.clear();
+                    guiInfo.performanceCountersInfo.reset();
+                    guiInfo.pipelineStatisticsQueryInfo.reset();
+                    guiInfo.pluginPerformanceCounterInfo.reset();
                     guiInfo.selectedPipeline = { };
                     guiInfo.enabledMetricsGroup = 0;
                     guiInfo.applicationInfo = { };
+                    guiInfo.apiCallInfo.reset();
+                    guiInfo.resultPending = false;
                     windowManager.clear();
+                    ///////////////////////////////////////////////////////////////////////////////
                 }
 
-                // TODO : Documentation
+                // Render GUI
                 auto renderPassBeginInfo = acquiredImageRenderTarget.get<VkRenderPassBeginInfo>();
                 gvk::CommandBuffer acquiredImageCommandBuffer = acquiredImageInfo.commandBuffer;
                 gvk_result(acquiredImageCommandBuffer.BeginCommandBuffer(&gvk::get_default<VkCommandBufferBeginInfo>()));
@@ -481,7 +673,7 @@ int main(int argc, const char* ppArgv[])
                 }
                 gvk_result(acquiredImageCommandBuffer.EndCommandBuffer());
 
-                // TODO : Documentation
+                // Submit and present
                 gvk_result(queue.QueueSubmit(1, &wsiContext.get<VkSubmitInfo>(acquiredImageInfo), acquiredImageInfo.fence));
                 wsiStatus = wsiContext.queue_present(queue, &acquiredImageInfo);
                 gvk_result((wsiStatus == VK_SUBOPTIMAL_KHR || wsiStatus == VK_ERROR_OUT_OF_DATE_KHR) ? VK_SUCCESS : wsiStatus);
@@ -490,8 +682,20 @@ int main(int argc, const char* ppArgv[])
                 save_workspace(guiInfo);
             }
         }
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+        // TODO : This should probably be managed by the WorkspaceWindow
+        if (guiInfo.applicationInfo.processInformation.hProcess) {
+            TerminateProcess(guiInfo.applicationInfo.processInformation.hProcess, 0);
+        }
+#endif
+
         save_workspace(guiInfo);
         gvk_result(device.DeviceWaitIdle());
+
+        // TODO : Automatically handle ImGui add-ons
+        ImPlot::DestroyContext();
+
     } gvk_result_scope_end;
     return gvkResult;
 }

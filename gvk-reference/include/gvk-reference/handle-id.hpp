@@ -44,6 +44,11 @@ public:
     {
     }
 
+    inline operator bool() const
+    {
+        return get_dispatchable_handle() && get_handle();
+    }
+
     inline const VkDispatchableHandleType& get_dispatchable_handle() const
     {
         return mId.first;

@@ -132,21 +132,44 @@ void StructureEnumerateHandlesGenerator::generate_source(FileGenerator& file, co
             compileGuards.insert("GVK_MANUALLY_IMPLEMENTED");
         }
         CompileGuardGenerator compileGuardGenerator(file, compileGuards);
-        file << string::replace("template <> void enumerate_structure_handles<{structureType}>(const {structureType}& obj, EnumerateHandlesCallback callback)", "{structureType}", structure.name) << std::endl;
-        file << "{" << std::endl;
-        file << "    (void)obj;" << std::endl;
-        file << "    (void)callback;" << std::endl;
-        for (size_t i = 0; i < structure.members.size(); ++i) {
-            const auto& member = structure.members[i];
-            CompileGuardGenerator memberCompileGuardGenerator(file, get_inner_scope_compile_guards(compileGuards, member.compileGuards));
-            auto source = StructureMemberEnumerateHandlesGenerator().generate(manifest, member);
-            if (!source.empty()) {
-                file << "    " << source << std::endl;
-            }
+        if (apiElements.typeErasedStructures.count(structure.name)) {
+            generate_type_erased_structure_source(file, apiElements, structure);
+        } else {
+            generate_structure_source(file, manifest, compileGuards, structure);
         }
-        file << "}" << std::endl;
     }
     file << std::endl;
+}
+
+void StructureEnumerateHandlesGenerator::generate_structure_source(FileGenerator& file, const xml::Manifest& manifest, const std::set<std::string>& compileGuards, const xml::Structure& structure)
+{
+    file << string::replace("template <> void enumerate_structure_handles<{structureType}>(const {structureType}& obj, EnumerateHandlesCallback callback)", "{structureType}", structure.name) << std::endl;
+    file << "{" << std::endl;
+    file << "    (void)obj;" << std::endl;
+    file << "    (void)callback;" << std::endl;
+    for (const auto& member : structure.members) {
+        CompileGuardGenerator memberCompileGuardGenerator(file, get_inner_scope_compile_guards(compileGuards, member.compileGuards));
+        auto source = StructureMemberEnumerateHandlesGenerator().generate(manifest, member);
+        if (!source.empty()) {
+            file << "    " << source << std::endl;
+        }
+    }
+    file << "}" << std::endl;
+}
+
+void StructureEnumerateHandlesGenerator::generate_type_erased_structure_source(FileGenerator& file, const ApiElementCollectionInfo& apiElements, const xml::Structure& structure)
+{
+    file << string::replace("template <> void enumerate_structure_handles<{structureType}>(const {structureType}& obj, EnumerateHandlesCallback callback)", "{structureType}", structure.name) << std::endl;
+    file << "{" << std::endl;
+    generate_type_erased_structure_switch(
+        file,
+        apiElements,
+        "    ",
+        "obj.sType",
+        "enumerate_structure_handles((const {structureType}&)obj, callback);",
+        "assert(false && \"Unrecognized structure type\");"
+    );
+    file << "}" << std::endl;
 }
 
 } // namespace cppgen

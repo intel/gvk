@@ -9,6 +9,8 @@ gvk_add_static_library(
         gvk-string
     FOLDER
         "gvk-string/"
+    LINK_LIBRARIES
+        boost-multiprecision
     INCLUDE_DIRECTORIES
         "${includeDirectory}"
     INCLUDE_FILES

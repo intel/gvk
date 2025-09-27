@@ -26,14 +26,18 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-pipeline-explorer/utilities.hpp"
+#include "gvk-pipeline-explorer/backend/utilities.hpp"
 #include "gvk-reference/handle-id.hpp"
+#include "gvk-command-structures.hpp"
 #include "gvk-defines.hpp"
 #include "gvk-gui.hpp"
 #include "gvk-pipeline-explorer.hpp"
 #include "gvk-structures.hpp"
 
 #include "boost/multiprecision/integer.hpp"
+#if GVK_GITS_ENABLED
+#include "libGits.h"
+#endif
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 #include <codecvt>
@@ -55,14 +59,177 @@ namespace gvk {
 namespace pipeline_explorer {
 namespace gui {
 
+template <typename RequestType, typename ResultType>
+class RequestResult final
+{
+public:
+    RequestResult() = default;
+
+    const gvk::Auto<RequestType>& get_request() const
+    {
+        return mRequest;
+    }
+
+    const gvk::Auto<ResultType>& get_result() const
+    {
+        return mResult;
+    }
+
+    void reset()
+    {
+        mRequest.reset();
+        mResult.reset();
+        mResultName.clear();
+    }
+
+    VkResult check_result(const std::filesystem::path& workspace)
+    {
+        return ready() ? VK_SUCCESS : (pending() ? read_serialized_structure(workspace / ".data", mResultName, mResult) : VK_NOT_READY);
+    }
+
+    VkResult submit_request(const std::filesystem::path& workspace, const RequestType& request, const std::string& requestName = "", const std::string& resultName = "")
+    {
+        // TODO : Timeout parameter
+        // TODO : Queue?
+        // TODO : Need to be able to check if any RequestResult is pending
+        // TODO : Message ID
+        // TODO : Maybe it should send over the thing it wants back to fill out?
+        if (idle() || ready()) {
+            reset();
+            auto result = write_serialized_structure(workspace / ".data", requestName, request);
+            if (result == VK_SUCCESS) {
+                mRequest = request;
+                mResultName = resultName;
+            }
+            return result;
+        }
+        return VK_NOT_READY;
+    }
+
+    bool idle() const
+    {
+        return mRequest->sType != gvk::get_stype<RequestType>() && mResult->sType != gvk::get_stype<ResultType>();
+    }
+
+    bool pending() const
+    {
+        return mRequest->sType == gvk::get_stype<RequestType>() && mResult->sType != gvk::get_stype<ResultType>();
+    }
+
+    bool ready() const
+    {
+        return mRequest->sType == gvk::get_stype<RequestType>() && mResult->sType == gvk::get_stype<ResultType>();
+    }
+
+private:
+    gvk::Auto<RequestType> mRequest;
+    gvk::Auto<ResultType> mResult;
+    std::string mResultName;
+
+    RequestResult(const RequestResult&) = delete;
+    RequestResult& operator=(const RequestResult&) = delete;
+};
+
 class ApplicationInfo final
 {
 public:
 #ifdef VK_USE_PLATFORM_WIN32_KHR
+    struct PipePair
+    {
+        static constexpr int INHERIT_READ  = 1 << 0;
+        static constexpr int INHERIT_WRITE = 1 << 1;
+        static BOOL create(DWORD inheritFlags, ApplicationInfo::PipePair* pPipePair)
+        {
+            (void)inheritFlags;
+            if (pPipePair) {
+                ApplicationInfo::PipePair::close(pPipePair);
+                SECURITY_ATTRIBUTES securityAtributes{ };
+                securityAtributes.nLength = sizeof(securityAtributes);
+                securityAtributes.bInheritHandle = TRUE;
+                auto success = CreatePipe(&pPipePair->read, &pPipePair->write, &securityAtributes, 0);
+                // if (success && pPipePair->read && !(inheritFlags & INHERIT_READ)) {
+                //     success &= SetHandleInformation(pPipePair->read, HANDLE_FLAG_INHERIT, 0);
+                // }
+                // if (success && pPipePair->write && !(inheritFlags & INHERIT_WRITE)) {
+                //     success &= SetHandleInformation(pPipePair->write, HANDLE_FLAG_INHERIT, 0);
+                // }
+                if (!success) {
+                    ApplicationInfo::PipePair::close(pPipePair);
+                }
+            }
+            return pPipePair && pPipePair->read && pPipePair->write;
+        }
+
+        static void close(ApplicationInfo::PipePair* pPipePair)
+        {
+            if (pPipePair) {
+                if (pPipePair->read) {
+                    CloseHandle(pPipePair->read);
+                }
+                if (pPipePair->write) {
+                    CloseHandle(pPipePair->write);
+                }
+                *pPipePair = { };
+            }
+        }
+
+        HANDLE read{ };
+        HANDLE write{ };
+    };
+
     PROCESS_INFORMATION processInformation{ };
     HANDLE waitHandle{ };
+    PipePair stdIn{ };
+    PipePair stdOut{ };
+    PipePair stdErr{ };
+    std::pair<HANDLE, DWORD> stdInThread{ };
+    std::pair<HANDLE, DWORD> stdOutThread{ };
+    std::pair<HANDLE, DWORD> stdErrThread{ };
+    HANDLE ioThread{ };
 #endif
+    bool running{ };
     bool closed{ };
+};
+
+class StreamInfo final
+{
+public:
+    class Benchmark
+    {
+    public:
+        double value{ };
+        std::string str;
+    };
+
+    std::string path;
+    uint64_t selectedFrame{ };
+    std::map<std::string, std::vector<Benchmark>> benchmarks;
+    std::string selectedBenchmark;
+    std::vector<double> selectedBenchmarkValues;
+    uint64_t loopCount{ };
+    #if GVK_GITS_ENABLED
+    GitsInstance gitsInstance{ };
+    GitsPlayer gitsPlayer{ };
+    GitsDispatchTable gitsDispatchTable{ };
+    #endif // GVK_GITS_ENABLED
+    bool running{ };
+    bool stop{ };
+    bool runFrame{ };
+    gvk::Auto<GvkCommandCollection> commandCollection;
+};
+
+class ApiCallInfo final
+{
+public:
+    void reset()
+    {
+        commandCollection.reset();
+        requestResult.reset();
+    }
+
+    gvk::Auto<GvkCommandCollection> commandCollection;
+    std::vector<double> commandDurations;
+    RequestResult<GvkPipelineExplorerCommandCollectionRequestInfo, GvkPipelineExplorerCommandCollectionResultInfo> requestResult;
 };
 
 class WorkspaceInfo final
@@ -75,11 +242,17 @@ public:
         , openTerminal{ (bool)pipelineExplorerWorkspaceInfo.openTerminal }
         , autoWorkingDirectory{ (bool)pipelineExplorerWorkspaceInfo.autoWorkingDirectory }
         , autoWorkspace{ (bool)pipelineExplorerWorkspaceInfo.autoWorkspace }
+        , autoLogPath{ (bool)pipelineExplorerWorkspaceInfo.autoLogPath }
+        , logToStdOut{ (bool)pipelineExplorerWorkspaceInfo.logToStdOut }
+        , logToFile{ (bool)pipelineExplorerWorkspaceInfo.logToFile }
+        , record{ (bool)pipelineExplorerWorkspaceInfo.record }
         , launch{ pipelineExplorerWorkspaceInfo.pLaunch ? pipelineExplorerWorkspaceInfo.pLaunch : std::string() }
         , target{ pipelineExplorerWorkspaceInfo.pTarget ? pipelineExplorerWorkspaceInfo.pTarget : std::string() }
         , args{ pipelineExplorerWorkspaceInfo.pArgs ? pipelineExplorerWorkspaceInfo.pArgs : std::string() }
         , workingDirectory{ pipelineExplorerWorkspaceInfo.pWorkingDirectory ? pipelineExplorerWorkspaceInfo.pWorkingDirectory : std::string() }
         , workspace{ pipelineExplorerWorkspaceInfo.pWorkspace ? pipelineExplorerWorkspaceInfo.pWorkspace : std::string() }
+        , logPath{ pipelineExplorerWorkspaceInfo.pLogPath ? pipelineExplorerWorkspaceInfo.pLogPath : std::string() }
+        , gits{ pipelineExplorerWorkspaceInfo.pGits ? pipelineExplorerWorkspaceInfo.pGits : std::string() }
     {
     }
 
@@ -92,11 +265,16 @@ public:
         pipelineExplorerWorkspaceInfo.openTerminal = openTerminal;
         pipelineExplorerWorkspaceInfo.autoWorkingDirectory = autoWorkingDirectory;
         pipelineExplorerWorkspaceInfo.autoWorkspace = autoWorkspace;
+        pipelineExplorerWorkspaceInfo.autoLogPath = autoLogPath;
+        pipelineExplorerWorkspaceInfo.logToStdOut = logToStdOut;
+        pipelineExplorerWorkspaceInfo.logToFile = logToFile;
         pipelineExplorerWorkspaceInfo.pLaunch = !launch.empty() ? launch.c_str() : nullptr;
         pipelineExplorerWorkspaceInfo.pTarget = !target.empty() ? target.c_str() : nullptr;
         pipelineExplorerWorkspaceInfo.pArgs = !args.empty() ? args.c_str() : nullptr;
         pipelineExplorerWorkspaceInfo.pWorkingDirectory = !workingDirectory.empty() ? workingDirectory.c_str() : nullptr;
         pipelineExplorerWorkspaceInfo.pWorkspace = !workspace.empty() ? workspace.c_str() : nullptr;
+        pipelineExplorerWorkspaceInfo.pLogPath = !logPath.empty() ? logPath.c_str() : nullptr;
+        pipelineExplorerWorkspaceInfo.pGits = !gits.empty() ? gits.c_str() : nullptr;
         return pipelineExplorerWorkspaceInfo;
     }
 
@@ -114,11 +292,28 @@ public:
     bool openTerminal{ };
     bool autoWorkingDirectory{ true };
     bool autoWorkspace{ true };
+    bool autoLogPath{ true };
+    bool logToStdOut{ true };
+    bool logToFile{ false };
+    bool record{ false };
     std::string launch;
     std::string target;
     std::string args;
     std::string workingDirectory;
     std::string workspace;
+    std::string logPath;
+    std::string gits;
+
+    ////////
+
+    bool gitsStream{ };
+    StreamInfo streamInfo{ };
+};
+
+struct PerformanceCounterResult
+{
+    double total{ };
+    double average{ };
 };
 
 class PipelineInfo final
@@ -140,6 +335,77 @@ public:
     ImVec4 highlightColor{ 1, 0, 1, 1 };
     bool infoWriteEnabled{ true };
     std::map<GvkPipelineExplorerMetricId, gvk::Auto<GvkPipelineExplorerMetricResultInfo>> metrics;
+    std::map<std::array<uint8_t, VK_UUID_SIZE>, PerformanceCounterResult> performanceCounterResults;
+    std::map<VkQueryPipelineStatisticFlagBits, PerformanceCounterResult> pipelineStatisticsQueryResults;
+};
+
+class PerformanceCountersInfo final
+{
+public:
+    void reset()
+    {
+        available.reset();
+        filters.clear();
+        scopes.clear();
+        categories.clear();
+        anyOfFilter.clear();
+        allOfFilter.clear();
+        sortSpecs.clear();
+        active.clear();
+        enabled.clear();
+        activeEnabledCount = 0;
+        requestResult.reset();
+    }
+
+    gvk::Auto<GvkPipelineExplorerPerformanceCounterCollection> available;
+    std::vector<std::pair<std::string, uint32_t>> filters;
+    std::map<VkPerformanceCounterScopeKHR, bool> scopes;
+    std::map<std::string, bool> categories;
+    std::string anyOfFilter;
+    std::string allOfFilter;
+    std::vector<ImGuiTableColumnSortSpecs> sortSpecs;
+    std::vector<uint32_t> active;
+    std::vector<bool> enabled;
+    uint32_t activeEnabledCount{ };
+    RequestResult<GvkPipelineExplorerPerformanceQueryRequestInfo, GvkPipelineExplorerPerformanceQueryResultInfo> requestResult;
+};
+
+class PluginPerformanceCounterInfo final
+{
+public:
+    void reset()
+    {
+        available.reset();
+        requestResult.reset();
+    }
+
+    gvk::Auto<GvkPipelineExplorerPluginCounterInfo> available;
+    RequestResult<GvkPipelineExplorerPerformanceQueryRequestInfo, GvkPipelineExplorerPerformanceQueryResultInfo> requestResult;
+};
+
+class TimestampInfo final
+{
+public:
+    void reset()
+    {
+        requestResult.reset();
+    }
+
+    gvk::Auto<GvkPipelineExplorerTimestampQueryResultInfo> available;
+    RequestResult<GvkPipelineExplorerPerformanceQueryRequestInfo, GvkPipelineExplorerTimestampQueryResultInfo> requestResult;
+};
+
+class PipelineStatisticsQueryInfo final
+{
+public:
+    void reset()
+    {
+        available.reset();
+        requestResult.reset();
+    }
+
+    gvk::Auto<GvkPipelineExplorerPerformanceCounterCollection> available;
+    RequestResult<GvkPipelineExplorerPipelineStatisticsQueryRequestInfo, GvkPipelineExplorerPipelineStatisticsQueryResultInfo> requestResult;
 };
 
 class GuiInfo final
@@ -156,6 +422,8 @@ public:
     std::vector<std::pair<std::string, uint32_t>> metricsFilters;
     std::string metricsAnyOfFilter;
     std::string metricsAllOfFilter;
+    PerformanceCountersInfo performanceCountersInfo;
+    PluginPerformanceCounterInfo pluginPerformanceCounterInfo;
     gvk::HandleId<VkDevice, VkPipeline> selectedPipeline;
     uint32_t enabledMetricsGroup{ };
     bool buildDefaultDockSpace{ true };
@@ -168,10 +436,53 @@ public:
     float fontScale{ 1.0f };
     ApplicationInfo applicationInfo{ };
     WorkspaceInfo workspaceInfo{ };
+    ApiCallInfo apiCallInfo{ };
+    TimestampInfo timestampInfo{ };
+    PipelineStatisticsQueryInfo pipelineStatisticsQueryInfo{ };
     std::vector<WorkspaceInfo> recentWorkspaceInfos;
+    std::vector<VkLayerProperties> layerProperties;
+    bool resultPending{ };
+    std::ofstream logFile;
+    bool autoQuery{ };
 };
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
+inline BOOL redirect_io(GuiInfo& guiInfo, HANDLE read, HANDLE write)
+{
+    DWORD count = 0;
+    std::array<char, 1024> buffer{ };
+    auto success = ReadFile(read, buffer.data(), (DWORD)buffer.size() - 1, &count, NULL);
+    if (success && count) {
+        if (guiInfo.workspaceInfo.logToStdOut) {
+            success = WriteFile(write, buffer.data(), count, NULL, NULL);
+        }
+        if (guiInfo.workspaceInfo.logToFile && guiInfo.logFile.is_open()) {
+            guiInfo.logFile.write(buffer.data(), count);
+            guiInfo.logFile.flush();
+        }
+    }
+    return success;
+}
+
+inline DWORD CALLBACK process_io_callback(_In_ LPVOID lpParameter)
+{
+    if (lpParameter) {
+        auto& guiInfo = *(GuiInfo*)lpParameter;
+        auto currentThreadId = GetCurrentThreadId();
+        if (currentThreadId == guiInfo.applicationInfo.stdInThread.second) {
+            while (redirect_io(guiInfo, GetStdHandle(STD_INPUT_HANDLE), guiInfo.applicationInfo.stdIn.write)) {
+            }
+        } else if (currentThreadId == guiInfo.applicationInfo.stdOutThread.second) {
+            while (redirect_io(guiInfo, guiInfo.applicationInfo.stdOut.read, GetStdHandle(STD_OUTPUT_HANDLE))) {
+            }
+        } else if (currentThreadId == guiInfo.applicationInfo.stdErrThread.second) {
+            while (redirect_io(guiInfo, guiInfo.applicationInfo.stdErr.read, GetStdHandle(STD_ERROR_HANDLE))) {
+            }
+        }
+    }
+    return 0;
+}
+
 inline VOID CALLBACK process_wait_callback(_In_ PVOID lpParameter, _In_ BOOLEAN TimerOrWaitFired)
 {
     (void)TimerOrWaitFired;
@@ -179,6 +490,18 @@ inline VOID CALLBACK process_wait_callback(_In_ PVOID lpParameter, _In_ BOOLEAN 
         auto& guiInfo = *(GuiInfo*)lpParameter;
         guiInfo.messages += "INFO : " + guiInfo.workspaceInfo.launch + " closed\n";
         guiInfo.applicationInfo.closed = true;
+        // TODO : Double check that all handles/resources associated with child process
+        //  are correctly closed/cleaned up
+        guiInfo.applicationInfo.running = false;
+        ApplicationInfo::PipePair::close(&guiInfo.applicationInfo.stdIn);
+        ApplicationInfo::PipePair::close(&guiInfo.applicationInfo.stdOut);
+        ApplicationInfo::PipePair::close(&guiInfo.applicationInfo.stdErr);
+        if (guiInfo.applicationInfo.ioThread) {
+            WaitForSingleObject(guiInfo.applicationInfo.ioThread, INFINITE);
+            CloseHandle(guiInfo.applicationInfo.ioThread);
+            guiInfo.applicationInfo.ioThread = NULL;
+        }
+        guiInfo.logFile.close();
     }
 }
 
@@ -350,20 +673,12 @@ inline void sort_pipelines(GuiInfo& guiInfo)
 
 inline std::string get_pipeline_path(GuiInfo& guiInfo, VkDevice device, VkPipeline pipeline)
 {
-#if 0
-    auto itr = guiInfo.pipelineInfos.find({ device, pipeline });
-    if (itr != guiInfo.pipelineInfos.end() && itr->second.path.empty()) {
-        itr->second.path = (guiInfo.workspacePath / ("VkPipeline-UUID-" + itr->second.uuidStr)).string();
-    }
-    return itr != guiInfo.pipelineInfos.end() ? itr->second.path.c_str() : nullptr;
-#else
     std::string pipelinePath;
     auto itr = guiInfo.pipelineInfos.find({ device, pipeline });
     if (itr != guiInfo.pipelineInfos.end()) {
         pipelinePath = (std::filesystem::path(guiInfo.workspaceInfo.workspace) / ("VkPipeline-UUID-" + itr->second.uuidStr)).string();
     }
     return pipelinePath;
-#endif
 }
 
 } // namespace gui
@@ -371,6 +686,57 @@ inline std::string get_pipeline_path(GuiInfo& guiInfo, VkDevice device, VkPipeli
 } // namespace gvk
 
 namespace GvkGui {
+
+class ScopeID final
+{
+public:
+    ScopeID(const char* str_id)
+    {
+        ImGui::PushID(str_id);
+    }
+
+    ScopeID(const char* str_id_begin, const char* str_id_end)
+    {
+        ImGui::PushID(str_id_begin, str_id_end);
+    }
+
+    ScopeID(const void* ptr_id)
+    {
+        ImGui::PushID(ptr_id);
+    }
+
+    ScopeID(int int_id)
+    {
+        ImGui::PushID(int_id);
+    }
+
+    ~ScopeID()
+    {
+        ImGui::PopID();
+    }
+
+private:
+    ScopeID(const ScopeID&) = delete;
+    ScopeID& operator=(const ScopeID&) = delete;
+};
+
+class ScopeIndent final
+{
+public:
+    ScopeIndent()
+    {
+        ImGui::Indent();
+    }
+
+    ~ScopeIndent()
+    {
+        ImGui::Unindent();
+    }
+
+private:
+    ScopeIndent(const ScopeIndent&) = delete;
+    ScopeIndent& operator=(const ScopeIndent&) = delete;
+};
 
 inline bool InputPath(const char* label, std::string* str)
 {

@@ -41,6 +41,8 @@ public:
 private:
     static void generate_header(FileGenerator& file, const ApiElementCollectionInfo& apiElements);
     static void generate_source(FileGenerator& file, const ApiElementCollectionInfo& apiElements);
+    static void generate_structure_source(FileGenerator& file, const xml::Structure& structure);
+    static void generate_type_erased_structure_source(FileGenerator& file, const ApiElementCollectionInfo& apiElements, const xml::Structure& structure);
 };
 
 } // namespace cppgen

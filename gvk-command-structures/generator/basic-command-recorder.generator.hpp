@@ -62,11 +62,13 @@ private:
         file << "{" << std::endl;
         file << "public:" << std::endl;
         file << "    BasicCommandRecorder() = default;" << std::endl;
-        file << "    virtual ~BasicCommandRecorder() = 0;" << std::endl;
+        file << "    virtual ~BasicCommandRecorder();" << std::endl;
         file << "    virtual void reset();" << std::endl;
+        file << "    const std::vector<const GvkCommandBaseStructure*>& get_commands() const;" << std::endl;
+        file << "    virtual void add_command(const GvkCommandBaseStructure& command);" << std::endl;
         for (const auto& commandItr : manifest.commands) {
             const auto& command = commandItr.second;
-            if (command.type == xml::Command::Type::Cmd && !string::contains(command.name, "INTEL")) {
+            if (!string::contains(command.name, "INTEL")) {
                 CompileGuardGenerator compileGuardGenerator(file, command.compileGuards);
                 file << "    virtual void record_" << command.name << "(" << get_parameter_list(command.parameters) << ");" << std::endl;
             }
@@ -96,7 +98,7 @@ private:
         file << "}" << std::endl;
         for (const auto& commandItr : manifest.commands) {
             const auto& command = commandItr.second;
-            if (command.type == xml::Command::Type::Cmd && !string::contains(command.name, "INTEL")) {
+            if (!string::contains(command.name, "INTEL")) {
                 file << std::endl;
                 CompileGuardGenerator compileGuardGenerator(file, command.compileGuards);
                 file << "void BasicCommandRecorder::record_" << command.name << "(" << get_parameter_list(command.parameters) << ")" << std::endl;
@@ -122,16 +124,14 @@ private:
         file << "        switch (pCommand->sType) {" << std::endl;
         for (const auto& commandItr : manifest.commands) {
             const auto& command = commandItr.second;
-            // if (command.type == xml::Command::Type::Cmd) {
-                CompileGuardGenerator compileGuardGenerator(file, command.compileGuards);
-                std::string sType = "GVK_COMMAND_STRUCTURE_TYPE";
-                for (const auto& token : string::split_camel_case(string::strip_vk(command.name))) {
-                    sType += "_" + string::to_upper(token);
-                }
-                file << "        case " << sType << ": {" << std::endl;
-                file << "            detail::destroy_dynamic_array_copy(1, (const GvkCommandStructure" << string::strip_vk(command.name) << "*)pCommand, nullptr);" << std::endl;
-                file << "        } break;" << std::endl;
-            // }
+            CompileGuardGenerator compileGuardGenerator(file, command.compileGuards);
+            std::string sType = "GVK_COMMAND_STRUCTURE_TYPE";
+            for (const auto& token : string::split_camel_case(string::strip_vk(command.name))) {
+                sType += "_" + string::to_upper(token);
+            }
+            file << "        case " << sType << ": {" << std::endl;
+            file << "            detail::destroy_dynamic_array_copy(1, (const GvkCommandStructure" << string::strip_vk(command.name) << "*)pCommand, nullptr);" << std::endl;
+            file << "        } break;" << std::endl;
         }
         file << "        default: {" << std::endl;
         file << "            assert(false && \"Unsupported GvkCommandStructureType\");" << std::endl;
@@ -139,6 +139,16 @@ private:
         file << "        }" << std::endl;
         file << "        mCommands.clear();" << std::endl;
         file << "    }" << std::endl;
+        file << "}" << std::endl;
+        file << std::endl;
+        file << "const std::vector<const GvkCommandBaseStructure*>& BasicCommandRecorder::get_commands() const" << std::endl;
+        file << "{" << std::endl;
+        file << "    return mCommands;" << std::endl;
+        file << "}" << std::endl;
+        file << std::endl;
+        file << "void BasicCommandRecorder::add_command(const GvkCommandBaseStructure& command)" << std::endl;
+        file << "{" << std::endl;
+        file << "    mCommands.push_back(detail::create_type_erased_structure_copy(&command, nullptr));" << std::endl;
         file << "}" << std::endl;
         file << std::endl;
     }

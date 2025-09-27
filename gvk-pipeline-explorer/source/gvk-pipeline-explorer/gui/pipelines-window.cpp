@@ -37,7 +37,59 @@ PipelinesWindow::PipelinesWindow(Window::Manager& windowManager)
 
 void PipelinesWindow::on_gui(GuiInfo& guiInfo)
 {
-    guiInfo.requestInfo.refreshActivePipelines = ImGui::Button("Refresh Active Pipelines");
+    // TODO : Unify timestamp query behavior
+    ImGui::BeginDisabled(!guiInfo.applicationInfo.running && !guiInfo.cliProvidedWorkspace);
+    {
+        guiInfo.requestInfo.refreshActivePipelines = ImGui::Button("Refresh Active Pipelines");
+
+        #if 0
+        // DEBUGGING :
+        static std::unordered_map<gvk::HandleId<VkDevice, VkPipeline>, std::pair<double, double>> sTimestamps;
+        if (guiInfo.timestampInfo.requestResult.pending()) {
+            if (guiInfo.timestampInfo.requestResult.check_result(guiInfo.workspaceInfo.workspace) == VK_SUCCESS) {
+                guiInfo.timestampInfo.available = guiInfo.timestampInfo.requestResult.get_result();
+                for (uint32_t i = 0; i < guiInfo.timestampInfo.available->pipelineTimestampQueryResultCount; ++i) {
+                    const auto& pipelineTimestampQueryResult = guiInfo.timestampInfo.available->pPipelineTimestampQueryResults[i];
+
+                    sTimestamps[{
+                        pipelineTimestampQueryResult.pipelineInfo.device,
+                        pipelineTimestampQueryResult.pipelineInfo.pipeline
+                    }] = {
+                        pipelineTimestampQueryResult.averageCmdRangeCmdCount,
+                        pipelineTimestampQueryResult.averageCmdRangeDuration
+                    };
+
+                    for (uint32_t j = 0; j < pipelineTimestampQueryResult.cmdRangeResultCount; ++j) {
+                        const auto& cmdRangeResult = pipelineTimestampQueryResult.pCmdRangeResults[j];
+                        for (uint32_t k = 0; k < cmdRangeResult.cmdSequenceCount; ++k) {
+                            const auto& cmdSequenceResult = cmdRangeResult.pCmdSequences[k];
+                            for (uint32_t l = 0; l < cmdSequenceResult.cmdCount; ++l) {
+                                auto cmdType = cmdSequenceResult.pCmdTypes[l];
+                                (void)cmdType;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Generate timestamp query report
+        ImGui::SameLine();
+        ImGui::BeginDisabled(guiInfo.timestampInfo.requestResult.pending());
+        if (ImGui::Button("Generate Timestamp Query Report")) {
+            auto request = gvk::get_default<GvkPipelineExplorerPerformanceQueryRequestInfo>();
+            std::string reportPath = guiInfo.reportEnabled ? (std::filesystem::path(guiInfo.workspaceInfo.workspace) / "reports").string() : std::string();
+            request.pReportPath = !reportPath.empty() ? reportPath.c_str() : nullptr;
+            request.warmupRangeCount = guiInfo.requestInfo.warmupRangeCount;
+            request.queryRangeCount = guiInfo.requestInfo.queryRangeCount;
+            guiInfo.timestampInfo.requestResult.submit_request(guiInfo.workspaceInfo.workspace, request, "TimestampQueryRequest");
+        }
+        ImGui::EndDisabled();
+        #endif
+    }
+    ImGui::EndDisabled();
+
+    // Draw pipelines table
     if (ImGui::BeginChild("##Pipelines Table")) {
         auto tableFlags =
             ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable |
@@ -45,16 +97,23 @@ void PipelinesWindow::on_gui(GuiInfo& guiInfo)
             ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti;
         if (ImGui::BeginTable("Pipelines-Table", 10, tableFlags)) {
             ImGui::TableSetupScrollFreeze(0, 1);
-            ImGui::TableSetupColumn("UUID",                  ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_NoReorder, 0, 0);
-            ImGui::TableSetupColumn("Driver UUID",           ImGuiTableColumnFlags_DefaultHide,                              0, 1);
-            ImGui::TableSetupColumn("Handle",                ImGuiTableColumnFlags_DefaultHide,                              0, 2);
-            ImGui::TableSetupColumn("Name",                  ImGuiTableColumnFlags_DefaultHide,                              0, 3);
-            ImGui::TableSetupColumn("Bind Point",            ImGuiTableColumnFlags_DefaultHide,                              0, 4);
-            ImGui::TableSetupColumn("Avg. Executions/Frame",                                                              0, 0, 5);
-            ImGui::TableSetupColumn("Avg. Time/Frame (ns)",                                                               0, 0, 6);
-            ImGui::TableSetupColumn("Highlight",                                                                          0, 0, 7);
-            ImGui::TableSetupColumn("Experiment",            ImGuiTableColumnFlags_DefaultHide,                              0, 8);
-            ImGui::TableSetupColumn("Metrics",               ImGuiTableColumnFlags_DefaultHide,                              0, 9);
+            ImGui::TableSetupColumn("UUID",                  ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_NoReorder);
+            ImGui::TableSetupColumn("Driver UUID",           ImGuiTableColumnFlags_DefaultHide);
+            ImGui::TableSetupColumn("Handle",                ImGuiTableColumnFlags_DefaultHide);
+            ImGui::TableSetupColumn("Name",                  ImGuiTableColumnFlags_DefaultHide);
+            ImGui::TableSetupColumn("Bind Point",            ImGuiTableColumnFlags_DefaultHide);
+            ImGui::TableSetupColumn("Avg. Executions/Frame");
+            ImGui::TableSetupColumn("Avg. Time/Frame (ns)");
+            ImGui::TableSetupColumn("Highlight");
+            ImGui::TableSetupColumn("Experiment",            ImGuiTableColumnFlags_DefaultHide);
+            ImGui::TableSetupColumn("Metrics",               ImGuiTableColumnFlags_DefaultHide);
+            
+            #if 0
+            // DEBUGGING :
+            ImGui::TableSetupColumn("AvgExecutionsEx", 0, 0, 10);
+            ImGui::TableSetupColumn("AvgTimeEx",       0, 0, 11);
+            #endif
+
             ImGui::TableHeadersRow();
 
             auto pTableSortSpecs = ImGui::TableGetSortSpecs();
@@ -97,7 +156,7 @@ void PipelinesWindow::on_gui(GuiInfo& guiInfo)
                         guiInfo.selectedPipeline = pipeline;
                     }
 
-                    // TODO : Documentation
+                    // Execution count
                     ImGui::TableNextColumn();
                     for (const auto& metrics : pipelineInfo.metrics) {
                         if (metrics.first.x == GVK_PIPELINE_EXPLORER_METRIC_ID_EXECUTION_COUNT) {
@@ -108,7 +167,7 @@ void PipelinesWindow::on_gui(GuiInfo& guiInfo)
                         }
                     }
 
-                    // TODO : Documentation
+                    // Duration
                     ImGui::TableNextColumn();
                     for (const auto& metrics : pipelineInfo.metrics) {
                         if (metrics.first.x == GVK_PIPELINE_EXPLORER_METRIC_ID_TIMESTAMP_QUERY) {
@@ -119,9 +178,9 @@ void PipelinesWindow::on_gui(GuiInfo& guiInfo)
                         }
                     }
 
-                    // TODO : Documentation
+                    // Highlight
                     ImGui::TableNextColumn();
-                    ImGui::BeginDisabled(pipelineInfo.bindPoint != VK_PIPELINE_BIND_POINT_GRAPHICS);
+                    ImGui::BeginDisabled(!(pipelineInfo.bindPoint == VK_PIPELINE_BIND_POINT_GRAPHICS || pipelineInfo.bindPoint == VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR));
                     bool highlightStateChanged = false;
                     if (ImGui::ColorEdit4("Highlight Color", (float*)&pipelineInfo.highlightColor, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel)) {
                         pipelineInfo.highlightEnabled = false;
@@ -136,18 +195,31 @@ void PipelinesWindow::on_gui(GuiInfo& guiInfo)
                     }
                     ImGui::EndDisabled();
 
-                    // TODO : Documentation
+                    // Experiment
                     ImGui::TableNextColumn();
                     if (ImGui::Checkbox("##Experiment Enabled", &pipelineInfo.experimentEnabled)) {
                         guiInfo.requestInfo.experimentPipeline = pipelineInfo.pipeline.get_handle();
                         guiInfo.requestInfo.experimentEnabled = pipelineInfo.experimentEnabled;
                     }
 
-                    // TODO : Documentation
+                    // Metrics
                     ImGui::TableNextColumn();
                     if (ImGui::Checkbox("##Metrics Enabled", &pipelineInfo.sampleMetrics)) {
                         guiInfo.selectedPipeline = pipeline;
                     }
+
+                    #if 0
+                    // DEBUGGING :
+                    const auto& timestamp = sTimestamps[pipelineInfo.pipeline];
+                    ImGui::TableNextColumn();
+                    if (ImGui::Selectable(std::to_string(timestamp.first).c_str(), pipelineInfo.sampleMetrics)) {
+                        guiInfo.selectedPipeline = pipeline;
+                    }
+                    ImGui::TableNextColumn();
+                    if (ImGui::Selectable(std::to_string(timestamp.second).c_str(), pipelineInfo.sampleMetrics)) {
+                        guiInfo.selectedPipeline = pipeline;
+                    }
+                    #endif
 
                     ImGui::PopID();
                 }

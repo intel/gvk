@@ -751,4 +751,41 @@ void print<VkPipelineExecutableStatisticValueKHR>(Printer& printer, const VkPipe
     );
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// UUID members
+template <>
+void print<VkPhysicalDeviceProperties>(Printer& printer, const VkPhysicalDeviceProperties& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("apiVersion", obj.apiVersion);
+            printer.print_field("driverVersion", obj.driverVersion);
+            printer.print_field("vendorID", obj.vendorID);
+            printer.print_field("deviceID", obj.deviceID);
+            printer.print_field("deviceType", obj.deviceType);
+            printer.print_field("deviceName", (const char*)obj.deviceName);
+            printer.print_field("pipelineCacheUUID", gvk::uuid_to_string<VK_UUID_SIZE>(obj.pipelineCacheUUID));
+            printer.print_field("limits", obj.limits);
+            printer.print_field("sparseProperties", obj.sparseProperties);
+        }
+    );
+}
+
+template <>
+void print<VkPerformanceCounterKHR>(Printer& printer, const VkPerformanceCounterKHR& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            detail::print_pnext(printer, obj.pNext);
+            printer.print_field("unit", obj.unit);
+            printer.print_field("scope", obj.scope);
+            printer.print_field("storage", obj.storage);
+            printer.print_field("uuid", gvk::uuid_to_string<VK_UUID_SIZE>(obj.uuid));
+        }
+    );
+}
+
 } // namespace gvk

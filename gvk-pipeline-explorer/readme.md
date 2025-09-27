@@ -1,5 +1,5 @@
 # Pipeline Explorer (*v0.5*)
-#### Please see [docs/UserGuide.md](docs/UserGuide.md) for a detailed user guide.
+#### Please see [documentation/UserGuide.md](documentation/UserGuide.md) for a detailed user guide.
 Pipeline Explorer is a standalone GUI that uses a Vulkan layer to gather metrics and perform shader experiments in a live Vulkan application. It also allows for frame analysis when paired with a capture/playback tool such as GITS.
 
 Pipeline Explorer is packaged within GVK. Upon building GVK, you will find the **gvk-pipeline.explorer.exe** binary generated in the gvk-pipeline-explorer directory.

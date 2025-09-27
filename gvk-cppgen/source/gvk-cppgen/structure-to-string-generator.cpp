@@ -206,21 +206,44 @@ void StructureToStringGenerator::generate_source(FileGenerator& file, const xml:
             compileGuards.insert("GVK_MANUALLY_IMPLEMENTED");
         }
         CompileGuardGenerator compileGuardGenerator(file, compileGuards);
-        file << string::replace("template <> void print<{structureType}>(Printer& printer, const {structureType}& obj)", "{structureType}", structure.name) << std::endl;
-        file << "{" << std::endl;
-        file << "    printer.print_object(" << std::endl;
-        file << "        [&]()" << std::endl;
-        file << "        {" << std::endl;
-        for (size_t i = 0; i < structure.members.size(); ++i) {
-            const auto& member = structure.members[i];
-            CompileGuardGenerator memberCompileGuardGenerator(file, get_inner_scope_compile_guards(compileGuards, member.compileGuards));
-            file << "            " << StructureMemberToStringGenerator().generate(manifest, member) << std::endl;
+        if (apiElements.typeErasedStructures.count(structure.name)) {
+            generate_type_erased_structure_source(file, apiElements, structure);
+        } else {
+            generate_structure_source(file, manifest, compileGuards, structure);
         }
-        file << "        }" << std::endl;
-        file << "    );" << std::endl;
-        file << "}" << std::endl;
     }
     file << std::endl;
+}
+
+void StructureToStringGenerator::generate_structure_source(FileGenerator& file, const xml::Manifest& manifest, const std::set<std::string>& compileGuards, const xml::Structure& structure)
+{
+    file << string::replace("template <> void print<{structureType}>(Printer& printer, const {structureType}& obj)", "{structureType}", structure.name) << std::endl;
+    file << "{" << std::endl;
+    file << "    printer.print_object(" << std::endl;
+    file << "        [&]()" << std::endl;
+    file << "        {" << std::endl;
+    for (const auto& member : structure.members) {
+        CompileGuardGenerator memberCompileGuardGenerator(file, get_inner_scope_compile_guards(compileGuards, member.compileGuards));
+        file << "            " << StructureMemberToStringGenerator().generate(manifest, member) << std::endl;
+    }
+    file << "        }" << std::endl;
+    file << "    );" << std::endl;
+    file << "}" << std::endl;
+}
+
+void StructureToStringGenerator::generate_type_erased_structure_source(FileGenerator& file, const ApiElementCollectionInfo& apiElements, const xml::Structure& structure)
+{
+    file << string::replace("template <> void print<{structureType}>(Printer& printer, const {structureType}& obj)", "{structureType}", structure.name) << std::endl;
+    file << "{" << std::endl;
+    generate_type_erased_structure_switch(
+        file,
+        apiElements,
+        "    ",
+        "obj.sType",
+        "print(printer, (const {structureType}&)obj);",
+        "assert(false && \"Unrecognized structure type\");"
+    );
+    file << "}" << std::endl;
 }
 
 } // namespace cppgen

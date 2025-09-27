@@ -29,9 +29,23 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-defines.hpp"
 
 #include <filesystem>
+#include <map>
 #include <string>
 
 namespace gvk {
+
+class Environment final
+{
+public:
+    void set_env();
+    void get_env(uint32_t* pCount, char* pEnv) const;
+    std::string get_env_var(const std::string& key) const;
+    void set_env_var(const std::string& key, const std::string& value);
+    void append_value_to_env_var(const std::string& key, const std::string& value);
+
+private:
+    std::map<std::filesystem::path, std::filesystem::path> mEnvVars;
+};
 
 /**
 Gets the value of a given environment variable

@@ -1,4 +1,16 @@
 
+# Priority
+- Multi pipeline
+- Overhaul message system
+- Metrics deltas
+- Break dependency on validation layer
+- Screenshot unit tests
+    - Deterministic samples
+    - Force priority on sample windows
+    - Programmatic control of layer
+
+# In no particular order
+- GPA FW secure DLL loading
 - Handle wrapping (everything *but* dispatchable handles)
 - Experiment/compile/recompile state is confusing
 - Store list of recent launcher paramers

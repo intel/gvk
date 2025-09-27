@@ -1,0 +1,8 @@
+
+{
+    "gvk_metrics_provider_version" : "1.0.0",
+    "implementation_version": "1.0.0",
+    "name": "VK_KHR_performance_query_gvk_metrics_provider",
+    "description": "TODO : Description",
+    "library_path": ".\\VK_KHR_performance_query_gvk_metrics_provider.dll"
+}

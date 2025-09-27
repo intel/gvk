@@ -28,6 +28,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-string/printer.hpp"
 
+#include "boost/multiprecision/integer.hpp"
+
 #include <initializer_list>
 #include <sstream>
 #include <string>
@@ -65,6 +67,36 @@ inline std::string to_hex_string(const T& value)
     char str[] = "0x0000000000000000";
     snprintf(str + 2, sizeof(str) - 2, "%llx", (long long unsigned int)value);
     return str;
+}
+
+/**
+Gets the std::string representation of a given uuid stored as a boost::multiprecision::number<>
+@size_t <BitCount> The number of bits of storage of the boost::multiprecision::number<>
+@param [in] uuid The uuid to get the std::string representation of
+@param [in] count (optional = 0) The maximum number of digits to include, 0 indicates all
+*/
+template <size_t BitCount>
+inline std::string uuid_to_string(const boost::multiprecision::number<boost::multiprecision::cpp_int_backend<BitCount, BitCount, boost::multiprecision::unsigned_magnitude, boost::multiprecision::unchecked, void>>& uuid, uint32_t count = 0)
+{
+    // TODO : Unify with to_hex_string()
+    std::stringstream strStrm;
+    strStrm << std::hex << std::showbase << uuid;
+    return count ? strStrm.str().substr(0, count) : strStrm.str();
+}
+
+/**
+Gets the std::string representation of a given uuid stored as a byte array
+@size_t <ByteCount> The number of bytes of storage of the byte array
+@param [in] uuid The uuid to get the std::string representation of
+@param [in] count (optional = 0) The maximum number of digits to include, 0 indicates all
+*/
+template <size_t ByteCount>
+inline std::string uuid_to_string(const uint8_t bytes[ByteCount], uint32_t count = 0)
+{
+    // TODO : Unify with to_hex_string()
+    boost::multiprecision::number<boost::multiprecision::cpp_int_backend<ByteCount * 8, ByteCount * 8, boost::multiprecision::unsigned_magnitude, boost::multiprecision::unchecked, void>> uuid{ };
+    boost::multiprecision::import_bits(uuid, bytes, bytes + ByteCount);
+    return uuid_to_string(uuid, count);
 }
 
 /**

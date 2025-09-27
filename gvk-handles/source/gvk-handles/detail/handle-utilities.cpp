@@ -402,6 +402,18 @@ VkResult initialize_control_block<Device>(Device& device)
         if (!deviceControlBlock.mUnmanaged) {
             DispatchTable::load_device_entry_points(deviceControlBlock.mVkDevice, &deviceControlBlock.mDispatchTable);
         }
+
+        // Checking for which versions of promoted entry points are available and
+        //  chaining them so that internally GVK can use any alias without having to
+        //  check for API version (still need to check if the entry point is available)
+        // TODO : Promotion chaining should be generated for several entry points
+        if (deviceControlBlock.mDispatchTable.gvkGetBufferDeviceAddress && !deviceControlBlock.mDispatchTable.gvkGetBufferDeviceAddressKHR) {
+            deviceControlBlock.mDispatchTable.gvkGetBufferDeviceAddressKHR = deviceControlBlock.mDispatchTable.gvkGetBufferDeviceAddress;
+        }
+        if (deviceControlBlock.mDispatchTable.gvkGetBufferDeviceAddressKHR && !deviceControlBlock.mDispatchTable.gvkGetBufferDeviceAddressEXT) {
+            deviceControlBlock.mDispatchTable.gvkGetBufferDeviceAddressEXT = deviceControlBlock.mDispatchTable.gvkGetBufferDeviceAddressKHR;
+        }
+
         const auto& deviceCreateInfo = *deviceControlBlock.mDeviceCreateInfo;
         for (uint32_t queueCreateInfo_i = 0; queueCreateInfo_i < deviceCreateInfo.queueCreateInfoCount; ++queueCreateInfo_i) {
             const auto& deviceQueueCreateInfo = deviceCreateInfo.pQueueCreateInfos[queueCreateInfo_i];

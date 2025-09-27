@@ -28,7 +28,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-string.hpp"
 #include "gvk-xml.hpp"
 #include "basic-command-recorder.generator.hpp"
+#include "command-collection-cerealization.generator.hpp"
 #include "execute-command-structure.generator.hpp"
+#include "get-cname.generator.hpp"
 #include "get-ctype.generator.hpp"
 
 std::vector<gvk::xml::Structure> get_command_structures(const gvk::xml::Manifest& manifest)
@@ -51,8 +53,14 @@ std::vector<gvk::xml::Structure> get_command_structures(const gvk::xml::Manifest
     gvkCommandCmdBaseStructure.members.push_back(gvk::cppgen::create_parameter("VkCommandBuffer", "commandBuffer"));
     structures.push_back(gvkCommandCmdBaseStructure);
 
+    gvk::xml::Structure gvkCommandCollection;
+    gvkCommandCollection.name = "GvkCommandCollection";
+    gvk::cppgen::add_array_members_to_structure("GvkCommandBaseStructure* const", "commandCount", "ppCommands", gvkCommandCollection);
+    structures.push_back(gvkCommandCollection);
+
     for (const auto& commandItr : manifest.commands) {
-        // TODO : Documentation
+
+        // Create structure for each command
         const auto& command = commandItr.second;
         gvk::xml::Structure structure;
         structure.name = "GvkCommandStructure" + gvk::string::strip_vk(command.name);
@@ -64,7 +72,7 @@ std::vector<gvk::xml::Structure> get_command_structures(const gvk::xml::Manifest
             structure.vkStructureType += "_" + gvk::string::to_upper(token);
         }
 
-        // TODO : Documentation
+        // Add sType member and command members to each structure
         structure.members.push_back(sTypeMember);
         structure.members.insert(structure.members.end(), command.parameters.begin(), command.parameters.end());
         if (command.returnType != "void") {
@@ -75,8 +83,10 @@ std::vector<gvk::xml::Structure> get_command_structures(const gvk::xml::Manifest
         }
         structures.push_back(structure);
 
-#if 0
-        // TODO : Documentation
+        #if 0
+        // TODO : Handle structures with `result` parameter.  Needs to work correctly
+        //  with execute_command_structure().
+        //  See note in gvk-command-structures/generator/execute-command-structure.generator.hpp
         structure.members.clear();
         for (const auto& parameter : command.parameters) {
             if (parameter.flags & gvk::xml::Pointer && !(parameter.flags & gvk::xml::Const)) {
@@ -94,7 +104,7 @@ std::vector<gvk::xml::Structure> get_command_structures(const gvk::xml::Manifest
             structure.vkStructureType.clear();
             structures.push_back(structure);
         }
-#endif
+        #endif
     }
     return structures;
 }
@@ -186,6 +196,7 @@ int main(int, const char*[])
             "gvk-structures.hpp",
         };
         apiElements.manuallyImplemented = {
+            "GvkCommandCollection",
             "GvkCommandStructureAllocateCommandBuffers",
             "GvkCommandStructureAllocateDescriptorSets",
             "GvkCommandStructureBuildAccelerationStructuresKHR",
@@ -200,17 +211,24 @@ int main(int, const char*[])
             "GvkCommandStructureGetAccelerationStructureBuildSizesKHR",
             "GvkCommandStructureGetPhysicalDeviceXlibPresentationSupportKHR",
         };
+        apiElements.typeErasedStructures = {
+            "GvkCommandBaseStructure",
+            "GvkCommandCmdBaseStructure",
+        };
+
+        gvk::cppgen::CommandCollectionCerealizationGenerator::generate(apiElements);
+        gvk::cppgen::ExecuteCommandStructureGenerator::generate(manifest, apiElements);
         gvk::cppgen::ApiElementCollectionDeclarationGenerator::generate(apiElements);
         gvk::cppgen::EnumerationToStringGenerator::generate(apiElements);
-        gvk::cppgen::ExecuteCommandStructureGenerator::generate(manifest, apiElements);
         gvk::cppgen::StructureComparisonOperatorsGenerator::generate(apiElements);
         gvk::cppgen::StructureCreateCopyGenerator::generate(manifest, apiElements);
         gvk::cppgen::StructureDestroyCopyGenerator::generate(manifest, apiElements);
         gvk::cppgen::StructureEnumerateHandlesGenerator::generate(manifest, apiElements);
+        gvk::cppgen::CommandStructureGetCNameGenerator::generate(apiElements);
         gvk::cppgen::CommandStructureGetCTypeGenerator::generate(apiElements);
         gvk::cppgen::StructureGetSTypeGenerator::generate(apiElements);
-        gvk::cppgen::StructureMakeTupleGenerator::generate(manifest, apiElements, "gvk-command-structures/detail/make-tuple-manual.hpp");
         gvk::cppgen::StructureToStringGenerator::generate(manifest, apiElements);
+        gvk::cppgen::StructureMakeTupleGenerator::generate(manifest, apiElements, "gvk-command-structures/detail/make-tuple-manual.hpp");
 
         apiElements.manuallyImplemented.insert("GvkCommandStructureGetDeviceProcAddr");
         apiElements.manuallyImplemented.insert("GvkCommandStructureGetInstanceProcAddr");

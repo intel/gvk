@@ -27,10 +27,94 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-environment.hpp"
 #include "gvk-string/utilities.hpp"
 
+#include <cstring>
 #include <filesystem>
 #include <unordered_set>
 
 namespace gvk {
+
+void Environment::set_env()
+{
+#ifdef GVK_PLATFORM_WINDOWS
+    auto freeEnvStrs = [](char* p) { FreeEnvironmentStrings(p); };
+    auto env = std::unique_ptr<char, decltype(freeEnvStrs)>{ GetEnvironmentStrings(), freeEnvStrs };
+    if (env) {
+        for (auto i = env.get(); *i != '\0'; ++i) {
+            std::string key;
+            std::string value;
+            for (; *i != '='; ++i) {
+                key += *i;
+            }
+            ++i;
+            for (; *i != '\0'; ++i) {
+                value += *i;
+            }
+            mEnvVars[key] = value;
+        }
+    }
+#else
+    // TODO :
+#endif
+}
+
+void Environment::get_env(uint32_t* pCount, char* pEnv) const
+{
+    if (pCount) {
+        if (pEnv) {
+            auto pWrite = pEnv;
+            auto pEnd = pEnv + *pCount;
+            memset(pEnv, '\0', *pCount);
+            for (const auto& envVar : mEnvVars) {
+                std::string kvp = envVar.first.string() + "=" + envVar.second.string();
+                if (pWrite + kvp.size() + 1 /* '\0' */ + 1 /* '\0' */ < pEnd) {
+                    memcpy(pWrite, kvp.c_str(), kvp.size());
+                    pWrite += kvp.size() + 1;
+                } else {
+                    // TODO : Report incomplete
+                }
+            }
+        } else {
+            *pCount = 0;
+            for (const auto& envVar : mEnvVars) {
+                *pCount += (uint32_t)envVar.first.string().size() + 1 /* '=' */ + (uint32_t)envVar.second.string().size() + 1 /* '\0' */;
+            }
+            *pCount += 1 /* '\0' */;
+            *pCount += 1 /* '\0' */;
+        }
+    }
+}
+
+std::string Environment::get_env_var(const std::string& key) const
+{
+    auto itr = !key.empty() ? mEnvVars.find(key) : mEnvVars.end();
+    return itr != mEnvVars.end() ? itr->second.string() : std::string();
+}
+
+void Environment::set_env_var(const std::string& key, const std::string& value)
+{
+    if (!key.empty()) {
+        if (value.empty()) {
+            mEnvVars.erase(key);
+        } else {
+            mEnvVars[key] = value;
+        }
+    }
+}
+
+void Environment::append_value_to_env_var(const std::string& key, const std::string& value)
+{
+    if (!key.empty() && !value.empty()) {
+        auto itr = !key.empty() ? mEnvVars.find(key) : mEnvVars.end();
+        if (itr != mEnvVars.end()) {
+#ifdef GVK_PLATFORM_WINDOWS
+            std::string delimiter = ";";
+#else
+            std::string delimiter = ":";
+#endif
+            mEnvVars[key] = itr->second.string() + delimiter + value;
+        }
+    }
+}
 
 std::string get_env_var(const std::string& key)
 {

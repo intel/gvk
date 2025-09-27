@@ -24,7 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "gvk-pipeline-explorer/pipeline-explorer.hpp"
+#include "gvk-pipeline-explorer/backend/pipeline-explorer.hpp"
 #include "gvk-layer.hpp"
 
 namespace gvk {
@@ -32,7 +32,7 @@ namespace layer {
 
 void on_load(Registry& registry)
 {
-    auto pPipelineExplorer = new PipelineExplorer;
+    auto pPipelineExplorer = new gvk::PipelineExplorer;
     pPipelineExplorer->vkLayer = true;
     registry.apiCallHandler.reset(pPipelineExplorer);
 }

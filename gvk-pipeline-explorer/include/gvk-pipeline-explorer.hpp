@@ -26,6 +26,26 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
+#ifdef WIN32
+
+#include "gvk-defines.hpp"
+#include "gvk-structures.hpp"
+#include "gvk-command-structures.hpp"
+#include "gvk-pipeline-explorer/generated/pipeline-explorer.h"
+#include "gvk-pipeline-explorer/generated/pipeline-explorer-enumerations-to-string.hpp"
+#include "gvk-pipeline-explorer/generated/pipeline-explorer-structure-comparison-operators.hpp"
+#include "gvk-pipeline-explorer/generated/pipeline-explorer-structure-create-copy.hpp"
+#include "gvk-pipeline-explorer/generated/pipeline-explorer-structure-deserialization.hpp"
+#include "gvk-pipeline-explorer/generated/pipeline-explorer-structure-destroy-copy.hpp"
+#include "gvk-pipeline-explorer/generated/pipeline-explorer-structure-get-stype.hpp"
+#include "gvk-pipeline-explorer/generated/pipeline-explorer-structure-serialization.hpp"
+#include "gvk-pipeline-explorer/generated/pipeline-explorer-structure-to-string.hpp"
+
+#else
+
+// TODO : Very annoying that Windows and Linux need different include orders for
+//  these...that's a very good indicator that these utilities need a rework
+
 #include "gvk-defines.hpp"
 #include "gvk-pipeline-explorer/generated/pipeline-explorer.h"
 #include "gvk-pipeline-explorer/generated/pipeline-explorer-enumerations-to-string.hpp"
@@ -36,3 +56,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-pipeline-explorer/generated/pipeline-explorer-structure-get-stype.hpp"
 #include "gvk-pipeline-explorer/generated/pipeline-explorer-structure-serialization.hpp"
 #include "gvk-pipeline-explorer/generated/pipeline-explorer-structure-to-string.hpp"
+#include "gvk-structures.hpp"
+#include "gvk-command-structures.hpp"
+
+#endif

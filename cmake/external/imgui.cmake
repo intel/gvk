@@ -34,16 +34,40 @@ set(ImGuiColorTextEdit_SOURCE_FILES
     "${ImGuiColorTextEdit_SOURCE_DIR}/TextEditor.cpp"
 )
 ################################################################################
+set(implot_VERSION 61af48ee1369083a3da391a849867af6d1b811a6) # `imgui_bundle` 3 Apr 2025
+FetchContent_Declare(
+    implot
+    GIT_REPOSITORY "https://github.com/pthom/implot.git"
+    GIT_TAG ${implot_VERSION}
+    GIT_PROGRESS TRUE
+)
+FetchContent_MakeAvailable(implot)
+FetchContent_GetProperties(implot SOURCE_DIR implot_SOURCE_DIR)
+set(implot_INCLUDE_DIRECTORIES
+    "${implot_SOURCE_DIR}/"
+)
+set(implot_INCLUDE_FILES
+    "${implot_SOURCE_DIR}/implot.h"
+)
+set(implot_SOURCE_FILES
+    "${implot_SOURCE_DIR}/implot.cpp"
+    "${implot_SOURCE_DIR}/implot_demo.cpp"
+    "${implot_SOURCE_DIR}/implot_internal.h"
+    "${implot_SOURCE_DIR}/implot_items.cpp"
+)
+################################################################################
 
 gvk_add_static_library(
     TARGET imgui
     FOLDER "external/"
     INCLUDE_DIRECTORIES
         "${ImGuiColorTextEdit_INCLUDE_DIRECTORIES}"
+        "${implot_INCLUDE_DIRECTORIES}"
         "${imgui_SOURCE_DIR}/"
         "${imgui_SOURCE_DIR}/misc/cpp/"
     INCLUDE_FILES
         "${ImGuiColorTextEdit_INCLUDE_FILES}"
+        "${implot_INCLUDE_FILES}"
         "${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.h"
         "${imgui_SOURCE_DIR}/imconfig.h"
         "${imgui_SOURCE_DIR}/imgui.h"
@@ -53,6 +77,7 @@ gvk_add_static_library(
         "${imgui_SOURCE_DIR}/imstb_truetype.h"
     SOURCE_FILES
         "${ImGuiColorTextEdit_SOURCE_FILES}"
+        "${implot_SOURCE_FILES}"
         "${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.cpp"
         "${imgui_SOURCE_DIR}/imgui.cpp"
         "${imgui_SOURCE_DIR}/imgui_demo.cpp"

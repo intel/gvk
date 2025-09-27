@@ -47,6 +47,11 @@ public:
     VkDeviceAddress values{ };
     VkDeviceSize kvpCount{ };
     VkDeviceSize handleSize{ };
+
+    inline operator bool() const
+    {
+        return gvkBuffer && keys && values && kvpCount && handleSize;
+    }
 };
 
 /**

@@ -30,7 +30,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <malloc.h>
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #ifndef _CRTDBGMAP_ALLOC
 #define _CRTDBGMAP_ALLOC
 #endif
@@ -56,7 +56,7 @@ struct MemoryUsageTracker::Snapshot
     mallinfo2 mallInfo{ };
 #endif
 #endif
-#ifdef WIN32
+#ifdef _WIN32
     _CrtMemState crtMemState{ };
 #endif
 };
@@ -79,7 +79,7 @@ void MemoryUsageTracker::create_snapshot(Snapshot** ppSnapshot)
     pSnapshot->mallInfo = mallinfo2();
 #endif
 #endif
-#ifdef WIN32
+#ifdef _WIN32
     _CrtMemCheckpoint(&pSnapshot->crtMemState);
 #endif
 }
@@ -112,7 +112,7 @@ bool operator==(const MemoryUsageTracker::Snapshot& lhs, const MemoryUsageTracke
     return true;
 #endif
 #endif
-#ifdef WIN32
+#ifdef _WIN32
     _CrtMemState crtMemStateDiff{ };
     return (bool)_CrtMemDifference(&crtMemStateDiff, &lhs.crtMemState, &rhs.crtMemState);
 #endif

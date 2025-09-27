@@ -15,6 +15,7 @@
 - [Install Build Tools](#Install-Build-Tools)
 - [Setup Git SSH](#Setup-Git-SSH)
 - [Setup Git Proxy](#Setup-Git-Proxy)
+- [Setup System Proxy](#Setup-System-Proxy)
 - [Clone Repository](#Clone-Repository)
 - [Configure and Build](#Configure-and-Build)
 - [Configure Vulkan SDK](#Configure-Vulkan-SDK)
@@ -72,10 +73,57 @@ FROM : https://git-scm.com/book/ms/v2/Git-on-the-Server-Generating-Your-SSH-Publ
 
 --------------------------------------------------------------------------------
 ### Setup Git Proxy
-*Note that <your-proxy-host>:<your-proxy-port> should be replaced with you proxy host and port, ie. proxy.company.com:8080*
+*Note that < your-proxy-host > : < your-proxy-port > should be replaced with your proxy host and port, eg. proxy.company.com:8080*  
+
 > `sudo apt install connect-proxy`  
-> `echo "host github.com" >> ~/.ssh/config`  
-> `echo "    ProxyCommand connect -a none -S <your-proxy-host>:<your-proxy-port> %h %p" >> ~/.ssh/config`
+> `sudo apt install corkscrew`  
+- Modify `~/.ssh/config`, eg. `sudo nano ~/.ssh/config`
+```
+host github.com
+    user git
+    port 22
+    hostname github.com
+    ProxyCommand /usr/bin/corkscrew <your-proxy-host> <your-proxy-port> %h %p
+```
+- If your proxy blocks port 22 CONNECT, try port 443 with ssh.github.com:
+```
+    hostname ssh.github.com
+    port 443
+```
+
+--------------------------------------------------------------------------------
+### Setup System Proxy
+*Note that < your-proxy-host > : < your-proxy-port > should be replaced with your proxy host and port, eg. proxy.company.com:8080*  
+
+*Note that based on your specific configuration, you may/may not require any/all/other proxy configurations*  
+
+- `/etc/bash.bashrc`
+```
+export http_proxy=<your-proxy-host>:<your-proxy-port>
+export https_proxy=<your-proxy-host>:<your-proxy-port>
+export ftp_proxy=<your-proxy-host>:<your-proxy-port>
+export socks_proxy=socks:<your-proxy-host>:<your-proxy-port>
+export no_proxy=localhost,127.0.0.0/8,.<your-no-proxy-host>.com
+```
+- `/etc/environment`
+```
+http_proxy=<your-proxy-host>:<your-proxy-port>
+https_proxy=<your-proxy-host>:<your-proxy-port>
+ftp_proxy=<your-proxy-host>:<your-proxy-port>
+socks_proxy=socks:<your-proxy-host>:<your-proxy-port>
+```
+- `/etc/apt/apt.conf`
+```
+Acquire::http::proxy "<your-proxy-host>:<your-proxy-port>";
+Acquire::https::proxy "<your-proxy-host>:<your-proxy-port>";
+Acquire::ftp::proxy "<your-proxy-host>:<your-proxy-port>";
+```
+- `/etc/wgetrc`  
+> Edit proxy section
+- Both "System Settings" and "Firefox Network Connection Settings"  
+>    HTTP Proxy : `<your-proxy-host>:<your-proxy-port>`  
+>    HTTPS Proxy : `<your-proxy-host>:<your-proxy-port>`  
+>    Ignored Hosts : `localhost, 127.0.0.0/8, .<your-no-proxy-host>.com, ::1`
 
 --------------------------------------------------------------------------------
 ### Clone Repository
@@ -145,19 +193,20 @@ FROM : https://git-scm.com/book/ms/v2/Git-on-the-Server-Generating-Your-SSH-Publ
 --------------------------------------------------------------------------------
 ### Remote Desktop Access from Windows
 - Sign in via SSH
-- Install and configure XFCE; Select **`lightdm`** and **`xfce4-session`** when prompted
+- Install XRDP and confirm its status
 > `sudo apt update`  
 > `sudo apt upgrade`  
 > `sudo apt autoremove`  
-> `sudo apt install xfce4-goodies xfce4`  
-> `sudo update-alternatives --config x-session-manager`  
-> `sudo reboot`
-- Wait a few minutes, then sign in via SSH again
-- Install XRDP and confirm its status
 > `sudo apt install xrdp`  
 > `sudo systemctl status xrdp`
 - Output should have **`Active: active (running)`** in the first few lines
 - Now start Remote Desktop Connection on your Windows machine with
     - `<ip-address>:3389` (3389 is the port RDP uses by default)
 - Sign in using the remote machine's credentials
-- You are now connected to the remote machine, you can disconnect by shutting down the machine or by ending your RDP session
+- You are now connected to the remote machine, you can disconnect by shutting down the machine or by ending your RDP session  
+- If Gnome is sluggish using XRDP, XFCE may perform better
+- Install and configure XFCE; Select **`lightdm`** and **`xfce4-session`** when prompted
+> `sudo apt install xfce4-goodies xfce4`  
+> `sudo update-alternatives --config x-session-manager`  
+> `sudo reboot`
+- Wait a few minutes, then connect via RDP

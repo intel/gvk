@@ -211,6 +211,68 @@ void generate_noop_command_body(FileGenerator& file, const xml::Command& command
     file << "}" << std::endl;
 }
 
+void generate_type_erased_structure_switch(
+    FileGenerator& file,
+    const ApiElementCollectionInfo& apiElements,
+    const std::string& indentation,
+    const std::string& evaluation,
+    const std::string& caseProcessor,
+    const std::string& defaultProcessor
+)
+{
+    file << indentation << "switch (" << evaluation << ") {\n";
+    for (const auto& structure : apiElements.structures) {
+        if (structure.alias.empty() && !structure.vkStructureType.empty()) {
+            CompileGuardGenerator compileGuardGenerator(file, structure.compileGuards);
+            file << indentation << "case " << structure.vkStructureType << ": {\n";
+            std::vector<string::Replacement> replacements{
+                { "{structureType}", structure.name },
+                { "{sType}", structure.vkStructureType },
+            };
+            file << indentation << "    " << string::replace(caseProcessor, replacements) << '\n';
+            file << indentation << "} break;\n";
+        }
+    }
+    file << indentation << "default: {\n";
+    if (!defaultProcessor.empty()) {
+        file << indentation << "    " << defaultProcessor << '\n';
+    }
+    file << indentation << "}\n";
+    file << indentation << "}\n";
+}
+
+void generate_type_erased_structure_switch(
+    FileGenerator& file,
+    const ApiElementCollectionInfo& apiElements,
+    const std::string& indentation,
+    const std::string& evaluation,
+    const std::vector<std::string>& caseProcessor,
+    const std::string& defaultProcessor
+)
+{
+    file << indentation << "switch (" << evaluation << ") {\n";
+    for (const auto& structure : apiElements.structures) {
+        if (structure.alias.empty() && !structure.vkStructureType.empty()) {
+            CompileGuardGenerator compileGuardGenerator(file, structure.compileGuards);
+            file << indentation << "case " << structure.vkStructureType << ": {\n";
+            std::vector<string::Replacement> replacements{
+                { "{structureType}", structure.name },
+                { "{sType}", structure.vkStructureType },
+            };
+            for (const auto& line : caseProcessor) {
+                file << indentation << "    " << string::replace(line, replacements) << '\n';
+            }
+            file << indentation << "} break;\n";
+        }
+    }
+    file << indentation << "default: {\n";
+    if (!defaultProcessor.empty()) {
+        file << indentation << "    " << defaultProcessor << '\n';
+    }
+    file << indentation << "}\n";
+    file << indentation << "}\n";
+}
+
 void generate_pnext_switch(
     FileGenerator& file,
     const xml::Manifest& manifest,

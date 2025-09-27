@@ -29,6 +29,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-cppgen/compile-guard-generator.hpp"
 #include "gvk-cppgen/module-generator.hpp"
 #include "gvk-cppgen/namespace-generator.hpp"
+#include "gvk-cppgen/utilities.hpp"
 #include "gvk-string.hpp"
 
 namespace gvk {
@@ -74,14 +75,59 @@ void StructureComparisonOperatorsGenerator::generate_source(FileGenerator& file,
     file << std::endl;
     for (const auto& structure : apiElements.structures) {
         CompileGuardGenerator compileGuardGenerator(file, structure.compileGuards);
-        file << string::replace(
+        if (apiElements.typeErasedStructures.count(structure.name)) {
+            generate_type_erased_structure_source(file, apiElements, structure);
+        } else {
+            generate_structure_source(file, structure);
+        }
+    }
+}
+
+void StructureComparisonOperatorsGenerator::generate_structure_source(FileGenerator& file, const xml::Structure& structure)
+{
+    file << string::replace(
 R"(bool operator==(const {structureName}& lhs, const {structureName}& rhs) { return gvk::make_tuple(lhs) == gvk::make_tuple(rhs); }
 bool operator!=(const {structureName}& lhs, const {structureName}& rhs) { return gvk::make_tuple(lhs) != gvk::make_tuple(rhs); }
 bool operator<(const {structureName}& lhs, const {structureName}& rhs) { return gvk::make_tuple(lhs) < gvk::make_tuple(rhs); }
 bool operator>(const {structureName}& lhs, const {structureName}& rhs) { return gvk::make_tuple(lhs) > gvk::make_tuple(rhs); }
 bool operator<=(const {structureName}& lhs, const {structureName}& rhs) { return gvk::make_tuple(lhs) <= gvk::make_tuple(rhs); }
 bool operator>=(const {structureName}& lhs, const {structureName}& rhs) { return gvk::make_tuple(lhs) >= gvk::make_tuple(rhs); })", "{structureName}", structure.name) << std::endl;
-    }
+}
+
+void StructureComparisonOperatorsGenerator::generate_type_erased_structure_source(FileGenerator& file, const ApiElementCollectionInfo& apiElements, const xml::Structure& structure)
+{
+    file << string::replace("bool operator==(const {structureName}& lhs, const {structureName}& rhs)", "{structureName}", structure.name) << std::endl;
+    file << "{" << std::endl;
+    file << "    if (lhs.sType == rhs.sType) {" << std::endl;
+    generate_type_erased_structure_switch(
+        file,
+        apiElements,
+        "        ",
+        "lhs.sType",
+        "return (const {structureType}&)lhs == (const {structureType}&)rhs;",
+        "assert(false && \"Unrecognized structure type\");"
+    );
+    file << "    }" << std::endl;
+    file << "    return false;" << std::endl;
+    file << "}" << std::endl;
+    file << string::replace("bool operator!=(const {structureName}& lhs, const {structureName}& rhs) { return !(lhs == rhs); }", "{structureName}", structure.name) << std::endl;
+    file << string::replace("bool operator<(const {structureName}& lhs, const {structureName}& rhs)", "{structureName}", structure.name) << std::endl;
+    file << "{" << std::endl;
+    file << "    if (lhs.sType == rhs.sType) {" << std::endl;
+    generate_type_erased_structure_switch(
+        file,
+        apiElements,
+        "        ",
+        "lhs.sType",
+        "return (const {structureType}&)lhs < (const {structureType}&)rhs;",
+        "assert(false && \"Unrecognized structure type\");"
+    );
+    file << "    }" << std::endl;
+    file << "    return lhs.sType < rhs.sType;" << std::endl;
+    file << "}" << std::endl;
+    file << string::replace("bool operator>(const {structureName}& lhs, const {structureName}& rhs) { return rhs < lhs; }", "{structureName}", structure.name) << std::endl;
+    file << string::replace("bool operator<=(const {structureName}& lhs, const {structureName}& rhs) { return !(lhs > rhs); }", "{structureName}", structure.name) << std::endl;
+    file << string::replace("bool operator>=(const {structureName}& lhs, const {structureName}& rhs) { return !(lhs < rhs); }", "{structureName}", structure.name) << std::endl;
 }
 
 } // namespace cppgen

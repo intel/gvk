@@ -24,9 +24,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
+#include "gvk-pipeline-explorer/gui/metrics/metrics-window.hpp"
+#include "gvk-pipeline-explorer/gui/api-call-explorer-window.hpp"
+#include "gvk-pipeline-explorer/gui/api-call-timeline-window.hpp"
 #include "gvk-pipeline-explorer/gui/window-manager.hpp"
 #include "gvk-pipeline-explorer/gui/console-window.hpp"
-#include "gvk-pipeline-explorer/gui/metrics-window.hpp"
 #include "gvk-pipeline-explorer/gui/pipelines-window.hpp"
 #include "gvk-pipeline-explorer/gui/selected-pipeline-window.hpp"
 #include "gvk-pipeline-explorer/gui/workspace-window.hpp"
@@ -37,6 +39,14 @@ namespace gui {
 
 Window::Manager::Manager()
 {
+    auto upApiCallExplorerWindow = std::make_unique<ApiCallExplorerWindow>(*this);
+    upApiCallExplorerWindow->mOpen = false;
+    mCoreWindows.insert({ "API Call Explorer", std::move(upApiCallExplorerWindow) });
+
+    auto upApiCallTimelineWindow = std::make_unique<ApiCallTimelineWindow>(*this);
+    upApiCallTimelineWindow->mOpen = false;
+    mCoreWindows.insert({ "API Call Timeline", std::move(upApiCallTimelineWindow) });
+
     mCoreWindows.insert({ "Selected Pipeline", std::make_unique<SelectedPipelineWindow>(*this) });
     mCoreWindows.insert({ "Pipelines", std::make_unique<PipelinesWindow>(*this) });
     mCoreWindows.insert({ "Metrics", std::make_unique<MetricsWindow>(*this) });
@@ -74,7 +84,7 @@ void Window::Manager::on_gui(GuiInfo& guiInfo)
         on_save(guiInfo);
     }
 
-    // TODO : Documentation
+    // Recompile pipelines on [Ctrl]+[Shift]+[BS]
     if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_B)) {
         guiInfo.pipelineInfos[guiInfo.selectedPipeline].experimentEnabled = true;
         guiInfo.requestInfo.recompilePipeline = guiInfo.selectedPipeline.get_handle();
@@ -106,6 +116,9 @@ void Window::Manager::on_gui(GuiInfo& guiInfo)
             ImGui::DockBuilderRemoveNode(rootNodeId);
             ImGui::DockBuilderAddNode(rootNodeId);
 
+            ImGui::DockBuilderDockWindow("API Call Timeline", ImGui::DockBuilderSplitNode(rootNodeId, ImGuiDir_Up, 0.2f, nullptr, &rootNodeId));
+            ImGui::DockBuilderDockWindow("API Call Explorer", ImGui::DockBuilderSplitNode(rootNodeId, ImGuiDir_Left, 0.2f, nullptr, &rootNodeId));
+
             ImGuiID workspaceNodeId = 0;
             ImGui::DockBuilderDockWindow("Workspace", ImGui::DockBuilderSplitNode(rootNodeId, ImGuiDir_Down, 0.25f, &workspaceNodeId, &rootNodeId));
             ImGui::DockBuilderDockWindow("Console", ImGui::DockBuilderSplitNode(workspaceNodeId, ImGuiDir_Right, 0.5f, nullptr, &workspaceNodeId));
@@ -124,7 +137,8 @@ void Window::Manager::on_gui(GuiInfo& guiInfo)
     on_gui(guiInfo, mCoreWindows);
     on_gui(guiInfo, mWindows);
 
-    // TODO : Documentation
+    // Merge new Windows spawned this frame into Window collection to start
+    //  rendering next frame
     mWindows.merge(mNewWindows);
     mNewWindows.clear();
 
