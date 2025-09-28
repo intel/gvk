@@ -41,6 +41,29 @@ GVK_STUB_STRUCTURE_COPY_FUNCTIONS(GvkCommandStructureGetPhysicalDeviceXlibPresen
 #endif // VK_USE_PLATFORM_XLIB_KHR
 
 ////////////////////////////////////////////////////////////////////////////////
+// GvkCommandCollection
+template <>
+GvkCommandCollection create_structure_copy<GvkCommandCollection>(const GvkCommandCollection& obj, const VkAllocationCallbacks* pAllocator)
+{
+    auto result = obj;
+    auto ppCommands = gvk::detail::create_dynamic_array<const GvkCommandBaseStructure*>(obj.commandCount, pAllocator);
+    result.ppCommands = ppCommands;
+    for (uint32_t i = 0; i < obj.commandCount; ++i) {
+        ppCommands[i] = gvk::detail::create_type_erased_structure_copy(obj.ppCommands[i], pAllocator);
+    }
+    return result;
+}
+
+template <>
+void destroy_structure_copy<GvkCommandCollection>(const GvkCommandCollection& obj, const VkAllocationCallbacks* pAllocator)
+{
+    for (uint32_t i = 0; i < obj.commandCount; ++i) {
+        gvk::detail::destroy_type_erased_structure_copy(obj.ppCommands[i], pAllocator);
+    }
+    gvk::detail::destroy_dynamic_array_copy(obj.commandCount, obj.ppCommands, pAllocator);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // GvkCommandStructureBuildAccelerationStructuresKHR
 template <>
 GvkCommandStructureBuildAccelerationStructuresKHR create_structure_copy<GvkCommandStructureBuildAccelerationStructuresKHR>(const GvkCommandStructureBuildAccelerationStructuresKHR& obj, const VkAllocationCallbacks* pAllocator)

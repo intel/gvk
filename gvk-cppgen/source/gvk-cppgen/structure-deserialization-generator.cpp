@@ -58,8 +58,10 @@ void StructureDeserializationGenerator::generate_header(FileGenerator& file, con
     gvk::cppgen::NamespaceGenerator namespaceGenerator(file, "gvk");
     file << std::endl;
     for (const auto& structure : apiElements.structures) {
-        CompileGuardGenerator compileGuardGenerator(file, structure.compileGuards);
-        file << string::replace("void deserialize(std::istream& istrm, const VkAllocationCallbacks* pAllocator, Auto<{structureType}>& obj);", "{structureType}", structure.name) << std::endl;
+        if (structure.alias.empty() && !apiElements.typeErasedStructures.count(structure.name)) {
+            CompileGuardGenerator compileGuardGenerator(file, structure.compileGuards);
+            file << string::replace("void deserialize(std::istream& istrm, const VkAllocationCallbacks* pAllocator, Auto<{structureType}>& obj);", "{structureType}", structure.name) << std::endl;
+        }
     }
     file << std::endl;
 }
@@ -77,7 +79,7 @@ void StructureDeserializationGenerator::generate_source(FileGenerator& file, con
     file << std::endl;
     gvk::cppgen::NamespaceGenerator namespaceGenerator(file, "gvk");
     for (const auto& structure : apiElements.structures) {
-        if (structure.alias.empty()) {
+        if (structure.alias.empty() && !apiElements.typeErasedStructures.count(structure.name)) {
             file << std::endl;
             CompileGuardGenerator compileGuardGenerator(file, structure.compileGuards);
             std::stringstream strStrm;

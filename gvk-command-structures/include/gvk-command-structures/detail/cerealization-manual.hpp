@@ -29,6 +29,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-defines.hpp"
 #include "gvk-command-structures/generated/command.h"
 #include "gvk-structures/detail/cerealization-manual.hpp"
+#include "gvk-command-structures/generated/command-collection-cerealization.hpp"
 
 #include <algorithm>
 

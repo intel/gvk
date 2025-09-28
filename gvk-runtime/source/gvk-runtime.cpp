@@ -61,4 +61,42 @@ PFN_vkGetInstanceProcAddr load_vkGetInstanceProcAddr()
     return (load_vulkan_runtime() == VK_SUCCESS) ? (PFN_vkGetInstanceProcAddr)gvk_dlsym(sVulkanRuntime, "vkGetInstanceProcAddr") : nullptr;
 }
 
+#ifdef GVK_PLATFORM_WINDOWS
+BOOL get_this_module_handle(HMODULE* phModule)
+{
+    gvk_assert(phModule);
+    return GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&get_this_module_handle, phModule);
+}
+
+DWORD get_module_path(HMODULE hModule, std::filesystem::path* pPath)
+{
+    gvk_assert(pPath);
+    const size_t CharBufferSize = 16384;
+    std::vector<wchar_t> wcharBuffer(CharBufferSize);
+    auto result = GetModuleFileNameW(hModule, wcharBuffer.data(), (DWORD)wcharBuffer.size());
+    if (result && wcharBuffer[0]) {
+        *pPath = wcharBuffer.data();
+    }
+    return result;
+}
+
+DWORD get_this_module_path(std::filesystem::path* pPath)
+{
+    HMODULE hModule = NULL;
+    return get_this_module_handle(&hModule) ? get_module_path(hModule, pPath) : 0;
+}
+
+std::string get_win32_error_str(DWORD errorCode)
+{
+    std::string errorStr = "Win32 [" + std::to_string(errorCode) + "]";
+    LPSTR pErrorStr = NULL;
+    auto dwFlags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
+    if (FormatMessage(dwFlags, NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&pErrorStr, 0, NULL)) {
+        errorStr += " " + std::string(pErrorStr);
+    }
+    LocalFree(pErrorStr);
+    return errorStr;
+}
+#endif // GVK_PLATFORM_WINDOWS
+
 } // namespace gvk

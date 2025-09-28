@@ -49,6 +49,12 @@ GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureCreateXlibSurfaceKHR)
 GVK_STUB_MAKE_TUPLE_DEFINITION(GvkCommandStructureGetPhysicalDeviceXlibPresentationSupportKHR)
 #endif // VK_USE_PLATFORM_XLIB_KHR
 
+inline auto make_tuple(const GvkCommandCollection& obj)
+{
+    (void)obj;
+    return std::make_tuple(0);
+}
+
 inline auto make_tuple(const GvkCommandStructureCmdPushConstants& obj)
 {
     return std::make_tuple(

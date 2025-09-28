@@ -37,6 +37,14 @@ GVK_STUB_ENUMERATE_STRUCTURE_HANDLES_DEFINITION(GvkCommandStructureGetPhysicalDe
 #endif // VK_USE_PLATFORM_XLIB_KHR
 
 template <>
+void enumerate_structure_handles<GvkCommandCollection>(const GvkCommandCollection& obj, EnumerateHandlesCallback callback)
+{
+    for (uint32_t i = 0; i < obj.commandCount; ++i) {
+        enumerate_structure_handles(*obj.ppCommands[i], callback);
+    }
+}
+
+template <>
 void enumerate_structure_handles<GvkCommandStructureAllocateCommandBuffers>(const GvkCommandStructureAllocateCommandBuffers& obj, EnumerateHandlesCallback callback)
 {
     enumerate_handle(obj.device, callback);

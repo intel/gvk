@@ -58,8 +58,10 @@ void StructureSerializationGenerator::generate_header(FileGenerator& file, const
     gvk::cppgen::NamespaceGenerator namespaceGenerator(file, "gvk");
     file << std::endl;
     for (const auto& structure : apiElements.structures) {
-        CompileGuardGenerator compileGuardGenerator(file, structure.compileGuards);
-        file << string::replace("void serialize(std::ostream& ostrm, const {structureType}& obj);", "{structureType}", structure.name) << std::endl;
+        if (structure.alias.empty() && !apiElements.typeErasedStructures.count(structure.name)) {
+            CompileGuardGenerator compileGuardGenerator(file, structure.compileGuards);
+            file << string::replace("void serialize(std::ostream& ostrm, const {structureType}& obj);", "{structureType}", structure.name) << std::endl;
+        }
     }
     file << std::endl;
 }
@@ -75,13 +77,15 @@ void StructureSerializationGenerator::generate_source(FileGenerator& file, const
     file << std::endl;
     gvk::cppgen::NamespaceGenerator namespaceGenerator(file, "gvk");
     for (const auto& structure : apiElements.structures) {
-        file << std::endl;
-        CompileGuardGenerator compileGuardGenerator(file, structure.compileGuards);
-        file << string::replace("void serialize(std::ostream& ostrm, const {structureType}& obj)", "{structureType}", structure.name) << std::endl;
-        file << "{" << std::endl;
-        file << "    cereal::BinaryOutputArchive archive(ostrm);" << std::endl;
-        file << "    archive(obj);" << std::endl;
-        file << "}" << std::endl;
+        if (structure.alias.empty() && !apiElements.typeErasedStructures.count(structure.name)) {
+            file << std::endl;
+            CompileGuardGenerator compileGuardGenerator(file, structure.compileGuards);
+            file << string::replace("void serialize(std::ostream& ostrm, const {structureType}& obj)", "{structureType}", structure.name) << std::endl;
+            file << "{" << std::endl;
+            file << "    cereal::BinaryOutputArchive archive(ostrm);" << std::endl;
+            file << "    archive(obj);" << std::endl;
+            file << "}" << std::endl;
+        }
     }
     file << std::endl;
 }

@@ -115,11 +115,12 @@ int main(int argc, const char* ppArgv[])
             gvk::xml::Manifest gvkXmlManifest;
             if (create_xml_manifest(ppArgv[i], &gvkXmlManifest)) {
                 gvkXmlManifests.push_back({ ppArgv[i], std::move(gvkXmlManifest) });
-                if (1 < i) {
+                if (1 < gvkXmlManifests.size()) {
                     std::cout << "--------------------------------------------------------------------------------" << std::endl;
                     std::cout << "Comparing" << std::endl;
-                    const auto& lhs = gvkXmlManifests.rbegin()[1];
-                    const auto& rhs = gvkXmlManifests.back();
+                    auto back_i = gvkXmlManifests.size() - 1;
+                    const auto& lhs = gvkXmlManifests[back_i - 1];
+                    const auto& rhs = gvkXmlManifests[back_i];
                     std::cout << lhs.first << std::endl;
                     std::cout << rhs.first << std::endl;
                     compare_xml_manifests(lhs.second, rhs.second);

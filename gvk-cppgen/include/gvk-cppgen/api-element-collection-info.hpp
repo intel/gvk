@@ -50,6 +50,7 @@ public:
     std::vector<xml::Enumeration> enumerations;
     std::vector<xml::Structure> structures;
     std::set<std::string> manuallyImplemented;
+    std::set<std::string> typeErasedStructures;
 };
 
 } // namespace cppgen

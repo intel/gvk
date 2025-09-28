@@ -53,13 +53,13 @@ void SelectedPipelineWindow::on_gui(GuiInfo& guiInfo)
         ImGui::EndDisabled();
         ImGui::PopItemWidth();
 
-        // TODO : Documentation
+        // Draw UUID fields
         ImGui::BeginDisabled();
         ImGui::InputText("UUID", &selectedPipelineInfo.uuidStr);
         ImGui::InputText("Driver UUID", &selectedPipelineInfo.driverUUIDStr);
         ImGui::EndDisabled();
 
-        // TODO : Documentation
+        // Draw shader compilation buttons and file selector
         if (ImGui::Button("Decompile")) {
             guiInfo.requestInfo.decompilePipeline = guiInfo.selectedPipeline.get_handle();
         }
@@ -73,8 +73,9 @@ void SelectedPipelineWindow::on_gui(GuiInfo& guiInfo)
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) {
             ImGui::SetTooltip("[Ctrl]+[Shift]+[B]");
         }
+
+        // Draw pipelne file selection popup
         ImGui::SameLine();
-        // TODO : Documentation
         ImGui::BeginDisabled(!std::filesystem::exists(infoPath));
         if (ImGui::Button("Open File")) {
             ImGui::OpenPopup("Pipeline-File-Popup");
@@ -92,7 +93,7 @@ void SelectedPipelineWindow::on_gui(GuiInfo& guiInfo)
         }
         ImGui::EndDisabled();
 
-        // TODO : Documentation
+        // Draw experiment and metrics options
         if (ImGui::Checkbox("Experiment", &selectedPipelineInfo.experimentEnabled)) {
             guiInfo.requestInfo.experimentPipeline = guiInfo.selectedPipeline.get_handle();
             guiInfo.requestInfo.experimentEnabled = selectedPipelineInfo.experimentEnabled;
@@ -103,8 +104,8 @@ void SelectedPipelineWindow::on_gui(GuiInfo& guiInfo)
         if (ImGui::Checkbox("Metrics", &selectedPipelineInfo.sampleMetrics) && selectedPipelineInfo.sampleMetrics) {
         }
 
-        // TODO : Documentation
-        ImGui::BeginDisabled(selectedPipelineInfo.bindPoint != VK_PIPELINE_BIND_POINT_GRAPHICS);
+        // Draw highlight options
+        ImGui::BeginDisabled(!(selectedPipelineInfo.bindPoint == VK_PIPELINE_BIND_POINT_GRAPHICS || selectedPipelineInfo.bindPoint == VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR));
         auto highlightStateChanged = ImGui::Checkbox("Highlight", &selectedPipelineInfo.highlightEnabled);
         ImGui::SameLine();
         if (ImGui::ColorEdit4("Color", (float*)&selectedPipelineInfo.highlightColor, ImGuiColorEditFlags_NoInputs)) {

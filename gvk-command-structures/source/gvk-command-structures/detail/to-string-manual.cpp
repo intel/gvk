@@ -40,6 +40,23 @@ GVK_STUB_TO_STRING_DEFINITION(GvkCommandStructureGetPhysicalDeviceXlibPresentati
 #endif // VK_USE_PLATFORM_XLIB_KHR
 
 template <>
+void print<GvkCommandCollection>(Printer& printer, const GvkCommandCollection& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            // TODO : This isn't valid JSON
+            printer.print_field("commandCount", obj.commandCount);
+            std::string iStr;
+            for (uint32_t i = 0; i < obj.commandCount; ++i) {
+                iStr = "[" + std::to_string(i) + "]";
+                printer.print_field(iStr.c_str(), *obj.ppCommands[i]);
+            }
+        }
+    );
+}
+
+template <>
 void print<GvkCommandStructureAllocateCommandBuffers>(Printer& printer, const GvkCommandStructureAllocateCommandBuffers& obj)
 {
     printer.print_object(

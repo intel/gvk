@@ -79,7 +79,8 @@ VkResult Creator::process_VkDeviceMemory(GvkDeviceMemoryRestoreInfo& restoreInfo
 
         // Sort bindings
         std::set<std::pair<VkDeviceSize, VkDeviceSize>> bindings;
-        const auto& dispatchTable = Device(device).get<DispatchTable>();
+        gvk::Device gvkDevice = device;
+        const auto& dispatchTable = gvkDevice.get<DispatchTable>();
         for (const auto& bindBufferMemoryInfo : deviceMemoryBindings.bufferBindInfos) {
             VkMemoryRequirements memoryRequirements{ };
             dispatchTable.gvkGetBufferMemoryRequirements(device, bindBufferMemoryInfo.buffer, &memoryRequirements);

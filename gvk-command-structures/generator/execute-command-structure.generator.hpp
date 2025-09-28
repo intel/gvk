@@ -58,11 +58,13 @@ private:
         NamespaceGenerator namespaceGenerator(file, "gvk::detail");
         file << std::endl;
         for (const auto& structure : apiElements.structures) {
-            CompileGuardGenerator compileGuardGenerator(file, structure.compileGuards);
-            file << string::replace("{returnType} execute_command_structure(const DispatchTable& dispatchTable, const {structureType}& obj);", {
-                { "{returnType}", structure.members.back().name == "result" ? structure.members.back().type : "void" },
-                { "{structureType}", structure.name },
-            }) << std::endl;
+            if (structure.name != "GvkCommandCollection") {
+                CompileGuardGenerator compileGuardGenerator(file, structure.compileGuards);
+                file << string::replace("{returnType} execute_command_structure(const DispatchTable& dispatchTable, const {structureType}& obj);", {
+                    { "{returnType}", structure.members.back().name == "result" ? structure.members.back().type : "void" },
+                    { "{structureType}", structure.name },
+                    }) << std::endl;
+            }
         }
         file << std::endl;
     }
@@ -78,7 +80,7 @@ private:
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk::detail");
         for (const auto& structure : apiElements.structures) {
-            if (!gvk::string::contains(structure.name, "BaseStructure")) {
+            if (!structure.vkStructureType.empty()) {
                 generate_command_structure_handler(file, structure);
             }
         }
@@ -97,9 +99,9 @@ private:
         }) << std::endl;
         file << "{" << std::endl;
         std::stringstream strStrm;
-        for (size_t i = 1; i < structure.members.size(); ++i) {
-            if (structure.members[i].name != "result") {
-                strStrm << "obj." << structure.members[i].name << ", ";
+        for (size_t member_i = 1; member_i < structure.members.size(); ++member_i) {
+            if (structure.members[member_i].name != "result") {
+                strStrm << "obj." << structure.members[member_i].name << ", ";
             }
         }
         auto commandArgumentsStr = strStrm.str();
@@ -117,13 +119,14 @@ private:
 
     static void generate_base_structure_handler(FileGenerator& file, const std::vector<xml::Structure>& structures)
     {
+        // TODO : Handle structures with `result` parameter.
         file << std::endl;
         file << "void execute_command_structure(const DispatchTable& dispatchTable, const GvkCommandBaseStructure& obj)" << std::endl;
         file << "{" << std::endl;
         file << "    // TODO : Handle `result` parameter" << std::endl;
         file << "    switch (obj.sType) {" << std::endl;
         for (const auto& structure : structures) {
-            if (structure.name != "GvkCommandBaseStructure") {
+            if (!structure.vkStructureType.empty()) {
                 CompileGuardGenerator compileGuardGenerator(file, structure.compileGuards);
                 file << "    case get_stype<" << structure.name << ">(): {" << std::endl;
                 file << "        execute_command_structure(dispatchTable, (const " << structure.name << "&)obj);" << std::endl;

@@ -179,7 +179,7 @@ void StructureDecerealizationGenerator::generate(
     file << std::endl;
     NamespaceGenerator namespaceGenerator(file, "cereal");
     for (const auto& structure : apiElements.structures) {
-        if (structure.alias.empty()) {
+        if (structure.alias.empty() && !apiElements.typeErasedStructures.count(structure.name)) {
             file << std::endl;
             auto compileGuards = structure.compileGuards;
             if (apiElements.manuallyImplemented.count(structure.name)) {
@@ -191,8 +191,7 @@ void StructureDecerealizationGenerator::generate(
             file << "{" << std::endl;
             file << "    (void)archive;" << std::endl;
             file << "    (void)obj;" << std::endl;
-            for (size_t i = 0; i < structure.members.size(); ++i) {
-                const auto& member = structure.members[i];
+            for (const auto& member : structure.members) {
                 CompileGuardGenerator memberCompileGuardGenerator(file, get_inner_scope_compile_guards(compileGuards, member.compileGuards));
                 for (const auto& source : string::split(DecerealizeStructureMemberGenerator().generate(manifest, member), "\n")) {
                     file << "    " << source << std::endl;

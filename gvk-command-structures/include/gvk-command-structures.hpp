@@ -34,6 +34,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-command-structures/generated/command-structure-create-copy.hpp"
 #include "gvk-command-structures/generated/command-structure-deserialization.hpp"
 #include "gvk-command-structures/generated/command-structure-destroy-copy.hpp"
+#include "gvk-command-structures/generated/command-structure-get-cname.hpp"
 #include "gvk-command-structures/generated/command-structure-get-ctype.hpp"
 #include "gvk-command-structures/generated/command-structure-get-stype.hpp"
 #include "gvk-command-structures/generated/command-structure-serialization.hpp"

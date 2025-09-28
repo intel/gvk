@@ -42,6 +42,14 @@ protected:
     void on_gui(GuiInfo& guiInfo) override final;
     void on_save(GuiInfo& guiInfo) override final;
     void on_load(GuiInfo& guiInfo) override final;
+
+private:
+    void draw_application_tab(GuiInfo& guiInfo);
+    void draw_stream_tab(GuiInfo& guiInfo);
+    void launch_application(GuiInfo& guiInfo);
+    std::vector<int> mActiveLayers;
+    bool mClearStdOut{ };
+    bool mAutoQuery{ };
 };
 
 } // namespace gui

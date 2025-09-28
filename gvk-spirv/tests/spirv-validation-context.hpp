@@ -37,7 +37,10 @@ namespace gvk {
 namespace spirv {
 namespace validation {
 
-// NOTE : Duplicated from gvk-pipeline-explorer
+// NOTE : Duplicated in...
+//  gvk/gvk-pipeline-explorer/source/gvk-pipeline-explorer/backend/device.cpp
+//  gvk/gvk-state-tracker/tests/state-tracker-test-utilities.cpp
+//  gvk/gvk-spirv/tests/spirv-validation-context.hpp
 // TODO : Move to a common location
 template <typename PhysicalDeviceFeatures>
 inline PhysicalDeviceFeatures get_available_physical_device_features(const gvk::PhysicalDevice& gvkPhysicalDevice)

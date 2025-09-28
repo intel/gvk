@@ -141,7 +141,7 @@ This test validates that enumerating Interval<> objects works correctly
 TEST(IntervalTree, AddAndEnumerate)
 {
 #if 0
-#ifdef WIN32
+#ifdef _WIN32
 #ifdef _DEBUG
     // NOTE : This test has a false positive for outstanding allocations
     //  according to MemoryUsageValidator on Linux.  Running this test with
@@ -391,7 +391,7 @@ TEST(IntervalTree, AddAndEnumerate)
 TEST(IntervalTree, AddAndEnumerateFuzz)
 {
 #if 0
-#ifdef WIN32
+#ifdef _WIN32
 #ifdef _DEBUG
     // NOTE : This test actually passes the MemoryUsageValidator, but it's
     //  disabled for consistency with the test above.

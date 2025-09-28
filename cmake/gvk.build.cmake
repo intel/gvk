@@ -1,5 +1,5 @@
 
-include_guard()
+include_guard(GLOBAL)
 
 include(CMakeDependentOption)
 include(CMakePackageConfigHelpers)
@@ -178,6 +178,35 @@ function(gvk_add_layer)
     endif()
     # HUH : Why doesn't CMAKE_CURRENT_FUNCTION_LIST_DIR work on Linux?
     configure_file("${gvkBuildModuleDirectory}/gvk-layer.json.in" "${CMAKE_CURRENT_BINARY_DIR}/${ARGS_TARGET}.json")
+    add_custom_command(
+        TARGET ${ARGS_TARGET} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_BINARY_DIR}/${ARGS_TARGET}.json" "$<TARGET_FILE_DIR:${ARGS_TARGET}>"
+    )
+endfunction()
+
+function(gvk_add_pipeline_explorer_plugin)
+    cmake_parse_arguments(ARGS "" "TARGET;FOLDER" "LINK_LIBRARIES;INCLUDE_DIRECTORIES;INCLUDE_FILES;SOURCE_FILES;COMPILE_DEFINITIONS;DESCRIPTION;VERSION;COMPANY;COPYRIGHT;ENTRY_POINTS" ${ARGN})
+    add_library(${ARGS_TARGET} SHARED "${ARGS_INCLUDE_FILES}" "${ARGS_SOURCE_FILES}")
+    list(APPEND ARGS_LINK_LIBRARIES gvk-pipeline-explorer-plugin-factory)
+    gvk_setup_target(
+        TARGET               ${ARGS_TARGET}
+        FOLDER              "${ARGS_FOLDER}"
+        LINK_LIBRARIES       ${ARGS_LINK_LIBRARIES}
+        INCLUDE_DIRECTORIES "${ARGS_INCLUDE_DIRECTORIES}"
+        INCLUDE_FILES       "${ARGS_INCLUDE_FILES}"
+        SOURCE_FILES        "${ARGS_SOURCE_FILES}"
+        COMPILE_DEFINITIONS  ${ARGS_COMPILE_DEFINITIONS}
+    )
+    set_target_properties(${ARGS_TARGET} PROPERTIES GVK_METRICS_PROVIDER TRUE)
+    if(MSVC)
+        target_compile_options(${ARGS_TARGET} PRIVATE /guard:cf)
+        target_link_options(${ARGS_TARGET} PRIVATE /guard:cf /DYNAMICBASE)
+        set(libraryPath ".\\\\${ARGS_TARGET}.dll")
+    else()
+        set(libraryPath "./lib${ARGS_TARGET}.so")
+    endif()
+    # HUH : Why doesn't CMAKE_CURRENT_FUNCTION_LIST_DIR work on Linux?
+    configure_file("${gvkBuildModuleDirectory}/gvk-pipeline-explorer-plugin.json.in" "${CMAKE_CURRENT_BINARY_DIR}/${ARGS_TARGET}.json")
     add_custom_command(
         TARGET ${ARGS_TARGET} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_BINARY_DIR}/${ARGS_TARGET}.json" "$<TARGET_FILE_DIR:${ARGS_TARGET}>"
@@ -364,6 +393,70 @@ function(gvk_install_headers)
 endfunction()
 
 function(gvk_install_layer)
+    cmake_parse_arguments(ARGS "" "TARGET;VERSION" "" ${ARGN})
+    if(NOT ARGS_VERSION)
+        get_target_property(ARGS_VERSION ${ARGS_TARGET} VERSION)
+        if(NOT ARGS_VERSION)
+            gvk_get_commit_hash(ARGS_VERSION)
+        endif()
+    endif()
+
+    # TODO : Documentation
+    get_target_property(gvkInternal ${ARGS_TARGET} GVK_INTERNAL)
+
+    # TODO : Documentation
+    gvk_install_target(TARGET ${ARGS_TARGET})
+    set(configVersion "${CMAKE_BINARY_DIR}/cmake/${ARGS_TARGET}ConfigVersion.cmake")
+
+    # TODO : Documentation
+    write_basic_package_version_file("${configVersion}" VERSION ${ARGS_VERSION} COMPATIBILITY ExactVersion)
+    set(configTemplate "${gvkBuildModuleDirectory}/gvk-target.config.cmake.in")
+    set(config "${CMAKE_BINARY_DIR}/cmake/${ARGS_TARGET}Config.cmake")
+    configure_package_config_file("${configTemplate}" "${config}" INSTALL_DESTINATION {CMAKE_BINARY_DIR}/cmake/)
+
+    # TODO : Documentation
+    if(gvkInternal)
+        install(FILES "${config}" "${configVersion}" DESTINATION internal/cmake/${ARGS_TARGET}/)
+        install(FILES "$<TARGET_FILE_DIR:${ARGS_TARGET}>/${ARGS_TARGET}.json" DESTINATION internal/bin/$<CONFIG>/)
+    else()
+        install(FILES "${config}" "${configVersion}" DESTINATION cmake/${ARGS_TARGET}/)
+        install(FILES "$<TARGET_FILE_DIR:${ARGS_TARGET}>/${ARGS_TARGET}.json" DESTINATION bin/$<CONFIG>/)
+    endif()
+endfunction()
+
+function(gvk_install_pipeline_explorer_plugin)
+    cmake_parse_arguments(ARGS "" "TARGET;VERSION" "" ${ARGN})
+    if(NOT ARGS_VERSION)
+        get_target_property(ARGS_VERSION ${ARGS_TARGET} VERSION)
+        if(NOT ARGS_VERSION)
+            gvk_get_commit_hash(ARGS_VERSION)
+        endif()
+    endif()
+
+    # TODO : Documentation
+    get_target_property(gvkInternal ${ARGS_TARGET} GVK_INTERNAL)
+
+    # TODO : Documentation
+    gvk_install_target(TARGET ${ARGS_TARGET})
+    set(configVersion "${CMAKE_BINARY_DIR}/cmake/${ARGS_TARGET}ConfigVersion.cmake")
+
+    # TODO : Documentation
+    write_basic_package_version_file("${configVersion}" VERSION ${ARGS_VERSION} COMPATIBILITY ExactVersion)
+    set(configTemplate "${gvkBuildModuleDirectory}/gvk-target.config.cmake.in")
+    set(config "${CMAKE_BINARY_DIR}/cmake/${ARGS_TARGET}Config.cmake")
+    configure_package_config_file("${configTemplate}" "${config}" INSTALL_DESTINATION {CMAKE_BINARY_DIR}/cmake/)
+
+    # TODO : Documentation
+    if(gvkInternal)
+        install(FILES "${config}" "${configVersion}" DESTINATION internal/cmake/${ARGS_TARGET}/)
+        install(FILES "$<TARGET_FILE_DIR:${ARGS_TARGET}>/${ARGS_TARGET}.json" DESTINATION internal/bin/$<CONFIG>/)
+    else()
+        install(FILES "${config}" "${configVersion}" DESTINATION cmake/${ARGS_TARGET}/)
+        install(FILES "$<TARGET_FILE_DIR:${ARGS_TARGET}>/${ARGS_TARGET}.json" DESTINATION bin/$<CONFIG>/)
+    endif()
+endfunction()
+
+function(gvk_install_metrics_provider)
     cmake_parse_arguments(ARGS "" "TARGET;VERSION" "" ${ARGN})
     if(NOT ARGS_VERSION)
         get_target_property(ARGS_VERSION ${ARGS_TARGET} VERSION)

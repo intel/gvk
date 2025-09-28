@@ -90,6 +90,8 @@ NOTE : Best practices for loading dll/so libraries (ie. full paths instead of re
 
 #include <cassert>
 
+#define gvk_assert assert
+
 #define gvk_stringify(STR) #STR
 #define gvk_expand(STR) gvk_stringify(STR)
 #define gvk_file_line (__FILE__ "(" gvk_expand(__LINE__) ")")
@@ -110,6 +112,7 @@ NOTE : Best practices for loading dll/so libraries (ie. full paths instead of re
     }
 */
 #define gvk_result_scope_begin(GVK_RESULT) VkResult gvkResult = GVK_RESULT; (void)gvkResult; {
+#define gvk_result_assert(GVK_EXPRESSION) gvk_result((GVK_EXPRESSION) ? VK_SUCCESS : VK_ERROR_VALIDATION_FAILED_EXT);
 #define gvk_result_scope_break(GVK_RESULT) { gvkResult = GVK_RESULT; goto GVK_FAIL; }
 #define gvk_result(GVK_CALL)                                                                   \
 {                                                                                              \
@@ -128,7 +131,7 @@ namespace gvk {
 /**
 Callback for processing gvk_result_scope failures
 @param [in] gvkResult The VkResult of the failed gvk_result_scope
-@param [in] pFileLine A string with the file and line number where the error occured
+@param [in] pFileLine A string with the file and line number where the error occurred
 @param [in[ pGvkCall A string with the expression that triggered the error
 @return Whether or not to continue execution in Debug configurations
     @note In Debug configurations returning VK_FALSE will trigger an assert()
@@ -143,7 +146,7 @@ extern PFN_result_scope_callback gPfnGvkResultScopeCallback;
 /**
 thread_local gvk_result_scope callback
     @note thread_local gvk_result_scope callbacks take precedence over the global gvk_result_scope
-    @note If a thread_local gvk_result_scope calback isn't set for a particular thread, the global callback will be used if set
+    @note If a thread_local gvk_result_scope callback isn't set for a particular thread, the global callback will be used if set
 */
 extern thread_local PFN_result_scope_callback tlPfnGvkResultScopeCallback;
 

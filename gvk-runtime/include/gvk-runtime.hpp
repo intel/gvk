@@ -28,21 +28,20 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-defines.hpp"
 
+#include <filesystem>
+#include <string>
+
 namespace gvk {
 
-/**
-TODO: Documentation
-*/
 VkResult load_vulkan_runtime();
-
-/**
-TODO: Documentation
-*/
 void unload_vulkan_runtime();
-
-/**
-TODO: Documentation
-*/
 PFN_vkGetInstanceProcAddr load_vkGetInstanceProcAddr();
+
+#ifdef GVK_PLATFORM_WINDOWS
+BOOL get_this_module_handle(HMODULE* phModule);
+DWORD get_module_path(HMODULE hModule, std::filesystem::path* pPath);
+DWORD get_this_module_path(std::filesystem::path* pPath);
+std::string get_win32_error_str(DWORD errorCode);
+#endif // GVK_PLATFORM_WINDOWS
 
 } // namespace gvk

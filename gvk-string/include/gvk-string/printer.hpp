@@ -464,7 +464,12 @@ Prints a given float using a given Printer
 template <>
 inline void print<float>(Printer& printer, const float& value)
 {
+    // TODO : Floating point behavior should be controlled via Printer::Flags
+#if 0
     printer.mOstrm << std::scientific << std::setprecision(8) << value;
+#else
+    printer.mOstrm << std::fixed << value;
+#endif
 }
 
 /**
@@ -475,7 +480,12 @@ Prints a given double using a given Printer
 template <>
 inline void print<double>(Printer& printer, const double& value)
 {
+    // TODO : Floating point behavior should be controlled via Printer::Flags
+#if 0
     printer.mOstrm << std::scientific << std::setprecision(16) << value;
+#else
+    printer.mOstrm << std::fixed << value;
+#endif
 }
 
 /**
@@ -486,7 +496,12 @@ Prints a given long double using a given Printer
 template <>
 inline void print<long double>(Printer& printer, const long double& value)
 {
+    // TODO : Floating point behavior should be controlled via Printer::Flags
+#if 0
     printer.mOstrm << std::scientific << std::setprecision(32) << value;
+#else
+    printer.mOstrm << std::fixed << value;
+#endif
 }
 
 } // namespace gvk

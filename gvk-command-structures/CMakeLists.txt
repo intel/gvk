@@ -7,6 +7,7 @@ set(generatedSourcePath "${CMAKE_CURRENT_BINARY_DIR}/source/gvk-command-structur
 set(generatedIncludeFiles
     "${generatedIncludePath}/basic-command-recorder.hpp"
     "${generatedIncludePath}/command.h"
+    "${generatedIncludePath}/command-collection-cerealization.hpp"
     "${generatedIncludePath}/command-enumerations-to-string.hpp"
     "${generatedIncludePath}/command-structure-cerealization.hpp"
     "${generatedIncludePath}/command-structure-comparison-operators.hpp"
@@ -15,6 +16,7 @@ set(generatedIncludeFiles
     "${generatedIncludePath}/command-structure-deserialization.hpp"
     "${generatedIncludePath}/command-structure-destroy-copy.hpp"
     "${generatedIncludePath}/command-structure-enumerate-handles.hpp"
+    "${generatedIncludePath}/command-structure-get-cname.hpp"
     "${generatedIncludePath}/command-structure-get-ctype.hpp"
     "${generatedIncludePath}/command-structure-get-stype.hpp"
     "${generatedIncludePath}/command-structure-make-tuple.hpp"
@@ -44,7 +46,9 @@ gvk_add_code_generator(
         gvk-cppgen
     INCLUDE_FILES
         "${generatorSourcePath}/basic-command-recorder.generator.hpp"
+        "${generatorSourcePath}/command-collection-cerealization.generator.hpp"
         "${generatorSourcePath}/execute-command-structure.generator.hpp"
+        "${generatorSourcePath}/get-cname.generator.hpp"
         "${generatorSourcePath}/get-ctype.generator.hpp"
     SOURCE_FILES
         "${generatorSourcePath}/main.cpp"

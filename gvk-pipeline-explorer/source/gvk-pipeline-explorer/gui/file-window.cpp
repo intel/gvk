@@ -38,13 +38,7 @@ FileWindow::FileWindow(Window::Manager& windowManager, const std::string& name, 
 {
     std::ifstream file(mFilePath);
     if (file.is_open()) {
-
-        // TODO : Documentation
-#if 0
-        mTextEditor.SetText(std::string((std::istreambuf_iterator<char>(file)), (std::istreambuf_iterator<char>())));
-#else
         mTextEditor.SetText(std::string(std::istreambuf_iterator<char>(file), { }));
-#endif
         auto extension = mFilePath.extension();
         if (extension == ".vert" ||
             extension == ".tesc" ||

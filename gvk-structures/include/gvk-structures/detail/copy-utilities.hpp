@@ -78,6 +78,15 @@ inline const VkAllocationCallbacks* validate_allocation_callbacks(const VkAlloca
     return (pAllocator && pAllocator->pfnAllocation && pAllocator->pfnFree) ? pAllocator : &sAllocator;
 }
 
+template <typename ObjectType>
+ObjectType* create_dynamic_array(size_t count, const VkAllocationCallbacks* pAllocator)
+{
+    // TODO : std::vector<> like C API for handling raw pointer collections
+    // TODO : Expose that API through gvk::Auto<>
+    pAllocator = validate_allocation_callbacks(pAllocator);
+    return (ObjectType*)pAllocator->pfnAllocation(pAllocator->pUserData, count * sizeof(ObjectType), 0, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+}
+
 template <typename CountType, typename ObjectType>
 inline ObjectType* create_dynamic_array_copy(CountType objCount, const ObjectType* pObjs, const VkAllocationCallbacks* pAllocator)
 {

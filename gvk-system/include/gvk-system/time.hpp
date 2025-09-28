@@ -28,7 +28,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <chrono>
 #include <ctime>
+#include <iomanip>
 #include <ratio>
+#include <sstream>
+#include <string>
 
 namespace gvk {
 namespace system {
@@ -178,6 +181,26 @@ public:
             dateTime.second = pLocalTime->tm_sec;
         }
         return dateTime;
+    }
+
+    inline std::string get_date_str() const
+    {
+        std::stringstream strStrm;
+        strStrm
+            << year << "/"
+            << std::setw(2) << std::setfill('0') << (int)month << "/"
+            << std::setw(2) << std::setfill('0') << dayOfTheMonth;
+        return strStrm.str();
+    }
+
+    inline std::string get_time_str() const
+    {
+        std::stringstream strStrm;
+        strStrm
+            << std::setw(2) << std::setfill('0') << hour << ":"
+            << std::setw(2) << std::setfill('0') << minute << ":"
+            << std::setw(2) << std::setfill('0') << second;
+        return strStrm.str();
     }
 
     int year { };          //!< This DateTime object's year

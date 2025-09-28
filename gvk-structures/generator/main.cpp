@@ -117,7 +117,14 @@ int main(int, const char*[])
         gvk::cppgen::StructureEnumerateHandlesGenerator::generate(manifest, apiElements);
         gvk::cppgen::StructureGetSTypeGenerator::generate(apiElements);
         gvk::cppgen::StructureMakeTupleGenerator::generate(manifest, apiElements);
+
+        // Manually implemented to_string() due to UUID members
+        // TODO : Automatically detect and generate UUID to_string()
+        apiElements.manuallyImplemented.insert("VkPhysicalDeviceProperties");
+        apiElements.manuallyImplemented.insert("VkPerformanceCounterKHR");
         gvk::cppgen::StructureToStringGenerator::generate(manifest, apiElements);
+        apiElements.manuallyImplemented.erase("VkPhysicalDeviceProperties");
+        apiElements.manuallyImplemented.erase("VkPerformanceCounterKHR");
 
         // Manually implemented serialization
         apiElements.manuallyImplemented.insert("VkAccelerationStructureInstanceKHR");

@@ -94,6 +94,14 @@ private:
         file << std::endl;
         generate_load_entry_points_function(
             file, manifest,
+            [](const xml::Command& command)
+            {
+                return
+                    command.name != "vkCreateInstance" &&
+                    command.name != "vkEnumerateInstanceVersion" &&
+                    command.name != "vkEnumerateInstanceExtensionProperties" &&
+                    command.name != "vkEnumerateInstanceLayerProperties";
+            },
             "load_instance_entry_points(VkInstance vkInstance, DispatchTable* pDispatchTable)",
             "vkInstance",
             "vkGetInstanceProcAddr"

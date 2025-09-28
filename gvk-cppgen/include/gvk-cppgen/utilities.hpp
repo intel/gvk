@@ -26,6 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
+#include "gvk-cppgen/api-element-collection-info.hpp"
 #include "gvk-cppgen/file-generator.hpp"
 #include "gvk-string.hpp"
 #include "gvk-xml.hpp"
@@ -51,6 +52,24 @@ void add_static_array_member_to_structure(const std::string& unqualifiedType, co
 std::set<std::string> get_inner_scope_compile_guards(const std::set<std::string>& outerScopeCompileGuards, std::set<std::string> innerScopeCompileGuards);
 std::vector<string::Replacement> get_inner_scope_replacements(const std::vector<string::Replacement>& outerScopeReplacements, std::vector<string::Replacement> innerScopeReplacements);
 void generate_noop_command_body(FileGenerator& file, const xml::Command& command);
+
+void generate_type_erased_structure_switch(
+    FileGenerator& file,
+    const ApiElementCollectionInfo& apiElements,
+    const std::string& indentation,
+    const std::string& evaluation,
+    const std::string& caseProcessor,
+    const std::string& defaultProcessor = std::string()
+);
+
+void generate_type_erased_structure_switch(
+    FileGenerator& file,
+    const ApiElementCollectionInfo& apiElements,
+    const std::string& indentation,
+    const std::string& evaluation,
+    const std::vector<std::string>& caseProcessor,
+    const std::string& defaultProcessor = std::string()
+);
 
 void generate_pnext_switch(
     FileGenerator& file,

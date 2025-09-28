@@ -38,9 +38,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace gvk {
 
-/*
-TODO : Documentation
-*/
+// TODO : These functions need to wrapped up in a message queue manager
+
 template <typename StructureType>
 inline const std::string& get_default_serialized_structure_file_name()
 {
@@ -49,23 +48,23 @@ inline const std::string& get_default_serialized_structure_file_name()
     return scFileName;
 }
 
-/*
-TODO : Documentation
-*/
 template <typename StructureType>
 inline VkResult write_serialized_structure(const std::filesystem::path& path, const std::string& name, const StructureType& obj, bool forceOverwrite = false)
 {
     std::filesystem::create_directories(path);
-    auto infoFilePath = std::filesystem::path(path / name).replace_extension(".info");
+    auto fileName = name.empty() ? get_default_serialized_structure_file_name<StructureType>() : name;
+    auto infoFilePath = std::filesystem::path(path / fileName).replace_extension(".info");
     std::error_code errorCode;
     if (!std::filesystem::exists(infoFilePath, errorCode) || forceOverwrite) {
         if (!errorCode) {
-            auto tempFilePath = std::filesystem::path(path / name).replace_extension(".temp");
+            auto tempFilePath = std::filesystem::path(path / fileName).replace_extension(".temp");
             std::ofstream tempFile(tempFilePath, std::ios::binary);
             if (tempFile.is_open()) {
                 gvk::serialize(tempFile, obj);
                 tempFile.close();
-                std::filesystem::rename(tempFilePath, infoFilePath);
+                do {
+                    std::filesystem::rename(tempFilePath, infoFilePath, errorCode);
+                } while (errorCode);
                 return VK_SUCCESS;
             } else {
                 return VK_INCOMPLETE;
@@ -77,24 +76,20 @@ inline VkResult write_serialized_structure(const std::filesystem::path& path, co
     return VK_NOT_READY;
 }
 
-/*
-TODO : Documentation
-*/
 template <typename StructureType>
 inline VkResult write_serialized_structure(const std::filesystem::path& path, const StructureType& obj, bool forceOverwrite = false)
 {
     return write_serialized_structure<StructureType>(path, get_default_serialized_structure_file_name<StructureType>(), obj, forceOverwrite);
 }
 
-/*
-TODO : Documentation
-*/
 template <typename StructureType>
 inline VkResult read_serialized_structure(const std::filesystem::path& path, const std::string& name, Auto<StructureType>& obj, bool removeFileOnRead = true)
 {
     obj.reset();
-    auto infoFilePath = std::filesystem::path(path / name).replace_extension(".info");
-    if (std::filesystem::exists(infoFilePath)) {
+    auto fileName = name.empty() ? get_default_serialized_structure_file_name<StructureType>() : name;
+    auto infoFilePath = std::filesystem::path(path / fileName).replace_extension(".info");
+    std::error_code errorCode;
+    if (std::filesystem::exists(infoFilePath, errorCode)) {
         std::ifstream infoFile(infoFilePath, std::ios::binary);
         if (infoFile.is_open()) {
             gvk::deserialize(infoFile, nullptr, obj);
@@ -110,9 +105,6 @@ inline VkResult read_serialized_structure(const std::filesystem::path& path, con
     return VK_NOT_READY;
 }
 
-/*
-TODO : Documentation
-*/
 template <typename StructureType>
 inline VkResult read_serialized_structure(const std::filesystem::path& path, Auto<StructureType>& obj, bool removeFileOnRead = true)
 {
