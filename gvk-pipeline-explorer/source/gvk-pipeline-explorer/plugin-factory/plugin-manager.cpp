@@ -79,10 +79,14 @@ VkResult PluginManager::initialize_plugins(const GvkPipelineExplorerPluginInitia
 VkResult PluginManager::get_plugin_status() const
 {
     gvk_result_scope_begin(VK_SUCCESS) {
-        gvk_result(mPlugins.size() == 1 ? VK_SUCCESS : VK_ERROR_FEATURE_NOT_PRESENT);
-        const auto& pluginInfo = *mPlugins.begin()->second;
-        gvk_result(pluginInfo.pfnGetStatus ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-        return pluginInfo.pfnGetStatus(pluginInfo.pUserData);
+        // NOTE : Plugin system currently only supports Intel MDAPI plugin
+        // TODO : Support for custom plugins will be available in the future
+        if (!mPlugins.empty()) {
+            gvk_result(mPlugins.size() == 1 ? VK_SUCCESS : VK_ERROR_FEATURE_NOT_PRESENT);
+            const auto& pluginInfo = *mPlugins.begin()->second;
+            gvk_result(pluginInfo.pfnGetStatus ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result(pluginInfo.pfnGetStatus(pluginInfo.pUserData));
+        }
     } gvk_result_scope_end;
     return gvkResult;
 }
@@ -96,10 +100,14 @@ VkResult PluginManager::get_plugin_counter_info(GvkPipelineExplorerPlugin plugin
 {
     (void)plugin;
     gvk_result_scope_begin(VK_SUCCESS) {
-        gvk_result(mPlugins.size() == 1 ? VK_SUCCESS : VK_ERROR_FEATURE_NOT_PRESENT);
-        const auto& pluginInfo = *mPlugins.begin()->second;
-        gvk_result(pluginInfo.pfnGetCounterInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-        gvk_result(pluginInfo.pfnGetCounterInfo(pCounterInfo, pluginInfo.pUserData));
+        // NOTE : Plugin system currently only supports Intel MDAPI plugin
+        // TODO : Support for custom plugins will be available in the future
+        if (!mPlugins.empty()) {
+            gvk_result(mPlugins.size() == 1 ? VK_SUCCESS : VK_ERROR_FEATURE_NOT_PRESENT);
+            const auto& pluginInfo = *mPlugins.begin()->second;
+            gvk_result(pluginInfo.pfnGetCounterInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result(pluginInfo.pfnGetCounterInfo(pCounterInfo, pluginInfo.pUserData));
+        }
     } gvk_result_scope_end;
     return gvkResult;
 }
@@ -108,10 +116,14 @@ VkResult PluginManager::submit_request(const std::filesystem::path& workspace, g
 {
     (void)workspace;
     gvk_result_scope_begin(VK_SUCCESS) {
-        gvk_result(mPlugins.size() == 1 ? VK_SUCCESS : VK_ERROR_FEATURE_NOT_PRESENT);
-        const auto& pluginInfo = *mPlugins.begin()->second;
-        gvk_result(pluginInfo.pfnSubmitRequest ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-        gvk_result(pluginInfo.pfnSubmitRequest(&*request, pluginInfo.pUserData));
+        // NOTE : Plugin system currently only supports Intel MDAPI plugin
+        // TODO : Support for custom plugins will be available in the future
+        if (!mPlugins.empty()) {
+            gvk_result(mPlugins.size() == 1 ? VK_SUCCESS : VK_ERROR_FEATURE_NOT_PRESENT);
+            const auto& pluginInfo = *mPlugins.begin()->second;
+            gvk_result(pluginInfo.pfnSubmitRequest ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result(pluginInfo.pfnSubmitRequest(&*request, pluginInfo.pUserData));
+        }
     } gvk_result_scope_end;
     return gvkResult;
 }
@@ -120,11 +132,15 @@ VkBool32 PluginManager::tool_cmd(VkDevice device, VkPipeline pipeline) const
 {
     auto toolCmd = false;
     gvk_result_scope_begin(VK_SUCCESS) {
-        gvk_result(mPlugins.size() == 1 ? VK_SUCCESS : VK_ERROR_FEATURE_NOT_PRESENT);
-        const auto& pluginInfo = *mPlugins.begin()->second;
-        gvk_result(pluginInfo.pfnToolCmd ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-        if (pluginInfo.pfnToolCmd(device, pipeline, pluginInfo.pUserData)) {
-            toolCmd = true;
+        // NOTE : Plugin system currently only supports Intel MDAPI plugin
+        // TODO : Support for custom plugins will be available in the future
+        if (!mPlugins.empty()) {
+            gvk_result(mPlugins.size() == 1 ? VK_SUCCESS : VK_ERROR_FEATURE_NOT_PRESENT);
+            const auto& pluginInfo = *mPlugins.begin()->second;
+            gvk_result(pluginInfo.pfnToolCmd ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            if (pluginInfo.pfnToolCmd(device, pipeline, pluginInfo.pUserData)) {
+                toolCmd = true;
+            }
         }
     } gvk_result_scope_end;
     return !gvkResult && toolCmd;
@@ -133,6 +149,8 @@ VkBool32 PluginManager::tool_cmd(VkDevice device, VkPipeline pipeline) const
 VkResult PluginManager::pre_process_vkCreateInstance(const GvkCommandBaseStructure& command) const
 {
     gvk_result_scope_begin(VK_SUCCESS) {
+        // NOTE : Plugin system currently only supports Intel MDAPI plugin
+        // TODO : Support for custom plugins will be available in the future
         for (auto itr = mPlugins.begin(); itr != mPlugins.end(); ++itr) {
             const auto& pluginInfo = *itr->second;
             gvk_result(pluginInfo.pfnPreProcessCreateInstance ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
@@ -145,6 +163,8 @@ VkResult PluginManager::pre_process_vkCreateInstance(const GvkCommandBaseStructu
 VkResult PluginManager::post_process_vkCreateInstance(const GvkCommandBaseStructure& command) const
 {
     gvk_result_scope_begin(VK_SUCCESS) {
+        // NOTE : Plugin system currently only supports Intel MDAPI plugin
+        // TODO : Support for custom plugins will be available in the future
         for (auto itr = mPlugins.begin(); itr != mPlugins.end(); ++itr) {
             const auto& pluginInfo = *itr->second;
             gvk_result(pluginInfo.pfnPostProcessCreateInstance ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
@@ -157,6 +177,8 @@ VkResult PluginManager::post_process_vkCreateInstance(const GvkCommandBaseStruct
 VkResult PluginManager::pre_process_vkCreateDevice(const GvkCommandBaseStructure& command) const
 {
     gvk_result_scope_begin(VK_SUCCESS) {
+        // NOTE : Plugin system currently only supports Intel MDAPI plugin
+        // TODO : Support for custom plugins will be available in the future
         for (auto itr = mPlugins.begin(); itr != mPlugins.end(); ++itr) {
             const auto& pluginInfo = *itr->second;
             gvk_result(pluginInfo.pfnPreProcessCreateDevice ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
@@ -169,6 +191,8 @@ VkResult PluginManager::pre_process_vkCreateDevice(const GvkCommandBaseStructure
 VkResult PluginManager::post_process_vkCreateDevice(const GvkCommandBaseStructure& command) const
 {
     gvk_result_scope_begin(VK_SUCCESS) {
+        // NOTE : Plugin system currently only supports Intel MDAPI plugin
+        // TODO : Support for custom plugins will be available in the future
         for (auto itr = mPlugins.begin(); itr != mPlugins.end(); ++itr) {
             const auto& pluginInfo = *itr->second;
             gvk_result(pluginInfo.pfnPostProcessCreateDevice ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
@@ -181,6 +205,8 @@ VkResult PluginManager::post_process_vkCreateDevice(const GvkCommandBaseStructur
 VkResult PluginManager::pre_process_range()
 {
     gvk_result_scope_begin(VK_SUCCESS) {
+        // NOTE : Plugin system currently only supports Intel MDAPI plugin
+        // TODO : Support for custom plugins will be available in the future
         for (auto itr = mPlugins.begin(); itr != mPlugins.end(); ++itr) {
             const auto& pluginInfo = *itr->second;
             gvk_result(pluginInfo.pfnPreProcessRange ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
@@ -193,6 +219,8 @@ VkResult PluginManager::pre_process_range()
 VkResult PluginManager::pre_process_command_buffers(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo) const
 {
     gvk_result_scope_begin(VK_SUCCESS) {
+        // NOTE : Plugin system currently only supports Intel MDAPI plugin
+        // TODO : Support for custom plugins will be available in the future
         for (auto itr = mPlugins.begin(); itr != mPlugins.end(); ++itr) {
             const auto& pluginInfo = *itr->second;
             gvk_result(pluginInfo.pfnPreProcessCommandBuffers ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
@@ -205,6 +233,8 @@ VkResult PluginManager::pre_process_command_buffers(const GvkPipelineExplorerToo
 VkResult PluginManager::pre_process_cmd(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo) const
 {
     gvk_result_scope_begin(VK_SUCCESS) {
+        // NOTE : Plugin system currently only supports Intel MDAPI plugin
+        // TODO : Support for custom plugins will be available in the future
         for (auto itr = mPlugins.begin(); itr != mPlugins.end(); ++itr) {
             const auto& pluginInfo = *itr->second;
             gvk_result(pluginInfo.pfnPreProcessCmd ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
@@ -217,6 +247,8 @@ VkResult PluginManager::pre_process_cmd(const GvkPipelineExplorerToolCommandBuff
 VkResult PluginManager::post_process_cmd(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo) const
 {
     gvk_result_scope_begin(VK_SUCCESS) {
+        // NOTE : Plugin system currently only supports Intel MDAPI plugin
+        // TODO : Support for custom plugins will be available in the future
         for (auto itr = mPlugins.begin(); itr != mPlugins.end(); ++itr) {
             const auto& pluginInfo = *itr->second;
             gvk_result(pluginInfo.pfnPostProcessCmd ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
@@ -229,6 +261,8 @@ VkResult PluginManager::post_process_cmd(const GvkPipelineExplorerToolCommandBuf
 VkResult PluginManager::post_process_command_buffers(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo) const
 {
     gvk_result_scope_begin(VK_SUCCESS) {
+        // NOTE : Plugin system currently only supports Intel MDAPI plugin
+        // TODO : Support for custom plugins will be available in the future
         for (auto itr = mPlugins.begin(); itr != mPlugins.end(); ++itr) {
             const auto& pluginInfo = *itr->second;
             gvk_result(pluginInfo.pfnPostProcessCommandBuffers ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
@@ -241,6 +275,8 @@ VkResult PluginManager::post_process_command_buffers(const GvkPipelineExplorerTo
 VkResult PluginManager::pre_process_queue_submission(const GvkPipelineExplorerToolQueueInfoEx& toolInfo) const
 {
     gvk_result_scope_begin(VK_SUCCESS) {
+        // NOTE : Plugin system currently only supports Intel MDAPI plugin
+        // TODO : Support for custom plugins will be available in the future
         for (auto itr = mPlugins.begin(); itr != mPlugins.end(); ++itr) {
             const auto& pluginInfo = *itr->second;
             gvk_result(pluginInfo.pfnPreProcessQueueSubmission ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
@@ -253,6 +289,8 @@ VkResult PluginManager::pre_process_queue_submission(const GvkPipelineExplorerTo
 VkResult PluginManager::post_process_queue_submission(const GvkPipelineExplorerToolQueueInfoEx& toolInfo) const
 {
     gvk_result_scope_begin(VK_SUCCESS) {
+        // NOTE : Plugin system currently only supports Intel MDAPI plugin
+        // TODO : Support for custom plugins will be available in the future
         for (auto itr = mPlugins.begin(); itr != mPlugins.end(); ++itr) {
             const auto& pluginInfo = *itr->second;
             gvk_result(pluginInfo.pfnPostProcessQueueSubmission ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
@@ -265,6 +303,8 @@ VkResult PluginManager::post_process_queue_submission(const GvkPipelineExplorerT
 VkResult PluginManager::post_process_range() const
 {
     gvk_result_scope_begin(VK_SUCCESS) {
+        // NOTE : Plugin system currently only supports Intel MDAPI plugin
+        // TODO : Support for custom plugins will be available in the future
         for (auto itr = mPlugins.begin(); itr != mPlugins.end(); ++itr) {
             const auto& pluginInfo = *itr->second;
             gvk_result(pluginInfo.pfnPostProcessRange ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
