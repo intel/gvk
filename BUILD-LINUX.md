@@ -17,13 +17,14 @@
 - [Setup Git Proxy](#Setup-Git-Proxy)
 - [Setup System Proxy](#Setup-System-Proxy)
 - [Clone Repository](#Clone-Repository)
-- [Configure and Build](#Configure-and-Build)
+- [Configure And Build](#Configure-And-Build)
 - [Configure Vulkan SDK](#Configure-Vulkan-SDK)
 
 #### Tips & Tricks
-- [SSH Access from Windows](#SSH-Access-from-Windows)
+- [SSH Access From Windows](#SSH-Access-From-Windows)
 - [Notepad++ FTP (NppFTP)](#NppFTP)
-- [Remote Desktop Access from Windows](#Remote-Desktop-Access-from-Windows)
+- [Remote Desktop Access From Windows](#Remote-Desktop-Access-From-Windows)
+- [Reboot Into Windows From Linux Dual Boot](#Reboot-Into-Windows-From-Linux-Dual-Boot)
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -133,7 +134,7 @@ Acquire::ftp::proxy "<your-proxy-host>:<your-proxy-port>";
 > `git clone git@github.com:intel/gvk.git`
 
 --------------------------------------------------------------------------------
-### Configure and Build
+### Configure And Build
 - Using Bash from the GVK root directory
 > `time cmake -B build`  
 > `time cmake --build build --target install`  
@@ -158,7 +159,7 @@ Acquire::ftp::proxy "<your-proxy-host>:<your-proxy-port>";
 --------------------------------------------------------------------------------
 ## Tips & Tricks
 --------------------------------------------------------------------------------
-### SSH Access from Windows
+### SSH Access From Windows
 - Using Git Bash/MinGW
 > `ssh <username>@<ip-address>`  
 > `<username>@<ip-address>'s password: <password>`
@@ -191,7 +192,7 @@ Acquire::ftp::proxy "<your-proxy-host>:<your-proxy-port>";
 - You are now connected to the remote machine, you can disconnect by shutting down the machine or using the first button of the NppFTP menu [(Dis)Connect]
 
 --------------------------------------------------------------------------------
-### Remote Desktop Access from Windows
+### Remote Desktop Access From Windows
 - Sign in via SSH
 - Install XRDP and confirm its status
 > `sudo apt update`  
@@ -210,3 +211,20 @@ Acquire::ftp::proxy "<your-proxy-host>:<your-proxy-port>";
 > `sudo update-alternatives --config x-session-manager`  
 > `sudo reboot`
 - Wait a few minutes, then connect via RDP
+
+--------------------------------------------------------------------------------
+### Reboot Into Windows From Linux Dual Boot
+- Determine Windows Boot Manager entry ID
+> `sudo efibootmgr`
+- Output should be simliar to the following:
+```
+BootCurrent: 0002
+Timeout: 1 seconds
+BootOrder: 0002,0000
+Boot0000* Windows Boot Manager HD(...)/File(\EFI\MICROSOFT\BOOT\BOOTMGFW.EFI)
+Boot0002* Ubuntu               HD(...)/File(\EFI\UBUNTU\SHIMX64.EFI)
+```
+- In this case, the Windows Boot Manager entry ID is `0000`
+- Configure the next reboot to select Windows Boot Manager, and reboot
+> `sudo efibootmgr -n 0000`  
+> `sudo reboot`
