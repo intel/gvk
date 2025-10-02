@@ -33,6 +33,7 @@
 - std::vector, std::map, std::set as static interfaces over C array
 - Debug names/labels
 - Sort by metric
+- Metrics delta charts and reports
 - Multi pipeline metrics
 - Barriers
 - Notify when duplicate UUIDs are encountered
