@@ -286,8 +286,16 @@ else()
     file(TO_CMAKE_PATH "$ENV{VULKAN_SDK}" VULKAN_SDK)
     set(ENV{VULKAN_SDK} "${VULKAN_SDK}")
 
+    # Remove tweak from version because find_package() only checks major.minor.patch,
+    #   if tweak isn't 0 it'll cause find_package(EXACT) to fail
+    string(REPLACE "." ";" requiredVersion ${gvk-Vulkan-SDK_VERSION})
+    list(GET requiredVersion 0 requiredVersionMajor)
+    list(GET requiredVersion 1 requiredVersionMinor)
+    list(GET requiredVersion 2 requiredVersionPatch)
+    set(requiredVersion "${requiredVersionMajor}.${requiredVersionMinor}.${requiredVersionPatch}")
+
     # Make Vulkan targets available for linking
-    find_package(Vulkan ${gvk-Vulkan-SDK_VERSION} EXACT REQUIRED)
+    find_package(Vulkan ${requiredVersion} EXACT REQUIRED)
     set(Vulkan_VERSION "${Vulkan_VERSION}" CACHE STRING "" FORCE)
     file(TO_CMAKE_PATH "$ENV{VULKAN_SDK}/share/vulkan/registry/vk.xml" Vulkan_XML)
     set(Vulkan_XML "${Vulkan_XML}" CACHE STRING "" FORCE)

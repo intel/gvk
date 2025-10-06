@@ -57,6 +57,7 @@ private:
             "vkAllocateCommandBuffers",
             "vkAllocateDescriptorSets",
             "vkCreateComputePipelines",
+            "vkCreateDataGraphPipelinesARM",
             "vkCreateDisplayModeKHR",
             "vkCreateExecutionGraphPipelinesAMDX",
             "vkCreateGraphicsPipelines",

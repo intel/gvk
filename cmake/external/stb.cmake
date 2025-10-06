@@ -1,7 +1,7 @@
 
 include_guard(GLOBAL)
 
-set(stb_VERSION 802cd454f25469d3123e678af41364153c132c2a) # 12 May 2025
+set(stb_VERSION fede005abaf93d9d7f3a679d1999b2db341b360f) # 7 Sep 2025
 FetchContent_Declare(
     stb
     GIT_REPOSITORY "https://github.com/nothings/stb.git"

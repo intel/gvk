@@ -1,6 +1,8 @@
 
 include_guard(GLOBAL)
 
+# NOTE : There's a newer version of ImGui available, but it introduces some
+#   breaking changes in ImPlot which hasn't been updated to latest ImGui yet
 set(imgui_VERSION 4806a1924ff6181180bf5e4b8b79ab4394118875) # 1.91.9b-docking
 FetchContent_Declare(
     imgui

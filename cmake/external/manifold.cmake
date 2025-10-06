@@ -4,7 +4,7 @@ include_guard(GLOBAL)
 set(MANIFOLD_CROSS_SECTION OFF CACHE BOOL "" FORCE)
 set(MANIFOLD_PAR           ON  CACHE BOOL "" FORCE)
 set(MANIFOLD_TEST          OFF CACHE BOOL "" FORCE)
-set(manifold_VERSION 1ec20369ca7655a2b1f7a37d0ad2e33bec38bd5e) # master 1 May 2025
+set(manifold_VERSION 3a29e9566f60d1021271a1a30ef654697df9eade) # v3.2.1
 FetchContent_Declare(
     manifold
     GIT_REPOSITORY "https://github.com/elalish/manifold.git"

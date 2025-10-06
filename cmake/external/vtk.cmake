@@ -15,7 +15,7 @@ set(VTK_MODULE_ENABLE_VTK_IOCore               YES CACHE STRING "" FORCE)
 set(VTK_WRAP_PYTHON                            OFF CACHE BOOL   "" FORCE)
 set(VTK_BUILD_TESTING                          OFF CACHE BOOL   "" FORCE)
 set(VTK_BUILD_EXAMPLES                         OFF CACHE BOOL   "" FORCE)
-set(vtk_VERSION v9.5.0.rc0)
+set(vtk_VERSION v9.5.2)
 FetchContent_Declare(
     vtk
     GIT_REPOSITORY "https://github.com/Kitware/VTK.git"
