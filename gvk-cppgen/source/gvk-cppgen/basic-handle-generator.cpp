@@ -141,6 +141,10 @@ const std::set<BasicHandleGenerator::MemberInfo>& BasicHandleGenerator::get_memb
 
 std::string BasicHandleGenerator::get_member_assignment_expression(const xml::Manifest& manifest, const xml::Command& command, const BasicHandleGenerator::MemberInfo& memberInfo) const
 {
+    if (command.name == "vkCreateDataGraphPipelinesARM" && memberInfo.storageName == "mBasePipeline") {
+        // NOTE : ARM data graph pipeline doesn't have a base pipeline option
+        return "VK_NULL_HANDLE";
+    }
     if (memberInfo.storageName != "m" + mHandle.name) {
         auto memberVkType = "Vk" + string::strip_vk(string::remove(string::remove(memberInfo.storageType, "gvk::Auto<"), ">"));
         if (manifest.structures.count(memberVkType)) {

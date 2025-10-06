@@ -34,17 +34,22 @@ namespace cppgen {
 
 bool is_static_const_value(const std::string& apiElementName)
 {
+    // TODO : Auto generate from XML
     static const std::set<std::string> sStaticConstValues {
         "VkAccessFlagBits2",
         "VkAccessFlagBits3KHR",
         "VkBufferUsageFlagBits2",
         "VkBufferUsageFlagBits2KHR",
+        "VkDataGraphPipelineSessionCreateFlagBitsARM",
         "VkFormatFeatureFlagBits2",
         "VkMemoryDecompressionMethodFlagBitsNV",
         "VkPhysicalDeviceSchedulingControlsFlagBitsARM",
         "VkPipelineCreateFlagBits2",
         "VkPipelineCreateFlagBits2KHR",
         "VkPipelineStageFlagBits2",
+        "VkTensorCreateFlagBitsARM",
+        "VkTensorUsageFlagBitsARM",
+        "VkTensorViewCreateFlagBitsARM",
     };
     return sStaticConstValues.count(apiElementName);
 }

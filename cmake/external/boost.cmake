@@ -18,7 +18,7 @@ set(BOOST_ENABLE_PYTHON          ON                             CACHE BOOL   "" 
 set(BOOST_EXPORT_DEPENDENCIES    ON                             CACHE BOOL   "" FORCE)
 set(BOOST_INSTALL_INCLUDE_SUBDIR ""                             CACHE STRING "" FORCE)
 set(BOOST_INSTALL_CMAKEDIR       cmake                          CACHE STRING "" FORCE)
-set(boost_VERSION boost-1.88.0)
+set(boost_VERSION boost-1.89.0)
 FetchContent_Declare(
     boost
     GIT_REPOSITORY "https://github.com/boostorg/boost.git"

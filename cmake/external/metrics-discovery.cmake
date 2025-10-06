@@ -1,7 +1,7 @@
 
 include_guard(GLOBAL)
 
-set(metrics-discovery_VERSION f3b8faa6337ffd52e8e53a3f878543f2e35b7fdc) # metrics-discovery-1.14.181
+set(metrics-discovery_VERSION 1524a7a75f5847c23ea69e1974ec6c4245f53452) # metrics-discovery-1.14.182
 FetchContent_Declare(
     metrics-discovery
     GIT_REPOSITORY "https://github.com/intel/metrics-discovery.git"

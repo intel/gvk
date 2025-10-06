@@ -64,6 +64,39 @@ VkResult Layer::post_vkCreateComputePipelines(VkDevice device, VkPipelineCache p
     return gvkResult;
 }
 
+VkResult Layer::pre_vkCreateDataGraphPipelinesARM(VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkDataGraphPipelineCreateInfoARM* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines, VkResult gvkResult)
+{
+    (void)device;
+    (void)deferredOperation;
+    (void)pipelineCache;
+    (void)createInfoCount;
+    (void)pCreateInfos;
+    (void)pAllocator;
+    (void)pPipelines;
+    // NOOP :
+    return gvkResult;
+}
+
+VkResult Layer::post_vkCreateDataGraphPipelinesARM(VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkDataGraphPipelineCreateInfoARM* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines, VkResult gvkResult)
+{
+    (void)deferredOperation;
+    (void)pipelineCache;
+    (void)pCreateInfos;
+    (void)pAllocator;
+    for (auto gvkRestorePoint : get_restore_points()) {
+        assert(gvkRestorePoint);
+        assert(pPipelines);
+        for (uint32_t i = 0; i < createInfoCount; ++i) {
+            auto stateTrackedPipeline = get_default<GvkStateTrackedObject>();
+            stateTrackedPipeline.type = VK_OBJECT_TYPE_PIPELINE;
+            stateTrackedPipeline.handle = (uint64_t)pPipelines[i];
+            stateTrackedPipeline.dispatchableHandle = (uint64_t)device;
+            gvkRestorePoint->createdObjects.insert(stateTrackedPipeline);
+        }
+    }
+    return gvkResult;
+}
+
 #ifdef VK_ENABLE_BETA_EXTENSIONS
 VkResult Layer::pre_vkCreateExecutionGraphPipelinesAMDX(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkExecutionGraphPipelineCreateInfoAMDX* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines, VkResult gvkResult)
 {

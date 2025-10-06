@@ -85,7 +85,7 @@ VkResult PluginManager::get_plugin_status() const
             gvk_result(mPlugins.size() == 1 ? VK_SUCCESS : VK_ERROR_FEATURE_NOT_PRESENT);
             const auto& pluginInfo = *mPlugins.begin()->second;
             gvk_result(pluginInfo.pfnGetStatus ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-            gvk_result(pluginInfo.pfnGetStatus(pluginInfo.pUserData));
+            return pluginInfo.pfnGetStatus(pluginInfo.pUserData);
         }
     } gvk_result_scope_end;
     return gvkResult;

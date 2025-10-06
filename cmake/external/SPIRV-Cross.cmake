@@ -5,7 +5,7 @@ set(SPIRV_CROSS_CLI          OFF CACHE BOOL "" FORCE)
 set(SPIRV_CROSS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
 set(SPIRV_CROSS_FORCE_PIC    ON  CACHE BOOL "" FORCE)
 set(SPIRV_CROSS_SKIP_INSTALL ON  CACHE BOOL "" FORCE)
-set(SPIRV-Cross_VERSION 2275d0efc4f2fa46851035d9d3c67c105bc8b99e) # vulkan-sdk-1.4.313.0
+set(SPIRV-Cross_VERSION d8e3e2b141b8c8a167b2e3984736a6baacff316c) # vulkan-sdk-1.4.321.0
 FetchContent_Declare(
     SPIRV-Cross
     GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Cross.git"

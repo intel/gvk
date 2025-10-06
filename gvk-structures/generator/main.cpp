@@ -67,7 +67,7 @@ int main(int, const char*[])
             const auto& structure = structureItr.second;
             if (structure.alias.empty()) {
                 apiElements.structures.push_back(structureItr.second);
-                if (gvk::string::contains(structure.name, "VkVideo")) {
+                if (gvk::string::contains(structure.name, "Video")) {
                     apiElements.manuallyImplemented.insert(structure.name);
                 }
             }
