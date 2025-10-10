@@ -65,13 +65,24 @@ void ApiCallExplorerWindow::on_gui(GuiInfo& guiInfo)
         ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable |
         ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY |
         ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti;
+#if 0
+    //Removed time column because we aren't getting commandDurations outside of autoquery yet (requestQuery is not setup in execute_vkQueueSubmit)
     if (ImGui::BeginTable("API Calls", 3, tableFlags)) {
+#else
+    if (ImGui::BeginTable("API Calls", 2, tableFlags)) {
+#endif
         auto lockedColumnFlags =
             ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize |
             ImGuiTableColumnFlags_NoReorder | ImGuiTableColumnFlags_NoClip;
-        ImGui::TableSetupColumn("Index", lockedColumnFlags | ImGuiTableColumnFlags_NoHeaderLabel);
-        ImGui::TableSetupColumn("Time (ns)");
-        ImGui::TableSetupColumn("Name");
+        ImGui::TableSetupColumn("Index", lockedColumnFlags | ImGuiTableColumnFlags_NoHeaderLabel, 0, 0);
+#if 0
+        //Disabled because we aren't getting commandDurations outside of autoquery yet (requestQuery is not setup in execute_vkQueueSubmit)
+        ImGui::TableSetupColumn("Time (ns)", 0, 0, 1);
+        ImGui::TableSetupColumn("sType", 0, 0, 2);
+#else
+        ImGui::TableSetupColumn("Command", 0, 0, 1);
+#endif
+        
         ImGui::TableSetupScrollFreeze(0, 1);
         ImGui::TableHeadersRow();
 
@@ -87,35 +98,45 @@ void ApiCallExplorerWindow::on_gui(GuiInfo& guiInfo)
             assert(pCommand);
 
             ImGui::PushID(i);
-            ImGui::TableNextRow();
+            float rowMinHeight = 0.0f;
+            bool itemIsSelected = guiInfo.workspaceInfo.streamInfo.selectedCalls.find(i - 1) != guiInfo.workspaceInfo.streamInfo.selectedCalls.end();
+            ImGuiSelectableFlags selectableFlags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap;
+            std::string invisibleLabel = "##gpaForever";
+            ImGui::SameLine();
+            if (ImGui::Selectable(invisibleLabel.c_str(), itemIsSelected, selectableFlags, ImVec2(0, rowMinHeight))) {
+                if (ImGui::GetIO().KeyCtrl) {
+                    if (itemIsSelected) {
+                        guiInfo.workspaceInfo.streamInfo.selectedCalls.erase(i - 1);
+                    } else {
+                        //value doesn't matter in this hash map, its just the key that denotes selection
+                        guiInfo.workspaceInfo.streamInfo.selectedCalls[i - 1] = 0;
+                    }
+                } else {
+                    guiInfo.workspaceInfo.streamInfo.selectedCalls.clear();
+                    guiInfo.workspaceInfo.streamInfo.selectedCalls[i - 1] = 0;
+                }
 
-            // Index
+            }
+            //Index column
             ImGui::TableNextColumn();
             ImGui::Text("%s", std::to_string(i).c_str());
 
-            // Duration
-            ImGui::TableNextColumn();
+#if 0
+            // Time column
+            //Disabled because we aren't getting commandDurations outside of autoquery yet (requestQuery is not setup in execute_vkQueueSubmit)
+            ImGui::TableSetupColumn("Time (ns)", 0, 0, 1);
             if (i < guiInfo.apiCallInfo.commandDurations.size()) {
                 ImGui::Text("%s", std::to_string(guiInfo.apiCallInfo.commandDurations[i]).c_str());
             } else {
                 ImGui::Text("%s", std::to_string(0).c_str());
             }
-
-            // Command
+#endif
+            // Command column
             ImGui::TableNextColumn();
+
             if (ImGui::TreeNode(gvk::get_cname(pCommand->sType))) {
                 ImGui::Text("%s", gvk::to_string(*pCommand, gvk::Printer::Default ^ gvk::Printer::EnumValue).c_str());
                 ImGui::TreePop();
-            }
-            switch (pCommand->sType) {
-            case gvk::get_stype<GvkCommandStructureQueueSubmit>():
-            case gvk::get_stype<GvkCommandStructureQueueSubmit2>():
-            case gvk::get_stype<GvkCommandStructureQueueSubmit2KHR>(): {
-                ImGui::TableNextRow();
-                ImGui::TableNextRow();
-            } break;
-            default: {
-            } break;
             }
 
             ImGui::PopID();

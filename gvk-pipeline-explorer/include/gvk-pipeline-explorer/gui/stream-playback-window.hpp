@@ -27,9 +27,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 #include "gvk-pipeline-explorer/gui/window.hpp"
-
-#include <filesystem>
 #include <thread>
+#include <filesystem>
 
 namespace gvk {
 namespace pipeline_explorer {
@@ -49,6 +48,7 @@ private:
     static void stream_playback_thread_proc(GuiInfo* pGuiInfo);
     static void stream_playback_on_tick(void* pUserData);
     static void stream_playback_on_loop_end(void* pUserData);
+    BarChart multiFrameChart;
     std::thread mStreamPlaybackThread;
 };
 

@@ -244,6 +244,7 @@ public:
     gvk::spirv::Context spirvContext;
 
     bool autoQuery{ };
+    bool requestQuery{ };
     std::mutex queueSubmissionMutex;
     std::string applicationName;
     std::string targetApplicationName;

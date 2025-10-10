@@ -25,9 +25,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include "gvk-pipeline-explorer/gui/stream-playback-window.hpp"
+#include "gvk-pipeline-explorer/gui/gui-info.hpp"
 #include "gvk-environment.hpp"
 
-#include "implot.h"
 #if GVK_GITS_ENABLED
 #include "libGits.h"
 #endif
@@ -71,7 +71,7 @@ void StreamPlaybackWindow::on_gui(GuiInfo& guiInfo)
                         lines.push_back(line);
                     }
 
-                    // TODO : Documentation
+                    // Extract benchmark values (expecting 4) to guiInfo.workspaceInfo.streamInfo.benchmarks
                     std::vector<std::string> columnHeaders;
                     if (!lines.empty()) {
                         auto itr = lines.begin();
@@ -88,7 +88,7 @@ void StreamPlaybackWindow::on_gui(GuiInfo& guiInfo)
                         }
                     }
 
-                    // TODO : Documentation
+                    // Only extract stamp (Frame Time) and make a graph based off of that
                     auto itr = guiInfo.workspaceInfo.streamInfo.benchmarks.find("stamp");
                     if (itr != guiInfo.workspaceInfo.streamInfo.benchmarks.end()) {
                         guiInfo.workspaceInfo.streamInfo.selectedBenchmark = "Frame Time";
@@ -105,16 +105,50 @@ void StreamPlaybackWindow::on_gui(GuiInfo& guiInfo)
 
             // TODO : Documentation
             if (!guiInfo.workspaceInfo.streamInfo.selectedBenchmarkValues.empty()) {
-                if (ImPlot::BeginPlot("Frame Time")) {
-                    ImPlot::PlotBars("Frame Time", guiInfo.workspaceInfo.streamInfo.selectedBenchmarkValues.data(), (int)guiInfo.workspaceInfo.streamInfo.selectedBenchmarkValues.size());
-                    ImPlot::EndPlot();
+
+                multiFrameChart.chartName = "Multi-Frame View";
+                multiFrameChart.xAxisName = "Total Time (ms)";
+                multiFrameChart.yAxisName = "Frame Time (ms)";
+                multiFrameChart.border = true;
+
+                BarChart::PlotInfo plotInfo;
+                plotInfo.pLabelName = "CPU Frame Duration";
+                plotInfo.pYData = guiInfo.workspaceInfo.streamInfo.selectedBenchmarkValues.data();
+                plotInfo.yDataCount = (int)guiInfo.workspaceInfo.streamInfo.selectedBenchmarkValues.size();
+
+                //We will get streamDuration from a report later on. For now we calculate here.
+                double streamDuration = 0;
+                for (auto& n : guiInfo.workspaceInfo.streamInfo.selectedBenchmarkValues) {
+                    streamDuration += n;
+                }
+                plotInfo.yValuesSum = streamDuration;
+#if 0
+                multiFrameChart.flagValue |= static_cast<int>(BarChartFlags::DYNAMIC_BARS) |
+                    static_cast<int>(BarChartFlags::CONTINUOUS_SELECTION) |
+                    static_cast<int>(BarChartFlags::BORDER) |
+                    static_cast<int>(BarChartFlags::TOOL_TIPS_FOR_FRAMES);
+#endif
+                multiFrameChart.flagValue |= static_cast<int>(BarChartFlags::WIP);
+                multiFrameChart.plot_bar_chart(plotInfo);
+
+                ImGui::SeparatorText("Trace Information");
+                std::string totalFrames = "Total Frames: " + std::to_string(plotInfo.yDataCount);
+                std::string debugSelectedStreams = "";
+                if (multiFrameChart.selectedBars.empty()) {
+                    ImGui::Text("%s", totalFrames.c_str());
+                } else {
+                    totalFrames += "      Selected Frames: " + std::to_string(multiFrameChart.selectedBars.size());
+                    ImGui::Text("%s", totalFrames.c_str());
+                    for (auto& it : multiFrameChart.selectedBars) {
+                        debugSelectedStreams += " " + std::to_string(it.first);
+                    }
+                    ImGui::Text("%s", debugSelectedStreams.c_str());
                 }
             }
 
             // TODO : Documentation
-            int selectedFrame = (int)guiInfo.workspaceInfo.streamInfo.selectedFrame;
-            ImGui::InputInt("Frame", &selectedFrame);
-            guiInfo.workspaceInfo.streamInfo.selectedFrame = selectedFrame;
+            ImGui::SeparatorText("Frame Tools");
+
 
             #if GVK_GITS_ENABLED
             // TODO : Documentation
