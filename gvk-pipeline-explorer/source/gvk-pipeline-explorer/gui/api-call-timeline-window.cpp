@@ -42,6 +42,44 @@ ApiCallTimelineWindow::~ApiCallTimelineWindow()
 void ApiCallTimelineWindow::on_gui(GuiInfo& guiInfo)
 {
     if (guiInfo.apiCallInfo.commandCollection->commandCount) {
+
+        if (!guiInfo.apiCallInfo.populateGpuCallPairs) {
+            //populate gpuCallInfos for Tooltips
+            for (uint32_t i = 0; i < guiInfo.apiCallInfo.commandDurations.size(); ++i) {
+                if (guiInfo.apiCallInfo.commandCollection->ppCommands[i]) {
+                    guiInfo.apiCallInfo.gpuCallInfos.push_back(std::make_pair(gvk::get_cname(guiInfo.apiCallInfo.commandCollection->ppCommands[i]->sType), guiInfo.apiCallInfo.commandDurations[i]));
+                }
+            }
+
+            guiInfo.apiCallInfo.populateGpuCallPairs = true;
+
+        }
+
+        BarChart::PlotInfo plotInfo;
+        plotInfo.pLabelName = "GPU Cmd Duration (ns)";
+        plotInfo.pYData = guiInfo.apiCallInfo.commandDurations.data();
+        plotInfo.yDataCount = guiInfo.apiCallInfo.commandCollection->commandCount;
+        plotInfo.gpuCallInfos = guiInfo.apiCallInfo.gpuCallInfos;
+        //TODO : Documentation
+        mBarChart.chartName = "GPU Cmd Timeline";
+        mBarChart.xAxisName = "GPU Cmd";
+        mBarChart.yAxisName = "GPU Duration (ns)";
+        mBarChart.barWidth = 0.8f;
+#if 0
+        mBarChart.flagValue |= static_cast<int>(BarChartFlags::NON_CONTINUOUS_SELECTION) |
+            static_cast<int>(BarChartFlags::CONTINUOUS_SELECTION) |
+            static_cast<int>(BarChartFlags::BORDER) |
+            static_cast<int>(BarChartFlags::TOOL_TIPS_FOR_GPU_CALLS) |
+            static_cast<int>(BarChartFlags::TIMING_BRACKET);
+#else
+        mBarChart.flagValue |= static_cast<int>(BarChartFlags::WIP);
+#endif
+
+        //Would like to unify selectedBars/selectedCalls, but selectedBars is per chart
+        //And api timeline + explorer window do not share a chart class. 
+        mBarChart.selectedBars = guiInfo.workspaceInfo.streamInfo.selectedCalls;
+        mBarChart.plot_bar_chart(plotInfo);
+        guiInfo.workspaceInfo.streamInfo.selectedCalls = mBarChart.selectedBars;
     }
 }
 

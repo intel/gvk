@@ -41,6 +41,7 @@ public:
 
 protected:
     void on_gui(GuiInfo& guiInfo) override final;
+    BarChart mBarChart;
 };
 
 } // namespace gui
