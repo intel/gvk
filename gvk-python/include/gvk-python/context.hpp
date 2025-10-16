@@ -26,42 +26,48 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-pipeline-explorer/gui/window.hpp"
+#include "gvk-python/defines.hpp"
+#include "gvk-reference.hpp"
 
-#include <map>
+#include "pybind11/embed.h"
+#include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
-namespace gvk {
-namespace pipeline_explorer {
-namespace gui {
+#include <memory>
+#include <filesystem>
+#include <regex>
 
-class MetricsWindow;
-
-class MetricsTab
+struct GvkPythonContextCreateInfo
 {
-public:
-    MetricsTab(MetricsWindow& metricsWindow);
-    virtual ~MetricsTab() = 0;
-    MetricsWindow& get_metrics_window();
-    virtual const std::string& get_name() const;
-    virtual bool idle(GuiInfo& guiInfo) const;
-    virtual bool enabled(GuiInfo& guiInfo) const;
-    virtual void submit_metrics_query_request(GuiInfo& guiInfo);
-    virtual void on_update(GuiInfo& guiInfo);
-    virtual void on_gui(GuiInfo& guiInfo);
 
-protected:
-    virtual void filter_counters(GuiInfo& guiInfo);
-    virtual void sort_counters(GuiInfo& guiInfo);
-
-    std::string mName;
-    std::map<std::string, bool> mCategories;
-
-private:
-    MetricsWindow& mMetricsWindow;
-    MetricsTab(const MetricsTab&) = delete;
-    MetricsTab& operator=(const MetricsTab&) = delete;
 };
 
-} // namespace gui
-} // namespace pipeline_explorer
+namespace gvk {
+namespace python {
+
+class Context final
+{
+public:
+    static GvkPythonResult create(const GvkPythonContextCreateInfo* pCreateInfo, Context* pContext);
+    ~Context();
+    void reset();
+    GvkPythonResult evaluate(const char* pPythonSource, pybind11::object* returnedObject);
+    GvkPythonResult execute(const char* pPythonSource, pybind11::object* returnedObject);
+
+private:
+    GvkPythonResult parsePyStdOut(std::string pythonSrc, pybind11::object* returnedObject);
+    class ControlBlock final
+    {
+    public:
+        ControlBlock();
+        ~ControlBlock();
+        std::unique_ptr<pybind11::scoped_interpreter> mupPythonInterpreter;
+    private:
+        ControlBlock(const ControlBlock&) = delete;
+        ControlBlock& operator=(const ControlBlock&) = delete;
+    };
+    gvk_reference_type(Context)
+};
+
+} // namespace python
 } // namespace gvk

@@ -30,7 +30,8 @@ namespace gvk {
 namespace pipeline_explorer {
 namespace gui {
 
-PerformanceQueryMetricsTab::PerformanceQueryMetricsTab()
+PerformanceQueryMetricsTab::PerformanceQueryMetricsTab(MetricsWindow& metricsWindow)
+    : MetricsTab(metricsWindow)
 {
     mName = "VK_KHR_performance_query";
 }

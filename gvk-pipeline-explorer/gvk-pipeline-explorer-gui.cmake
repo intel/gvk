@@ -1,17 +1,29 @@
 
 ################################################################################
 # gvk-pipeline-explorer
+list(APPEND linkLibraries
+    gvk-gui
+    gvk-pipeline-explorer-backend
+    gvk-python
+)
+if(GVK_AUTOCORR_ENABLED)
+    list(APPEND linkLibraries gvk-autocorr)
+endif()
+
 gvk_add_executable(
     TARGET
         gvk-pipeline-explorer
     FOLDER
         "gvk-pipeline-explorer/"
     LINK_LIBRARIES
+        ${linkLibraries}
         gvk-gui
         gvk-pipeline-explorer-backend
+        gvk-python
     INCLUDE_DIRECTORIES
         "${CMAKE_CURRENT_LIST_DIR}/gui/"
     INCLUDE_FILES
+        "${includePath}/gui/metrics/autocorr-window.hpp"
         "${includePath}/gui/metrics/metrics-tab.hpp"
         "${includePath}/gui/metrics/metrics-window.hpp"
         "${includePath}/gui/metrics/performance-query-metrics-tab.hpp"
@@ -29,6 +41,7 @@ gvk_add_executable(
         "${includePath}/gui/window.hpp"
         "${includePath}/gui/workspace-window.hpp"
     SOURCE_FILES
+        "${sourcePath}/gui/metrics/autocorr-window.cpp"
         "${sourcePath}/gui/metrics/metrics-tab.cpp"
         "${sourcePath}/gui/metrics/metrics-window.cpp"
         "${sourcePath}/gui/metrics/performance-query-metrics-tab.cpp"

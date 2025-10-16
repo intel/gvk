@@ -30,7 +30,8 @@ namespace gvk {
 namespace pipeline_explorer {
 namespace gui {
 
-PipelineStatisticsMetricsTab::PipelineStatisticsMetricsTab()
+PipelineStatisticsMetricsTab::PipelineStatisticsMetricsTab(MetricsWindow& metricsWindow)
+    : MetricsTab(metricsWindow)
 {
     mName = "Pipeline Statistics";
 }

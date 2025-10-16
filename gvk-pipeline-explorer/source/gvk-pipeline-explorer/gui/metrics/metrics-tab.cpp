@@ -25,18 +25,33 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include "gvk-pipeline-explorer/gui/metrics/metrics-tab.hpp"
+#include "gvk-pipeline-explorer/gui/metrics/metrics-window.hpp"
 
 namespace gvk {
 namespace pipeline_explorer {
 namespace gui {
 
-MetricsTab::MetricsTab()
+
+
+MetricsTab::MetricsTab(MetricsWindow& metricsWindow)
+    : mMetricsWindow{ metricsWindow }
 {
 }
 
 MetricsTab::~MetricsTab()
 {
 }
+
+MetricsWindow& MetricsTab::get_metrics_window()
+{
+    return mMetricsWindow;
+}
+
+const std::string& MetricsTab::get_name() const
+{
+    return mName;
+}
+
 bool MetricsTab::idle(GuiInfo& guiInfo) const
 {
     (void)guiInfo;
@@ -52,11 +67,6 @@ bool MetricsTab::enabled(GuiInfo& guiInfo) const
 {
     (void)guiInfo;
     return false;
-}
-
-const std::string& MetricsTab::get_name() const
-{
-    return mName;
 }
 
 void MetricsTab::on_update(GuiInfo& guiInfo)

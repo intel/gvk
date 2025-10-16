@@ -34,6 +34,9 @@ namespace gui {
 
 MetricsWindow::MetricsWindow(Window::Manager& windowManager)
     : Window(windowManager, "Metrics")
+    , mPipelineStatisticsMetricsTab(*this)
+    , mPerformanceQueryMetricsTab(*this)
+    , mPluginMetricsTab(*this)
 {
 }
 

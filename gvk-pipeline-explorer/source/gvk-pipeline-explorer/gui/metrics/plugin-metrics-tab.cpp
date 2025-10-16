@@ -25,6 +25,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include "gvk-pipeline-explorer/gui/metrics/plugin-metrics-tab.hpp"
+#include "gvk-pipeline-explorer/gui/metrics/autocorr-window.hpp"
+#include "gvk-pipeline-explorer/gui/metrics/metrics-window.hpp"
+#include "gvk-pipeline-explorer/gui/window-manager.hpp"
 
 #include <sstream>
 
@@ -62,7 +65,8 @@ static void get_uuid_indices(const uint8_t uuid[UUID_SIZE], uint32_t* pX, uint32
     }
 }
 
-PluginMetricsTab::PluginMetricsTab()
+PluginMetricsTab::PluginMetricsTab(MetricsWindow& metricsWindow)
+    : MetricsTab(metricsWindow)
 {
     mName = "Intel MDAPI";
 }
@@ -78,12 +82,29 @@ bool PluginMetricsTab::enabled(GuiInfo& guiInfo) const
     return guiInfo.pluginPerformanceCounterInfo.available->groupCount;
 }
 
+uint32_t PluginMetricsTab::get_selected_group()
+{
+    return mSelectedGroup;
+}
+
+uint32_t PluginMetricsTab::get_selected_set()
+{ 
+    auto result = mSelectedSets.find(mSelectedGroup);
+    if (result != mSelectedSets.end()) {
+        return mSelectedSets.find(mSelectedGroup)->second;
+    }
+    //return UINT32_MAX if no selection
+    return UINT32_MAX;
+}
+
 void PluginMetricsTab::submit_metrics_query_request(GuiInfo& guiInfo)
 {
     auto selectedSetItr = mSelectedSets.find(mSelectedGroup);
     if (selectedSetItr != mSelectedSets.end()) {
         auto counter = gvk::get_default<VkPerformanceCounterKHR>();
+
         set_uuid_indices<VK_UUID_SIZE>(counter.uuid, mSelectedGroup, selectedSetItr->second, 0, 0);
+
         auto queryRequestInfo = gvk::get_default<GvkPipelineExplorerPerformanceQueryRequestInfo>();
         std::string reportPath = guiInfo.reportEnabled ? (std::filesystem::path(guiInfo.workspaceInfo.workspace) / "reports").string() : std::string();
         queryRequestInfo.pReportPath = !reportPath.empty() ? reportPath.c_str() : nullptr;
@@ -100,6 +121,7 @@ void PluginMetricsTab::submit_metrics_query_request(GuiInfo& guiInfo)
 #define DEBUG_QUERY_RESULTS 0
 void PluginMetricsTab::on_update(GuiInfo& guiInfo)
 {
+    // TODO : Documentation
     gvk::Auto<GvkPipelineExplorerPluginCounterInfo> pluginCounterInfo;
     switch (gvk::read_serialized_structure(std::filesystem::path(guiInfo.workspaceInfo.workspace) / ".data", pluginCounterInfo)) {
     case VK_SUCCESS: {
@@ -147,13 +169,12 @@ void PluginMetricsTab::on_update(GuiInfo& guiInfo)
     // Process request/result
     if (mRequestResult.ready()) {
         const auto& result = mRequestResult.get_result();
-
-        #if DEBUG_QUERY_RESULTS
+#if DEBUG_QUERY_RESULTS
         std::cout << "================================================================================" << std::endl;
         std::cout << "Result" << std::endl;
         std::cout << gvk::to_string(result, gvk::Printer::Default & ~gvk::Printer::EnumValue) << std::endl;
         std::cout << "================================================================================" << std::endl;
-        #endif // DEBUG_QUERY_RESULTS
+#endif // DEBUG_QUERY_RESULTS
 
         uint32_t group_i = 0;
         uint32_t set_i = 0;
@@ -183,9 +204,18 @@ void PluginMetricsTab::on_update(GuiInfo& guiInfo)
     }
 }
 
+
 void PluginMetricsTab::on_gui(GuiInfo& guiInfo)
 {
+    // TODO : Documentation
     MetricsTab::on_gui(guiInfo);
+
+    // TODO : Closing app while this is open causes crash... 
+    if (ImGui::Button("Autocorr analysis")) {
+        get_metrics_window().get_window_manager().open<AutocorrWindow>("Autocorr", * this);
+    }
+
+    // TODO : Documentation
     if (ImGui::BeginChild("##Draw-Gui")) {
         draw_gui(guiInfo);
     }
@@ -223,6 +253,7 @@ void PluginMetricsTab::filter_counters(GuiInfo& guiInfo)
 
 void PluginMetricsTab::draw_gui(GuiInfo& guiInfo)
 {
+    // TODO : Documentation
     mSelectedGroup = 0;
     if (ImGui::BeginTabBar("Metrics Groups Tab Bar")) {
         for (const auto& groupItr : mFiltered) {
@@ -252,7 +283,7 @@ void PluginMetricsTab::draw_gui(GuiInfo& guiInfo)
 
 void PluginMetricsTab::draw_metric_group(const std::pair<uint32_t, std::set<uint32_t>>& groupItr, GuiInfo& guiInfo)
 {
-    // Get group
+    //Get group
     auto group_i = groupItr.first;
     assert(group_i < guiInfo.pluginPerformanceCounterInfo.available->groupCount);
     const auto& group = guiInfo.pluginPerformanceCounterInfo.available->pGroups[group_i];
@@ -306,9 +337,10 @@ void PluginMetricsTab::draw_metric_set(const std::pair<uint32_t, std::set<uint32
         ImGui::TableSetupScrollFreeze(0, 1);
         ImGui::TableHeadersRow();
 
+        // Drill into group and set for individual metrics
         auto selectedPipelineInfo = guiInfo.pipelineInfos[guiInfo.selectedPipeline];
 
-        // Drill into group and set for individual metrics
+        // TODO : Documentation
         auto group_i = groupItr.first;
         assert(group_i < guiInfo.pluginPerformanceCounterInfo.available->groupCount);
         const auto& group = guiInfo.pluginPerformanceCounterInfo.available->pGroups[group_i];
@@ -320,6 +352,7 @@ void PluginMetricsTab::draw_metric_set(const std::pair<uint32_t, std::set<uint32
             for (uint32_t counter_i = 0; counter_i < set.counterCount; ++counter_i) {
                 GvkGui::ScopeID counterID(group_i + set_i + counter_i);
                 const auto& counter = set.pCounters[counter_i];
+                (void)counter;
                 const auto& description = set.pDescriptions[counter_i];
 
                 // Counter info

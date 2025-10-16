@@ -36,7 +36,7 @@ class PipelineStatisticsMetricsTab final
     : public MetricsTab
 {
 public:
-    PipelineStatisticsMetricsTab();
+    PipelineStatisticsMetricsTab(MetricsWindow& metricsWindow);
     bool idle(GuiInfo& guiInfo) const override final;
     bool enabled(GuiInfo& guiInfo) const override final;
     void on_update(GuiInfo& guiInfo) override final;

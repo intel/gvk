@@ -25,43 +25,55 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #pragma once
+#ifndef GVK_AUTOCORR_ENABLED
+#define GVK_AUTOCORR_ENABLED 0
+#endif
+#ifndef GVK_MDAPI_ENABLED
+#define GVK_MDAPI_ENABLED 0
+#endif
 
 #include "gvk-pipeline-explorer/gui/window.hpp"
+#if GVK_AUTOCORR_ENABLED
+#include "gvk-autocorr/autocorr.hpp"
+#endif
+#if GVK_MDAPI_ENABLED
+#include "gvk-mdapi/mdapi.hpp"
+#endif
+#include "gvk-structures.hpp"
+#include "gvk-python/context.hpp"
 
-#include <map>
 
 namespace gvk {
 namespace pipeline_explorer {
 namespace gui {
+class PluginMetricsTab;
 
-class MetricsWindow;
-
-class MetricsTab
+class AutocorrWindow final
+    : public Window
 {
 public:
-    MetricsTab(MetricsWindow& metricsWindow);
-    virtual ~MetricsTab() = 0;
-    MetricsWindow& get_metrics_window();
-    virtual const std::string& get_name() const;
-    virtual bool idle(GuiInfo& guiInfo) const;
-    virtual bool enabled(GuiInfo& guiInfo) const;
-    virtual void submit_metrics_query_request(GuiInfo& guiInfo);
-    virtual void on_update(GuiInfo& guiInfo);
-    virtual void on_gui(GuiInfo& guiInfo);
+    AutocorrWindow(Window::Manager& windowManager, const std::string&, PluginMetricsTab& pluginMetricsTab);
 
 protected:
-    virtual void filter_counters(GuiInfo& guiInfo);
-    virtual void sort_counters(GuiInfo& guiInfo);
-
-    std::string mName;
-    std::map<std::string, bool> mCategories;
+    void on_gui(GuiInfo& guiInfo) override final;
+private:  
+    gvk::Auto<GvkPipelineExplorerPerformanceQueryRequestInfo> create_request(GuiInfo& guiInfo, uint32_t group_i, uint32_t set_i);
+    std::string detect_similar_metrics(std::string expectedMetricName);
 
 private:
-    MetricsWindow& mMetricsWindow;
-    MetricsTab(const MetricsTab&) = delete;
-    MetricsTab& operator=(const MetricsTab&) = delete;
+    PluginMetricsTab& mPluginMetricsTab;
+    std::vector<gvk::Auto<GvkPipelineExplorerPerformanceQueryRequestInfo>> mRequests;
+    std::vector<gvk::Auto<GvkPipelineExplorerPerformanceQueryResultInfo>> mResults;
+    RequestResult<GvkPipelineExplorerPerformanceQueryRequestInfo, GvkPipelineExplorerPerformanceQueryResultInfo> mRequestResult;
+#if GVK_MDAPI_ENABLED
+    gvk::Auto<GvkMdapiGlobalSymbolCollection> mGlobalSymbolCollection;
+    gvk::Auto<MetricsDiscovery::SMetricsDeviceParams_1_2> mMetricsDeviceParams;
+    gvk::Auto<MetricsDiscovery::TAdapterParams_1_9> mAdapterParams;
+#endif
+    static gvk::python::Context mPythonContext;
 };
 
 } // namespace gui
 } // namespace pipeline_explorer
 } // namespace gvk
+

@@ -24,44 +24,26 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#pragma once
-
-#include "gvk-pipeline-explorer/gui/window.hpp"
-
-#include <map>
+#include "gvk-python/defines.hpp"
 
 namespace gvk {
-namespace pipeline_explorer {
-namespace gui {
+namespace python {
 
-class MetricsWindow;
+PFN_result_scope_callback gPfnGvkResultScopeCallback;
+thread_local PFN_result_scope_callback tlPfnGvkResultScopeCallback;
 
-class MetricsTab
+namespace detail {
+
+bool process_result_scope_failure(GvkPythonResult gvkPythonResult, const char* pFileLine, const char* pGvkPythonCall)
 {
-public:
-    MetricsTab(MetricsWindow& metricsWindow);
-    virtual ~MetricsTab() = 0;
-    MetricsWindow& get_metrics_window();
-    virtual const std::string& get_name() const;
-    virtual bool idle(GuiInfo& guiInfo) const;
-    virtual bool enabled(GuiInfo& guiInfo) const;
-    virtual void submit_metrics_query_request(GuiInfo& guiInfo);
-    virtual void on_update(GuiInfo& guiInfo);
-    virtual void on_gui(GuiInfo& guiInfo);
+    if (gvk::python::tlPfnGvkResultScopeCallback) {
+        return gvk::python::tlPfnGvkResultScopeCallback(gvkPythonResult, pFileLine, pGvkPythonCall);
+    } else if (gvk::python::gPfnGvkResultScopeCallback) {
+        return gvk::python::gPfnGvkResultScopeCallback(gvkPythonResult, pFileLine, pGvkPythonCall);
+    }
+    return false;
+}
 
-protected:
-    virtual void filter_counters(GuiInfo& guiInfo);
-    virtual void sort_counters(GuiInfo& guiInfo);
-
-    std::string mName;
-    std::map<std::string, bool> mCategories;
-
-private:
-    MetricsWindow& mMetricsWindow;
-    MetricsTab(const MetricsTab&) = delete;
-    MetricsTab& operator=(const MetricsTab&) = delete;
-};
-
-} // namespace gui
-} // namespace pipeline_explorer
+} // namespace detail
+} // namespace python
 } // namespace gvk

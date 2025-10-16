@@ -86,6 +86,17 @@ if(GITS_INSTALL_DIRECTORY)
 endif()
 
 ################################################################################
+# Autocorr
+if(GVK_AUTOCORR_ENABLED)
+    set(autocorrScripts "${CMAKE_CURRENT_LIST_DIR}/../internal/gvk-autocorr/scripts/")
+    add_custom_command(
+        TARGET gvk-pipeline-explorer POST_BUILD
+        #COMMAND ${CMAKE_COMMAND} -E copy_directory "${pythonRuntime}" "$<TARGET_FILE_DIR:gvk-python>"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${autocorrScripts}" "$<TARGET_FILE_DIR:gvk-pipeline-explorer>/.."
+    )
+endif()
+
+################################################################################
 # gvk-pipeline-explorer install
 if(gvk-pipeline-explorer_INSTALL_ARTIFACTS)
     gvk_install_artifacts(TARGET gvk-pipeline-explorer)
