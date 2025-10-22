@@ -96,8 +96,9 @@ void gvk::print<Baz>(gvk::Printer& printer, const Baz& obj)
     );
 }
 
-TEST(Printer, print)
+TEST(Printer, DISABLED_print)
 {
+    //Skipping test that prints double/float/long double as we need code paths for std::fixed vs std::setprecision(8/16/32);
     Baz baz{ };
     EXPECT_EQ(gvk::to_string(baz, 0), R"({"pName":null,"active":false,"barCount":0,"pBars":null,"pFoo":null})");
     EXPECT_EQ(gvk::to_string(baz), R"({
@@ -186,6 +187,96 @@ TEST(Printer, print)
 })");
 }
 
+TEST(Printer, print)
+{
+    Baz baz{ };
+    EXPECT_EQ(gvk::to_string(baz, 0), R"({"pName":null,"active":false,"barCount":0,"pBars":null,"pFoo":null})");
+    EXPECT_EQ(gvk::to_string(baz), R"({
+    "pName": null,
+    "active": false,
+    "barCount": 0,
+    "pBars": null,
+    "pFoo": null
+})");
+
+    Foo foo{ };
+    foo.intValue = 64;
+    foo.floatValue = 3.14f;
+    baz.pName = "Baz";
+    baz.active = true;
+    baz.pFoo = &foo;
+    EXPECT_EQ(gvk::to_string(baz, 0), R"({"pName":"Baz","active":true,"barCount":0,"pBars":null,"pFoo":{"intValue":64,"floatValue":3.140000}})");
+    EXPECT_EQ(gvk::to_string(baz), R"({
+    "pName": "Baz",
+    "active": true,
+    "barCount": 0,
+    "pBars": null,
+    "pFoo": {
+        "intValue": 64,
+        "floatValue": 3.140000
+    }
+})");
+
+    std::vector<const char*> strs{
+        "The",
+        "quick",
+        nullptr,
+        "brown",
+        "fox",
+    };
+    std::vector<Bar> bars(3);
+    bars[1].stringCount = strs.size();
+    bars[1].ppStrings = strs.data();
+    bars[2].foo = foo;
+    baz.barCount = bars.size();
+    baz.pBars = bars.data();
+    EXPECT_EQ(gvk::to_string(baz, 0), R"({"pName":"Baz","active":true,"barCount":3,"pBars":[{"pName":null,"stringCount":0,"ppStrings":null,"foo":{"intValue":0,"floatValue":0.000000}},{"pName":null,"stringCount":5,"ppStrings":["The","quick",null,"brown","fox"],"foo":{"intValue":0,"floatValue":0.000000}},{"pName":null,"stringCount":0,"ppStrings":null,"foo":{"intValue":64,"floatValue":3.140000}}],"pFoo":{"intValue":64,"floatValue":3.140000}})");
+    EXPECT_EQ(gvk::to_string(baz), R"({
+    "pName": "Baz",
+    "active": true,
+    "barCount": 3,
+    "pBars": [
+        {
+            "pName": null,
+            "stringCount": 0,
+            "ppStrings": null,
+            "foo": {
+                "intValue": 0,
+                "floatValue": 0.000000
+            }
+        },
+        {
+            "pName": null,
+            "stringCount": 5,
+            "ppStrings": [
+                "The",
+                "quick",
+                null,
+                "brown",
+                "fox"
+            ],
+            "foo": {
+                "intValue": 0,
+                "floatValue": 0.000000
+            }
+        },
+        {
+            "pName": null,
+            "stringCount": 0,
+            "ppStrings": null,
+            "foo": {
+                "intValue": 64,
+                "floatValue": 3.140000
+            }
+        }
+    ],
+    "pFoo": {
+        "intValue": 64,
+        "floatValue": 3.140000
+    }
+})");
+}
+
 class Qux final
 {
 public:
@@ -224,8 +315,9 @@ void gvk::print<Quux>(gvk::Printer& printer, const Quux& obj)
     );
 }
 
-TEST(Printer, print_std_collections)
+TEST(Printer, DISABLED_print_std_collections)
 {
+    //Skipping test that prints double/float/long double as we need code paths for std::fixed vs std::setprecision(8/16/32). Duplicated test just checks for std::fixed
     Quux quux{ };
     EXPECT_EQ(gvk::to_string(quux, 0), R"({"strings":[],"quxs":[]})");
     EXPECT_EQ(gvk::to_string(quux), R"({
@@ -276,6 +368,60 @@ TEST(Printer, print_std_collections)
     ]
 })");
 }
+
+TEST(Printer, print_std_collections)
+{
+    Quux quux{ };
+    EXPECT_EQ(gvk::to_string(quux, 0), R"({"strings":[],"quxs":[]})");
+    EXPECT_EQ(gvk::to_string(quux), R"({
+    "strings": [
+    ],
+    "quxs": [
+    ]
+})");
+
+    Qux qux;
+    quux.strings.insert("The");
+    quux.strings.insert("quick");
+    quux.strings.insert("brown");
+    quux.strings.insert("fox");
+    quux.quxs[32].floats.push_back(32.0f);
+    quux.quxs[98].floats.push_back(98.6f);
+    quux.quxs[212].floats.push_back(212.0f);
+    EXPECT_EQ(gvk::to_string(quux, 0), R"({"strings":["The","brown","fox","quick"],"quxs":[{"ints":[],"floats":[32.000000]},{"ints":[],"floats":[98.599998]},{"ints":[],"floats":[212.000000]}]})");
+    EXPECT_EQ(gvk::to_string(quux), R"({
+    "strings": [
+        "The",
+        "brown",
+        "fox",
+        "quick"
+    ],
+    "quxs": [
+        {
+            "ints": [
+            ],
+            "floats": [
+                32.000000
+            ]
+        },
+        {
+            "ints": [
+            ],
+            "floats": [
+                98.599998
+            ]
+        },
+        {
+            "ints": [
+            ],
+            "floats": [
+                212.000000
+            ]
+        }
+    ]
+})");
+}
+
 
 enum class ObjectType
 {

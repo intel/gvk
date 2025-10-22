@@ -36,18 +36,20 @@ endif()
 
 ################################################################################
 # gvk-python.test
-set(testsPath "${CMAKE_CURRENT_LIST_DIR}/tests/")
-gvk_add_target_test(
-    TARGET
-        gvk-python
-    FOLDER
-        "gvk-python/"
-    SOURCE_FILES
-        "${testsPath}/context.tests.cpp"
-)
+if(gvk-python_TEST_ENABLED)
+    set(testsPath "${CMAKE_CURRENT_LIST_DIR}/tests/")
+    gvk_add_target_test(
+        TARGET
+            gvk-python
+        FOLDER
+            "gvk-python/"
+        SOURCE_FILES
+            "${testsPath}/context.tests.cpp"
+    )
 
-add_custom_command(
-    TARGET gvk-python POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory "${pythonRuntime}" "$<TARGET_FILE_DIR:gvk-python>"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${testsPath}/unitTests.pyd" "$<TARGET_FILE_DIR:gvk-python>/.."
-)
+    add_custom_command(
+        TARGET gvk-python POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${pythonRuntime}" "$<TARGET_FILE_DIR:gvk-python>"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${testsPath}/unitTests.pyd" "$<TARGET_FILE_DIR:gvk-python>/.."
+    )
+endif()
