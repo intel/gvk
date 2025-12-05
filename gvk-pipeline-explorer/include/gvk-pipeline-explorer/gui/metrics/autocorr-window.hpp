@@ -25,6 +25,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #pragma once
+
 #ifndef GVK_AUTOCORR_ENABLED
 #define GVK_AUTOCORR_ENABLED 0
 #endif
@@ -33,19 +34,23 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 #include "gvk-pipeline-explorer/gui/window.hpp"
+
 #if GVK_AUTOCORR_ENABLED
 #include "gvk-autocorr/autocorr.hpp"
 #endif
 #if GVK_MDAPI_ENABLED
 #include "gvk-mdapi/mdapi.hpp"
 #endif
-#include "gvk-structures.hpp"
+#if GVK_PYTHON_ENABLED
 #include "gvk-python/context.hpp"
+#endif
 
+#include "gvk-structures.hpp"
 
 namespace gvk {
 namespace pipeline_explorer {
 namespace gui {
+
 class PluginMetricsTab;
 
 class AutocorrWindow final
@@ -70,7 +75,9 @@ private:
     gvk::Auto<MetricsDiscovery::SMetricsDeviceParams_1_2> mMetricsDeviceParams;
     gvk::Auto<MetricsDiscovery::TAdapterParams_1_9> mAdapterParams;
 #endif
+#if GVK_PYTHON_ENABLED
     static gvk::python::Context mPythonContext;
+#endif
 };
 
 } // namespace gui

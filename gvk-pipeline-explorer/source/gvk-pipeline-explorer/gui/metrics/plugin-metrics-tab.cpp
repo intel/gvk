@@ -210,10 +210,12 @@ void PluginMetricsTab::on_gui(GuiInfo& guiInfo)
     // TODO : Documentation
     MetricsTab::on_gui(guiInfo);
 
+#if GVK_AUTOCORR_ENABLED
     // TODO : Closing app while this is open causes crash... 
     if (ImGui::Button("Autocorr analysis")) {
         get_metrics_window().get_window_manager().open<AutocorrWindow>("Autocorr", * this);
     }
+#endif
 
     // TODO : Documentation
     if (ImGui::BeginChild("##Draw-Gui")) {

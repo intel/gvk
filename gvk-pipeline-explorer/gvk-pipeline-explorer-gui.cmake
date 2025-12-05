@@ -4,10 +4,12 @@
 list(APPEND linkLibraries
     gvk-gui
     gvk-pipeline-explorer-backend
-    gvk-python
 )
 if(GVK_AUTOCORR_ENABLED)
     list(APPEND linkLibraries gvk-autocorr)
+endif()
+if(GVK_PYTHON_ENABLED)
+    list(APPEND linkLibraries gvk-python)
 endif()
 
 gvk_add_executable(
@@ -17,9 +19,6 @@ gvk_add_executable(
         "gvk-pipeline-explorer/"
     LINK_LIBRARIES
         ${linkLibraries}
-        gvk-gui
-        gvk-pipeline-explorer-backend
-        gvk-python
     INCLUDE_DIRECTORIES
         "${CMAKE_CURRENT_LIST_DIR}/gui/"
     INCLUDE_FILES

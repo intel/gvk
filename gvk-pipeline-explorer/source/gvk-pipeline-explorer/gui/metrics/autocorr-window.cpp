@@ -34,17 +34,21 @@ namespace gvk {
 namespace pipeline_explorer {
 namespace gui {
 
+#if GVK_PYTHON_ENABLED
 gvk::python::Context AutocorrWindow::mPythonContext;
+#endif
 
 AutocorrWindow::AutocorrWindow(Window::Manager& windowManager, const std::string&, PluginMetricsTab& pluginMetricsTab)
     : Window(windowManager, "Autocorr")
     , mPluginMetricsTab{ pluginMetricsTab }
 {
+#if GVK_PYTHON_ENABLED
     // Create Python context
     if (!mPythonContext) {
         GvkPythonContextCreateInfo pythonContextCreateInfo{ };
         (void)gvk::python::Context::create(&pythonContextCreateInfo, &mPythonContext);
     }
+#endif
 }
 
 void AutocorrWindow::on_gui(GuiInfo& guiInfo)

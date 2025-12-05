@@ -34,7 +34,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define ENABLE_HLSL
 #include "glslang/Public/ResourceLimits.h"
 #include "glslang/Public/ShaderLang.h"
-#include "glslang/SPIRV/GlslangToSpv.h"
+#include /* glslang/ */ "SPIRV/GlslangToSpv.h"
 #include "spirv_common.hpp"
 #include "spirv_glsl.hpp"
 #include "spirv_hlsl.hpp"

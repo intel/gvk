@@ -26,11 +26,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#ifndef GVK_AUTOCORR_ENABLED
-#define GVK_AUTOCORR_ENABLED 0
-#endif
-#include "gvk-python/context.hpp"
 #include "gvk-pipeline-explorer/gui/metrics/metrics-tab.hpp"
+
 #if GVK_AUTOCORR_ENABLED
 #include "gvk-autocorr/autocorr.hpp"
 #endif
@@ -72,14 +69,15 @@ private:
     void draw_metric_group(const std::pair<uint32_t, std::set<uint32_t>>& groupItr, GuiInfo& guiInfo);
     void draw_metric_set(const std::pair<uint32_t, std::set<uint32_t>>& groupItr, GuiInfo& guiInfo);
 
-    gvk::python::Context mPythonContext;
     uint32_t mSelectedGroup{ };
     std::map<uint32_t, uint32_t> mSelectedSets;
     std::map<uint32_t, std::set<uint32_t>> mFiltered;
     std::map<uint32_t, std::vector<uint32_t>> mFilteredEx;
     RequestResult<GvkPipelineExplorerPerformanceQueryRequestInfo, GvkPipelineExplorerPerformanceQueryResultInfo> mRequestResult;
     std::unordered_map<gvk::HandleId<VkDevice, VkPipeline>, std::map<uint32_t, std::map<uint32_t, std::map<uint32_t, PerformanceCounterResult>>>> mResults;
+#if GVK_AUTOCORR_ENABLED
     friend class AutocorrWindow;
+#endif
 };
 
 } // namespace gui

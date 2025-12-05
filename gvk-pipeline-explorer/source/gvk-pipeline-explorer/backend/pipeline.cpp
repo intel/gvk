@@ -28,8 +28,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-pipeline-explorer/backend/utilities.hpp"
 #include "gvk-spirv.hpp"
 
-#include "spirv_cross/spirv_glsl.hpp"
-#include "spirv_cross/spirv_parser.hpp"
+#include /* spirv_cross/ */ "spirv_glsl.hpp"
+#include /* spirv_cross/ */ "spirv_parser.hpp"
 
 namespace gvk {
 

@@ -10,7 +10,10 @@ include(gvk.build)
 
 ################################################################################
 # Vulkan SDK options
+set(VK_NO_PROTOTYPES ON CACHE BOOL "")
+set(gvk-Vulkan-SDK_EXTRACT OFF CACHE BOOL "")
 set(gvk-Vulkan-SDK_VERSION 1.4.321.1 CACHE STRING "")
+set(Vulkan-Headers_VERSION 2cd90f9d20df57eac214c148f3aed885372ddcfe) # vulkan-sdk-1.4.321.0
 
 set(gvk-Vulkan-SDK_URL_LINUX     "https://sdk.lunarg.com/sdk/download/${gvk-Vulkan-SDK_VERSION}/linux"   CACHE STRING "")
 set(gvk-Vulkan-SDK_PACKAGE_LINUX "vulkansdk-linux-x86_64-${gvk-Vulkan-SDK_VERSION}.tar.xz"               CACHE STRING "")
@@ -23,11 +26,11 @@ set(gvk-Vulkan-SDK_SHA256_WIN32  baaa4f7ca11ed3d82aa1c102b21208915485bbaa473068c
 if(UNIX AND NOT APPLE)
     set(gvk-Vulkan-SDK_URL     "${gvk-Vulkan-SDK_URL_LINUX}"     CACHE STRING "")
     set(gvk-Vulkan-SDK_PACKAGE "${gvk-Vulkan-SDK_PACKAGE_LINUX}" CACHE STRING "")
-    set(gvk-Vulkan-SDK_SHA256  ${gvk-Vulkan-SDK_SHA256_LINUX}    CACHE STRING "")
+    set(gvk-Vulkan-SDK_SHA256   ${gvk-Vulkan-SDK_SHA256_LINUX}   CACHE STRING "")
 elseif(WIN32)
     set(gvk-Vulkan-SDK_URL     "${gvk-Vulkan-SDK_URL_WIN32}"     CACHE STRING "")
     set(gvk-Vulkan-SDK_PACKAGE "${gvk-Vulkan-SDK_PACKAGE_WIN32}" CACHE STRING "")
-    set(gvk-Vulkan-SDK_SHA256  ${gvk-Vulkan-SDK_SHA256_WIN32}    CACHE STRING "")
+    set(gvk-Vulkan-SDK_SHA256   ${gvk-Vulkan-SDK_SHA256_WIN32}   CACHE STRING "")
 endif()
 
 ################################################################################

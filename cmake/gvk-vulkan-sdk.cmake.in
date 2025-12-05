@@ -28,6 +28,7 @@ include_guard(GLOBAL)
 include(CMakeParseArguments)
 
 set(gvk-Vulkan-SDK_VERSION @gvk-Vulkan-SDK_VERSION@ CACHE STRING "")
+set(gvk-Vulkan-SDK_EXTRACT ON CACHE BOOL "")
 
 set(gvk-Vulkan-SDK_URL_LINUX "https://sdk.lunarg.com/sdk/download/${gvk-Vulkan-SDK_VERSION}/linux" CACHE STRING "")
 set(gvk-Vulkan-SDK_PACKAGE_LINUX @gvk-Vulkan-SDK_PACKAGE_LINUX@ CACHE STRING "")
@@ -278,25 +279,29 @@ else()
     if(NOT gvk-Vulkan-SDK_VERSION VERSION_EQUAL Vulkan-SDK_INSTALLED_VERSION)
         set(workingDirectory "${FETCHCONTENT_BASE_DIR}/VulkanSDK/")
         gvk_download_vulkan_sdk(WORKING_DIRECTORY "${workingDirectory}" URL "${gvk-Vulkan-SDK_URL}")
-        gvk_extract_vulkan_sdk(WORKING_DIRECTORY "${workingDirectory}" EXTRACT .)
-        gvk_set_vulkan_sdk_env_var(VULKAN_SDK "${workingDirectory}/${gvk-Vulkan-SDK_VERSION}")
+        if(gvk-Vulkan-SDK_EXTRACT)
+            gvk_extract_vulkan_sdk(WORKING_DIRECTORY "${workingDirectory}" EXTRACT .)
+            gvk_set_vulkan_sdk_env_var(VULKAN_SDK "${workingDirectory}/${gvk-Vulkan-SDK_VERSION}")
+        endif()
     endif()
 
-    # Normalize Vulkan SDK path
-    file(TO_CMAKE_PATH "$ENV{VULKAN_SDK}" VULKAN_SDK)
-    set(ENV{VULKAN_SDK} "${VULKAN_SDK}")
+    if(gvk-Vulkan-SDK_EXTRACT)
+        # Normalize Vulkan SDK path
+        file(TO_CMAKE_PATH "$ENV{VULKAN_SDK}" VULKAN_SDK)
+        set(ENV{VULKAN_SDK} "${VULKAN_SDK}")
 
-    # Remove tweak from version because find_package() only checks major.minor.patch,
-    #   if tweak isn't 0 it'll cause find_package(EXACT) to fail
-    string(REPLACE "." ";" requiredVersion ${gvk-Vulkan-SDK_VERSION})
-    list(GET requiredVersion 0 requiredVersionMajor)
-    list(GET requiredVersion 1 requiredVersionMinor)
-    list(GET requiredVersion 2 requiredVersionPatch)
-    set(requiredVersion "${requiredVersionMajor}.${requiredVersionMinor}.${requiredVersionPatch}")
+        # Remove tweak from version because find_package() only checks major.minor.patch,
+        #   if tweak isn't 0 it'll cause find_package(EXACT) to fail
+        string(REPLACE "." ";" requiredVersion ${gvk-Vulkan-SDK_VERSION})
+        list(GET requiredVersion 0 requiredVersionMajor)
+        list(GET requiredVersion 1 requiredVersionMinor)
+        list(GET requiredVersion 2 requiredVersionPatch)
+        set(requiredVersion "${requiredVersionMajor}.${requiredVersionMinor}.${requiredVersionPatch}")
 
-    # Make Vulkan targets available for linking
-    find_package(Vulkan ${requiredVersion} EXACT REQUIRED)
-    set(Vulkan_VERSION "${Vulkan_VERSION}" CACHE STRING "" FORCE)
-    file(TO_CMAKE_PATH "$ENV{VULKAN_SDK}/share/vulkan/registry/vk.xml" Vulkan_XML)
-    set(Vulkan_XML "${Vulkan_XML}" CACHE STRING "" FORCE)
+        # Make Vulkan targets available for linking
+        find_package(Vulkan ${requiredVersion} EXACT REQUIRED)
+        set(Vulkan_VERSION "${Vulkan_VERSION}" CACHE STRING "" FORCE)
+        file(TO_CMAKE_PATH "$ENV{VULKAN_SDK}/share/vulkan/registry/vk.xml" Vulkan_XML)
+        set(Vulkan_XML "${Vulkan_XML}" CACHE STRING "" FORCE)
+    endif()
 endif()

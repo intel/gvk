@@ -26,7 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-pipeline-explorer/backend/utilities.hpp"
 
-#include "spirv_cross/spirv_common.hpp"
+#include /* spirv_cross/ */ "spirv_common.hpp"
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 #include <codecvt>

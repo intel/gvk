@@ -1,7 +1,7 @@
 
 ################################################################################
 # Vulkan SDK options
-set(gvk-Vulkan-SDK_VERSION 1.4.313.0 CACHE STRING "")
+set(gvk-Vulkan-SDK_VERSION 1.4.321.1 CACHE STRING "")
 set(gvk-Vulkan-SDK_URL_LINUX
     "https://dependency.server.com/vulkan/sdk/linux"
     "https://sdk.lunarg.com/sdk/download/${gvk-Vulkan-SDK_VERSION}/linux"
@@ -70,9 +70,3 @@ gvk_set_build_options(gvk-xml                   ON  ON  ON )
 set(gvk-build-samples ON  CACHE BOOL "")
 set(gvk-build-tests   ON  CACHE BOOL "")
 set(gvk-run-tests     OFF CACHE BOOL "")
-
-################################################################################
-# Internal GVK modules
-set(gvk-internal-target-example_SOURCE_DIRECTORY  "internal/gvk-internal-target-example" CACHE STRING "" FORCE)
-set(gvk-modules gvk-internal-target-example CACHE STRING "" FORCE)
-gvk_set_build_options(gvk-internal-target-example ON ON ON)

@@ -10,7 +10,6 @@ FetchContent_Declare(
     GIT_TAG ${SPIRV-Headers_VERSION}
     GIT_PROGRESS TRUE
 )
-
 FetchContent_MakeAvailable(SPIRV-Headers)
 FetchContent_GetProperties(SPIRV-Headers SOURCE_DIR SPIRV-Headers_SOURCE_DIR)
 
