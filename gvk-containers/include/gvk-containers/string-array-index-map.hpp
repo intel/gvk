@@ -26,37 +26,39 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsign-conversion"
-#endif
-
-#include "tinyxml2/tinyxml2.h"
-
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
-
-#include <cstdint>
+#include <map>
+#include <set>
+#include <string>
+#include <vector>
 
 namespace gvk {
-namespace xml {
 
-enum FlagBits
+class StringArrayIndexMap final
 {
-    Optional = 1,
-    Dynamic  = 1 << 1,
-    Static   = 1 << 2,
-    Const    = 1 << 3,
-    Pointer  = 1 << 4,
-    Array    = 1 << 5,
-    String   = 1 << 6,
-    Void     = 1 << 7,
-    Function = 1 << 8,
-    Out      = 1 << 9,
+public:
+    template <typename T, typename GetStringFunctionType>
+    inline std::set<std::string> validate(uint32_t objectCount, const T* pObjs, GetStringFunctionType getString)
+    {
+        std::set<std::string> availableEntries;
+        for (uint32_t i = 0; i < objectCount; ++i) {
+            availableEntries.insert(getString(pObjs[i]));
+        }
+        return validate(availableEntries);
+    }
+
+    void add(const char* pEntry, bool force = false);
+    void add(uint32_t entryCount, const char* const* pEntries, bool force = false);
+    void erase(const char* pEntry);
+    bool contains(const char* pEntry) const;
+    void clear();
+    uint32_t count() const;
+    const char* const* data() const;
+
+private:
+    std::set<std::string> validate(std::set<std::string> const& availableEntries);
+
+    std::map<std::string, uint32_t> mEntryIndices;
+    std::vector<char const*> mEntries;
 };
 
-using Flags = uint32_t;
-
-} // namespace xml
 } // namespace gvk

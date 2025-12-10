@@ -37,6 +37,7 @@ namespace gvk {
 class Environment final
 {
 public:
+    void reset();
     void set_env();
     void get_env(uint32_t* pCount, char* pEnv) const;
     std::string get_env_var(const std::string& key) const;
@@ -53,6 +54,14 @@ Gets the value of a given environment variable
 @return The value of the given environment variable
 */
 std::string get_env_var(const std::string& key);
+
+/**
+Gets a value indicating whether or not a given environment variable evaluates to true
+@param [in] key The environment variable to check
+@return A value indicating whether or not the given environment variable evaluates to true
+NOTE : Any case-insensitive form of the strings "true", "yes", "on", "y", or any number besides 0 evaluates to true
+*/
+bool get_env_var_true(const std::string& key);
 
 /**
 Sets the value of a given environment variable
@@ -72,7 +81,7 @@ void append_value_to_env_var(const std::string& key, const std::string& value);
 /**
 Sets the environment variable VK_LAYER_PATH with the explicit layer paths present in HKEY_LOCAL_MACHINE:"SOFTWARE\\Khronos\\Vulkan\\ExplicitLayers"
 NOTE : If the environment variable VK_LAYER_PATH is already set when this function is called it noops
-NOTE : After calling this function, append_value_to_env_var("VK_LAYER_PATH", "custom/layer/path") can be used to enable custom layers and built in layers simultaneously
+NOTE : After calling this function, gvk::append_value_to_env_var("VK_LAYER_PATH", "custom/layer/path") can be used to enable custom layers and built in layers simultaneously
 */
 void set_vk_layer_path_from_windows_registry();
 #endif

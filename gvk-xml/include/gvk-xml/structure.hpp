@@ -36,12 +36,17 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace xml {
 
+class Manifest;
+
 class Structure final
     : public ApiElement
 {
 public:
     Structure() = default;
     Structure(const tinyxml2::XMLElement& xmlElement);
+
+    bool contains_union(const xml::Manifest& manifest, bool recursive = true) const;
+    bool contains_handle(const xml::Manifest& manfiest, bool recursive = true) const;
 
     bool isUnion { false };
     std::string vkStructureType;

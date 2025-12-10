@@ -33,7 +33,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "cereal/archives/binary.hpp"
 #include "cereal/types/common.hpp"
 
+#include <array>
 #include <cassert>
+#include <cstring>
 #include <iosfwd>
 #include <type_traits>
 
@@ -150,6 +152,12 @@ inline void cerealize_static_handle_array(ArchiveType& archive, const HandleType
     }
 }
 
+template <typename ArchiveType, typename ObjectType>
+inline void cerealize_pod_union(ArchiveType& archive, const ObjectType& obj)
+{
+    archive(cereal::binary_data(&obj, sizeof(ObjectType)));
+}
+
 template <typename HandleType, typename ArchiveType>
 inline HandleType decerealize_handle(ArchiveType& archive)
 {
@@ -257,6 +265,12 @@ inline void decerealize_static_handle_array(ArchiveType& archive, HandleType* pH
     for (size_t i = 0; i < Count; ++i) {
         pHandles[i] = decerealize_handle<HandleType>(archive);
     }
+}
+
+template <typename ArchiveType, typename ObjectType>
+inline void decerealize_pod_union(ArchiveType& archive, ObjectType& obj)
+{
+    archive(cereal::binary_data(&obj, sizeof(ObjectType)));
 }
 
 } // namespace detail

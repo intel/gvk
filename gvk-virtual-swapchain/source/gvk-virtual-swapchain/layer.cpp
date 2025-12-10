@@ -40,16 +40,36 @@ VirtualSwapchain::VirtualSwapchain(VirtualSwapchain&& other)
 VirtualSwapchain& VirtualSwapchain::operator=(VirtualSwapchain&& other)
 {
     if (this != &other) {
-        mGvkDevice = std::move(other.mGvkDevice);
-        mVkSwapchain = std::exchange(other.mVkSwapchain, VK_NULL_HANDLE);
-        mExtent = std::move(other.mExtent);
-        mGvkDeviceMemory = std::move(other.mGvkDeviceMemory);
-        mActualVkImages = std::move(other.mActualVkImages);
-        mVirtualImages = std::move(other.mVirtualImages);
-        mAvailableImageIndices = std::move(other.mAvailableImageIndices);
-        mAcquiredImages = std::move(other.mAcquiredImages);
+        reset();
+        mGvkDevice = std::exchange(other.mGvkDevice, mGvkDevice);
+        mVkSwapchain = std::exchange(other.mVkSwapchain, mVkSwapchain);
+        mExtent = std::exchange(other.mExtent, mExtent);
+        mGvkDeviceMemory = std::exchange(other.mGvkDeviceMemory, mGvkDeviceMemory);
+        mActualVkImages = std::exchange(other.mActualVkImages, mActualVkImages);
+        mVirtualImages = std::exchange(other.mVirtualImages, mVirtualImages);
+        mAvailableImageIndices = std::exchange(other.mAvailableImageIndices, mAvailableImageIndices);
+        mAcquiredImages = std::exchange(other.mAcquiredImages, mAcquiredImages);
+        mPendingImageAcquisition = std::exchange(other.mPendingImageAcquisition, mPendingImageAcquisition);
     }
     return *this;
+}
+
+VirtualSwapchain::~VirtualSwapchain()
+{
+    reset();
+}
+
+void VirtualSwapchain::reset()
+{
+    mGvkDevice.reset();
+    mVkSwapchain = VK_NULL_HANDLE;
+    mExtent = { };
+    mGvkDeviceMemory.reset();
+    mActualVkImages.clear();
+    mVirtualImages.clear();
+    mAvailableImageIndices.clear();
+    mAcquiredImages.clear();
+    mPendingImageAcquisition = { };
 }
 
 VkResult VirtualSwapchain::post_vkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain)
@@ -921,8 +941,9 @@ VkResult Layer::get_command_resources(const std::lock_guard<std::mutex>&, const 
 namespace gvk {
 namespace layer {
 
-void on_load(Registry& registry)
+void on_load(const VkInstanceCreateInfo* pInstanceCreateInfo, Registry& registry)
 {
+    (void)pInstanceCreateInfo;
     registry.layers.push_back(std::make_unique<virtual_swapchain::Layer>());
 }
 

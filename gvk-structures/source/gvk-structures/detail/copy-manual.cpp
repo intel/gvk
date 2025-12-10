@@ -291,98 +291,32 @@ GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkVideoSessionParametersUpdateInfoKHR)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Special case members
-template <> VkAccelerationStructureBuildGeometryInfoKHR create_structure_copy<VkAccelerationStructureBuildGeometryInfoKHR>(const VkAccelerationStructureBuildGeometryInfoKHR& obj, const VkAllocationCallbacks* pAllocator)
-{
-    auto result = obj;
-    result.pNext = (const void*)create_pnext_copy(obj.pNext, pAllocator);
-    result.pGeometries = create_dynamic_array_copy(obj.geometryCount, obj.pGeometries, pAllocator);
-    result.ppGeometries = create_dynamic_pointer_array_copy(obj.geometryCount, obj.ppGeometries, pAllocator);
-    return result;
-}
-
-template <> void destroy_structure_copy<VkAccelerationStructureBuildGeometryInfoKHR>(const VkAccelerationStructureBuildGeometryInfoKHR& obj, const VkAllocationCallbacks* pAllocator)
-{
-    destroy_pnext_copy(obj.pNext, pAllocator);
-    destroy_dynamic_array_copy(obj.geometryCount, obj.pGeometries, pAllocator);
-    destroy_dynamic_pointer_array_copy(obj.geometryCount, obj.ppGeometries, pAllocator);
-}
-
-template <> VkAccelerationStructureTrianglesDisplacementMicromapNV create_structure_copy<VkAccelerationStructureTrianglesDisplacementMicromapNV>(const VkAccelerationStructureTrianglesDisplacementMicromapNV& obj, const VkAllocationCallbacks* pAllocator)
-{
-    auto result = obj;
-    result.pNext = create_pnext_copy(obj.pNext, pAllocator);
-    result.pUsageCounts = create_dynamic_array_copy(obj.usageCountsCount, obj.pUsageCounts, pAllocator);
-    result.ppUsageCounts = create_dynamic_pointer_array_copy(obj.usageCountsCount, obj.ppUsageCounts, pAllocator);
-    return result;
-}
-
-template <> void destroy_structure_copy<VkAccelerationStructureTrianglesDisplacementMicromapNV>(const VkAccelerationStructureTrianglesDisplacementMicromapNV& obj, const VkAllocationCallbacks* pAllocator)
-{
-    destroy_pnext_copy(obj.pNext, pAllocator);
-    destroy_dynamic_array_copy(obj.usageCountsCount, obj.pUsageCounts, pAllocator);
-    destroy_dynamic_pointer_array_copy(obj.usageCountsCount, obj.ppUsageCounts, pAllocator);
-}
-
-template <> VkAccelerationStructureTrianglesOpacityMicromapEXT create_structure_copy<VkAccelerationStructureTrianglesOpacityMicromapEXT>(const VkAccelerationStructureTrianglesOpacityMicromapEXT& obj, const VkAllocationCallbacks* pAllocator)
-{
-    auto result = obj;
-    result.pNext = create_pnext_copy(obj.pNext, pAllocator);
-    result.pUsageCounts = create_dynamic_array_copy(obj.usageCountsCount, obj.pUsageCounts, pAllocator);
-    result.ppUsageCounts = create_dynamic_pointer_array_copy(obj.usageCountsCount, obj.ppUsageCounts, pAllocator);
-    return result;
-}
-
-template <> void destroy_structure_copy<VkAccelerationStructureTrianglesOpacityMicromapEXT>(const VkAccelerationStructureTrianglesOpacityMicromapEXT& obj, const VkAllocationCallbacks* pAllocator)
-{
-    destroy_pnext_copy(obj.pNext, pAllocator);
-    destroy_dynamic_array_copy(obj.usageCountsCount, obj.pUsageCounts, pAllocator);
-    destroy_dynamic_pointer_array_copy(obj.usageCountsCount, obj.ppUsageCounts, pAllocator);
-}
-
 template <> VkAccelerationStructureVersionInfoKHR create_structure_copy<VkAccelerationStructureVersionInfoKHR>(const VkAccelerationStructureVersionInfoKHR& obj, const VkAllocationCallbacks* pAllocator)
 {
     auto result = obj;
     result.pNext = (const void*)create_pnext_copy(obj.pNext, pAllocator);
-    // NOTE : pVersionData is expected to point to the header of a previously
-    //  serialized acceleration structure, so we're just copying the address...this
-    //  can be revisited if deep copies become necessary.
+    result.pVersionData = create_dynamic_array_copy(2 * VK_UUID_SIZE, obj.pVersionData, pAllocator);
     return result;
 }
 
 template <> void destroy_structure_copy<VkAccelerationStructureVersionInfoKHR>(const VkAccelerationStructureVersionInfoKHR& obj, const VkAllocationCallbacks* pAllocator)
 {
     destroy_pnext_copy(obj.pNext, pAllocator);
-}
-
-template <> VkMicromapBuildInfoEXT create_structure_copy<VkMicromapBuildInfoEXT>(const VkMicromapBuildInfoEXT& obj, const VkAllocationCallbacks* pAllocator)
-{
-    auto result = obj;
-    result.pNext = (const void*)create_pnext_copy(obj.pNext, pAllocator);
-    result.pUsageCounts = create_dynamic_array_copy(obj.usageCountsCount, obj.pUsageCounts, pAllocator);
-    result.ppUsageCounts = create_dynamic_pointer_array_copy(obj.usageCountsCount, obj.ppUsageCounts, pAllocator);
-    return result;
-}
-
-template <> void destroy_structure_copy<VkMicromapBuildInfoEXT>(const VkMicromapBuildInfoEXT& obj, const VkAllocationCallbacks* pAllocator)
-{
-    destroy_pnext_copy(obj.pNext, pAllocator);
-    destroy_dynamic_array_copy(obj.usageCountsCount, obj.pUsageCounts, pAllocator);
-    destroy_dynamic_pointer_array_copy(obj.usageCountsCount, obj.ppUsageCounts, pAllocator);
+    destroy_dynamic_array_copy(2 * VK_UUID_SIZE, obj.pVersionData, pAllocator);
 }
 
 template <> VkMicromapVersionInfoEXT create_structure_copy<VkMicromapVersionInfoEXT>(const VkMicromapVersionInfoEXT& obj, const VkAllocationCallbacks* pAllocator)
 {
     auto result = obj;
     result.pNext = (const void*)create_pnext_copy(obj.pNext, pAllocator);
-    // NOTE : pVersionData is expected to point to the header of a previously
-    //  serialized micromap, so this comparison just uses the address...this can be
-    //  revisited if deep comparisons become necessary.
+    result.pVersionData = create_dynamic_array_copy(2 * VK_UUID_SIZE, obj.pVersionData, pAllocator);
     return result;
 }
 
 template <> void destroy_structure_copy<VkMicromapVersionInfoEXT>(const VkMicromapVersionInfoEXT& obj, const VkAllocationCallbacks* pAllocator)
 {
     destroy_pnext_copy(obj.pNext, pAllocator);
+    destroy_dynamic_array_copy(2 * VK_UUID_SIZE, obj.pVersionData, pAllocator);
 }
 
 template <> VkPipelineCacheCreateInfo create_structure_copy<VkPipelineCacheCreateInfo>(const VkPipelineCacheCreateInfo& obj, const VkAllocationCallbacks* pAllocator)
@@ -477,7 +411,17 @@ template <> void destroy_structure_copy<VkSpecializationInfo>(const VkSpecializa
     destroy_dynamic_array_copy(obj.dataSize, (const uint8_t*)obj.pData, pAllocator);
 }
 
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkTransformMatrixKHR)
+template <> VkTransformMatrixKHR create_structure_copy<VkTransformMatrixKHR>(const VkTransformMatrixKHR& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)pAllocator;
+    return obj;
+}
+
+template <> void destroy_structure_copy<VkTransformMatrixKHR>(const VkTransformMatrixKHR& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)obj;
+    (void)pAllocator;
+}
 
 template <> VkWriteDescriptorSet create_structure_copy<VkWriteDescriptorSet>(const VkWriteDescriptorSet& obj, const VkAllocationCallbacks* pAllocator)
 {
@@ -551,9 +495,76 @@ template <> void destroy_structure_copy<VkWriteDescriptorSet>(const VkWriteDescr
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Array of pointer members
+template <> VkAccelerationStructureBuildGeometryInfoKHR create_structure_copy<VkAccelerationStructureBuildGeometryInfoKHR>(const VkAccelerationStructureBuildGeometryInfoKHR& obj, const VkAllocationCallbacks* pAllocator)
+{
+    auto result = obj;
+    result.pNext = (const void*)create_pnext_copy(obj.pNext, pAllocator);
+    result.pGeometries = create_dynamic_array_copy(obj.geometryCount, obj.pGeometries, pAllocator);
+    result.ppGeometries = create_dynamic_pointer_array_copy(obj.geometryCount, obj.ppGeometries, pAllocator);
+    return result;
+}
+
+template <> void destroy_structure_copy<VkAccelerationStructureBuildGeometryInfoKHR>(const VkAccelerationStructureBuildGeometryInfoKHR& obj, const VkAllocationCallbacks* pAllocator)
+{
+    destroy_pnext_copy(obj.pNext, pAllocator);
+    destroy_dynamic_array_copy(obj.geometryCount, obj.pGeometries, pAllocator);
+    destroy_dynamic_pointer_array_copy(obj.geometryCount, obj.ppGeometries, pAllocator);
+}
+
+template <> VkAccelerationStructureTrianglesDisplacementMicromapNV create_structure_copy<VkAccelerationStructureTrianglesDisplacementMicromapNV>(const VkAccelerationStructureTrianglesDisplacementMicromapNV& obj, const VkAllocationCallbacks* pAllocator)
+{
+    auto result = obj;
+    result.pNext = create_pnext_copy(obj.pNext, pAllocator);
+    result.pUsageCounts = create_dynamic_array_copy(obj.usageCountsCount, obj.pUsageCounts, pAllocator);
+    result.ppUsageCounts = create_dynamic_pointer_array_copy(obj.usageCountsCount, obj.ppUsageCounts, pAllocator);
+    return result;
+}
+
+template <> void destroy_structure_copy<VkAccelerationStructureTrianglesDisplacementMicromapNV>(const VkAccelerationStructureTrianglesDisplacementMicromapNV& obj, const VkAllocationCallbacks* pAllocator)
+{
+    destroy_pnext_copy(obj.pNext, pAllocator);
+    destroy_dynamic_array_copy(obj.usageCountsCount, obj.pUsageCounts, pAllocator);
+    destroy_dynamic_pointer_array_copy(obj.usageCountsCount, obj.ppUsageCounts, pAllocator);
+}
+
+template <> VkAccelerationStructureTrianglesOpacityMicromapEXT create_structure_copy<VkAccelerationStructureTrianglesOpacityMicromapEXT>(const VkAccelerationStructureTrianglesOpacityMicromapEXT& obj, const VkAllocationCallbacks* pAllocator)
+{
+    auto result = obj;
+    result.pNext = create_pnext_copy(obj.pNext, pAllocator);
+    result.pUsageCounts = create_dynamic_array_copy(obj.usageCountsCount, obj.pUsageCounts, pAllocator);
+    result.ppUsageCounts = create_dynamic_pointer_array_copy(obj.usageCountsCount, obj.ppUsageCounts, pAllocator);
+    return result;
+}
+
+template <> void destroy_structure_copy<VkAccelerationStructureTrianglesOpacityMicromapEXT>(const VkAccelerationStructureTrianglesOpacityMicromapEXT& obj, const VkAllocationCallbacks* pAllocator)
+{
+    destroy_pnext_copy(obj.pNext, pAllocator);
+    destroy_dynamic_array_copy(obj.usageCountsCount, obj.pUsageCounts, pAllocator);
+    destroy_dynamic_pointer_array_copy(obj.usageCountsCount, obj.ppUsageCounts, pAllocator);
+}
+
+template <> VkMicromapBuildInfoEXT create_structure_copy<VkMicromapBuildInfoEXT>(const VkMicromapBuildInfoEXT& obj, const VkAllocationCallbacks* pAllocator)
+{
+    auto result = obj;
+    result.pNext = (const void*)create_pnext_copy(obj.pNext, pAllocator);
+    result.pUsageCounts = create_dynamic_array_copy(obj.usageCountsCount, obj.pUsageCounts, pAllocator);
+    result.ppUsageCounts = create_dynamic_pointer_array_copy(obj.usageCountsCount, obj.ppUsageCounts, pAllocator);
+    return result;
+}
+
+template <> void destroy_structure_copy<VkMicromapBuildInfoEXT>(const VkMicromapBuildInfoEXT& obj, const VkAllocationCallbacks* pAllocator)
+{
+    destroy_pnext_copy(obj.pNext, pAllocator);
+    destroy_dynamic_array_copy(obj.usageCountsCount, obj.pUsageCounts, pAllocator);
+    destroy_dynamic_pointer_array_copy(obj.usageCountsCount, obj.ppUsageCounts, pAllocator);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Unions
 template <> VkAccelerationStructureGeometryDataKHR create_structure_copy<VkAccelerationStructureGeometryDataKHR>(const VkAccelerationStructureGeometryDataKHR& obj, const VkAllocationCallbacks* pAllocator)
 {
+    // NOTE : Union of structures that all have sType; use sType to interpret.
     auto result = obj;
     switch (((VkBaseInStructure&)obj).sType) {
     case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR: {
@@ -566,6 +577,7 @@ template <> VkAccelerationStructureGeometryDataKHR create_structure_copy<VkAccel
         result.instances = create_structure_copy(result.instances, pAllocator);
     } break;
     default: {
+        // NOOP :
     } break;
     }
     return result;
@@ -573,6 +585,7 @@ template <> VkAccelerationStructureGeometryDataKHR create_structure_copy<VkAccel
 
 template <> void destroy_structure_copy<VkAccelerationStructureGeometryDataKHR>(const VkAccelerationStructureGeometryDataKHR& obj, const VkAllocationCallbacks* pAllocator)
 {
+    // NOTE : Union of structures that all have sType; use sType to interpret.
     switch (((VkBaseInStructure&)obj).sType) {
     case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR: {
         destroy_structure_copy(obj.triangles, pAllocator);
@@ -584,18 +597,404 @@ template <> void destroy_structure_copy<VkAccelerationStructureGeometryDataKHR>(
         destroy_structure_copy(obj.instances, pAllocator);
     } break;
     default: {
+        // NOOP :
     } break;
     }
 }
 
-GVK_DEFINE_DEFAULT_STRUCTURE_COPY_FUNCTIONS(VkAccelerationStructureMotionInstanceDataNV)
-GVK_DEFINE_DEFAULT_STRUCTURE_COPY_FUNCTIONS(VkClearColorValue)
-GVK_DEFINE_DEFAULT_STRUCTURE_COPY_FUNCTIONS(VkClearValue)
-GVK_DEFINE_DEFAULT_STRUCTURE_COPY_FUNCTIONS(VkDeviceOrHostAddressConstKHR)
-GVK_DEFINE_DEFAULT_STRUCTURE_COPY_FUNCTIONS(VkDeviceOrHostAddressKHR)
-GVK_DEFINE_DEFAULT_STRUCTURE_COPY_FUNCTIONS(VkPerformanceCounterResultKHR)
-GVK_STUB_STRUCTURE_COPY_FUNCTIONS(VkPerformanceValueDataINTEL)
-GVK_DEFINE_DEFAULT_STRUCTURE_COPY_FUNCTIONS(VkPipelineExecutableStatisticValueKHR)
+template <> VkAccelerationStructureMotionInstanceDataNV create_structure_copy<VkAccelerationStructureMotionInstanceDataNV>(const VkAccelerationStructureMotionInstanceDataNV& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)pAllocator;
+    // NOTE : POD union
+    return obj;
+}
+
+template <> void destroy_structure_copy<VkAccelerationStructureMotionInstanceDataNV>(const VkAccelerationStructureMotionInstanceDataNV& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)obj;
+    (void)pAllocator;
+    // NOOP : POD union
+}
+
+template <> VkClearColorValue create_structure_copy<VkClearColorValue>(const VkClearColorValue& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)pAllocator;
+    // NOTE : POD union
+    return obj;
+}
+
+template <> void destroy_structure_copy<VkClearColorValue>(const VkClearColorValue& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)obj;
+    (void)pAllocator;
+    // NOOP : POD union
+}
+
+template <> VkClearValue create_structure_copy<VkClearValue>(const VkClearValue& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)pAllocator;
+    // NOTE : POD union
+    return obj;
+}
+
+template <> void destroy_structure_copy<VkClearValue>(const VkClearValue& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)obj;
+    (void)pAllocator;
+    // NOOP : POD union
+}
+
+template <> VkClusterAccelerationStructureOpInputNV create_structure_copy<VkClusterAccelerationStructureOpInputNV>(const VkClusterAccelerationStructureOpInputNV& obj, const VkAllocationCallbacks* pAllocator)
+{
+    // NOTE : Union of pointers to structures that all have sType; use sType to interpret.
+    auto result = obj;
+    auto pObj = (const VkBaseInStructure*&)obj;
+    switch (pObj ? pObj->sType : VkStructureType{ }) {
+    case VK_STRUCTURE_TYPE_CLUSTER_ACCELERATION_STRUCTURE_CLUSTERS_BOTTOM_LEVEL_INPUT_NV: {
+        result.pClustersBottomLevel = create_dynamic_array_copy(1, obj.pClustersBottomLevel, pAllocator);
+    } break;
+    case VK_STRUCTURE_TYPE_CLUSTER_ACCELERATION_STRUCTURE_TRIANGLE_CLUSTER_INPUT_NV: {
+        result.pTriangleClusters = create_dynamic_array_copy(1, obj.pTriangleClusters, pAllocator);
+    } break;
+    case VK_STRUCTURE_TYPE_CLUSTER_ACCELERATION_STRUCTURE_MOVE_OBJECTS_INPUT_NV: {
+        result.pMoveObjects = create_dynamic_array_copy(1, obj.pMoveObjects, pAllocator);
+    } break;
+    default: {
+        // NOOP :
+    } break;
+    }
+    return result;
+}
+
+template <> void destroy_structure_copy<VkClusterAccelerationStructureOpInputNV>(const VkClusterAccelerationStructureOpInputNV& obj, const VkAllocationCallbacks* pAllocator)
+{
+    // NOTE : Union of pointers to structures that all have sType; use sType to interpret.
+    auto pObj = (const VkBaseInStructure*&)obj;
+    switch (pObj ? pObj->sType : VkStructureType{ }) {
+    case VK_STRUCTURE_TYPE_CLUSTER_ACCELERATION_STRUCTURE_CLUSTERS_BOTTOM_LEVEL_INPUT_NV: {
+        destroy_dynamic_array_copy(1, obj.pClustersBottomLevel, pAllocator);
+    } break;
+    case VK_STRUCTURE_TYPE_CLUSTER_ACCELERATION_STRUCTURE_TRIANGLE_CLUSTER_INPUT_NV: {
+        destroy_dynamic_array_copy(1, obj.pTriangleClusters, pAllocator);
+    } break;
+    case VK_STRUCTURE_TYPE_CLUSTER_ACCELERATION_STRUCTURE_MOVE_OBJECTS_INPUT_NV: {
+        destroy_dynamic_array_copy(1, obj.pMoveObjects, pAllocator);
+    } break;
+    default: {
+        // NOOP :
+    } break;
+    }
+}
+
+template <> VkDescriptorDataEXT create_structure_copy<VkDescriptorDataEXT>(const VkDescriptorDataEXT& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)pAllocator;
+    assert(false && "VkDescriptorDataEXT cannot be directly copied; copy via VkDescriptorGetInfoEXT which specifies VkDescriptorType");
+    return obj;
+}
+
+template <> void destroy_structure_copy<VkDescriptorDataEXT>(const VkDescriptorDataEXT& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)obj;
+    (void)pAllocator;
+    assert(false && "VkDescriptorDataEXT cannot be directly destroyed; destroy via VkDescriptorGetInfoEXT which specifies VkDescriptorType");
+}
+
+template <> VkDeviceOrHostAddressConstAMDX create_structure_copy<VkDeviceOrHostAddressConstAMDX>(const VkDeviceOrHostAddressConstAMDX& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)pAllocator;
+    // NOTE : POD union
+    return obj;
+}
+
+template <> void destroy_structure_copy<VkDeviceOrHostAddressConstAMDX>(const VkDeviceOrHostAddressConstAMDX& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)obj;
+    (void)pAllocator;
+    // NOOP : POD union
+}
+
+template <> VkDeviceOrHostAddressConstKHR create_structure_copy<VkDeviceOrHostAddressConstKHR>(const VkDeviceOrHostAddressConstKHR& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)pAllocator;
+    // NOTE : POD union
+    return obj;
+}
+
+template <> void destroy_structure_copy<VkDeviceOrHostAddressConstKHR>(const VkDeviceOrHostAddressConstKHR& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)obj;
+    (void)pAllocator;
+    // NOOP : POD union
+}
+
+template <> VkDeviceOrHostAddressKHR create_structure_copy<VkDeviceOrHostAddressKHR>(const VkDeviceOrHostAddressKHR& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)pAllocator;
+    // NOTE : POD union
+    return obj;
+}
+
+template <> void destroy_structure_copy<VkDeviceOrHostAddressKHR>(const VkDeviceOrHostAddressKHR& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)obj;
+    (void)pAllocator;
+    // NOOP : POD union
+}
+
+template <> VkIndirectCommandsTokenDataEXT create_structure_copy<VkIndirectCommandsTokenDataEXT>(const VkIndirectCommandsTokenDataEXT& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)pAllocator;
+    assert(false && "VkIndirectCommandsTokenDataEXT cannot be directly copied; copy via VkIndirectCommandsLayoutTokenEXT which specifies VkIndirectCommandsTokenTypeEXT");
+    return obj;
+}
+
+template <> void destroy_structure_copy<VkIndirectCommandsTokenDataEXT>(const VkIndirectCommandsTokenDataEXT& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)obj;
+    (void)pAllocator;
+    assert(false && "VkIndirectCommandsTokenDataEXT cannot be directly destroyed; destroy via VkIndirectCommandsLayoutTokenEXT which specifies VkIndirectCommandsTokenTypeEXT");
+}
+
+template <> VkIndirectExecutionSetInfoEXT create_structure_copy<VkIndirectExecutionSetInfoEXT>(const VkIndirectExecutionSetInfoEXT& obj, const VkAllocationCallbacks* pAllocator)
+{
+    // NOTE : Union of pointers to structures that all have sType; use sType to interpret.
+    auto result = obj;
+    auto pObj = (const VkBaseInStructure*&)obj;
+    switch (pObj ? pObj->sType : VkStructureType{ }) {
+    case VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_PIPELINE_INFO_EXT: {
+        result.pPipelineInfo = create_dynamic_array_copy(1, obj.pPipelineInfo, pAllocator);
+    } break;
+    case VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_SHADER_INFO_EXT: {
+        result.pShaderInfo = create_dynamic_array_copy(1, obj.pShaderInfo, pAllocator);
+    } break;
+    default: {
+        // NOOP :
+    } break;
+    }
+    return result;
+}
+
+template <> void destroy_structure_copy<VkIndirectExecutionSetInfoEXT>(const VkIndirectExecutionSetInfoEXT& obj, const VkAllocationCallbacks* pAllocator)
+{
+    // NOTE : Union of pointers to structures that all have sType; use sType to interpret.
+    auto pObj = (const VkBaseInStructure*&)obj;
+    switch (pObj ? pObj->sType : VkStructureType{ }) {
+    case VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_PIPELINE_INFO_EXT: {
+        destroy_dynamic_array_copy(1, obj.pPipelineInfo, pAllocator);
+    } break;
+    case VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_SHADER_INFO_EXT: {
+        destroy_dynamic_array_copy(1, obj.pShaderInfo, pAllocator);
+    } break;
+    default: {
+        // NOOP :
+    } break;
+    }
+}
+
+template <> VkPerformanceCounterResultKHR create_structure_copy<VkPerformanceCounterResultKHR>(const VkPerformanceCounterResultKHR& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)pAllocator;
+    // NOTE : POD union
+    return obj;
+}
+
+template <> void destroy_structure_copy<VkPerformanceCounterResultKHR>(const VkPerformanceCounterResultKHR& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)obj;
+    (void)pAllocator;
+    // NOOP : POD union
+}
+
+template <> VkPerformanceValueDataINTEL create_structure_copy<VkPerformanceValueDataINTEL>(const VkPerformanceValueDataINTEL& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)pAllocator;
+    assert(false && "VkPerformanceValueDataINTEL cannot be directly copied; copy via VkPerformanceValueINTEL which specifies VkPerformanceValueTypeINTEL");
+    return obj;
+}
+
+template <> void destroy_structure_copy<VkPerformanceValueDataINTEL>(const VkPerformanceValueDataINTEL& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)obj;
+    (void)pAllocator;
+    assert(false && "VkPerformanceValueDataINTEL cannot be directly destroyed; destroy via VkPerformanceValueINTEL which specifies VkPerformanceValueTypeINTEL");
+}
+
+template <> VkPipelineExecutableStatisticValueKHR create_structure_copy<VkPipelineExecutableStatisticValueKHR>(const VkPipelineExecutableStatisticValueKHR& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)pAllocator;
+    // NOTE : POD union
+    return obj;
+}
+
+template <> void destroy_structure_copy<VkPipelineExecutableStatisticValueKHR>(const VkPipelineExecutableStatisticValueKHR& obj, const VkAllocationCallbacks* pAllocator)
+{
+    (void)obj;
+    (void)pAllocator;
+    // NOOP : POD union
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Union members
+template <> VkDescriptorGetInfoEXT create_structure_copy<VkDescriptorGetInfoEXT>(const VkDescriptorGetInfoEXT& obj, const VkAllocationCallbacks* pAllocator)
+{
+    auto result = obj;
+    result.pNext = create_pnext_copy(obj.pNext, pAllocator);
+
+    // NOTE : Use obj.type to interpret obj.data union
+    switch (obj.type) {
+    case VK_DESCRIPTOR_TYPE_SAMPLER: {
+        result.data.pSampler = create_dynamic_array_copy(1, obj.data.pSampler, pAllocator);
+    } break;
+    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
+        result.data.pCombinedImageSampler = create_dynamic_array_copy(1, obj.data.pCombinedImageSampler, pAllocator);
+    } break;
+    case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: {
+        result.data.pInputAttachmentImage = create_dynamic_array_copy(1, obj.data.pInputAttachmentImage, pAllocator);
+    } break;
+    case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE: {
+        result.data.pSampledImage = create_dynamic_array_copy(1, obj.data.pSampledImage, pAllocator);
+    } break;
+    case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE: {
+        result.data.pStorageImage = create_dynamic_array_copy(1, obj.data.pStorageImage, pAllocator);
+    } break;
+    case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER: {
+        result.data.pUniformTexelBuffer = create_dynamic_array_copy(1, obj.data.pUniformTexelBuffer, pAllocator);
+    } break;
+    case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER: {
+        result.data.pStorageTexelBuffer = create_dynamic_array_copy(1, obj.data.pStorageTexelBuffer, pAllocator);
+    } break;
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: {
+        result.data.pUniformBuffer = create_dynamic_array_copy(1, obj.data.pUniformBuffer, pAllocator);
+    } break;
+    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER: {
+        result.data.pStorageBuffer = create_dynamic_array_copy(1, obj.data.pStorageBuffer, pAllocator);
+    } break;
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV: {
+        result.data.accelerationStructure = obj.data.accelerationStructure;
+    } break;
+    default: {
+        // NOOP :
+    } break;
+    }
+    return result;
+}
+
+template <> void destroy_structure_copy<VkDescriptorGetInfoEXT>(const VkDescriptorGetInfoEXT& obj, const VkAllocationCallbacks* pAllocator)
+{
+    destroy_pnext_copy(obj.pNext, pAllocator);
+
+    // NOTE : Use obj.type to interpret obj.data union
+    switch (obj.type) {
+    case VK_DESCRIPTOR_TYPE_SAMPLER: {
+        destroy_dynamic_array_copy(1, obj.data.pSampler, pAllocator);
+    } break;
+    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
+        destroy_dynamic_array_copy(1, obj.data.pCombinedImageSampler, pAllocator);
+    } break;
+    case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: {
+        destroy_dynamic_array_copy(1, obj.data.pInputAttachmentImage, pAllocator);
+    } break;
+    case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE: {
+        destroy_dynamic_array_copy(1, obj.data.pSampledImage, pAllocator);
+    } break;
+    case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE: {
+        destroy_dynamic_array_copy(1, obj.data.pStorageImage, pAllocator);
+    } break;
+    case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER: {
+        destroy_dynamic_array_copy(1, obj.data.pUniformTexelBuffer, pAllocator);
+    } break;
+    case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER: {
+        destroy_dynamic_array_copy(1, obj.data.pStorageTexelBuffer, pAllocator);
+    } break;
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: {
+        destroy_dynamic_array_copy(1, obj.data.pUniformBuffer, pAllocator);
+    } break;
+    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER: {
+        destroy_dynamic_array_copy(1, obj.data.pStorageBuffer, pAllocator);
+    } break;
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV: {
+        // NOOP : VkDeviceAddress
+    } break;
+    default: {
+        // NOOP :
+    } break;
+    }
+}
+
+template <> VkIndirectCommandsLayoutTokenEXT create_structure_copy<VkIndirectCommandsLayoutTokenEXT>(const VkIndirectCommandsLayoutTokenEXT& obj, const VkAllocationCallbacks* pAllocator)
+{
+    auto result = obj;
+    result.pNext = create_pnext_copy(obj.pNext, pAllocator);
+
+    // NOTE : Use obj.type to interpret obj.data union
+    switch (obj.type) {
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_CONSTANT_EXT:
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_SEQUENCE_INDEX_EXT: {
+        result.data.pPushConstant = create_dynamic_array_copy(1, obj.data.pPushConstant, pAllocator);
+    } break;
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_VERTEX_BUFFER_EXT: {
+        result.data.pVertexBuffer = create_dynamic_array_copy(1, obj.data.pVertexBuffer, pAllocator);
+    } break;
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_INDEX_BUFFER_EXT: {
+        result.data.pIndexBuffer = create_dynamic_array_copy(1, obj.data.pIndexBuffer, pAllocator);
+    } break;
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_EXECUTION_SET_EXT: {
+        result.data.pExecutionSet = create_dynamic_array_copy(1, obj.data.pExecutionSet, pAllocator);
+    } break;
+    default: {
+        // NOOP :
+    } break;
+    }
+    return result;
+}
+
+template <> void destroy_structure_copy<VkIndirectCommandsLayoutTokenEXT>(const VkIndirectCommandsLayoutTokenEXT& obj, const VkAllocationCallbacks* pAllocator)
+{
+    destroy_pnext_copy(obj.pNext, pAllocator);
+
+    // NOTE : Use obj.type to interpret obj.data union
+    switch (obj.type) {
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_CONSTANT_EXT:
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_SEQUENCE_INDEX_EXT: {
+        destroy_dynamic_array_copy(1, obj.data.pPushConstant, pAllocator);
+    } break;
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_VERTEX_BUFFER_EXT: {
+        destroy_dynamic_array_copy(1, obj.data.pVertexBuffer, pAllocator);
+    } break;
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_INDEX_BUFFER_EXT: {
+        destroy_dynamic_array_copy(1, obj.data.pIndexBuffer, pAllocator);
+    } break;
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_EXECUTION_SET_EXT: {
+        destroy_dynamic_array_copy(1, obj.data.pExecutionSet, pAllocator);
+    } break;
+    default: {
+        // NOOP :
+    } break;
+    }
+}
+
+template <> VkPerformanceValueINTEL create_structure_copy<VkPerformanceValueINTEL>(const VkPerformanceValueINTEL& obj, const VkAllocationCallbacks* pAllocator)
+{
+    auto result = obj;
+    // NOTE : Use obj.type to interpret obj.data union
+    // NOTE : Only VK_PERFORMANCE_VALUE_TYPE_STRING_INTEL needs explicit handling
+    if (obj.type == VK_PERFORMANCE_VALUE_TYPE_STRING_INTEL) {
+        result.data.valueString = create_dynamic_string_copy(obj.data.valueString, pAllocator);
+    }
+    return result;
+}
+
+template <> void destroy_structure_copy<VkPerformanceValueINTEL>(const VkPerformanceValueINTEL& obj, const VkAllocationCallbacks* pAllocator)
+{
+    // NOTE : Use obj.type to interpret obj.data union
+    // NOTE : Only VK_PERFORMANCE_VALUE_TYPE_STRING_INTEL needs explicit handling
+    if (obj.type == VK_PERFORMANCE_VALUE_TYPE_STRING_INTEL) {
+        destroy_dynamic_string_copy(obj.data.valueString, pAllocator);
+    }
+}
 
 } // namespace detail
 } // namespace gvk

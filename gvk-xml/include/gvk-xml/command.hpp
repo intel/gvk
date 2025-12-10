@@ -36,6 +36,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace xml {
 
+class Manifest;
+
 class Command final
     : public ApiElement
 {
@@ -51,6 +53,7 @@ public:
     Command() = default;
     Command(const tinyxml2::XMLElement& xmlElement);
 
+    bool contains_handle_out_parameter(const Manifest& manifest) const;
     Parameter get_create_info_parameter() const;
     Parameter get_target_parameter() const;
 

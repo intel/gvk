@@ -264,91 +264,12 @@ GVK_STUB_MAKE_TUPLE_DEFINITION(VkVideoSessionParametersUpdateInfoKHR)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Special case members
-inline auto make_tuple(const VkAccelerationStructureBuildGeometryInfoKHR& obj)
-{
-    return std::make_tuple(
-        obj.sType,
-        detail::PNextTupleElementWrapper{ obj.pNext },
-        obj.type,
-        obj.flags,
-        obj.mode,
-        obj.srcAccelerationStructure,
-        obj.dstAccelerationStructure,
-        obj.geometryCount,
-        detail::ArrayTupleElementWrapper<VkAccelerationStructureGeometryKHR>{ (size_t)obj.geometryCount, obj.pGeometries },
-        detail::PointerArrayTupleElementWrapper<VkAccelerationStructureGeometryKHR>{ (size_t)obj.geometryCount, obj.ppGeometries },
-        obj.scratchData
-    );
-}
-
-inline auto make_tuple(const VkAccelerationStructureTrianglesDisplacementMicromapNV& obj)
-{
-    return std::make_tuple(
-        obj.sType,
-        detail::PNextTupleElementWrapper { obj.pNext },
-        obj.displacementBiasAndScaleFormat,
-        obj.displacementVectorFormat,
-        obj.displacementBiasAndScaleBuffer,
-        obj.displacementBiasAndScaleStride,
-        obj.displacementVectorBuffer,
-        obj.displacementVectorStride,
-        obj.displacedMicromapPrimitiveFlags,
-        obj.displacedMicromapPrimitiveFlagsStride,
-        obj.indexType,
-        obj.indexBuffer,
-        obj.indexStride,
-        obj.baseTriangle,
-        obj.usageCountsCount,
-        detail::ArrayTupleElementWrapper<VkMicromapUsageEXT> { (size_t)obj.usageCountsCount, obj.pUsageCounts },
-        detail::PointerArrayTupleElementWrapper<VkMicromapUsageEXT> { (size_t)obj.usageCountsCount, obj.ppUsageCounts },
-        obj.micromap
-    );
-}
-
-inline auto make_tuple(const VkAccelerationStructureTrianglesOpacityMicromapEXT& obj)
-{
-    return std::make_tuple(
-        obj.sType,
-        detail::PNextTupleElementWrapper{ obj.pNext },
-        obj.indexType,
-        obj.indexBuffer,
-        obj.indexStride,
-        obj.baseTriangle,
-        obj.usageCountsCount,
-        detail::ArrayTupleElementWrapper<VkMicromapUsageEXT>{ (size_t)obj.usageCountsCount, obj.pUsageCounts },
-        detail::PointerArrayTupleElementWrapper<VkMicromapUsageEXT>{ (size_t)obj.usageCountsCount, obj.ppUsageCounts },
-        obj.micromap
-    );
-}
-
 inline auto make_tuple(const VkAccelerationStructureVersionInfoKHR& obj)
 {
     return std::make_tuple(
         obj.sType,
         detail::PNextTupleElementWrapper{ obj.pNext },
-        // NOTE : pVersionData is expected to point to the header of a previously
-        //  serialized acceleration structure, so this comparison just uses the
-        //  address...this can be revisited if deep comparisons become necessary.
-        obj.pVersionData
-    );
-}
-
-inline auto make_tuple(const VkMicromapBuildInfoEXT& obj)
-{
-    return std::make_tuple(
-        obj.sType,
-        detail::PNextTupleElementWrapper { obj.pNext },
-        obj.type,
-        obj.flags,
-        obj.mode,
-        obj.dstMicromap,
-        obj.usageCountsCount,
-        detail::ArrayTupleElementWrapper<VkMicromapUsageEXT>{ (size_t)obj.usageCountsCount, obj.pUsageCounts },
-        detail::PointerArrayTupleElementWrapper<VkMicromapUsageEXT>{ (size_t)obj.usageCountsCount, obj.ppUsageCounts },
-        obj.data,
-        obj.scratchData,
-        obj.triangleArray,
-        obj.triangleArrayStride
+        detail::ArrayTupleElementWrapper<uint8_t> { 2 * VK_UUID_SIZE, obj.pVersionData }
     );
 }
 
@@ -357,10 +278,7 @@ inline auto make_tuple(const VkMicromapVersionInfoEXT& obj)
     return std::make_tuple(
         obj.sType,
         detail::PNextTupleElementWrapper { obj.pNext },
-        // NOTE : pVersionData is expected to point to the header of a previously
-        //  serialized micromap, so this comparison just uses the address...this can be
-        //  revisited if deep comparisons become necessary.
-        obj.pVersionData
+        detail::ArrayTupleElementWrapper<uint8_t> { 2 * VK_UUID_SIZE, obj.pVersionData }
     );
 }
 
@@ -502,67 +420,199 @@ inline auto make_tuple(const VkWriteDescriptorSet& obj)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Array of pointer members
+inline auto make_tuple(const VkAccelerationStructureBuildGeometryInfoKHR& obj)
+{
+    return std::make_tuple(
+        obj.sType,
+        detail::PNextTupleElementWrapper{ obj.pNext },
+        obj.type,
+        obj.flags,
+        obj.mode,
+        obj.srcAccelerationStructure,
+        obj.dstAccelerationStructure,
+        obj.geometryCount,
+        detail::ArrayTupleElementWrapper<VkAccelerationStructureGeometryKHR>{ (size_t)obj.geometryCount, obj.pGeometries },
+        detail::PointerArrayTupleElementWrapper<VkAccelerationStructureGeometryKHR>{ (size_t)obj.geometryCount, obj.ppGeometries },
+        obj.scratchData
+    );
+}
+
+inline auto make_tuple(const VkAccelerationStructureTrianglesDisplacementMicromapNV& obj)
+{
+    return std::make_tuple(
+        obj.sType,
+        detail::PNextTupleElementWrapper{ obj.pNext },
+        obj.displacementBiasAndScaleFormat,
+        obj.displacementVectorFormat,
+        obj.displacementBiasAndScaleBuffer,
+        obj.displacementBiasAndScaleStride,
+        obj.displacementVectorBuffer,
+        obj.displacementVectorStride,
+        obj.displacedMicromapPrimitiveFlags,
+        obj.displacedMicromapPrimitiveFlagsStride,
+        obj.indexType,
+        obj.indexBuffer,
+        obj.indexStride,
+        obj.baseTriangle,
+        obj.usageCountsCount,
+        detail::ArrayTupleElementWrapper<VkMicromapUsageEXT> { (size_t)obj.usageCountsCount, obj.pUsageCounts },
+        detail::PointerArrayTupleElementWrapper<VkMicromapUsageEXT> { (size_t)obj.usageCountsCount, obj.ppUsageCounts },
+        obj.micromap
+    );
+}
+
+inline auto make_tuple(const VkAccelerationStructureTrianglesOpacityMicromapEXT& obj)
+{
+    return std::make_tuple(
+        obj.sType,
+        detail::PNextTupleElementWrapper{ obj.pNext },
+        obj.indexType,
+        obj.indexBuffer,
+        obj.indexStride,
+        obj.baseTriangle,
+        obj.usageCountsCount,
+        detail::ArrayTupleElementWrapper<VkMicromapUsageEXT>{ (size_t)obj.usageCountsCount, obj.pUsageCounts },
+        detail::PointerArrayTupleElementWrapper<VkMicromapUsageEXT>{ (size_t)obj.usageCountsCount, obj.ppUsageCounts },
+        obj.micromap
+    );
+}
+
+inline auto make_tuple(const VkMicromapBuildInfoEXT& obj)
+{
+    return std::make_tuple(
+        obj.sType,
+        detail::PNextTupleElementWrapper{ obj.pNext },
+        obj.type,
+        obj.flags,
+        obj.mode,
+        obj.dstMicromap,
+        obj.usageCountsCount,
+        detail::ArrayTupleElementWrapper<VkMicromapUsageEXT>{ (size_t)obj.usageCountsCount, obj.pUsageCounts },
+        detail::PointerArrayTupleElementWrapper<VkMicromapUsageEXT>{ (size_t)obj.usageCountsCount, obj.ppUsageCounts },
+        obj.data,
+        obj.scratchData,
+        obj.triangleArray,
+        obj.triangleArrayStride
+    );
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Unions
 inline auto make_tuple(const VkAccelerationStructureGeometryDataKHR& obj)
 {
     switch (((VkBaseInStructure&)obj).sType) {
     case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR: {
         return std::make_tuple(
-            obj.triangles,
-            VkAccelerationStructureGeometryAabbsDataKHR{ },
-            VkAccelerationStructureGeometryInstancesDataKHR{ }
+            detail::ArrayTupleElementWrapper<VkAccelerationStructureGeometryTrianglesDataKHR> { 1, &obj.triangles },
+            detail::ArrayTupleElementWrapper<VkAccelerationStructureGeometryAabbsDataKHR> { 0, nullptr },
+            detail::ArrayTupleElementWrapper<VkAccelerationStructureGeometryInstancesDataKHR> { 0, nullptr }
         );
     } break;
     case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_AABBS_DATA_KHR: {
         return std::make_tuple(
-            VkAccelerationStructureGeometryTrianglesDataKHR{ },
-            obj.aabbs,
-            VkAccelerationStructureGeometryInstancesDataKHR{ }
+            detail::ArrayTupleElementWrapper<VkAccelerationStructureGeometryTrianglesDataKHR> { 0, nullptr },
+            detail::ArrayTupleElementWrapper<VkAccelerationStructureGeometryAabbsDataKHR> { 1, &obj.aabbs },
+            detail::ArrayTupleElementWrapper<VkAccelerationStructureGeometryInstancesDataKHR> { 0, nullptr }
         );
     } break;
     case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR: {
         return std::make_tuple(
-            VkAccelerationStructureGeometryTrianglesDataKHR{ },
-            VkAccelerationStructureGeometryAabbsDataKHR{ },
-            obj.instances
+            detail::ArrayTupleElementWrapper<VkAccelerationStructureGeometryTrianglesDataKHR> { 0, nullptr },
+            detail::ArrayTupleElementWrapper<VkAccelerationStructureGeometryAabbsDataKHR> { 0, nullptr },
+            detail::ArrayTupleElementWrapper<VkAccelerationStructureGeometryInstancesDataKHR> { 1, &obj.instances }
         );
     } break;
     default: {
     } break;
     }
     return std::make_tuple(
-        VkAccelerationStructureGeometryTrianglesDataKHR{ },
-        VkAccelerationStructureGeometryAabbsDataKHR{ },
-        VkAccelerationStructureGeometryInstancesDataKHR{ }
+        detail::ArrayTupleElementWrapper<VkAccelerationStructureGeometryTrianglesDataKHR> { 0, nullptr },
+        detail::ArrayTupleElementWrapper<VkAccelerationStructureGeometryAabbsDataKHR> { 0, nullptr },
+        detail::ArrayTupleElementWrapper<VkAccelerationStructureGeometryInstancesDataKHR> { 0, nullptr }
     );
 }
 
 inline auto make_tuple(const VkAccelerationStructureMotionInstanceDataNV& obj)
 {
+    // POD union
     return std::make_tuple(
-        obj.srtMotionInstance
+        detail::ArrayTupleElementWrapper<uint8_t> { sizeof(obj), (const uint8_t*)&obj }
     );
 }
 
 inline auto make_tuple(const VkClearColorValue& obj)
 {
+    // POD union
     return std::make_tuple(
-        obj.uint32[0],
-        obj.uint32[1],
-        obj.uint32[2],
-        obj.uint32[3]
+        detail::ArrayTupleElementWrapper<uint8_t> { sizeof(obj), (const uint8_t*)&obj }
     );
 }
 
 inline auto make_tuple(const VkClearValue& obj)
 {
+    // POD union
     return std::make_tuple(
-        obj.color
+        detail::ArrayTupleElementWrapper<uint8_t> { sizeof(obj), (const uint8_t*)&obj }
+    );
+}
+
+inline auto make_tuple(const VkClusterAccelerationStructureOpInputNV& obj)
+{
+    // NOTE : Union of pointers to structures that all have sType; use sType to interpret.
+    auto pObj = (const VkBaseInStructure*&)obj;
+    auto sType = pObj ? pObj->sType : VkStructureType{ };
+    switch (sType) {
+    case VK_STRUCTURE_TYPE_CLUSTER_ACCELERATION_STRUCTURE_CLUSTERS_BOTTOM_LEVEL_INPUT_NV: {
+        return std::make_tuple(
+            detail::ArrayTupleElementWrapper<VkClusterAccelerationStructureClustersBottomLevelInputNV> { 1, obj.pClustersBottomLevel },
+            detail::ArrayTupleElementWrapper<VkClusterAccelerationStructureTriangleClusterInputNV> { 0, nullptr },
+            detail::ArrayTupleElementWrapper<VkClusterAccelerationStructureMoveObjectsInputNV> { 0, nullptr }
+        );
+    } break;
+    case VK_STRUCTURE_TYPE_CLUSTER_ACCELERATION_STRUCTURE_TRIANGLE_CLUSTER_INPUT_NV: {
+        return std::make_tuple(
+            detail::ArrayTupleElementWrapper<VkClusterAccelerationStructureClustersBottomLevelInputNV> { 0, nullptr },
+            detail::ArrayTupleElementWrapper<VkClusterAccelerationStructureTriangleClusterInputNV> { 1, obj.pTriangleClusters },
+            detail::ArrayTupleElementWrapper<VkClusterAccelerationStructureMoveObjectsInputNV> { 0, nullptr }
+        );
+    } break;
+    case VK_STRUCTURE_TYPE_CLUSTER_ACCELERATION_STRUCTURE_MOVE_OBJECTS_INPUT_NV: {
+        return std::make_tuple(
+            detail::ArrayTupleElementWrapper<VkClusterAccelerationStructureClustersBottomLevelInputNV> { 0, nullptr },
+            detail::ArrayTupleElementWrapper<VkClusterAccelerationStructureTriangleClusterInputNV> { 0, nullptr },
+            detail::ArrayTupleElementWrapper<VkClusterAccelerationStructureMoveObjectsInputNV> { 1, obj.pMoveObjects }
+        );
+    } break;
+    default: {
+    } break;
+    }
+    return std::make_tuple(
+        detail::ArrayTupleElementWrapper<VkClusterAccelerationStructureClustersBottomLevelInputNV> { 0, nullptr },
+        detail::ArrayTupleElementWrapper<VkClusterAccelerationStructureTriangleClusterInputNV> { 0, nullptr },
+        detail::ArrayTupleElementWrapper<VkClusterAccelerationStructureMoveObjectsInputNV> { 0, nullptr }
+    );
+}
+
+inline auto make_tuple(const VkDescriptorDataEXT& obj)
+{
+    assert(false && "VkDescriptorDataEXT cannot be directly converted to std::tuple<>; convert to std::tuple<> via VkDescriptorGetInfoEXT which specifies VkDescriptorType");
+    return std::make_tuple(
+        detail::ArrayTupleElementWrapper<uint8_t> { sizeof(obj), (const uint8_t*)&obj }
+    );
+}
+
+inline auto make_tuple(const VkDeviceOrHostAddressConstAMDX& obj)
+{
+    assert(sizeof(obj.deviceAddress) == sizeof(VkDeviceOrHostAddressConstAMDX));
+    return std::make_tuple(
+        obj.deviceAddress
     );
 }
 
 inline auto make_tuple(const VkDeviceOrHostAddressConstKHR& obj)
 {
+    assert(sizeof(obj.deviceAddress) == sizeof(VkDeviceOrHostAddressConstKHR));
     return std::make_tuple(
         obj.deviceAddress
     );
@@ -570,13 +620,50 @@ inline auto make_tuple(const VkDeviceOrHostAddressConstKHR& obj)
 
 inline auto make_tuple(const VkDeviceOrHostAddressKHR& obj)
 {
+    assert(sizeof(obj.deviceAddress) == sizeof(VkDeviceOrHostAddressKHR));
     return std::make_tuple(
         obj.deviceAddress
     );
 }
 
+inline auto make_tuple(const VkIndirectCommandsTokenDataEXT& obj)
+{
+    assert(false && "VkIndirectCommandsTokenDataEXT cannot be directly converted to std::tuple<>; convert to std::tuple<> via VkIndirectCommandsLayoutTokenEXT which specifies VkIndirectCommandsTokenTypeEXT");
+    return std::make_tuple(
+        detail::ArrayTupleElementWrapper<uint8_t> { sizeof(obj), (const uint8_t*)&obj }
+    );
+}
+
+inline auto make_tuple(const VkIndirectExecutionSetInfoEXT& obj)
+{
+    // NOTE : Union of pointers to structures that all have sType; use sType to interpret.
+    auto pObj = (const VkBaseInStructure*&)obj;
+    auto sType = pObj ? pObj->sType : VkStructureType{ };
+    switch (sType) {
+    case VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_PIPELINE_INFO_EXT: {
+        return std::make_tuple(
+            detail::ArrayTupleElementWrapper<VkIndirectExecutionSetPipelineInfoEXT> { 1, obj.pPipelineInfo },
+            detail::ArrayTupleElementWrapper<VkIndirectExecutionSetShaderInfoEXT> { 0, nullptr }
+        );
+    } break;
+    case VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_SHADER_INFO_EXT: {
+        return std::make_tuple(
+            detail::ArrayTupleElementWrapper<VkIndirectExecutionSetPipelineInfoEXT> { 0, nullptr },
+            detail::ArrayTupleElementWrapper<VkIndirectExecutionSetShaderInfoEXT> { 1, obj.pShaderInfo }
+        );
+    } break;
+    default: {
+    } break;
+    }
+    return std::make_tuple(
+        detail::ArrayTupleElementWrapper<VkIndirectExecutionSetPipelineInfoEXT> { 0, nullptr },
+        detail::ArrayTupleElementWrapper<VkIndirectExecutionSetShaderInfoEXT> { 0, nullptr }
+    );
+}
+
 inline auto make_tuple(const VkPerformanceCounterResultKHR& obj)
 {
+    assert(sizeof(obj.uint64) == sizeof(VkPerformanceCounterResultKHR));
     return std::make_tuple(
         obj.uint64
     );
@@ -584,6 +671,7 @@ inline auto make_tuple(const VkPerformanceCounterResultKHR& obj)
 
 inline auto make_tuple(const VkPerformanceValueDataINTEL& obj)
 {
+    assert(sizeof(obj.value64) == sizeof(VkPerformanceValueDataINTEL));
     return std::make_tuple(
         obj.value64
     );
@@ -591,8 +679,121 @@ inline auto make_tuple(const VkPerformanceValueDataINTEL& obj)
 
 inline auto make_tuple(const VkPipelineExecutableStatisticValueKHR& obj)
 {
+    assert(sizeof(obj.u64) == sizeof(VkPipelineExecutableStatisticValueKHR));
     return std::make_tuple(
         obj.u64
+    );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Union members
+inline auto make_tuple(const VkDescriptorGetInfoEXT& obj)
+{
+    detail::ArrayTupleElementWrapper<VkSampler> sampler;
+    detail::ArrayTupleElementWrapper<VkDescriptorImageInfo> descriptorImageInfo;
+    detail::ArrayTupleElementWrapper<VkDescriptorAddressInfoEXT> descriptorAddressInfo;
+    VkDeviceAddress deviceAddress = 0;
+    switch (obj.type) {
+    case VK_DESCRIPTOR_TYPE_SAMPLER: {
+        sampler.count = 1;
+        sampler.ptr = obj.data.pSampler;
+    } break;
+    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
+        descriptorImageInfo.count = 1;
+        descriptorImageInfo.ptr = obj.data.pCombinedImageSampler;
+    } break;
+    case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: {
+        descriptorImageInfo.count = 1;
+        descriptorImageInfo.ptr = obj.data.pInputAttachmentImage;
+    } break;
+    case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE: {
+        descriptorImageInfo.count = 1;
+        descriptorImageInfo.ptr = obj.data.pSampledImage;
+    } break;
+    case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE: {
+        descriptorImageInfo.count = 1;
+        descriptorImageInfo.ptr = obj.data.pStorageImage;
+    } break;
+    case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER: {
+        descriptorAddressInfo.count = 1;
+        descriptorAddressInfo.ptr = obj.data.pUniformTexelBuffer;
+    } break;
+    case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER: {
+        descriptorAddressInfo.count = 1;
+        descriptorAddressInfo.ptr = obj.data.pStorageTexelBuffer;
+    } break;
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: {
+        descriptorAddressInfo.count = 1;
+        descriptorAddressInfo.ptr = obj.data.pUniformBuffer;
+    } break;
+    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER: {
+        descriptorAddressInfo.count = 1;
+        descriptorAddressInfo.ptr = obj.data.pStorageBuffer;
+    } break;
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV: {
+        deviceAddress = obj.data.accelerationStructure;
+    } break;
+    default: {
+        // NOOP :
+    } break;
+    }
+    return std::make_tuple(
+        obj.sType,
+        detail::PNextTupleElementWrapper{ obj.pNext },
+        obj.type,
+        sampler,
+        descriptorImageInfo,
+        descriptorAddressInfo,
+        deviceAddress
+    );
+}
+
+inline auto make_tuple(const VkIndirectCommandsLayoutTokenEXT& obj)
+{
+    detail::ArrayTupleElementWrapper<VkIndirectCommandsPushConstantTokenEXT> pushConstant;
+    detail::ArrayTupleElementWrapper<VkIndirectCommandsVertexBufferTokenEXT> vertexBuffer;
+    detail::ArrayTupleElementWrapper<VkIndirectCommandsIndexBufferTokenEXT> indexBuffer;
+    detail::ArrayTupleElementWrapper<VkIndirectCommandsExecutionSetTokenEXT> executionSet;
+    switch (obj.type) {
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_CONSTANT_EXT:
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_SEQUENCE_INDEX_EXT: {
+        pushConstant.count = 1;
+        pushConstant.ptr = obj.data.pPushConstant;
+    } break;
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_VERTEX_BUFFER_EXT: {
+        vertexBuffer.count = 1;
+        vertexBuffer.ptr = obj.data.pVertexBuffer;
+    } break;
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_INDEX_BUFFER_EXT: {
+        indexBuffer.count = 1;
+        indexBuffer.ptr = obj.data.pIndexBuffer;
+    } break;
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_EXECUTION_SET_EXT: {
+        executionSet.count = 1;
+        executionSet.ptr = obj.data.pExecutionSet;
+    } break;
+    default: {
+        // NOOP :
+    } break;
+    }
+    return std::make_tuple(
+        obj.sType,
+        detail::PNextTupleElementWrapper{ obj.pNext },
+        obj.type,
+        pushConstant,
+        vertexBuffer,
+        indexBuffer,
+        executionSet,
+        obj.offset
+    );
+}
+
+inline auto make_tuple(const VkPerformanceValueINTEL& obj)
+{
+    return std::make_tuple(
+        obj.type,
+        obj.data
     );
 }
 

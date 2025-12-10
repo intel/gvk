@@ -25,7 +25,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include "gvk-state-tracker/state-tracker.hpp"
+#include "gvk-containers/string-array-index-map.hpp"
 #include "gvk-layer/registry.hpp"
+#include "gvk-environment.hpp"
 #include "gvk-handles.hpp"
 
 #include <cassert>
@@ -33,10 +35,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace state_tracker {
 
+VkResult StateTracker::pre_vkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance, VkResult gvkResult)
+{
+    return BasicStateTracker::pre_vkCreateInstance(pCreateInfo, pAllocator, pInstance, gvkResult);
+}
+
 VkResult StateTracker::post_vkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance, VkResult gvkResult)
 {
     if (gvkResult == VK_SUCCESS) {
         assert(pCreateInfo);
+
         // TODO : Move to layer::Registry so it's handled for all layers...
         auto pNext = (VkBaseOutStructure*)pCreateInfo;
         while (pNext) {
@@ -45,6 +53,7 @@ VkResult StateTracker::post_vkCreateInstance(const VkInstanceCreateInfo* pCreate
             }
             pNext = pNext->pNext;
         }
+
         gvkResult = BasicStateTracker::post_vkCreateInstance(pCreateInfo, pAllocator, pInstance, gvkResult);
         assert(gvkResult == VK_SUCCESS);
         assert(pInstance);

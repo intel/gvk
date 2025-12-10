@@ -123,8 +123,9 @@ public:
 namespace gvk {
 namespace layer {
 
-void on_load(Registry& registry)
+void on_load(const VkInstanceCreateInfo* pInstanceCreateInfo, Registry& registry)
 {
+    (void)pInstanceCreateInfo;
     registry.layers.push_back(std::make_unique<GvkSampleLayer>());
 }
 

@@ -57,7 +57,7 @@ public:
             "        ",
             "sType",
             "archive(*(const {structureType}*)pNext);",
-            "assert(false && \"Unrecognized VkStructureType\");"
+            "archive(*(const VkBaseInStructure*)pNext); // assert(false && \"Unrecognized VkStructureType\"); // TODO : Need to revisit how to deal with unknown structure types...ie. VK_STRUCTURE_TYPE_LOADER_DEVICE_CREATE_INFO"
         );
         file << "        } else {" << std::endl;
         file << "        archive(false);" << std::endl;

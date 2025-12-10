@@ -29,6 +29,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-state-tracker/generated/state-tracked-handles.hpp"
 #include "gvk-structures/defaults.hpp"
 #include "gvk-structures/get-stype.hpp"
+#include "gvk-environment.hpp"
 
 #include <cassert>
 #include <vector>
@@ -305,8 +306,32 @@ void StateTracker::get_state_tracked_mapped_memory(const GvkStateTrackedObject* 
 namespace gvk {
 namespace layer {
 
-void on_load(Registry& registry)
+void on_load(const VkInstanceCreateInfo* pInstanceCreateInfo, Registry& registry)
 {
+    // Check if VK_LAYER_KHRONOS_validation is enabled
+    bool validationEnabled = gvk::string::contains("VK_INSTANCE_LAYERS", "validation") || gvk::string::contains("VK_LOADER_LAYERS_ENABLE", "validation");
+    if (!validationEnabled && pInstanceCreateInfo) {
+        for (uint32_t layer_i = 0; layer_i < pInstanceCreateInfo->enabledLayerCount; ++layer_i) {
+            if (!strcmp(pInstanceCreateInfo->ppEnabledLayerNames[layer_i], "VK_LAYER_KHRONOS_validation")) {
+                validationEnabled = true;
+                break;
+            }
+        }
+    }
+
+    // If VK_LAYER_KHRONOS_validation is enabled, ensure that VK_KHRONOS_VALIDATION_UNIQUE_HANDLES
+    //  is also enabled, otherwise enable UniqueHandlesManager
+    if (validationEnabled) {
+        gvk::set_env_var("VK_KHRONOS_VALIDATION_UNIQUE_HANDLES", "true");
+    } else {
+        registry.uniqueHandlesManager.enabled = true;
+    }
+
+    // TODO : Option to disable all besides VK_KHRONOS_VALIDATION_UNIQUE_HANDLES
+
+    // TODO : Validate that validation layer is closest to driver
+
+    // Enable state tracker
     registry.layers.push_back(std::make_unique<state_tracker::StateTracker>());
 }
 

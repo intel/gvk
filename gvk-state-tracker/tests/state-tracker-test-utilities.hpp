@@ -80,7 +80,7 @@ class StateTrackerValidationContext final
     : public gvk::Context
 {
 public:
-    static VkResult create(StateTrackerValidationContext* pContext);
+    static VkResult create(StateTrackerValidationContext* pContext, VkBool32 loadApiDumpLayer = false);
     const VkPhysicalDevice8BitStorageFeatures& get_physical_device_8_bit_storage_features() const;
     const VkPhysicalDeviceSynchronization2Features& get_physical_device_synchronization_2_features() const;
     const VkPhysicalDeviceAccelerationStructureFeaturesKHR& get_physical_device_acceleration_structure_features() const;

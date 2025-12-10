@@ -64,7 +64,8 @@ public:
                 "pNext = pAllocator->pfnAllocation(pAllocator->pUserData, sizeof({structureType}), 0, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);",
                 "archive(*({structureType}*)pNext);",
             },
-            "assert(false && \"Unrecognized VkStructureType\");"
+R"(pNext = pAllocator->pfnAllocation(pAllocator->pUserData, sizeof(VkBaseInStructure), 0, VK_SYSTEM_ALLOCATION_SCOPE_OBJECT);
+archive(*(VkBaseInStructure*)pNext); // assert(false && \"Unrecognized VkStructureType\"); // TODO : Need to revisit how to deal with unknown structure types...ie. VK_STRUCTURE_TYPE_LOADER_DEVICE_CREATE_INFO)"
         );
         file << "    }" << std::endl;
         file << "    return pNext;" << std::endl;

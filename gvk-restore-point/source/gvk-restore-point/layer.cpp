@@ -191,8 +191,9 @@ void Layer::destroy_restore_point(VkInstance instance, GvkRestorePoint restorePo
 namespace gvk {
 namespace layer {
 
-void on_load(Registry& registry)
+void on_load(const VkInstanceCreateInfo* pInstanceCreateInfo, Registry& registry)
 {
+    (void)pInstanceCreateInfo;
     registry.layers.push_back(std::make_unique<restore_point::Layer>());
 }
 

@@ -49,6 +49,7 @@ template <> void print<SECURITY_ATTRIBUTES>(Printer& printer, const SECURITY_ATT
 namespace detail {
 
 void print_pnext(Printer& printer, const void* pNext);
+void print_pnext(Printer& printer, const char* pName, const void* pNext);
 
 } // namespace detail
 } // namespace gvk

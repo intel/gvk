@@ -63,6 +63,9 @@ public:
     VirtualSwapchain() = default;
     VirtualSwapchain(VirtualSwapchain&& other);
     VirtualSwapchain& operator=(VirtualSwapchain&& other);
+    ~VirtualSwapchain();
+    void reset();
+
     VkResult post_vkCreateSwapchainKHR(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain);
     void pre_vkDestroySwapchainKHR(VkDevice device, VkSwapchainKHR swapchain, const VkAllocationCallbacks* pAllocator);
     VkResult post_vkGetSwapchainImagesKHR(VkDevice device, VkSwapchainKHR swapchain, uint32_t* pSwapchainImageCount, VkImage* pSwapchainImages);

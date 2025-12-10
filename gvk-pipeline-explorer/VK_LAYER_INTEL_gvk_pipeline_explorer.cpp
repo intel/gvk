@@ -30,8 +30,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace layer {
 
-void on_load(Registry& registry)
+void on_load(const VkInstanceCreateInfo* pInstanceCreateInfo, Registry& registry)
 {
+    (void)pInstanceCreateInfo;
     auto pPipelineExplorer = new gvk::PipelineExplorer;
     pPipelineExplorer->vkLayer = true;
     registry.apiCallHandler.reset(pPipelineExplorer);

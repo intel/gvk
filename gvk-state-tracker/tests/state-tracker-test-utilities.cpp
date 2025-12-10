@@ -77,7 +77,7 @@ template <> void print<GvkStateTrackedObjectInfo>(Printer& printer, const GvkSta
 
 } // namespace gvk
 
-VkResult StateTrackerValidationContext::create(StateTrackerValidationContext* pContext)
+VkResult StateTrackerValidationContext::create(StateTrackerValidationContext* pContext, VkBool32 loadApiDumpLayer)
 {
     assert(pContext);
     auto vkLayerPath = gvk::get_env_var("VK_LAYER_PATH");
@@ -92,7 +92,10 @@ VkResult StateTrackerValidationContext::create(StateTrackerValidationContext* pC
     instanceCreateInfo.enabledLayerCount = (uint32_t)layers.size();
     instanceCreateInfo.ppEnabledLayerNames = layers.data();
     auto contextCreateInfo = gvk::get_default<gvk::Context::CreateInfo>();
-    contextCreateInfo.loadValidationLayer = VK_TRUE;
+    contextCreateInfo.loadApiDumpLayer = loadApiDumpLayer;
+    // TODO : Need to run tests with and without validation enabled, and fail if the
+    //  run with validation has any validation errors
+    contextCreateInfo.loadValidationLayer = VK_FALSE;
     contextCreateInfo.loadWsiExtensions = VK_TRUE;
     contextCreateInfo.pInstanceCreateInfo = &instanceCreateInfo;
     return gvk::Context::create(&contextCreateInfo, nullptr, pContext);

@@ -25,6 +25,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include "gvk-layer/generated/basic-layer.hpp"
+#include "gvk-layer/generated/unique-handles-layer-hooks.hpp"
 #include "gvk-layer/generated/layer-hooks.hpp"
 #include "gvk-layer/registry.hpp"
 #include "gvk-structures.hpp"
@@ -92,52 +93,60 @@ VkResult create_instance(const VkInstanceCreateInfo* pCreateInfo, const VkAlloca
 
         // Advance layer link info
         pLayerLinkInfo->u.pLayerInfo = pLayerLinkInfo->u.pLayerInfo->pNext;
-
-        // Get layers and run pre vkCreateInstance() handlers
-        auto& layers = layerRegistry.layers;
-        on_load(layerRegistry);
         vkResult = VK_SUCCESS;
+
+        // Intialize custom layers
+        on_load(pCreateInfo, layerRegistry);
+
+        // Run pre_vkCreateInstance() handlers
+        auto& layers = layerRegistry.layers;
         for (auto layerItr = layers.begin(); layerItr != layers.end(); ++layerItr) {
             assert(*layerItr && "gvk::layer::Registry contains a null layer; are layers configured correctly and intialized via gvk::layer::on_load()?");
             vkResult = (*layerItr)->pre_vkCreateInstance(pCreateInfo, pAllocator, pInstance, vkResult);
         }
 
-        // TODO : Documentation
+        // Make pre_execute_vkCreateInstance() call against ApiCallHandler
         auto& apiCallHandler = layerRegistry.apiCallHandler;
         if (apiCallHandler) {
             vkResult = apiCallHandler->pre_execute_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
         }
 
-#if 0
-        // Make the vkCreateInstance() call down the layer chain
-        vkResult = pfn_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
-#else
-        // TODO : Documentation
+        // Make execute_vkCreateInstance() call against ApiCallHandler, or down layer chain
         if (apiCallHandler) {
             apiCallHandler->dispatchTable.gvkCreateInstance = pfn_vkCreateInstance;
             vkResult = apiCallHandler->execute_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
         } else {
             vkResult = pfn_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
         }
-#endif
         if (vkResult == VK_SUCCESS) {
             DispatchTable instanceDispatchTable { };
             instanceDispatchTable.gvkGetInstanceProcAddr = layerRegistry.pfn_vkGetInstanceProcAddr;
             DispatchTable::load_instance_entry_points(*pInstance, &instanceDispatchTable);
             layerRegistry.instance = *pInstance;
             layerRegistry.apiVersion = pCreateInfo->pApplicationInfo ? pCreateInfo->pApplicationInfo->apiVersion : VK_API_VERSION_1_0;
-            layerRegistry.VkInstanceDispatchTables[get_dispatch_key(*pInstance)] = instanceDispatchTable;
+
+            // Setup UniqueHandlesManager VkInstanceDispatchTables if enabled
+            if (layerRegistry.uniqueHandlesManager.enabled) {
+                layerRegistry.uniqueHandlesManager.VkInstanceDispatchTables[get_dispatch_key(*pInstance)] = instanceDispatchTable;
+                auto uniqueHandlesDispatchTable = gvk::layer::hooks::unique_handles::get_dispatch_table();
+                uniqueHandlesDispatchTable.gvkGetInstanceProcAddr = layerRegistry.pfn_vkGetInstanceProcAddr;
+                layerRegistry.VkInstanceDispatchTables[get_dispatch_key(*pInstance)] = uniqueHandlesDispatchTable;
+            } else {
+                layerRegistry.VkInstanceDispatchTables[get_dispatch_key(*pInstance)] = instanceDispatchTable;
+            }
+
+            // Set the custom ApiCallHandler's VkInstance DispatchTable
             if (apiCallHandler) {
-                apiCallHandler->dispatchTable = instanceDispatchTable;
+                apiCallHandler->dispatchTable = layerRegistry.VkInstanceDispatchTables[get_dispatch_key(*pInstance)];
             }
         }
 
-        // TODO : Documentation
+        // Make post_execute_vkCreateInstance() call against ApiCallHandler
         if (apiCallHandler) {
             vkResult = apiCallHandler->post_execute_vkCreateInstance(pCreateInfo, pAllocator, pInstance);
         }
 
-        // Run post vkCreateInstance() handlers
+        // Run post_vkCreateInstance() handlers
         for (auto layerItr = layers.rbegin(); layerItr != layers.rend(); ++layerItr) {
             assert(*layerItr && "gvk::layer::Registry contains a null layer; are layers configured correctly and intialized via gvk::layer::on_load()?");
             vkResult = (*layerItr)->post_vkCreateInstance(pCreateInfo, pAllocator, pInstance, vkResult);
@@ -157,7 +166,7 @@ void destroy_instance(VkInstance instance, const VkAllocationCallbacks* pAllocat
         (*layerItr)->pre_vkDestroyInstance(instance, pAllocator);
     }
 
-    // TODO : Documentation
+    // Make pre_execute_vkDestroyInstance() call against ApiCallHandler
     auto& apiCallHandler = layerRegistry.apiCallHandler;
     if (apiCallHandler) {
         apiCallHandler->pre_execute_vkDestroyInstance(instance, pAllocator);
@@ -168,6 +177,7 @@ void destroy_instance(VkInstance instance, const VkAllocationCallbacks* pAllocat
     const auto& instanceDispatchTable = instanceDispatchTableItr->second;
     assert(instanceDispatchTable.gvkDestroyInstance && "gvk::layer::Registry VkInstance gvk::DispatchTable contains a null entry point; are the Vulkan SDK, runtime, and layers configured correctly?");
 
+    // Make execute_vkDestroyInstance() call against ApiCallHandler, or down layer chain
     if (apiCallHandler) {
         apiCallHandler->dispatchTable.gvkDestroyInstance = instanceDispatchTable.gvkDestroyInstance;
         apiCallHandler->execute_vkDestroyInstance(instance, pAllocator);
@@ -184,6 +194,7 @@ void destroy_instance(VkInstance instance, const VkAllocationCallbacks* pAllocat
     layerRegistry.VkPhysicalDevices.clear();
 #endif
 
+    // Make post_execute_vkDestroyInstance() call against ApiCallHandler
     if (apiCallHandler) {
         apiCallHandler->post_execute_vkDestroyInstance(instance, pAllocator);
     }
@@ -252,7 +263,7 @@ VkResult create_physical_device_mappings(VkInstance instance)
             loaderPhysicalDeviceInfos.erase(physicalDeviceProperties);
         }
 
-        // Ensure that every VkPhysicalDevice has been mapped 
+        // Ensure that every VkPhysicalDevice has been mapped
         gvk_result(loaderPhysicalDeviceInfos.empty() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
     } gvk_result_scope_end;
     return gvkResult;
@@ -272,44 +283,63 @@ VkResult create_device(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo
     const auto& instanceDispatchTable = instanceDispatchTableItr->second;
     if (pfn_vkGetDeviceProcAddr && instanceDispatchTable.gvkCreateDevice) {
         pLayerDeviceCreateInfo->u.pLayerInfo = pLayerDeviceCreateInfo->u.pLayerInfo->pNext;
-        auto& layers = Registry::get().layers;
         vkResult = VK_SUCCESS;
+
+        // Run pre_vkCreateDevice() handlers
+        auto& layers = Registry::get().layers;
         for (auto layerItr = layers.begin(); layerItr != layers.end(); ++layerItr) {
             assert(*layerItr && "gvk::layer::Registry contains a null layer; are layers configured correctly and intialized via gvk::layer::on_load()?");
             vkResult = (*layerItr)->pre_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice, vkResult);
         }
 
-        // TODO : Documentation
+        // Make pre_execute_vkCreateDevice() call against ApiCallHandler
         auto& apiCallHandler = Registry::get().apiCallHandler;
         if (apiCallHandler) {
             vkResult = apiCallHandler->pre_execute_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
         }
 
-        // TODO : Documentation
+        // Make execute_vkCreateDevice() call against ApiCallHandler, or down layer chain
         if (apiCallHandler) {
             apiCallHandler->dispatchTable.gvkCreateDevice = instanceDispatchTable.gvkCreateDevice;
             vkResult = apiCallHandler->execute_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
         } else {
             vkResult = instanceDispatchTable.gvkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
         }
-
-        // TODO : Documentation
         if (vkResult == VK_SUCCESS) {
             DispatchTable deviceDispatchTable { };
             deviceDispatchTable.gvkGetDeviceProcAddr = pfn_vkGetDeviceProcAddr;
             DispatchTable::load_device_entry_points(*pDevice, &deviceDispatchTable);
-            Registry::get().VkDeviceDispatchTables[get_dispatch_key(*pDevice)] = deviceDispatchTable;
-            if (apiCallHandler) {
-                apiCallHandler->dispatchTable = deviceDispatchTable;
+
+            // Setup UniqueHandlesManager VkDeviceDispatchTables if enabled
+            auto& layerRegistry = Registry::get();
+            if (layerRegistry.uniqueHandlesManager.enabled) {
+                layerRegistry.uniqueHandlesManager.VkDeviceDispatchTables[get_dispatch_key(*pDevice)] = deviceDispatchTable;
+                auto uniqueHandlesDispatchTable = gvk::layer::hooks::unique_handles::get_dispatch_table();
+                uniqueHandlesDispatchTable.gvkGetInstanceProcAddr = instanceDispatchTable.gvkGetInstanceProcAddr;
+                uniqueHandlesDispatchTable.gvkGetDeviceProcAddr = pfn_vkGetDeviceProcAddr;
+                layerRegistry.VkDeviceDispatchTables[get_dispatch_key(*pDevice)] = uniqueHandlesDispatchTable;
+            } else {
+                layerRegistry.VkDeviceDispatchTables[get_dispatch_key(*pDevice)] = deviceDispatchTable;
             }
+
+            #if 0
+            // TODO : Need to setup ApiCallHandler to manage multiple DispatchTables.  Any VkDevice
+            //  or VkCommandBuffer call can be made against its parent VkInstance DispatchTable,
+            //  but it would be more ideal to have the DispatchTable with the narrowest scope
+            //  possible for each object.
+            // Set the custom ApiCallHandler's VkDevice DispatchTable
+            if (apiCallHandler) {
+                apiCallHandler->dispatchTable = layerRegistry.VkDeviceDispatchTables[get_dispatch_key(*pDevice)];
+            }
+            #endif
         }
 
-        // TODO : Documentation
+        // Make post_execute_vkCreateDevice() call against ApiCallHandler
         if (apiCallHandler) {
             vkResult = apiCallHandler->post_execute_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);
         }
 
-        // TODO : Documentation
+        // Run post_vkCreateDevice() handlers
         for (auto layerItr = layers.rbegin(); layerItr != layers.rend(); ++layerItr) {
             assert(*layerItr && "gvk::layer::Registry contains a null layer; are layers configured correctly and intialized via gvk::layer::on_load()?");
             vkResult = (*layerItr)->post_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice, vkResult);
@@ -328,7 +358,6 @@ void destroy_device(VkDevice device, const VkAllocationCallbacks* pAllocator)
         (*layerItr)->pre_vkDestroyDevice(device, pAllocator);
     }
 
-    // TODO : Documentation
     auto& apiCallHandler = Registry::get().apiCallHandler;
     if (apiCallHandler) {
         apiCallHandler->pre_execute_vkDestroyDevice(device, pAllocator);

@@ -26,17 +26,23 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
+#include "gvk-defines.hpp"
 #include "gvk-layer/generated/basic-api-call-handler.hpp"
 #include "gvk-layer/generated/basic-layer.hpp"
 #include "gvk-layer/generated/layer-hooks.hpp"
-#include "gvk-defines.hpp"
+#include "gvk-layer/unique-handles-manager.hpp"
+#include "gvk-containers/thread-safe-unordered-map.hpp"
+#include "gvk-command-structures.hpp"
 #include "gvk-dispatch-table.hpp"
+#include "gvk-reference.hpp"
+#include "gvk-structures.hpp"
 
 #include "vulkan/vk_layer.h"
 
 #include <memory>
 #include <mutex>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -87,6 +93,8 @@ public:
     std::unique_ptr<BasicApiCallHandler> apiCallHandler;
     std::unordered_map<void*, DispatchTable> VkInstanceDispatchTables;
     std::unordered_map<void*, DispatchTable> VkDeviceDispatchTables;
+    UniqueHandlesManager uniqueHandlesManager;
+
     using ApplicationVkPhysicalDevice = VkPhysicalDevice;
     using LoaderVkPhysicalDevice = VkPhysicalDevice;
     std::unordered_map<ApplicationVkPhysicalDevice, LoaderVkPhysicalDevice> VkPhysicalDevices;
@@ -100,7 +108,7 @@ private:
     Registry& operator=(const Registry&) = delete;
 };
 
-extern void on_load(Registry& registry);
+extern void on_load(const VkInstanceCreateInfo* pInstanceCreateInfo, Registry& registry);
 VkLayerInstanceCreateInfo* get_instance_chain_info(const VkInstanceCreateInfo* pCreateInfo, VkLayerFunction layerFunction);
 VkLayerDeviceCreateInfo* get_device_chain_info(const VkDeviceCreateInfo* pCreateInfo, VkLayerFunction layerFunction);
 PFN_vkVoidFunction get_instance_proc_addr(VkInstance instance, const char* pName);

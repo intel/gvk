@@ -218,40 +218,9 @@ GVK_STUB_ENUMERATE_STRUCTURE_HANDLES_DEFINITION(VkVideoSessionParametersUpdateIn
 ////////////////////////////////////////////////////////////////////////////////
 // Special case members
 template <>
-void enumerate_structure_handles<VkAccelerationStructureBuildGeometryInfoKHR>(const VkAccelerationStructureBuildGeometryInfoKHR& obj, EnumerateHandlesCallback callback)
-{
-    enumerate_pnext_handles(obj.pNext, callback);
-    enumerate_handle(obj.srcAccelerationStructure, callback);
-    enumerate_handle(obj.dstAccelerationStructure, callback);
-    enumerate_dynamic_structure_array_handles(obj.geometryCount, obj.pGeometries, callback);
-    enumerate_dynamic_structure_array_handles(obj.geometryCount, obj.ppGeometries, callback);
-}
-
-template <>
-void enumerate_structure_handles<VkAccelerationStructureTrianglesDisplacementMicromapNV>(const VkAccelerationStructureTrianglesDisplacementMicromapNV& obj, EnumerateHandlesCallback callback)
-{
-    enumerate_pnext_handles(obj.pNext, callback);
-    enumerate_handle(obj.micromap, callback);
-}
-
-template <>
-void enumerate_structure_handles<VkAccelerationStructureTrianglesOpacityMicromapEXT>(const VkAccelerationStructureTrianglesOpacityMicromapEXT& obj, EnumerateHandlesCallback callback)
-{
-    enumerate_pnext_handles(obj.pNext, callback);
-    enumerate_handle(obj.micromap, callback);
-}
-
-template <>
 void enumerate_structure_handles<VkAccelerationStructureVersionInfoKHR>(const VkAccelerationStructureVersionInfoKHR& obj, EnumerateHandlesCallback callback)
 {
     enumerate_pnext_handles(obj.pNext, callback);
-}
-
-template <>
-void enumerate_structure_handles<VkMicromapBuildInfoEXT>(const VkMicromapBuildInfoEXT& obj, EnumerateHandlesCallback callback)
-{
-    enumerate_pnext_handles(obj.pNext, callback);
-    enumerate_handle(obj.dstMicromap, callback);
 }
 
 template <>
@@ -279,14 +248,6 @@ void enumerate_structure_handles<VkPipelineMultisampleStateCreateInfo>(const VkP
 }
 
 template <>
-void enumerate_structure_handles<VkSpecializationInfo>(const VkSpecializationInfo& obj, EnumerateHandlesCallback callback)
-{
-    (void)obj;
-    (void)callback;
-    // NOOP : No handles
-}
-
-template <>
 void enumerate_structure_handles<VkShaderCreateInfoEXT>(const VkShaderCreateInfoEXT& obj, EnumerateHandlesCallback callback)
 {
     enumerate_pnext_handles(obj.pNext, callback);
@@ -297,6 +258,14 @@ template <>
 void enumerate_structure_handles<VkShaderModuleCreateInfo>(const VkShaderModuleCreateInfo& obj, EnumerateHandlesCallback callback)
 {
     enumerate_pnext_handles(obj.pNext, callback);
+}
+
+template <>
+void enumerate_structure_handles<VkSpecializationInfo>(const VkSpecializationInfo& obj, EnumerateHandlesCallback callback)
+{
+    (void)obj;
+    (void)callback;
+    // NOOP : No handles
 }
 
 template <>
@@ -345,12 +314,58 @@ void enumerate_structure_handles<VkWriteDescriptorSet>(const VkWriteDescriptorSe
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Array of pointer members
+template <>
+void enumerate_structure_handles<VkAccelerationStructureBuildGeometryInfoKHR>(const VkAccelerationStructureBuildGeometryInfoKHR& obj, EnumerateHandlesCallback callback)
+{
+    enumerate_pnext_handles(obj.pNext, callback);
+    enumerate_handle(obj.srcAccelerationStructure, callback);
+    enumerate_handle(obj.dstAccelerationStructure, callback);
+    enumerate_dynamic_structure_array_handles(obj.geometryCount, obj.pGeometries, callback);
+    enumerate_dynamic_structure_array_handles(obj.geometryCount, obj.ppGeometries, callback);
+}
+
+template <>
+void enumerate_structure_handles<VkAccelerationStructureTrianglesDisplacementMicromapNV>(const VkAccelerationStructureTrianglesDisplacementMicromapNV& obj, EnumerateHandlesCallback callback)
+{
+    enumerate_pnext_handles(obj.pNext, callback);
+    enumerate_handle(obj.micromap, callback);
+}
+
+template <>
+void enumerate_structure_handles<VkAccelerationStructureTrianglesOpacityMicromapEXT>(const VkAccelerationStructureTrianglesOpacityMicromapEXT& obj, EnumerateHandlesCallback callback)
+{
+    enumerate_pnext_handles(obj.pNext, callback);
+    enumerate_handle(obj.micromap, callback);
+}
+
+template <>
+void enumerate_structure_handles<VkMicromapBuildInfoEXT>(const VkMicromapBuildInfoEXT& obj, EnumerateHandlesCallback callback)
+{
+    enumerate_pnext_handles(obj.pNext, callback);
+    enumerate_handle(obj.dstMicromap, callback);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Unions
 template <>
 void enumerate_structure_handles<VkAccelerationStructureGeometryDataKHR>(const VkAccelerationStructureGeometryDataKHR& obj, EnumerateHandlesCallback callback)
 {
-    (void)obj;
-    (void)callback;
+    // NOTE : Union of structures that all have sType; use sType to interpret.
+    switch (((VkBaseInStructure&)obj).sType) {
+    case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR: {
+        enumerate_structure_handles(obj.triangles, callback);
+    } break;
+    case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_AABBS_DATA_KHR: {
+        enumerate_structure_handles(obj.aabbs, callback);
+    } break;
+    case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR: {
+        enumerate_structure_handles(obj.instances, callback);
+    } break;
+    default: {
+        // NOOP :
+    } break;
+    }
 }
 
 template <>
@@ -358,6 +373,7 @@ void enumerate_structure_handles<VkAccelerationStructureMotionInstanceDataNV>(co
 {
     (void)obj;
     (void)callback;
+    // NOOP : No handles
 }
 
 template <>
@@ -365,6 +381,7 @@ void enumerate_structure_handles<VkClearColorValue>(const VkClearColorValue& obj
 {
     (void)obj;
     (void)callback;
+    // NOOP : No handles
 }
 
 template <>
@@ -372,6 +389,44 @@ void enumerate_structure_handles<VkClearValue>(const VkClearValue& obj, Enumerat
 {
     (void)obj;
     (void)callback;
+    // NOOP : No handles
+}
+
+template <>
+void enumerate_structure_handles<VkClusterAccelerationStructureOpInputNV>(const VkClusterAccelerationStructureOpInputNV& obj, EnumerateHandlesCallback callback)
+{
+    // NOTE : Union of pointers to structures that all have sType; use sType to interpret.
+    auto pObj = (const VkBaseInStructure*&)obj;
+    switch (pObj ? pObj->sType : VkStructureType{ }) {
+    case VK_STRUCTURE_TYPE_CLUSTER_ACCELERATION_STRUCTURE_CLUSTERS_BOTTOM_LEVEL_INPUT_NV: {
+        enumerate_structure_handles(*obj.pClustersBottomLevel, callback);
+    } break;
+    case VK_STRUCTURE_TYPE_CLUSTER_ACCELERATION_STRUCTURE_TRIANGLE_CLUSTER_INPUT_NV: {
+        enumerate_structure_handles(*obj.pTriangleClusters, callback);
+    } break;
+    case VK_STRUCTURE_TYPE_CLUSTER_ACCELERATION_STRUCTURE_MOVE_OBJECTS_INPUT_NV: {
+        enumerate_structure_handles(*obj.pMoveObjects, callback);
+    } break;
+    default: {
+        // NOOP :
+    } break;
+    }
+}
+
+template <>
+void enumerate_structure_handles<VkDescriptorDataEXT>(const VkDescriptorDataEXT& obj, EnumerateHandlesCallback callback)
+{
+    (void)obj;
+    (void)callback;
+    assert(false && "VkDescriptorDataEXT handles cannot be directly enumerated; enumerate handles via VkDescriptorGetInfoEXT which specifies VkDescriptorType");
+}
+
+template <>
+void enumerate_structure_handles<VkDeviceOrHostAddressConstAMDX>(const VkDeviceOrHostAddressConstAMDX& obj, EnumerateHandlesCallback callback)
+{
+    (void)obj;
+    (void)callback;
+    // NOOP : No handles
 }
 
 template <>
@@ -379,6 +434,7 @@ void enumerate_structure_handles<VkDeviceOrHostAddressConstKHR>(const VkDeviceOr
 {
     (void)obj;
     (void)callback;
+    // NOOP : No handles
 }
 
 template <>
@@ -386,6 +442,33 @@ void enumerate_structure_handles<VkDeviceOrHostAddressKHR>(const VkDeviceOrHostA
 {
     (void)obj;
     (void)callback;
+    // NOOP : No handles
+}
+
+template <>
+void enumerate_structure_handles<VkIndirectCommandsTokenDataEXT>(const VkIndirectCommandsTokenDataEXT& obj, EnumerateHandlesCallback callback)
+{
+    (void)obj;
+    (void)callback;
+    assert(false && "VkIndirectCommandsTokenDataEXT handles cannot be directly enumerated; enumerate via VkIndirectCommandsLayoutTokenEXT which specifies VkIndirectCommandsTokenTypeEXT");
+}
+
+template <>
+void enumerate_structure_handles<VkIndirectExecutionSetInfoEXT>(const VkIndirectExecutionSetInfoEXT& obj, EnumerateHandlesCallback callback)
+{
+    // NOTE : Union of pointers to structures that all have sType; use sType to interpret.
+    auto pObj = (const VkBaseInStructure*&)obj;
+    switch (pObj ? pObj->sType : VkStructureType{ }) {
+    case VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_PIPELINE_INFO_EXT: {
+        enumerate_structure_handles(*obj.pPipelineInfo, callback);
+    } break;
+    case VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_SHADER_INFO_EXT: {
+        enumerate_structure_handles(*obj.pShaderInfo, callback);
+    } break;
+    default: {
+        // NOOP :
+    } break;
+    }
 }
 
 template <>
@@ -393,6 +476,7 @@ void enumerate_structure_handles<VkPerformanceCounterResultKHR>(const VkPerforma
 {
     (void)obj;
     (void)callback;
+    // NOOP : No handles
 }
 
 template <>
@@ -400,6 +484,7 @@ void enumerate_structure_handles<VkPerformanceValueDataINTEL>(const VkPerformanc
 {
     (void)obj;
     (void)callback;
+    // NOOP : No handles
 }
 
 template <>
@@ -407,6 +492,87 @@ void enumerate_structure_handles<VkPipelineExecutableStatisticValueKHR>(const Vk
 {
     (void)obj;
     (void)callback;
+    // NOOP : No handles
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Union members
+template <>
+void enumerate_structure_handles<VkDescriptorGetInfoEXT>(const VkDescriptorGetInfoEXT& obj, EnumerateHandlesCallback callback)
+{
+    enumerate_pnext_handles(obj.pNext, callback);
+
+    // NOTE : Use obj.type to interpret obj.data union
+    switch (obj.type) {
+    case VK_DESCRIPTOR_TYPE_SAMPLER: {
+        enumerate_handle(*obj.data.pSampler, callback);
+    } break;
+    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
+        enumerate_structure_handles(*obj.data.pCombinedImageSampler, callback);
+    } break;
+    case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: {
+        enumerate_structure_handles(*obj.data.pInputAttachmentImage, callback);
+    } break;
+    case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE: {
+        enumerate_structure_handles(*obj.data.pSampledImage, callback);
+    } break;
+    case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE: {
+        enumerate_structure_handles(*obj.data.pStorageImage, callback);
+    } break;
+    case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER: {
+        enumerate_structure_handles(*obj.data.pUniformTexelBuffer, callback);
+    } break;
+    case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER: {
+        enumerate_structure_handles(*obj.data.pStorageTexelBuffer, callback);
+    } break;
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: {
+        enumerate_structure_handles(*obj.data.pUniformBuffer, callback);
+    } break;
+    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER: {
+        enumerate_structure_handles(*obj.data.pStorageBuffer, callback);
+    } break;
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV: {
+        // NOOP : VkDeviceAddress
+    } break;
+    default: {
+        // NOOP :
+    } break;
+    }
+}
+
+template <>
+void enumerate_structure_handles<VkIndirectCommandsLayoutTokenEXT>(const VkIndirectCommandsLayoutTokenEXT& obj, EnumerateHandlesCallback callback)
+{
+    enumerate_pnext_handles(obj.pNext, callback);
+
+    // NOTE : Use obj.type to interpret obj.data union
+    switch (obj.type) {
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_CONSTANT_EXT:
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_SEQUENCE_INDEX_EXT: {
+        enumerate_structure_handles(*obj.data.pPushConstant, callback);
+    } break;
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_VERTEX_BUFFER_EXT: {
+        enumerate_structure_handles(*obj.data.pVertexBuffer, callback);
+    } break;
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_INDEX_BUFFER_EXT: {
+        enumerate_structure_handles(*obj.data.pIndexBuffer, callback);
+    } break;
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_EXECUTION_SET_EXT: {
+        enumerate_structure_handles(*obj.data.pExecutionSet, callback);
+    } break;
+    default: {
+        // NOOP :
+    } break;
+    }
+}
+
+template <>
+void enumerate_structure_handles<VkPerformanceValueINTEL>(const VkPerformanceValueINTEL& obj, EnumerateHandlesCallback callback)
+{
+    (void)obj;
+    (void)callback;
+    // NOOP : No handles
 }
 
 } // namespace detail

@@ -97,6 +97,9 @@ Parameter::Parameter(const tinyxml2::XMLElement& xmlElement)
     if (unqualifiedType == "void") {
         flags |= Void;
     }
+    if (!(flags & Const) && (flags & Pointer)) {
+        flags |= Out;
+    }
     if (string::starts_with(unqualifiedType, "PFN_")) {
         flags |= Function | Pointer;
     }
@@ -104,6 +107,14 @@ Parameter::Parameter(const tinyxml2::XMLElement& xmlElement)
         flags |= Optional;
     }
     type = string::replace(type, " *", "*");
+    if (gvk::string::contains(length, ",")) {
+        assert(altLength.empty() && "Unexpected altLength encountered during vk.xml parsing; gvk maintenance required");
+        auto tokens = string::split(length, ",");
+        assert(tokens.size() == 2 && "Unexpected altLength encountered during vk.xml parsing; gvk maintenance required");
+        assert((length == tokens[0] + "," + tokens[1]) && "Unexpected length encountered during vk.xml parsing; gvk maintenance required");
+        length = tokens[0];
+        altLength = tokens[1];
+    }
 }
 
 } // namespace xml

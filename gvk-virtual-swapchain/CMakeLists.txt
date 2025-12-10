@@ -11,6 +11,7 @@ gvk_add_layer(
         "VK_LAYER_INTEL_gvk_virtual_swapchain/"
     LINK_LIBRARIES
         gvk-handles
+        gvk-layer
     INCLUDE_DIRECTORIES
         "${includeDirectory}"
     INCLUDE_FILES

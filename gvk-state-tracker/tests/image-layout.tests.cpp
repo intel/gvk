@@ -328,7 +328,7 @@ TEST(ImageLayout, WaitEvents2)
     std::array<VkImageMemoryBarrier2, 2> imageMemoryBarriers { };
     for (auto& imageMemoryBarrier : imageMemoryBarriers) {
         imageMemoryBarrier = gvk::get_default<VkImageMemoryBarrier2>();
-        imageMemoryBarrier.srcStageMask = VK_PIPELINE_STAGE_HOST_BIT;
+        imageMemoryBarrier.srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
         imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         imageMemoryBarrier.image = image;
         imageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -349,9 +349,6 @@ TEST(ImageLayout, WaitEvents2)
     auto eventCreateInfo = gvk::get_default<VkEventCreateInfo>();
     gvk::Event event;
     ASSERT_EQ(gvk::Event::create(context.get<gvk::Devices>()[0], &eventCreateInfo, nullptr, &event), VK_SUCCESS);
-    const auto& dispatchTable = context.get<gvk::Devices>()[0].get<gvk::DispatchTable>();
-    assert(dispatchTable.gvkSetEvent);
-    ASSERT_EQ(dispatchTable.gvkSetEvent(context.get<gvk::Devices>()[0], event), VK_SUCCESS);
 
     gvk::execute_immediately(
         context.get<gvk::Devices>()[0],
@@ -360,6 +357,11 @@ TEST(ImageLayout, WaitEvents2)
         VK_NULL_HANDLE,
         [&](auto)
         {
+            const auto& dispatchTable = context.get<gvk::Devices>()[0].get<gvk::DispatchTable>();
+
+            assert(dispatchTable.gvkCmdSetEvent2);
+            dispatchTable.gvkCmdSetEvent2(context.get<gvk::CommandBuffers>()[0], event.get<VkEvent>(), &dependencyInfo);
+
             assert(dispatchTable.gvkCmdWaitEvents2);
             dispatchTable.gvkCmdWaitEvents2(context.get<gvk::CommandBuffers>()[0], 1, &event.get<VkEvent>(), &dependencyInfo);
         }

@@ -77,13 +77,14 @@ CopyEngine::CopyEngine(CopyEngine&& other)
 CopyEngine& CopyEngine::operator=(CopyEngine&& other)
 {
     if (this != &other) {
-        mDevice = std::move(other.mDevice);
-        mQueue = std::move(other.mQueue);
-        mpfnInitializeThreadCallback = std::move(other.mpfnInitializeThreadCallback);
+        reset();
+        mDevice = std::exchange(other.mDevice, mDevice);
+        mQueue = std::exchange(other.mQueue, mQueue);
+        mpfnInitializeThreadCallback = std::exchange(other.mpfnInitializeThreadCallback, mpfnInitializeThreadCallback);
         mupThreadPool = std::move(other.mupThreadPool);
-        mTaskResources = std::move(other.mTaskResources);
-        mAccelerationStructureTaskResources = std::move(other.mAccelerationStructureTaskResources);
-        mAccelerationStrcutureSerializationInfoRetrieved = std::move(other.mAccelerationStrcutureSerializationInfoRetrieved);
+        mTaskResources = std::exchange(other.mTaskResources, mTaskResources);
+        mAccelerationStructureTaskResources = std::exchange(other.mAccelerationStructureTaskResources, mAccelerationStructureTaskResources);
+        mAccelerationStrcutureSerializationInfoRetrieved = std::exchange(other.mAccelerationStrcutureSerializationInfoRetrieved, mAccelerationStrcutureSerializationInfoRetrieved);
     }
     return *this;
 }
@@ -98,8 +99,11 @@ void CopyEngine::reset()
     wait();
     mDevice.reset();
     mQueue.reset();
+    mpfnInitializeThreadCallback = nullptr;
     mupThreadPool.reset();
     mTaskResources.clear();
+    mAccelerationStructureTaskResources.clear();
+    mAccelerationStrcutureSerializationInfoRetrieved = false;
 }
 
 void CopyEngine::wait()

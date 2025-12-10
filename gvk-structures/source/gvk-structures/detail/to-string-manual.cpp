@@ -327,102 +327,6 @@ GVK_STUB_TO_STRING_DEFINITION(VkVideoSessionParametersUpdateInfoKHR)
 ////////////////////////////////////////////////////////////////////////////////
 // Special case members
 template <>
-void print<VkAccelerationStructureBuildGeometryInfoKHR>(Printer& printer, const VkAccelerationStructureBuildGeometryInfoKHR& obj)
-{
-    printer.print_object(
-        [&]()
-        {
-            printer.print_field("sType", obj.sType);
-            detail::print_pnext(printer, obj.pNext);
-            printer.print_field("type", obj.type);
-            printer.print_flags<VkBuildAccelerationStructureFlagBitsKHR>("flags", obj.flags);
-            printer.print_field("mode", obj.mode);
-            printer.print_field("srcAccelerationStructure", obj.srcAccelerationStructure);
-            printer.print_field("dstAccelerationStructure", obj.dstAccelerationStructure);
-            printer.print_field("geometryCount", obj.geometryCount);
-            printer.print_array("pGeometries", obj.geometryCount, obj.pGeometries);
-            printer.print_array("ppGeometries", obj.geometryCount, obj.ppGeometries,
-                [&](auto, auto pGeometry)
-                {
-                    if (pGeometry) {
-                        print(printer, *pGeometry);
-                    } else {
-                        printer.mOstrm << "null";
-                    }
-                }
-            );
-            printer.print_field("scratchData", obj.scratchData);
-        }
-    );
-}
-
-template <>
-void print<VkAccelerationStructureTrianglesDisplacementMicromapNV>(Printer& printer, const VkAccelerationStructureTrianglesDisplacementMicromapNV& obj)
-{
-    printer.print_object(
-        [&]()
-        {
-            printer.print_field("sType", obj.sType);
-            detail::print_pnext(printer, obj.pNext);
-            printer.print_field("displacementBiasAndScaleFormat", obj.displacementBiasAndScaleFormat);
-            printer.print_field("displacementVectorFormat", obj.displacementVectorFormat);
-            printer.print_field("displacementBiasAndScaleBuffer", obj.displacementBiasAndScaleBuffer);
-            printer.print_field("displacementBiasAndScaleStride", obj.displacementBiasAndScaleStride);
-            printer.print_field("displacementVectorBuffer", obj.displacementVectorBuffer);
-            printer.print_field("displacementVectorStride", obj.displacementVectorStride);
-            printer.print_field("displacedMicromapPrimitiveFlags", obj.displacedMicromapPrimitiveFlags);
-            printer.print_field("displacedMicromapPrimitiveFlagsStride", obj.displacedMicromapPrimitiveFlagsStride);
-            printer.print_field("indexType", obj.indexType);
-            printer.print_field("indexBuffer", obj.indexBuffer);
-            printer.print_field("indexStride", obj.indexStride);
-            printer.print_field("baseTriangle", obj.baseTriangle);
-            printer.print_field("usageCountsCount", obj.usageCountsCount);
-            printer.print_array("pGeometries", obj.usageCountsCount, obj.pUsageCounts);
-            printer.print_array("ppGeometries", obj.usageCountsCount, obj.ppUsageCounts,
-                [&](auto, auto pUsageCount)
-                {
-                    if (pUsageCount) {
-                        print(printer, *pUsageCount);
-                    } else {
-                        printer.mOstrm << "null";
-                    }
-                }
-            );
-            printer.print_field("micromap", obj.micromap);
-        }
-    );
-}
-
-template <>
-void print<VkAccelerationStructureTrianglesOpacityMicromapEXT>(Printer& printer, const VkAccelerationStructureTrianglesOpacityMicromapEXT& obj)
-{
-    printer.print_object(
-        [&]()
-        {
-            printer.print_field("sType", obj.sType);
-            detail::print_pnext(printer, obj.pNext);
-            printer.print_field("indexType", obj.indexType);
-            printer.print_field("indexBuffer", obj.indexBuffer);
-            printer.print_field("indexStride", obj.indexStride);
-            printer.print_field("baseTriangle", obj.baseTriangle);
-            printer.print_field("usageCountsCount", obj.usageCountsCount);
-            printer.print_array("pGeometries", obj.usageCountsCount, obj.pUsageCounts);
-            printer.print_array("ppGeometries", obj.usageCountsCount, obj.ppUsageCounts,
-                [&](auto, auto pUsageCount)
-                {
-                    if (pUsageCount) {
-                        print(printer, *pUsageCount);
-                    } else {
-                        printer.mOstrm << "null";
-                    }
-                }
-            );
-            printer.print_field("micromap", obj.micromap);
-        }
-    );
-}
-
-template <>
 void print<VkAccelerationStructureVersionInfoKHR>(Printer& printer, const VkAccelerationStructureVersionInfoKHR& obj)
 {
     printer.print_object(
@@ -430,39 +334,7 @@ void print<VkAccelerationStructureVersionInfoKHR>(Printer& printer, const VkAcce
         {
             printer.print_field("sType", obj.sType);
             detail::print_pnext(printer, obj.pNext);
-            printer.print_field("pVersionData", obj.pVersionData);
-        }
-    );
-}
-
-template <>
-void print<VkMicromapBuildInfoEXT>(Printer& printer, const VkMicromapBuildInfoEXT& obj)
-{
-    printer.print_object(
-        [&]()
-        {
-            printer.print_field("sType", obj.sType);
-            detail::print_pnext(printer, obj.pNext);
-            printer.print_field("type", obj.type);
-            printer.print_field("flags", obj.flags);
-            printer.print_field("mode", obj.mode);
-            printer.print_field("dstMicromap", obj.dstMicromap);
-            printer.print_field("usageCountsCount", obj.usageCountsCount);
-            printer.print_array("pGeometries", obj.usageCountsCount, obj.pUsageCounts);
-            printer.print_array("ppGeometries", obj.usageCountsCount, obj.ppUsageCounts,
-                [&](auto, auto pUsageCount)
-                {
-                    if (pUsageCount) {
-                        print(printer, *pUsageCount);
-                    } else {
-                        printer.mOstrm << "null";
-                    }
-                }
-            );
-            printer.print_field("data", obj.data);
-            printer.print_field("scratchData", obj.scratchData);
-            printer.print_field("triangleArray", obj.triangleArray);
-            printer.print_field("triangleArrayStride", obj.triangleArrayStride);
+            printer.print_array("pVersionData", 2 * VK_UUID_SIZE, obj.pVersionData);
         }
     );
 }
@@ -475,7 +347,7 @@ void print<VkMicromapVersionInfoEXT>(Printer& printer, const VkMicromapVersionIn
         {
             printer.print_field("sType", obj.sType);
             detail::print_pnext(printer, obj.pNext);
-            printer.print_field("pVersionData", obj.pVersionData);
+            printer.print_array("pVersionData", 2 * VK_UUID_SIZE, obj.pVersionData);
         }
     );
 }
@@ -657,6 +529,136 @@ void print<VkWriteDescriptorSet>(Printer& printer, const VkWriteDescriptorSet& o
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Array of pointer members
+template <>
+void print<VkAccelerationStructureBuildGeometryInfoKHR>(Printer& printer, const VkAccelerationStructureBuildGeometryInfoKHR& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            detail::print_pnext(printer, obj.pNext);
+            printer.print_field("type", obj.type);
+            printer.print_flags<VkBuildAccelerationStructureFlagBitsKHR>("flags", obj.flags);
+            printer.print_field("mode", obj.mode);
+            printer.print_field("srcAccelerationStructure", obj.srcAccelerationStructure);
+            printer.print_field("dstAccelerationStructure", obj.dstAccelerationStructure);
+            printer.print_field("geometryCount", obj.geometryCount);
+            printer.print_array("pGeometries", obj.geometryCount, obj.pGeometries);
+            printer.print_array("ppGeometries", obj.geometryCount, obj.ppGeometries,
+                [&](auto, auto pGeometry)
+                {
+                    if (pGeometry) {
+                        print(printer, *pGeometry);
+                    } else {
+                        printer.mOstrm << "null";
+                    }
+                }
+            );
+            printer.print_field("scratchData", obj.scratchData);
+        }
+    );
+}
+
+template <>
+void print<VkAccelerationStructureTrianglesDisplacementMicromapNV>(Printer& printer, const VkAccelerationStructureTrianglesDisplacementMicromapNV& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            detail::print_pnext(printer, obj.pNext);
+            printer.print_field("displacementBiasAndScaleFormat", obj.displacementBiasAndScaleFormat);
+            printer.print_field("displacementVectorFormat", obj.displacementVectorFormat);
+            printer.print_field("displacementBiasAndScaleBuffer", obj.displacementBiasAndScaleBuffer);
+            printer.print_field("displacementBiasAndScaleStride", obj.displacementBiasAndScaleStride);
+            printer.print_field("displacementVectorBuffer", obj.displacementVectorBuffer);
+            printer.print_field("displacementVectorStride", obj.displacementVectorStride);
+            printer.print_field("displacedMicromapPrimitiveFlags", obj.displacedMicromapPrimitiveFlags);
+            printer.print_field("displacedMicromapPrimitiveFlagsStride", obj.displacedMicromapPrimitiveFlagsStride);
+            printer.print_field("indexType", obj.indexType);
+            printer.print_field("indexBuffer", obj.indexBuffer);
+            printer.print_field("indexStride", obj.indexStride);
+            printer.print_field("baseTriangle", obj.baseTriangle);
+            printer.print_field("usageCountsCount", obj.usageCountsCount);
+            printer.print_array("pGeometries", obj.usageCountsCount, obj.pUsageCounts);
+            printer.print_array("ppGeometries", obj.usageCountsCount, obj.ppUsageCounts,
+                [&](auto, auto pUsageCount)
+                {
+                    if (pUsageCount) {
+                        print(printer, *pUsageCount);
+                    } else {
+                        printer.mOstrm << "null";
+                    }
+                }
+            );
+            printer.print_field("micromap", obj.micromap);
+        }
+    );
+}
+
+template <>
+void print<VkAccelerationStructureTrianglesOpacityMicromapEXT>(Printer& printer, const VkAccelerationStructureTrianglesOpacityMicromapEXT& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            detail::print_pnext(printer, obj.pNext);
+            printer.print_field("indexType", obj.indexType);
+            printer.print_field("indexBuffer", obj.indexBuffer);
+            printer.print_field("indexStride", obj.indexStride);
+            printer.print_field("baseTriangle", obj.baseTriangle);
+            printer.print_field("usageCountsCount", obj.usageCountsCount);
+            printer.print_array("pGeometries", obj.usageCountsCount, obj.pUsageCounts);
+            printer.print_array("ppGeometries", obj.usageCountsCount, obj.ppUsageCounts,
+                [&](auto, auto pUsageCount)
+                {
+                    if (pUsageCount) {
+                        print(printer, *pUsageCount);
+                    } else {
+                        printer.mOstrm << "null";
+                    }
+                }
+            );
+            printer.print_field("micromap", obj.micromap);
+        }
+    );
+}
+
+template <>
+void print<VkMicromapBuildInfoEXT>(Printer& printer, const VkMicromapBuildInfoEXT& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            detail::print_pnext(printer, obj.pNext);
+            printer.print_field("type", obj.type);
+            printer.print_field("flags", obj.flags);
+            printer.print_field("mode", obj.mode);
+            printer.print_field("dstMicromap", obj.dstMicromap);
+            printer.print_field("usageCountsCount", obj.usageCountsCount);
+            printer.print_array("pGeometries", obj.usageCountsCount, obj.pUsageCounts);
+            printer.print_array("ppGeometries", obj.usageCountsCount, obj.ppUsageCounts,
+                [&](auto, auto pUsageCount)
+                {
+                    if (pUsageCount) {
+                        print(printer, *pUsageCount);
+                    } else {
+                        printer.mOstrm << "null";
+                    }
+                }
+            );
+            printer.print_field("data", obj.data);
+            printer.print_field("scratchData", obj.scratchData);
+            printer.print_field("triangleArray", obj.triangleArray);
+            printer.print_field("triangleArrayStride", obj.triangleArrayStride);
+        }
+    );
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Unions
 template <>
 void print<VkAccelerationStructureGeometryDataKHR>(Printer& printer, const VkAccelerationStructureGeometryDataKHR& obj)
@@ -664,9 +666,20 @@ void print<VkAccelerationStructureGeometryDataKHR>(Printer& printer, const VkAcc
     printer.print_object(
         [&]()
         {
-            printer.print_field("triangles", obj.triangles);
-            printer.print_field("aabbs", obj.aabbs);
-            printer.print_field("instances", obj.instances);
+            switch (((VkBaseInStructure&)obj).sType) {
+            case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR: {
+                printer.print_field("triangles", obj.triangles);
+            } break;
+            case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_AABBS_DATA_KHR: {
+                printer.print_field("aabbs", obj.aabbs);
+            } break;
+            case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR: {
+                printer.print_field("instances", obj.instances);
+            } break;
+            default: {
+                // NOOP :
+            } break;
+            }
         }
     );
 }
@@ -710,6 +723,100 @@ void print<VkClearValue>(Printer& printer, const VkClearValue& obj)
 }
 
 template <>
+void print<VkClusterAccelerationStructureOpInputNV>(Printer& printer, const VkClusterAccelerationStructureOpInputNV& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            auto pObj = (const VkBaseInStructure*&)obj;
+            switch (pObj ? pObj->sType : VkStructureType{ }) {
+            case VK_STRUCTURE_TYPE_CLUSTER_ACCELERATION_STRUCTURE_CLUSTERS_BOTTOM_LEVEL_INPUT_NV: {
+                printer.print_pointer("pClustersBottomLevel", obj.pClustersBottomLevel);
+            } break;
+            case VK_STRUCTURE_TYPE_CLUSTER_ACCELERATION_STRUCTURE_TRIANGLE_CLUSTER_INPUT_NV: {
+                printer.print_pointer("pTriangleClusters", obj.pTriangleClusters);
+            } break;
+            case VK_STRUCTURE_TYPE_CLUSTER_ACCELERATION_STRUCTURE_MOVE_OBJECTS_INPUT_NV: {
+                printer.print_pointer("pMoveObjects", obj.pMoveObjects);
+            } break;
+            default: {
+                // NOOP :
+            } break;
+            }
+        }
+    );
+}
+
+namespace detail {
+
+inline VkDescriptorType& get_thread_local_VkDescriptorType()
+{
+    thread_local VkDescriptorType tlDescriptorType;
+    return tlDescriptorType;
+}
+
+} // namespace detail
+
+template <>
+void print<VkDescriptorDataEXT>(Printer& printer, const VkDescriptorDataEXT& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            // NOTE : VkDescriptorType set by print<VkDescriptorGetInfoEXT>()
+            switch (detail::get_thread_local_VkDescriptorType()) {
+            case VK_DESCRIPTOR_TYPE_SAMPLER: {
+                printer.print_pointer("pSampler", obj.pSampler);
+            } break;
+            case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
+                printer.print_pointer("pCombinedImageSampler", obj.pCombinedImageSampler);
+            } break;
+            case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: {
+                printer.print_pointer("pInputAttachmentImage", obj.pInputAttachmentImage);
+            } break;
+            case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE: {
+                printer.print_pointer("pSampledImage", obj.pSampledImage);
+            } break;
+            case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE: {
+                printer.print_pointer("pStorageImage", obj.pStorageImage);
+            } break;
+            case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER: {
+                printer.print_pointer("pUniformTexelBuffer", obj.pUniformTexelBuffer);
+            } break;
+            case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER: {
+                printer.print_pointer("pStorageTexelBuffer", obj.pStorageTexelBuffer);
+            } break;
+            case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: {
+                printer.print_pointer("pUniformBuffer", obj.pUniformBuffer);
+            } break;
+            case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER: {
+                printer.print_pointer("pStorageBuffer", obj.pStorageBuffer);
+            } break;
+            case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+            case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV: {
+                printer.print_field("accelerationStructure", obj.accelerationStructure);
+            } break;
+            default: {
+                // NOOP :
+            } break;
+            }
+        }
+    );
+}
+
+template <>
+void print<VkDeviceOrHostAddressConstAMDX>(Printer& printer, const VkDeviceOrHostAddressConstAMDX& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("deviceAddress", obj.deviceAddress);
+            printer.print_field("hostAddress", obj.hostAddress);
+        }
+    );
+}
+
+template <>
 void print<VkDeviceOrHostAddressConstKHR>(Printer& printer, const VkDeviceOrHostAddressConstKHR& obj)
 {
     printer.print_object(
@@ -733,6 +840,67 @@ void print<VkDeviceOrHostAddressKHR>(Printer& printer, const VkDeviceOrHostAddre
     );
 }
 
+namespace detail {
+
+inline VkIndirectCommandsTokenTypeEXT& get_thread_local_VkIndirectCommandsTokenTypeEXT()
+{
+    thread_local VkIndirectCommandsTokenTypeEXT tlIndirectCommandsTokenTypeEXT;
+    return tlIndirectCommandsTokenTypeEXT;
+}
+
+} // namespace detail
+
+template <>
+void print<VkIndirectCommandsTokenDataEXT>(Printer& printer, const VkIndirectCommandsTokenDataEXT& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            // NOTE : VkIndirectCommandsTokenTypeEXT set by print<VkIndirectCommandsLayoutTokenEXT>()
+            switch (detail::get_thread_local_VkIndirectCommandsTokenTypeEXT()) {
+            case VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_CONSTANT_EXT:
+            case VK_INDIRECT_COMMANDS_TOKEN_TYPE_SEQUENCE_INDEX_EXT: {
+                printer.print_pointer("pPushConstant", obj.pPushConstant);
+            } break;
+            case VK_INDIRECT_COMMANDS_TOKEN_TYPE_VERTEX_BUFFER_EXT: {
+                printer.print_pointer("pVertexBuffer", obj.pVertexBuffer);
+            } break;
+            case VK_INDIRECT_COMMANDS_TOKEN_TYPE_INDEX_BUFFER_EXT: {
+                printer.print_pointer("pIndexBuffer", obj.pIndexBuffer);
+            } break;
+            case VK_INDIRECT_COMMANDS_TOKEN_TYPE_EXECUTION_SET_EXT: {
+                printer.print_pointer("pExecutionSet", obj.pExecutionSet);
+            } break;
+            default: {
+                // NOOP :
+            } break;
+            }
+        }
+    );
+}
+
+template <>
+void print<VkIndirectExecutionSetInfoEXT>(Printer& printer, const VkIndirectExecutionSetInfoEXT& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            auto pObj = (const VkBaseInStructure*&)obj;
+            switch (pObj ? pObj->sType : VkStructureType{ }) {
+            case VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_PIPELINE_INFO_EXT: {
+                printer.print_pointer("pPipelineInfo", obj.pPipelineInfo);
+            } break;
+            case VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_SHADER_INFO_EXT: {
+                printer.print_pointer("pShaderInfo", obj.pShaderInfo);
+            } break;
+            default: {
+                // NOOP :
+            } break;
+            }
+        }
+    );
+}
+
 template <>
 void print<VkPerformanceCounterResultKHR>(Printer& printer, const VkPerformanceCounterResultKHR& obj)
 {
@@ -749,10 +917,44 @@ void print<VkPerformanceCounterResultKHR>(Printer& printer, const VkPerformanceC
     );
 }
 
-template <>
-void print<VkPerformanceValueDataINTEL>(Printer&, const VkPerformanceValueDataINTEL&)
+namespace detail {
+
+inline VkPerformanceValueTypeINTEL& get_thread_local_VkPerformanceValueTypeINTEL()
 {
-    // NOPE :
+    thread_local VkPerformanceValueTypeINTEL tlPerformanceValueTypeINTEL;
+    return tlPerformanceValueTypeINTEL;
+}
+
+} // namespace detail
+
+template <>
+void print<VkPerformanceValueDataINTEL>(Printer& printer, const VkPerformanceValueDataINTEL& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            switch (detail::get_thread_local_VkPerformanceValueTypeINTEL()) {
+            case VK_PERFORMANCE_VALUE_TYPE_UINT32_INTEL: {
+                printer.print_field("value32", obj.value32);
+            } break;
+            case VK_PERFORMANCE_VALUE_TYPE_UINT64_INTEL: {
+                printer.print_field("value64", obj.value64);
+            } break;
+            case VK_PERFORMANCE_VALUE_TYPE_FLOAT_INTEL: {
+                printer.print_field("valueFloat", obj.valueFloat);
+            } break;
+            case VK_PERFORMANCE_VALUE_TYPE_BOOL_INTEL: {
+                printer.print_field("valueBool", obj.valueBool);
+            } break;
+            case VK_PERFORMANCE_VALUE_TYPE_STRING_INTEL: {
+                printer.print_field("valueString", obj.valueString);
+            } break;
+            default: {
+                // NOOP :
+            } break;
+            }
+        }
+    );
 }
 
 template <>
@@ -765,6 +967,62 @@ void print<VkPipelineExecutableStatisticValueKHR>(Printer& printer, const VkPipe
             printer.print_field("i64", obj.i64);
             printer.print_field("u64", obj.u64);
             printer.print_field("f64", obj.f64);
+        }
+    );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Union members
+template <>
+void print<VkDescriptorGetInfoEXT>(Printer& printer, const VkDescriptorGetInfoEXT& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            detail::print_pnext(printer, obj.pNext);
+            printer.print_field("type", obj.type);
+
+            // Set VkDescriptorType for print<VkDescriptorDataEXT>()
+            detail::get_thread_local_VkDescriptorType() = obj.type;
+            printer.print_field("data", obj.data);
+            detail::get_thread_local_VkDescriptorType() = { };
+        }
+    );
+}
+
+template <>
+void print<VkIndirectCommandsLayoutTokenEXT>(Printer& printer, const VkIndirectCommandsLayoutTokenEXT& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            detail::print_pnext(printer, obj.pNext);
+            printer.print_field("type", obj.type);
+
+            // Set VkDescriptorType for print<VkDescriptorDataEXT>()
+            detail::get_thread_local_VkIndirectCommandsTokenTypeEXT() = obj.type;
+            printer.print_field("data", obj.data);
+            detail::get_thread_local_VkIndirectCommandsTokenTypeEXT() = { };
+
+            printer.print_field("offset", obj.offset);
+        }
+    );
+}
+
+template <>
+void print<VkPerformanceValueINTEL>(Printer& printer, const VkPerformanceValueINTEL& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("type", obj.type);
+
+            // Set VkPerformanceValueTypeINTEL for print<VkIndirectCommandsTokenDataEXT>()
+            detail::get_thread_local_VkPerformanceValueTypeINTEL() = obj.type;
+            printer.print_field("data", obj.data);
+            detail::get_thread_local_VkPerformanceValueTypeINTEL() = { };
         }
     );
 }

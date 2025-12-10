@@ -80,8 +80,10 @@ public:
     */
     IntervalTree<EndPointType, ValueType>& operator=(IntervalTree<EndPointType, ValueType>&& other)
     {
-        mpRoot = std::move(other.mpRoot);
-        other.mpRoot = nullptr;
+        if (this != &other) {
+            clear();
+            mpRoot = std::exchange(other.mpRoot, mpRoot);
+        }
         return *this;
     }
 
@@ -90,7 +92,16 @@ public:
     */
     ~IntervalTree()
     {
+        clear();
+    }
+
+    /**
+    Clears this IntervalTree<>
+    */
+    void clear()
+    {
         delete mpRoot;
+        mpRoot = nullptr;
     }
 
     /**

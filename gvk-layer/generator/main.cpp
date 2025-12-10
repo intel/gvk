@@ -27,6 +27,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-xml.hpp"
 #include "basic-api-call-handler.generator.hpp"
 #include "basic-layer.generator.hpp"
+#include "unique-handles-layer-hooks.generator.hpp"
 #include "layer-hooks.generator.hpp"
 
 int main(int, const char*[])
@@ -37,6 +38,7 @@ int main(int, const char*[])
         gvk::xml::Manifest manifest(xmlDocument);
         gvk::cppgen::BasicApiCallHandlerGenerator::generate(manifest);
         gvk::cppgen::BasicLayerGenerator::generate(manifest);
+        gvk::cppgen::UniqueHandlesLayerHooksGenerator::generate(manifest);
         gvk::cppgen::LayerHooksGenerator::generate(manifest);
     }
     return 0;

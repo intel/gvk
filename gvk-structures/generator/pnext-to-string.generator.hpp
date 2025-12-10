@@ -46,17 +46,22 @@ public:
         file << std::endl;
         file << "void print_pnext(Printer& printer, const void* pNext)" << std::endl;
         file << "{" << std::endl;
+        file << "    print_pnext(printer, \"pNext\", pNext);" << std::endl;
+        file << "}" << std::endl;
+        file << std::endl;
+        file << "void print_pnext(Printer& printer, const char* pName, const void* pNext)" << std::endl;
+        file << "{" << std::endl;
         file << "    if (pNext) {" << std::endl;
         generate_pnext_switch(
             file,
             manifest,
             "        ",
             "((const VkBaseInStructure*)pNext)->sType",
-            "printer.print_field(\"pNext\", *(const {structureType}*)pNext);",
-            "printer.print_field(\"pNext\", *(const VkBaseInStructure*)pNext);"
+            "printer.print_field(pName, *(const {structureType}*)pNext);",
+            "printer.print_field(pName, *(const VkBaseInStructure*)pNext);"
         );
         file << "    } else {" << std::endl;
-        file << "        printer.print_pointer(\"pNext\", (const VkBaseInStructure*)pNext);" << std::endl;
+        file << "        printer.print_pointer(pName, (const VkBaseInStructure*)pNext);" << std::endl;
         file << "    }" << std::endl;
         file << "}" << std::endl;
         file << std::endl;

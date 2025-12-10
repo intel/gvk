@@ -25,6 +25,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include "gvk-xml/command.hpp"
+#include "gvk-xml/manifest.hpp"
+#include "gvk-xml/structure.hpp"
 #include "tinyxml2-utilities.hpp"
 
 namespace gvk {
@@ -70,6 +72,23 @@ Command::Command(const tinyxml2::XMLElement& xmlElement)
             }
         }
     }
+}
+
+bool Command::contains_handle_out_parameter(const Manifest& manifest) const
+{
+    for (const auto& parameter : parameters) {
+        if (parameter.flags & gvk::xml::Out) {
+            if (manifest.handles.count(parameter.unqualifiedType)) {
+                return true;
+            } else {
+                const auto& structureItr = manifest.structures.find(parameter.unqualifiedType);
+                if (structureItr != manifest.structures.end() && structureItr->second.contains_handle(manifest)) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 Parameter Command::get_create_info_parameter() const

@@ -25,6 +25,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include "gvk-xml/structure.hpp"
+#include "gvk-xml/manifest.hpp"
 #include "tinyxml2-utilities.hpp"
 
 namespace gvk {
@@ -48,6 +49,42 @@ Structure::Structure(const tinyxml2::XMLElement& xmlElement)
             }
         }
     );
+}
+
+bool Structure::contains_union(const xml::Manifest& manifest, bool recursive) const
+{
+    for (const auto& member : members) {
+        const auto& structureItr = manifest.structures.find(member.unqualifiedType);
+        if (structureItr != manifest.structures.end()) {
+            const auto& structure = structureItr->second;
+            if (structure.name != "VkBaseInStructure" && structure.name != "VkBaseOutStructure") {
+                if (structure.isUnion || (recursive && structure.contains_union(manifest))) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+bool Structure::contains_handle(const xml::Manifest& manifest, bool recursive) const
+{
+    for (const auto& member : members) {
+        if (manifest.handles.count(member.unqualifiedType)) {
+            return true;
+        } else if (recursive) {
+            const auto& structureItr = manifest.structures.find(member.unqualifiedType);
+            if (structureItr != manifest.structures.end()) {
+                const auto& structure = structureItr->second;
+                if (structure.name != "VkBaseInStructure" && structure.name != "VkBaseOutStructure") {
+                    if (structure.contains_handle(manifest, recursive)) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
 }
 
 } // namespace xml

@@ -30,6 +30,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-structures/detail/cerealization-utilities.hpp"
 #include "gvk-structures/detail/get-count.hpp"
 
+#include <array>
+
 namespace cereal {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -399,119 +401,11 @@ GVK_STUB_CEREALIZATION_FUNCTIONS(VkVideoSessionParametersUpdateInfoKHR)
 ////////////////////////////////////////////////////////////////////////////////
 // Special case members
 template <typename ArchiveType>
-inline void save(ArchiveType& archive, const VkAccelerationStructureBuildGeometryInfoKHR& obj)
-{
-    archive(obj.sType);
-    gvk::detail::cerealize_pnext(archive, obj.pNext);
-    archive(obj.type);
-    archive(obj.flags);
-    archive(obj.mode);
-    gvk::detail::cerealize_handle(archive, obj.srcAccelerationStructure);
-    gvk::detail::cerealize_handle(archive, obj.dstAccelerationStructure);
-    archive(obj.geometryCount);
-    gvk::detail::cerealize_dynamic_array(archive, obj.geometryCount, obj.pGeometries);
-    gvk::detail::cerealize_dynamic_pointer_array(archive, obj.geometryCount, obj.ppGeometries);
-    archive(obj.scratchData);
-}
-
-template <typename ArchiveType>
-inline void load(ArchiveType& archive, VkAccelerationStructureBuildGeometryInfoKHR& obj)
-{
-    archive(obj.sType);
-    obj.pNext = gvk::detail::decerealize_pnext(archive);
-    archive(obj.type);
-    archive(obj.flags);
-    archive(obj.mode);
-    obj.srcAccelerationStructure = gvk::detail::decerealize_handle<VkAccelerationStructureKHR>(archive);
-    obj.dstAccelerationStructure = gvk::detail::decerealize_handle<VkAccelerationStructureKHR>(archive);
-    archive(obj.geometryCount);
-    obj.pGeometries = gvk::detail::decerealize_dynamic_array<VkAccelerationStructureGeometryKHR>(archive);
-    obj.ppGeometries = gvk::detail::decerealize_dynamic_pointer_array<VkAccelerationStructureGeometryKHR>(archive);
-    archive(obj.scratchData);
-}
-
-template <typename ArchiveType>
-inline void save(ArchiveType& archive, const VkAccelerationStructureTrianglesDisplacementMicromapNV& obj)
-{
-    archive(obj.sType);
-    gvk::detail::cerealize_pnext(archive, obj.pNext);
-    archive(obj.displacementBiasAndScaleFormat);
-    archive(obj.displacementVectorFormat);
-    archive(obj.displacementBiasAndScaleBuffer);
-    archive(obj.displacementBiasAndScaleStride);
-    archive(obj.displacementVectorBuffer);
-    archive(obj.displacementVectorStride);
-    archive(obj.displacedMicromapPrimitiveFlags);
-    archive(obj.displacedMicromapPrimitiveFlagsStride);
-    archive(obj.indexType);
-    archive(obj.indexBuffer);
-    archive(obj.indexStride);
-    archive(obj.baseTriangle);
-    archive(obj.usageCountsCount);
-    gvk::detail::cerealize_dynamic_array(archive, obj.usageCountsCount, obj.pUsageCounts);
-    gvk::detail::cerealize_dynamic_pointer_array(archive, obj.usageCountsCount, obj.ppUsageCounts);
-    gvk::detail::cerealize_handle(archive, obj.micromap);
-}
-
-template <typename ArchiveType>
-inline void load(ArchiveType& archive, VkAccelerationStructureTrianglesDisplacementMicromapNV& obj)
-{
-    archive(obj.sType);
-    obj.pNext = gvk::detail::decerealize_pnext(archive);
-    archive(obj.displacementBiasAndScaleFormat);
-    archive(obj.displacementVectorFormat);
-    archive(obj.displacementBiasAndScaleBuffer);
-    archive(obj.displacementBiasAndScaleStride);
-    archive(obj.displacementVectorBuffer);
-    archive(obj.displacementVectorStride);
-    archive(obj.displacedMicromapPrimitiveFlags);
-    archive(obj.displacedMicromapPrimitiveFlagsStride);
-    archive(obj.indexType);
-    archive(obj.indexBuffer);
-    archive(obj.indexStride);
-    archive(obj.baseTriangle);
-    archive(obj.usageCountsCount);
-    obj.pUsageCounts = gvk::detail::decerealize_dynamic_array<VkMicromapUsageEXT>(archive);
-    obj.ppUsageCounts = gvk::detail::decerealize_dynamic_pointer_array<VkMicromapUsageEXT>(archive);
-    obj.micromap = gvk::detail::decerealize_handle<VkMicromapEXT>(archive);
-}
-
-template <typename ArchiveType>
-inline void save(ArchiveType& archive, const VkAccelerationStructureTrianglesOpacityMicromapEXT& obj)
-{
-    archive(obj.sType);
-    gvk::detail::cerealize_pnext(archive, obj.pNext);
-    archive(obj.indexType);
-    archive(obj.indexBuffer);
-    archive(obj.indexStride);
-    archive(obj.baseTriangle);
-    archive(obj.usageCountsCount);
-    gvk::detail::cerealize_dynamic_array(archive, obj.usageCountsCount, obj.pUsageCounts);
-    gvk::detail::cerealize_dynamic_pointer_array(archive, obj.usageCountsCount, obj.ppUsageCounts);
-    gvk::detail::cerealize_handle(archive, obj.micromap);
-}
-
-template <typename ArchiveType>
-inline void load(ArchiveType& archive, VkAccelerationStructureTrianglesOpacityMicromapEXT& obj)
-{
-    archive(obj.sType);
-    obj.pNext = gvk::detail::decerealize_pnext(archive);
-    archive(obj.indexType);
-    archive(obj.indexBuffer);
-    archive(obj.indexStride);
-    archive(obj.baseTriangle);
-    archive(obj.usageCountsCount);
-    obj.pUsageCounts = gvk::detail::decerealize_dynamic_array<VkMicromapUsageEXT>(archive);
-    obj.ppUsageCounts = gvk::detail::decerealize_dynamic_pointer_array<VkMicromapUsageEXT>(archive);
-    obj.micromap = gvk::detail::decerealize_handle<VkMicromapEXT>(archive);
-}
-
-template <typename ArchiveType>
 inline void save(ArchiveType& archive, const VkAccelerationStructureVersionInfoKHR& obj)
 {
     archive(obj.sType);
     gvk::detail::cerealize_pnext(archive, obj.pNext);
-    // NOTE : Not serializing pVersionData...this can be revisited if it becomes necessary
+    gvk::detail::cerealize_dynamic_array(archive, 2 * VK_UUID_SIZE, obj.pVersionData);
 }
 
 template <typename ArchiveType>
@@ -519,44 +413,7 @@ inline void load(ArchiveType& archive, VkAccelerationStructureVersionInfoKHR& ob
 {
     archive(obj.sType);
     obj.pNext = gvk::detail::decerealize_pnext(archive);
-    // NOTE : Not serializing pVersionData...this can be revisited if it becomes necessary
-    obj.pVersionData = nullptr;
-}
-
-template <typename ArchiveType>
-inline void save(ArchiveType& archive, const VkMicromapBuildInfoEXT& obj)
-{
-    archive(obj.sType);
-    gvk::detail::cerealize_pnext(archive, obj.pNext);
-    archive(obj.type);
-    archive(obj.flags);
-    archive(obj.mode);
-    gvk::detail::cerealize_handle(archive, obj.dstMicromap);
-    archive(obj.usageCountsCount);
-    gvk::detail::cerealize_dynamic_array(archive, obj.usageCountsCount, obj.pUsageCounts);
-    gvk::detail::cerealize_dynamic_pointer_array(archive, obj.usageCountsCount, obj.ppUsageCounts);
-    archive(obj.data);
-    archive(obj.scratchData);
-    archive(obj.triangleArray);
-    archive(obj.triangleArrayStride);
-}
-
-template <typename ArchiveType>
-inline void load(ArchiveType& archive, VkMicromapBuildInfoEXT& obj)
-{
-    archive(obj.sType);
-    obj.pNext = gvk::detail::decerealize_pnext(archive);
-    archive(obj.type);
-    archive(obj.flags);
-    archive(obj.mode);
-    obj.dstMicromap = gvk::detail::decerealize_handle<VkMicromapEXT>(archive);
-    archive(obj.usageCountsCount);
-    obj.pUsageCounts = gvk::detail::decerealize_dynamic_array<VkMicromapUsageEXT>(archive);
-    obj.ppUsageCounts = gvk::detail::decerealize_dynamic_pointer_array<VkMicromapUsageEXT>(archive);
-    archive(obj.data);
-    archive(obj.scratchData);
-    archive(obj.triangleArray);
-    archive(obj.triangleArrayStride);
+    obj.pVersionData = gvk::detail::decerealize_dynamic_array<uint8_t>(archive);
 }
 
 template <typename ArchiveType>
@@ -564,7 +421,7 @@ inline void save(ArchiveType& archive, const VkMicromapVersionInfoEXT& obj)
 {
     archive(obj.sType);
     gvk::detail::cerealize_pnext(archive, obj.pNext);
-    // NOTE : Not serializing pVersionData...this can be revisited if it becomes necessary
+    gvk::detail::cerealize_dynamic_array(archive, 2 * VK_UUID_SIZE, obj.pVersionData);
 }
 
 template <typename ArchiveType>
@@ -572,22 +429,7 @@ inline void load(ArchiveType& archive, VkMicromapVersionInfoEXT& obj)
 {
     archive(obj.sType);
     obj.pNext = gvk::detail::decerealize_pnext(archive);
-    // NOTE : Not serializing pVersionData...this can be revisited if it becomes necessary
-    obj.pVersionData = nullptr;
-}
-
-template <typename ArchiveType>
-inline void save(ArchiveType& archive, const VkPipelineMultisampleStateCreateInfo& obj)
-{
-    archive(obj.sType);
-    gvk::detail::cerealize_pnext(archive, obj.pNext);
-    archive(obj.flags);
-    archive(obj.rasterizationSamples);
-    archive(obj.sampleShadingEnable);
-    archive(obj.minSampleShading);
-    gvk::detail::cerealize_dynamic_array(archive, (obj.rasterizationSamples + 31) / 32, obj.pSampleMask);
-    archive(obj.alphaToCoverageEnable);
-    archive(obj.alphaToOneEnable);
+    obj.pVersionData = gvk::detail::decerealize_dynamic_array<uint8_t>(archive);
 }
 
 template <typename ArchiveType>
@@ -632,6 +474,20 @@ inline void load(ArchiveType& archive, VkPipelineExecutableInternalRepresentatio
     archive(obj.isText);
     archive(obj.dataSize);
     obj.pData = (void*)gvk::detail::decerealize_dynamic_array<uint8_t>(archive);
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkPipelineMultisampleStateCreateInfo& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+    archive(obj.flags);
+    archive(obj.rasterizationSamples);
+    archive(obj.sampleShadingEnable);
+    archive(obj.minSampleShading);
+    gvk::detail::cerealize_dynamic_array(archive, (obj.rasterizationSamples + 31) / 32, obj.pSampleMask);
+    archive(obj.alphaToCoverageEnable);
+    archive(obj.alphaToOneEnable);
 }
 
 template <typename ArchiveType>
@@ -817,10 +673,157 @@ inline void load(ArchiveType& archive, VkWriteDescriptorSet& obj)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Array of pointer members
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkAccelerationStructureBuildGeometryInfoKHR& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+    archive(obj.type);
+    archive(obj.flags);
+    archive(obj.mode);
+    gvk::detail::cerealize_handle(archive, obj.srcAccelerationStructure);
+    gvk::detail::cerealize_handle(archive, obj.dstAccelerationStructure);
+    archive(obj.geometryCount);
+    gvk::detail::cerealize_dynamic_array(archive, obj.geometryCount, obj.pGeometries);
+    gvk::detail::cerealize_dynamic_pointer_array(archive, obj.geometryCount, obj.ppGeometries);
+    archive(obj.scratchData);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkAccelerationStructureBuildGeometryInfoKHR& obj)
+{
+    archive(obj.sType);
+    obj.pNext = gvk::detail::decerealize_pnext(archive);
+    archive(obj.type);
+    archive(obj.flags);
+    archive(obj.mode);
+    obj.srcAccelerationStructure = gvk::detail::decerealize_handle<VkAccelerationStructureKHR>(archive);
+    obj.dstAccelerationStructure = gvk::detail::decerealize_handle<VkAccelerationStructureKHR>(archive);
+    archive(obj.geometryCount);
+    obj.pGeometries = gvk::detail::decerealize_dynamic_array<VkAccelerationStructureGeometryKHR>(archive);
+    obj.ppGeometries = gvk::detail::decerealize_dynamic_pointer_array<VkAccelerationStructureGeometryKHR>(archive);
+    archive(obj.scratchData);
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkAccelerationStructureTrianglesDisplacementMicromapNV& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+    archive(obj.displacementBiasAndScaleFormat);
+    archive(obj.displacementVectorFormat);
+    archive(obj.displacementBiasAndScaleBuffer);
+    archive(obj.displacementBiasAndScaleStride);
+    archive(obj.displacementVectorBuffer);
+    archive(obj.displacementVectorStride);
+    archive(obj.displacedMicromapPrimitiveFlags);
+    archive(obj.displacedMicromapPrimitiveFlagsStride);
+    archive(obj.indexType);
+    archive(obj.indexBuffer);
+    archive(obj.indexStride);
+    archive(obj.baseTriangle);
+    archive(obj.usageCountsCount);
+    gvk::detail::cerealize_dynamic_array(archive, obj.usageCountsCount, obj.pUsageCounts);
+    gvk::detail::cerealize_dynamic_pointer_array(archive, obj.usageCountsCount, obj.ppUsageCounts);
+    gvk::detail::cerealize_handle(archive, obj.micromap);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkAccelerationStructureTrianglesDisplacementMicromapNV& obj)
+{
+    archive(obj.sType);
+    obj.pNext = gvk::detail::decerealize_pnext(archive);
+    archive(obj.displacementBiasAndScaleFormat);
+    archive(obj.displacementVectorFormat);
+    archive(obj.displacementBiasAndScaleBuffer);
+    archive(obj.displacementBiasAndScaleStride);
+    archive(obj.displacementVectorBuffer);
+    archive(obj.displacementVectorStride);
+    archive(obj.displacedMicromapPrimitiveFlags);
+    archive(obj.displacedMicromapPrimitiveFlagsStride);
+    archive(obj.indexType);
+    archive(obj.indexBuffer);
+    archive(obj.indexStride);
+    archive(obj.baseTriangle);
+    archive(obj.usageCountsCount);
+    obj.pUsageCounts = gvk::detail::decerealize_dynamic_array<VkMicromapUsageEXT>(archive);
+    obj.ppUsageCounts = gvk::detail::decerealize_dynamic_pointer_array<VkMicromapUsageEXT>(archive);
+    obj.micromap = gvk::detail::decerealize_handle<VkMicromapEXT>(archive);
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkAccelerationStructureTrianglesOpacityMicromapEXT& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+    archive(obj.indexType);
+    archive(obj.indexBuffer);
+    archive(obj.indexStride);
+    archive(obj.baseTriangle);
+    archive(obj.usageCountsCount);
+    gvk::detail::cerealize_dynamic_array(archive, obj.usageCountsCount, obj.pUsageCounts);
+    gvk::detail::cerealize_dynamic_pointer_array(archive, obj.usageCountsCount, obj.ppUsageCounts);
+    gvk::detail::cerealize_handle(archive, obj.micromap);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkAccelerationStructureTrianglesOpacityMicromapEXT& obj)
+{
+    archive(obj.sType);
+    obj.pNext = gvk::detail::decerealize_pnext(archive);
+    archive(obj.indexType);
+    archive(obj.indexBuffer);
+    archive(obj.indexStride);
+    archive(obj.baseTriangle);
+    archive(obj.usageCountsCount);
+    obj.pUsageCounts = gvk::detail::decerealize_dynamic_array<VkMicromapUsageEXT>(archive);
+    obj.ppUsageCounts = gvk::detail::decerealize_dynamic_pointer_array<VkMicromapUsageEXT>(archive);
+    obj.micromap = gvk::detail::decerealize_handle<VkMicromapEXT>(archive);
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkMicromapBuildInfoEXT& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+    archive(obj.type);
+    archive(obj.flags);
+    archive(obj.mode);
+    gvk::detail::cerealize_handle(archive, obj.dstMicromap);
+    archive(obj.usageCountsCount);
+    gvk::detail::cerealize_dynamic_array(archive, obj.usageCountsCount, obj.pUsageCounts);
+    gvk::detail::cerealize_dynamic_pointer_array(archive, obj.usageCountsCount, obj.ppUsageCounts);
+    archive(obj.data);
+    archive(obj.scratchData);
+    archive(obj.triangleArray);
+    archive(obj.triangleArrayStride);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkMicromapBuildInfoEXT& obj)
+{
+    archive(obj.sType);
+    obj.pNext = gvk::detail::decerealize_pnext(archive);
+    archive(obj.type);
+    archive(obj.flags);
+    archive(obj.mode);
+    obj.dstMicromap = gvk::detail::decerealize_handle<VkMicromapEXT>(archive);
+    archive(obj.usageCountsCount);
+    obj.pUsageCounts = gvk::detail::decerealize_dynamic_array<VkMicromapUsageEXT>(archive);
+    obj.ppUsageCounts = gvk::detail::decerealize_dynamic_pointer_array<VkMicromapUsageEXT>(archive);
+    archive(obj.data);
+    archive(obj.scratchData);
+    archive(obj.triangleArray);
+    archive(obj.triangleArrayStride);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Unions
 template <typename ArchiveType>
 inline void save(ArchiveType& archive, const VkAccelerationStructureGeometryDataKHR& obj)
 {
+    // NOTE : Union of structures that all have sType; use sType to interpret.
     archive(((VkBaseInStructure&)obj).sType);
     switch (((VkBaseInStructure&)obj).sType) {
     case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR: {
@@ -840,6 +843,7 @@ inline void save(ArchiveType& archive, const VkAccelerationStructureGeometryData
 template <typename ArchiveType>
 inline void load(ArchiveType& archive, VkAccelerationStructureGeometryDataKHR& obj)
 {
+    // NOTE : Union of structures that all have sType; use sType to interpret.
     VkStructureType sType{ };
     archive(sType);
     switch (sType) {
@@ -853,6 +857,7 @@ inline void load(ArchiveType& archive, VkAccelerationStructureGeometryDataKHR& o
         archive(obj.instances);
     } break;
     default: {
+        obj = { };
     } break;
     }
 }
@@ -860,91 +865,437 @@ inline void load(ArchiveType& archive, VkAccelerationStructureGeometryDataKHR& o
 template <typename ArchiveType>
 inline void save(ArchiveType& archive, const VkAccelerationStructureMotionInstanceDataNV& obj)
 {
-    archive(obj.srtMotionInstance);
+    gvk::detail::cerealize_pod_union(archive, obj);
 }
 
 template <typename ArchiveType>
 inline void load(ArchiveType& archive, VkAccelerationStructureMotionInstanceDataNV& obj)
 {
-    archive(obj.srtMotionInstance);
+    gvk::detail::decerealize_pod_union(archive, obj);
 }
 
 template <typename ArchiveType>
 inline void save(ArchiveType& archive, const VkClearColorValue& obj)
 {
-    gvk::detail::cerealize_static_array<4>(archive, obj.uint32);
+    gvk::detail::cerealize_pod_union(archive, obj);
 }
 
 template <typename ArchiveType>
 inline void load(ArchiveType& archive, VkClearColorValue& obj)
 {
-    gvk::detail::decerealize_static_array<4>(archive, obj.uint32);
+    gvk::detail::decerealize_pod_union(archive, obj);
 }
 
 template <typename ArchiveType>
 inline void save(ArchiveType& archive, const VkClearValue& obj)
 {
-    archive(obj.color);
+    gvk::detail::cerealize_pod_union(archive, obj);
 }
 
 template <typename ArchiveType>
 inline void load(ArchiveType& archive, VkClearValue& obj)
 {
-    archive(obj.color);
+    gvk::detail::decerealize_pod_union(archive, obj);
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkClusterAccelerationStructureOpInputNV& obj)
+{
+    // NOTE : Union of pointers to structures that all have sType; use sType to interpret.
+    auto pObj = (const VkBaseInStructure*&)obj;
+    auto sType = pObj ? pObj->sType : VkStructureType{ };
+    archive(sType);
+    switch (sType) {
+    case VK_STRUCTURE_TYPE_CLUSTER_ACCELERATION_STRUCTURE_CLUSTERS_BOTTOM_LEVEL_INPUT_NV: {
+        gvk::detail::cerealize_dynamic_array(archive, 1, obj.pClustersBottomLevel);
+    } break;
+    case VK_STRUCTURE_TYPE_CLUSTER_ACCELERATION_STRUCTURE_TRIANGLE_CLUSTER_INPUT_NV: {
+        gvk::detail::cerealize_dynamic_array(archive, 1, obj.pTriangleClusters);
+    } break;
+    case VK_STRUCTURE_TYPE_CLUSTER_ACCELERATION_STRUCTURE_MOVE_OBJECTS_INPUT_NV: {
+        gvk::detail::cerealize_dynamic_array(archive, 1, obj.pMoveObjects);
+    } break;
+    default: {
+    } break;
+    }
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkClusterAccelerationStructureOpInputNV& obj)
+{
+    // NOTE : Union of pointers to structures that all have sType; use sType to interpret.
+    VkStructureType sType{ };
+    archive(sType);
+    switch (sType) {
+    case VK_STRUCTURE_TYPE_CLUSTER_ACCELERATION_STRUCTURE_CLUSTERS_BOTTOM_LEVEL_INPUT_NV: {
+        obj.pClustersBottomLevel = gvk::detail::decerealize_dynamic_array<VkClusterAccelerationStructureClustersBottomLevelInputNV>(archive);
+    } break;
+    case VK_STRUCTURE_TYPE_CLUSTER_ACCELERATION_STRUCTURE_TRIANGLE_CLUSTER_INPUT_NV: {
+        obj.pTriangleClusters = gvk::detail::decerealize_dynamic_array<VkClusterAccelerationStructureTriangleClusterInputNV>(archive);
+    } break;
+    case VK_STRUCTURE_TYPE_CLUSTER_ACCELERATION_STRUCTURE_MOVE_OBJECTS_INPUT_NV: {
+        obj.pMoveObjects = gvk::detail::decerealize_dynamic_array<VkClusterAccelerationStructureMoveObjectsInputNV>(archive);
+    } break;
+    default: {
+        obj = { };
+    } break;
+    }
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkDescriptorDataEXT& obj)
+{
+    (void)archive;
+    (void)obj;
+    assert(false && "VkDescriptorDataEXT cannot be directly serialized; serialize via VkDescriptorGetInfoEXT which specifies VkDescriptorType");
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkDescriptorDataEXT& obj)
+{
+    (void)archive;
+    (void)obj;
+    assert(false && "VkDescriptorDataEXT cannot be directly deserialized; deserialize via VkDescriptorGetInfoEXT which specifies VkDescriptorType");
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkDeviceOrHostAddressConstAMDX& obj)
+{
+    gvk::detail::cerealize_pod_union(archive, obj);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkDeviceOrHostAddressConstAMDX& obj)
+{
+    gvk::detail::decerealize_pod_union(archive, obj);
 }
 
 template <typename ArchiveType>
 inline void save(ArchiveType& archive, const VkDeviceOrHostAddressConstKHR& obj)
 {
-    archive(obj.deviceAddress);
+    gvk::detail::cerealize_pod_union(archive, obj);
 }
 
 template <typename ArchiveType>
 inline void load(ArchiveType& archive, VkDeviceOrHostAddressConstKHR& obj)
 {
-    archive(obj.deviceAddress);
+    gvk::detail::decerealize_pod_union(archive, obj);
 }
 
 template <typename ArchiveType>
 inline void save(ArchiveType& archive, const VkDeviceOrHostAddressKHR& obj)
 {
-    archive(obj.deviceAddress);
+    gvk::detail::cerealize_pod_union(archive, obj);
 }
 
 template <typename ArchiveType>
 inline void load(ArchiveType& archive, VkDeviceOrHostAddressKHR& obj)
 {
-    archive(obj.deviceAddress);
+    gvk::detail::decerealize_pod_union(archive, obj);
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkIndirectCommandsTokenDataEXT& obj)
+{
+    (void)archive;
+    (void)obj;
+    assert(false && "VkIndirectCommandsTokenDataEXT cannot be directly serialized; serialize via VkIndirectCommandsLayoutTokenEXT which specifies VkIndirectCommandsTokenTypeEXT");
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkIndirectCommandsTokenDataEXT& obj)
+{
+    (void)archive;
+    (void)obj;
+    assert(false && "VkIndirectCommandsTokenDataEXT cannot be directly deserialized; deserialize via VkIndirectCommandsLayoutTokenEXT which specifies VkIndirectCommandsTokenTypeEXT");
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkIndirectExecutionSetInfoEXT& obj)
+{
+    // NOTE : Union of pointers to structures that all have sType; use sType to interpret.
+    auto pObj = (const VkBaseInStructure*&)obj;
+    auto sType = pObj ? pObj->sType : VkStructureType{ };
+    archive(sType);
+    switch (sType) {
+    case VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_PIPELINE_INFO_EXT: {
+        gvk::detail::cerealize_dynamic_array(archive, 1, obj.pPipelineInfo);
+    } break;
+    case VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_SHADER_INFO_EXT: {
+        gvk::detail::cerealize_dynamic_array(archive, 1, obj.pShaderInfo);
+    } break;
+    default: {
+    } break;
+    }
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkIndirectExecutionSetInfoEXT& obj)
+{
+    // NOTE : Union of pointers to structures that all have sType; use sType to interpret.
+    VkStructureType sType{ };
+    archive(sType);
+    switch (sType) {
+    case VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_PIPELINE_INFO_EXT: {
+        obj.pPipelineInfo = gvk::detail::decerealize_dynamic_array<VkIndirectExecutionSetPipelineInfoEXT>(archive);
+    } break;
+    case VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_SHADER_INFO_EXT: {
+        obj.pShaderInfo = gvk::detail::decerealize_dynamic_array<VkIndirectExecutionSetShaderInfoEXT>(archive);
+    } break;
+    default: {
+        obj = { };
+    } break;
+    }
 }
 
 template <typename ArchiveType>
 inline void save(ArchiveType& archive, const VkPerformanceCounterResultKHR& obj)
 {
-    archive(obj.uint64);
+    gvk::detail::cerealize_pod_union(archive, obj);
 }
 
 template <typename ArchiveType>
 inline void load(ArchiveType& archive, VkPerformanceCounterResultKHR& obj)
 {
-    archive(obj.uint64);
+    gvk::detail::decerealize_pod_union(archive, obj);
 }
 
-GVK_STUB_CEREALIZATION_FUNCTIONS(VkPerformanceValueDataINTEL)
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkPerformanceValueDataINTEL& obj)
+{
+    (void)archive;
+    (void)obj;
+    assert(false && "VkPerformanceValueDataINTEL cannot be directly serialized; serialize via VkPerformanceValueINTEL which specifies VkPerformanceValueTypeINTEL");
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkPerformanceValueDataINTEL& obj)
+{
+    (void)archive;
+    (void)obj;
+    assert(false && "VkPerformanceValueDataINTEL cannot be directly deserialized; deserialize via VkPerformanceValueINTEL which specifies VkPerformanceValueTypeINTEL");
+}
 
 template <typename ArchiveType>
 inline void save(ArchiveType& archive, const VkPipelineExecutableStatisticValueKHR& obj)
 {
-    archive(obj.u64);
+    gvk::detail::cerealize_pod_union(archive, obj);
 }
 
 template <typename ArchiveType>
 inline void load(ArchiveType& archive, VkPipelineExecutableStatisticValueKHR& obj)
 {
-    archive(obj.u64);
+    gvk::detail::decerealize_pod_union(archive, obj);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Custom cerealization required
+// Union members
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkDescriptorGetInfoEXT& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+
+    // NOTE : Use obj.type to interpret obj.data union
+    archive(obj.type);
+    switch (obj.type) {
+    case VK_DESCRIPTOR_TYPE_SAMPLER: {
+        gvk::detail::cerealize_dynamic_handle_array(archive, 1, obj.data.pSampler);
+    } break;
+    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
+        gvk::detail::cerealize_dynamic_array(archive, 1, obj.data.pCombinedImageSampler);
+    } break;
+    case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: {
+        gvk::detail::cerealize_dynamic_array(archive, 1, obj.data.pInputAttachmentImage);
+    } break;
+    case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE: {
+        gvk::detail::cerealize_dynamic_array(archive, 1, obj.data.pSampledImage);
+    } break;
+    case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE: {
+        gvk::detail::cerealize_dynamic_array(archive, 1, obj.data.pStorageImage);
+    } break;
+    case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER: {
+        gvk::detail::cerealize_dynamic_array(archive, 1, obj.data.pUniformTexelBuffer);
+    } break;
+    case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER: {
+        gvk::detail::cerealize_dynamic_array(archive, 1, obj.data.pStorageTexelBuffer);
+    } break;
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: {
+        gvk::detail::cerealize_dynamic_array(archive, 1, obj.data.pUniformBuffer);
+    } break;
+    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER: {
+        gvk::detail::cerealize_dynamic_array(archive, 1, obj.data.pStorageBuffer);
+    } break;
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV: {
+        archive(obj.data.accelerationStructure);
+    } break;
+    default: {
+        // NOOP :
+    } break;
+    }
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkDescriptorGetInfoEXT& obj)
+{
+    archive(obj.sType);
+    obj.pNext = (const void*)gvk::detail::decerealize_pnext(archive);
+
+    // NOTE : Use obj.type to interpret obj.data union
+    archive(obj.type);
+    switch (obj.type) {
+    case VK_DESCRIPTOR_TYPE_SAMPLER: {
+        obj.data.pSampler = gvk::detail::decerealize_dynamic_handle_array<VkSampler>(archive);
+    } break;
+    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
+        obj.data.pCombinedImageSampler = gvk::detail::decerealize_dynamic_array<VkDescriptorImageInfo>(archive);
+    } break;
+    case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: {
+        obj.data.pInputAttachmentImage = gvk::detail::decerealize_dynamic_array<VkDescriptorImageInfo>(archive);
+    } break;
+    case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE: {
+        obj.data.pSampledImage = gvk::detail::decerealize_dynamic_array<VkDescriptorImageInfo>(archive);
+    } break;
+    case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE: {
+        obj.data.pStorageImage = gvk::detail::decerealize_dynamic_array<VkDescriptorImageInfo>(archive);
+    } break;
+    case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER: {
+        obj.data.pUniformTexelBuffer = gvk::detail::decerealize_dynamic_array<VkDescriptorAddressInfoEXT>(archive);
+    } break;
+    case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER: {
+        obj.data.pStorageTexelBuffer = gvk::detail::decerealize_dynamic_array<VkDescriptorAddressInfoEXT>(archive);
+    } break;
+    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: {
+        obj.data.pUniformBuffer = gvk::detail::decerealize_dynamic_array<VkDescriptorAddressInfoEXT>(archive);
+    } break;
+    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER: {
+        obj.data.pStorageBuffer = gvk::detail::decerealize_dynamic_array<VkDescriptorAddressInfoEXT>(archive);
+    } break;
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+    case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV: {
+        archive(obj.data.accelerationStructure);
+    } break;
+    default: {
+        // NOOP :
+    } break;
+    }
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkIndirectCommandsLayoutTokenEXT& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_pnext(archive, obj.pNext);
+
+    // NOTE : Use obj.type to interpret obj.data union
+    archive(obj.type);
+    switch (obj.type) {
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_CONSTANT_EXT:
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_SEQUENCE_INDEX_EXT: {
+        gvk::detail::cerealize_dynamic_array(archive, 1, obj.data.pPushConstant);
+    } break;
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_VERTEX_BUFFER_EXT: {
+        gvk::detail::cerealize_dynamic_array(archive, 1, obj.data.pVertexBuffer);
+    } break;
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_INDEX_BUFFER_EXT: {
+        gvk::detail::cerealize_dynamic_array(archive, 1, obj.data.pIndexBuffer);
+    } break;
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_EXECUTION_SET_EXT: {
+        gvk::detail::cerealize_dynamic_array(archive, 1, obj.data.pExecutionSet);
+    } break;
+    default: {
+        // NOOP :
+    } break;
+    }
+    archive(obj.offset);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkIndirectCommandsLayoutTokenEXT& obj)
+{
+    archive(obj.sType);
+    obj.pNext = (const void*)gvk::detail::decerealize_pnext(archive);
+
+    // NOTE : Use obj.type to interpret obj.data union
+    archive(obj.type);
+    switch (obj.type) {
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_PUSH_CONSTANT_EXT:
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_SEQUENCE_INDEX_EXT: {
+        obj.data.pPushConstant = gvk::detail::decerealize_dynamic_array<VkIndirectCommandsPushConstantTokenEXT>(archive);
+    } break;
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_VERTEX_BUFFER_EXT: {
+        obj.data.pVertexBuffer = gvk::detail::decerealize_dynamic_array<VkIndirectCommandsVertexBufferTokenEXT>(archive);
+    } break;
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_INDEX_BUFFER_EXT: {
+        obj.data.pIndexBuffer = gvk::detail::decerealize_dynamic_array<VkIndirectCommandsIndexBufferTokenEXT>(archive);
+    } break;
+    case VK_INDIRECT_COMMANDS_TOKEN_TYPE_EXECUTION_SET_EXT: {
+        obj.data.pExecutionSet = gvk::detail::decerealize_dynamic_array<VkIndirectCommandsExecutionSetTokenEXT>(archive);
+    } break;
+    default: {
+        // NOOP :
+    } break;
+    }
+    archive(obj.offset);
+}
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const VkPerformanceValueINTEL& obj)
+{
+    // NOTE : Use obj.type to interpret obj.data union
+    archive(obj.type);
+    switch (obj.type) {
+    case VK_PERFORMANCE_VALUE_TYPE_UINT32_INTEL: {
+        archive(obj.data.value32);
+    } break;
+    case VK_PERFORMANCE_VALUE_TYPE_UINT64_INTEL: {
+        archive(obj.data.value32);
+    } break;
+    case VK_PERFORMANCE_VALUE_TYPE_FLOAT_INTEL: {
+        archive(obj.data.value32);
+    } break;
+    case VK_PERFORMANCE_VALUE_TYPE_BOOL_INTEL: {
+        archive(obj.data.value32);
+    } break;
+    case VK_PERFORMANCE_VALUE_TYPE_STRING_INTEL: {
+        gvk::detail::cerealize_dynamic_string(archive, obj.data.valueString);
+    } break;
+    default: {
+        // NOOP :
+    } break;
+    }
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, VkPerformanceValueINTEL& obj)
+{
+    // NOTE : Use obj.type to interpret obj.data union
+    archive(obj.type);
+    switch (obj.type) {
+    case VK_PERFORMANCE_VALUE_TYPE_UINT32_INTEL: {
+        archive(obj.data.value32);
+    } break;
+    case VK_PERFORMANCE_VALUE_TYPE_UINT64_INTEL: {
+        archive(obj.data.value32);
+    } break;
+    case VK_PERFORMANCE_VALUE_TYPE_FLOAT_INTEL: {
+        archive(obj.data.value32);
+    } break;
+    case VK_PERFORMANCE_VALUE_TYPE_BOOL_INTEL: {
+        archive(obj.data.value32);
+    } break;
+    case VK_PERFORMANCE_VALUE_TYPE_STRING_INTEL: {
+        obj.data.valueString = gvk::detail::decerealize_dynamic_string(archive);
+    } break;
+    default: {
+        // NOOP :
+    } break;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Manually implemented serialization required
 template <typename ArchiveType>
 inline void save(ArchiveType& archive, const VkAccelerationStructureInstanceKHR& obj)
 {

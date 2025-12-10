@@ -55,11 +55,6 @@ public:
         *this = std::move(other);
     }
 
-    inline ~Auto()
-    {
-        reset();
-    }
-
     inline Auto<StructureType>& operator=(const Auto<StructureType>& other)
     {
         if (this != &other) {
@@ -72,10 +67,21 @@ public:
     inline Auto<StructureType>& operator=(Auto<StructureType>&& other)
     {
         if (this != &other) {
-            mStructure = other.mStructure;
-            other.mStructure = { };
+            reset();
+            mStructure = std::exchange(other.mStructure, mStructure);
         }
         return *this;
+    }
+
+    inline ~Auto()
+    {
+        reset();
+    }
+
+    inline void reset()
+    {
+        detail::destroy_structure_copy(mStructure, nullptr);
+        mStructure = { };
     }
 
     inline operator const StructureType&() const
@@ -91,12 +97,6 @@ public:
     inline const StructureType* operator->() const
     {
         return &mStructure;
-    }
-
-    inline void reset()
-    {
-        detail::destroy_structure_copy(mStructure, nullptr);
-        mStructure = { };
     }
 
 private:

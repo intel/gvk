@@ -335,8 +335,8 @@ void generate_pnext_switch(
         }
     }
     file << indentation << "default: {\n";
-    if (!defaultProcessor.empty()) {
-        file << indentation << "    " << defaultProcessor << '\n';
+    for (const auto& line : gvk::string::split(defaultProcessor, "\n")) {
+        file << indentation << "    " << line << '\n';
     }
     file << indentation << "}\n";
     file << indentation << "}\n";

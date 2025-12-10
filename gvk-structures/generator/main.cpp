@@ -75,6 +75,7 @@ int main(int, const char*[])
 
         // Linux
         apiElements.manuallyImplemented.insert("VkXlibSurfaceCreateInfoKHR");
+
         // Win32
         apiElements.manuallyImplemented.insert("VkExportFenceWin32HandleInfoKHR");
         apiElements.manuallyImplemented.insert("VkExportMemoryWin32HandleInfoKHR");
@@ -84,12 +85,9 @@ int main(int, const char*[])
         apiElements.manuallyImplemented.insert("VkImportMemoryWin32HandleInfoKHR");
         apiElements.manuallyImplemented.insert("VkImportMemoryWin32HandleInfoNV");
         apiElements.manuallyImplemented.insert("VkImportSemaphoreWin32HandleInfoKHR");
+
         // Special case members
-        apiElements.manuallyImplemented.insert("VkAccelerationStructureBuildGeometryInfoKHR");
-        apiElements.manuallyImplemented.insert("VkAccelerationStructureTrianglesDisplacementMicromapNV");
-        apiElements.manuallyImplemented.insert("VkAccelerationStructureTrianglesOpacityMicromapEXT");
         apiElements.manuallyImplemented.insert("VkAccelerationStructureVersionInfoKHR");
-        apiElements.manuallyImplemented.insert("VkMicromapBuildInfoEXT");
         apiElements.manuallyImplemented.insert("VkMicromapVersionInfoEXT");
         apiElements.manuallyImplemented.insert("VkPipelineCacheCreateInfo");
         apiElements.manuallyImplemented.insert("VkPipelineExecutableInternalRepresentationKHR");
@@ -99,16 +97,53 @@ int main(int, const char*[])
         apiElements.manuallyImplemented.insert("VkSpecializationInfo");
         apiElements.manuallyImplemented.insert("VkTransformMatrixKHR");
         apiElements.manuallyImplemented.insert("VkWriteDescriptorSet");
-        // Unions
-        apiElements.manuallyImplemented.insert("VkAccelerationStructureGeometryDataKHR");
-        apiElements.manuallyImplemented.insert("VkAccelerationStructureMotionInstanceDataNV");
-        apiElements.manuallyImplemented.insert("VkClearColorValue");
-        apiElements.manuallyImplemented.insert("VkClearValue");
-        apiElements.manuallyImplemented.insert("VkDeviceOrHostAddressConstKHR");
-        apiElements.manuallyImplemented.insert("VkDeviceOrHostAddressKHR");
-        apiElements.manuallyImplemented.insert("VkPerformanceCounterResultKHR");
-        apiElements.manuallyImplemented.insert("VkPerformanceValueDataINTEL");
-        apiElements.manuallyImplemented.insert("VkPipelineExecutableStatisticValueKHR");
+
+        // Array of pointer members
+        // TODO : Roll into generated code if/when a new structure follows this pattern
+        apiElements.manuallyImplemented.insert("VkAccelerationStructureBuildGeometryInfoKHR");
+        apiElements.manuallyImplemented.insert("VkAccelerationStructureTrianglesDisplacementMicromapNV");
+        apiElements.manuallyImplemented.insert("VkAccelerationStructureTrianglesOpacityMicromapEXT");
+        apiElements.manuallyImplemented.insert("VkMicromapBuildInfoEXT");
+
+        // Unions and union members
+        for (const auto& structureItr : manifest.structures) {
+            const auto& structure = structureItr.second;
+
+            // If structure is a union its handlers must be manually implemented
+            if (structure.isUnion) {
+                apiElements.manuallyImplemented.insert(structureItr.first);
+
+            // If a structure has a union member that cannot be handled automatically
+            } else if (
+                structure.contains_union(manifest, false) &&
+                structure.name != "VkAccelerationStructureGeometryKHR" &&
+                structure.name != "VkClusterAccelerationStructureInputInfoNV" &&
+                structure.name != "VkAccelerationStructureMotionInstanceNV" &&
+                structure.name != "VkIndirectExecutionSetCreateInfoEXT" &&
+                structure.name != "VkPipelineExecutableStatisticKHR"
+            ) {
+                for (const auto& member : structure.members) {
+                    const auto& structureMemberItr = manifest.structures.find(member.unqualifiedType);
+                    if (structureMemberItr != manifest.structures.end()) {
+                        const auto& structureMember = structureMemberItr->second;
+                        if (structureMember.isUnion) {
+                            if (!member.selector.empty()) {
+                                apiElements.manuallyImplemented.insert(structureItr.first);
+                            } else {
+                                assert(
+                                    (member.unqualifiedType == "VkClearColorValue" ||
+                                    member.unqualifiedType == "VkClearValue" ||
+                                    member.unqualifiedType == "VkDeviceOrHostAddressConstAMDX" ||
+                                    member.unqualifiedType == "VkDeviceOrHostAddressConstKHR" ||
+                                    member.unqualifiedType == "VkDeviceOrHostAddressKHR") &&
+                                    "Unexpected selectorless union encountered; gvk maintenance required"
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         gvk::cppgen::EnumerationToStringGenerator::generate(apiElements);
         gvk::cppgen::StructureComparisonOperatorsGenerator::generate(apiElements);
@@ -118,22 +153,21 @@ int main(int, const char*[])
         gvk::cppgen::StructureGetSTypeGenerator::generate(apiElements);
         gvk::cppgen::StructureMakeTupleGenerator::generate(manifest, apiElements);
 
+        auto manuallyImplemented = apiElements.manuallyImplemented;
         // Manually implemented to_string() due to UUID members
         // TODO : Automatically detect and generate UUID to_string()
         apiElements.manuallyImplemented.insert("VkPhysicalDeviceProperties");
         apiElements.manuallyImplemented.insert("VkPerformanceCounterKHR");
         gvk::cppgen::StructureToStringGenerator::generate(manifest, apiElements);
-        apiElements.manuallyImplemented.erase("VkPhysicalDeviceProperties");
-        apiElements.manuallyImplemented.erase("VkPerformanceCounterKHR");
+        apiElements.manuallyImplemented = manuallyImplemented;
 
-        // Manually implemented serialization
+        // Manually implemented serialization required
         apiElements.manuallyImplemented.insert("VkAccelerationStructureInstanceKHR");
         apiElements.manuallyImplemented.insert("VkAccelerationStructureMatrixMotionInstanceNV");
         apiElements.manuallyImplemented.insert("VkAccelerationStructureSRTMotionInstanceNV");
         apiElements.manuallyImplemented.insert("VkRayTracingShaderGroupCreateInfoKHR");
         apiElements.manuallyImplemented.insert("VkSurfaceFullScreenExclusiveWin32InfoEXT");
         apiElements.manuallyImplemented.insert("VkWin32SurfaceCreateInfoKHR");
-
         gvk::cppgen::StructureCerealizationGenerator::generate(manifest, apiElements);
         gvk::cppgen::StructureDecerealizationGenerator::generate(manifest, apiElements);
         gvk::cppgen::StructureDeserializationGenerator::generate(apiElements);

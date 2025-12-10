@@ -33,8 +33,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace gvk {
 
+void Environment::reset()
+{
+    mEnvVars.clear();
+}
+
 void Environment::set_env()
 {
+    reset();
 #ifdef GVK_PLATFORM_WINDOWS
     auto freeEnvStrs = [](char* p) { FreeEnvironmentStrings(p); };
     auto env = std::unique_ptr<char, decltype(freeEnvStrs)>{ GetEnvironmentStrings(), freeEnvStrs };
@@ -132,6 +138,12 @@ std::string get_env_var(const std::string& key)
 #endif
     }
     return value;
+}
+
+bool get_env_var_true(const std::string& key)
+{
+    auto value = gvk::string::to_lower(get_env_var(key));
+    return value == "true" || value == "yes" || value == "on" || value == "y" || gvk::string::to_number<int>(value);
 }
 
 void set_env_var(const std::string& key, const std::string& value)

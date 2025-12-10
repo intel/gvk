@@ -8,11 +8,13 @@ set(generatedIncludeFiles
     "${generatedIncludePath}/basic-api-call-handler.hpp"
     "${generatedIncludePath}/basic-layer.hpp"
     "${generatedIncludePath}/layer-hooks.hpp"
+    "${generatedIncludePath}/unique-handles-layer-hooks.hpp"
 )
 set(generatedSourceFiles
     "${generatedSourcePath}/basic-api-call-handler.cpp"
     "${generatedSourcePath}/basic-layer.cpp"
     "${generatedSourcePath}/layer-hooks.cpp"
+    "${generatedSourcePath}/unique-handles-layer-hooks.cpp"
 )
 set(generatorSourcePath "${CMAKE_CURRENT_LIST_DIR}/generator/")
 gvk_add_code_generator(
@@ -28,6 +30,7 @@ gvk_add_code_generator(
         "${generatorSourcePath}/basic-api-call-handler.generator.hpp"
         "${generatorSourcePath}/basic-layer.generator.hpp"
         "${generatorSourcePath}/layer-hooks.generator.hpp"
+        "${generatorSourcePath}/unique-handles-layer-hooks.generator.hpp"
     SOURCE_FILES
         "${generatorSourcePath}/main.cpp"
     OUTPUT_FILES
@@ -51,6 +54,9 @@ gvk_add_static_library(
     FOLDER
         "gvk-layer/"
     LINK_LIBRARIES
+        gvk-command-structures
+        gvk-containers
+        gvk-reference
         gvk-runtime
         gvk-structures
     INCLUDE_DIRECTORIES
@@ -60,12 +66,18 @@ gvk_add_static_library(
         "${generatedIncludeFiles}"
         "${includePath}/log.hpp"
         "${includePath}/registry.hpp"
+        "${includePath}/unique-handles-manager.hpp"
         "${includeDirectory}/gvk-layer.hpp"
     SOURCE_FILES
         "${generatedSourceFiles}"
         "${sourcePath}/log.cpp"
         "${sourcePath}/registry.cpp"
+        "${sourcePath}/unique-handles-manager.cpp"
 )
+if(MSVC)
+    set_source_files_properties("${generatedSourcePath}/unique-handles-layer-hooks.cpp" PROPERTIES COMPILE_FLAGS "/bigobj")
+    set_source_files_properties("${generatedSourcePath}/layer-hooks.cpp" PROPERTIES COMPILE_FLAGS "/bigobj")
+endif()
 
 ################################################################################
 # gvk-layer install

@@ -52,6 +52,18 @@ public:
     VkResult post_vkSetDebugUtilsObjectNameEXT(VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo, VkResult gvkResult) override final;
 
     ////////////////////////////////////////////////////////////////////////////////
+    // Defined in /source/gvk-state-tracker/instance.cpp
+    VkResult pre_vkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance, VkResult gvkResult) override final;
+    VkResult post_vkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance, VkResult gvkResult) override final;
+    void pre_vkDestroyInstance(VkInstance instance, const VkAllocationCallbacks* pAllocator) override final;
+
+    ////////////////////////////////////////////////////////////////////////////////
+    // Defined in /source/gvk-state-tracker/device.cpp
+    VkResult pre_vkCreateDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice, VkResult gvkResult) override final;
+    VkResult post_vkCreateDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice, VkResult gvkResult) override final;
+    void pre_vkDestroyDevice(VkDevice device, const VkAllocationCallbacks* pAllocator) override final;
+
+    ////////////////////////////////////////////////////////////////////////////////
     // Defined in /source/gvk-state-tracker/acceleration-structure.cpp
     VkResult pre_vkCreateAccelerationStructureKHR(VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure, VkResult gvkResult) override final;
     VkResult post_vkCreateAccelerationStructureKHR(VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure, VkResult gvkResult) override final;
@@ -92,12 +104,6 @@ public:
     void copy_descriptor_sets(VkDevice vkDevice, uint32_t descriptorCopyCount, const VkCopyDescriptorSet* pDescriptorCopies);
 
     ////////////////////////////////////////////////////////////////////////////////
-    // Defined in /source/gvk-state-tracker/device.cpp
-    VkResult pre_vkCreateDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice, VkResult gvkResult) override final;
-    VkResult post_vkCreateDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice, VkResult gvkResult) override final;
-    void pre_vkDestroyDevice(VkDevice device, const VkAllocationCallbacks* pAllocator) override final;
-
-    ////////////////////////////////////////////////////////////////////////////////
     // Defined in /source/gvk-state-tracker/device-memory.cpp
     VkResult pre_vkAllocateMemory(VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory, VkResult gvkResult) override final;
     VkResult post_vkAllocateMemory(VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory, VkResult gvkResult) override final;
@@ -124,11 +130,6 @@ public:
     VkResult pre_vkCreateImage(VkDevice device, const VkImageCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImage* pImage, VkResult gvkResult) override final;
     VkResult post_vkCreateImage(VkDevice device, const VkImageCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImage* pImage, VkResult gvkResult) override final;
     void post_vkDestroyImage(VkDevice device, VkImage image, const VkAllocationCallbacks* pAllocator) override final;
-
-    ////////////////////////////////////////////////////////////////////////////////
-    // Defined in /source/gvk-state-tracker/instance.cpp
-    VkResult post_vkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance, VkResult gvkResult) override final;
-    void pre_vkDestroyInstance(VkInstance instance, const VkAllocationCallbacks* pAllocator) override final;
 
     ////////////////////////////////////////////////////////////////////////////////
     // Defined in /source/gvk-state-tracker/pipeline.cpp
