@@ -86,6 +86,8 @@ gvk_add_static_library(
         "${imgui_SOURCE_DIR}/imgui_draw.cpp"
         "${imgui_SOURCE_DIR}/imgui_tables.cpp"
         "${imgui_SOURCE_DIR}/imgui_widgets.cpp"
+    COMPILE_DEFINITIONS
+        IMGUI_DISABLE_STB_IMAGE_WRITE_IMPLEMENTATION=1
 )
 
 target_compile_options(imgui PRIVATE -w)

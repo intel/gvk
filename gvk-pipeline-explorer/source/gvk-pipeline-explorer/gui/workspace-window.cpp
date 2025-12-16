@@ -26,12 +26,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-pipeline-explorer/gui/workspace-window.hpp"
 #include "gvk-pipeline-explorer/gui/stream-playback-window.hpp"
+#include "gvk-pipeline-explorer/gui/image-window.hpp"
 #include "gvk-pipeline-explorer/gui/window-manager.hpp"
 #include "gvk-environment.hpp"
 #include "gvk-system.hpp"
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 #include <codecvt>
+#include <filesystem>
 #include <locale>
 #include <Psapi.h>
 #include <ShlObj.h>
@@ -52,8 +54,8 @@ void WorkspaceWindow::on_gui(GuiInfo& guiInfo)
 {
     (void)guiInfo;
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-
-    ImGui::BeginDisabled(guiInfo.applicationInfo.processInformation.hProcess || guiInfo.cliProvidedWorkspace || guiInfo.workspaceInfo.streamInfo.running);
+    bool appRunningState = guiInfo.applicationInfo.processInformation.hProcess || guiInfo.cliProvidedWorkspace || guiInfo.workspaceInfo.streamInfo.running; //True means app is running
+    ImGui::BeginDisabled(appRunningState);
     {
         // Workspace options
         ImGui::Text("Workspace");
@@ -70,24 +72,25 @@ void WorkspaceWindow::on_gui(GuiInfo& guiInfo)
             }
         }
         ImGui::EndDisabled();
-
-        // Draw tab bar
-        if (ImGui::BeginTabBar("Tab Bar"))
-        {
-            if (ImGui::BeginTabItem("Application")) {
-                draw_application_tab(guiInfo);
-                ImGui::EndTabItem();
-            }
-            ImGui::BeginDisabled();
-            if (ImGui::BeginTabItem("Stream Playback")) {
-                draw_stream_tab(guiInfo);
-                ImGui::EndTabItem();
-            }
-            ImGui::EndDisabled();
-            ImGui::EndTabBar();
-        }
     }
     ImGui::EndDisabled();
+    // Draw tab bar
+    if (ImGui::BeginTabBar("Tab Bar"))
+    {
+        if (ImGui::BeginTabItem("Application")) {
+            draw_application_tab(guiInfo, appRunningState);
+            ImGui::EndTabItem();
+        }
+        ImGui::BeginDisabled();
+        if (ImGui::BeginTabItem("Stream Playback")) {
+            draw_stream_tab(guiInfo);
+            ImGui::EndTabItem();
+        }
+        ImGui::EndDisabled();
+        ImGui::EndTabBar();
+    }
+    
+
 
 #endif // VK_USE_PLATFORM_WIN32_KHR
 }
@@ -102,252 +105,346 @@ void WorkspaceWindow::on_load(GuiInfo& guiInfo)
     (void)guiInfo;
 }
 
-void WorkspaceWindow::draw_application_tab(GuiInfo& guiInfo)
+void WorkspaceWindow::draw_application_tab(GuiInfo& guiInfo, bool appRunningState)
 {
-    // Clear workspace
-    if (ImGui::Button("Clear")) {
-        guiInfo.workspaceInfo = { };
-    }
-
-    // Recent workspaces
-    ImGui::SameLine();
-    ImGui::BeginDisabled(guiInfo.recentWorkspaceInfos.empty());
+    ImGui::BeginDisabled(appRunningState);
     {
-        if (ImGui::Button("Recent")) {
-            ImGui::OpenPopup("Recent-Workspace-Popup");
+        // Clear workspace
+        if (ImGui::Button("Clear")) {
+            guiInfo.workspaceInfo = { };
         }
-        if (ImGui::BeginPopup("Recent-Workspace-Popup")) {
-            auto remove = guiInfo.recentWorkspaceInfos.end();
-            for (auto itr = guiInfo.recentWorkspaceInfos.begin(); itr != guiInfo.recentWorkspaceInfos.end(); ++itr) {
+
+        // Recent workspaces
+        ImGui::SameLine();
+        ImGui::BeginDisabled(guiInfo.recentWorkspaceInfos.empty());
+        {
+            if (ImGui::Button("Recent")) {
+                ImGui::OpenPopup("Recent-Workspace-Popup");
+            }
+            if (ImGui::BeginPopup("Recent-Workspace-Popup")) {
+                auto remove = guiInfo.recentWorkspaceInfos.end();
+                for (auto itr = guiInfo.recentWorkspaceInfos.begin(); itr != guiInfo.recentWorkspaceInfos.end(); ++itr) {
+                    ImGui::PushID(&*itr);
+                    if (ImGui::SmallButton("Remove")) {
+                        remove = itr;
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::Selectable((itr->launch + " " + itr->args).c_str())) {
+                        guiInfo.workspaceInfo = *itr;
+                    }
+                    ImGui::PopID();
+                }
+                if (remove != guiInfo.recentWorkspaceInfos.end()) {
+                    guiInfo.recentWorkspaceInfos.erase(remove);
+                }
+                ImGui::EndPopup();
+            }
+        }
+        ImGui::EndDisabled();
+    }
+    ImGui::EndDisabled();
+
+    ImGui::SameLine();
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+    std::filesystem::path screenshotDir = std::filesystem::path(guiInfo.workspaceInfo.workspace) / "screens";
+    ImGui::BeginDisabled(!appRunningState);
+    {
+        if (ImGui::Button("Take Screenshot")) {
+            auto hwnd = find_window_by_pid(guiInfo.applicationInfo.processInformation.dwProcessId); //Do we need to pass guiInfo.applicationInfo.processInformation.hProcess too?
+            //Get timestamp
+            auto dateTime = gvk::system::DateTime::now();
+            auto dateStr = dateTime.get_date_str();
+            auto timeStr = dateTime.get_time_str();
+            auto dateTimeStr = gvk::string::replace(dateStr, "/", "-") + "_" + gvk::string::replace(timeStr, ":", "-");
+
+            //===For future use
+            auto windowTitle = get_window_title(hwnd);
+            
+            if (windowTitle.length() > 50) {
+                windowTitle[50] = '\0';
+            }
+                (void)windowTitle;
+            std::string filename = screenshotDir.string() +"/" + dateTimeStr + ".png";
+            std::filesystem::create_directories(screenshotDir);
+            ImageData windowImage = capture_window_pixels(hwnd);
+            if (windowImage.pixels.empty())
+            {
+                guiInfo.messages += "ERROR: A problem occured when taking a screenshot.";
+            }
+            else
+            {
+                save_pixels_to_png(windowImage, filename);
+            }
+        }
+    }
+    ImGui::EndDisabled();
+
+    ImGui::SameLine();
+    ImGui::BeginDisabled(!std::filesystem::exists(screenshotDir) || !std::filesystem::is_directory(screenshotDir)
+        || std::filesystem::is_empty(screenshotDir));
+    {
+        if (ImGui::Button("Screenshots")) {
+            ImGui::OpenPopup("Screenshots-Popup");
+
+            for (const auto& entry : std::filesystem::directory_iterator(screenshotDir)) {
+                if (entry.is_regular_file()) {
+                    if (gvk::string::to_lower(entry.path().extension().string()) == ".png") {
+                        guiInfo.screenshots.insert(entry.path().filename().string());
+                    }
+                }
+            }
+        }
+        if (ImGui::BeginPopup("Screenshots-Popup")) {
+            auto remove = guiInfo.screenshots.end();
+            for (auto itr = guiInfo.screenshots.begin(); itr != guiInfo.screenshots.end(); ++itr) {
                 ImGui::PushID(&*itr);
-                if (ImGui::SmallButton("Remove")) {
+                if (ImGui::SmallButton("Delete")) {
                     remove = itr;
                 }
                 ImGui::SameLine();
-                if (ImGui::Selectable((itr->launch + " " + itr->args).c_str())) {
-                    guiInfo.workspaceInfo = *itr;
+                if (ImGui::Selectable((*itr).c_str())) {
+                    get_window_manager().open<ImageWindow>(ImageWindow::get_name(*itr), *itr);
                 }
                 ImGui::PopID();
             }
-            if (remove != guiInfo.recentWorkspaceInfos.end()) {
-                guiInfo.recentWorkspaceInfos.erase(remove);
+            if (remove != guiInfo.screenshots.end()) {
+                try {
+                    if (std::filesystem::remove(screenshotDir.string() + "/" + *remove)) {
+                        guiInfo.messages += "File removed successfully: " + *remove + "\n";
+                    } else {
+                        guiInfo.messages += "File not found or could not be removed: " + *remove + "\n";
+                    }
+                }
+                catch (const std::filesystem::filesystem_error& e) {
+                    std::cerr << "Filesystem error: " << e.what() << std::endl;
+                }
+                guiInfo.screenshots.erase(remove);
             }
             ImGui::EndPopup();
         }
     }
     ImGui::EndDisabled();
+#endif // VK_USE_PLATFORM_WIN32_KHR
 
-    // Launch options
-    ImGui::Checkbox("Auto Query", &mAutoQuery);
-    ImGui::SameLine();
-    ImGui::Checkbox("Wait For Debugger", &guiInfo.workspaceInfo.waitForDebugger);
-    #if 0
-    ImGui::SameLine();
-    ImGui::Checkbox("Open Terminal", &guiInfo.workspaceInfo.openTerminal);
-    #endif
-
-    // GITS launch options
-    ImGui::SameLine();
-    #if GVK_GITS_ENABLED
-    ImGui::BeginDisabled(guiInfo.workspaceInfo.gits.empty());
-    #else
-    ImGui::BeginDisabled();
-    #endif // GVK_GITS_ENABLED
-    ImGui::Checkbox("Record Stream", &guiInfo.workspaceInfo.record);
-    ImGui::EndDisabled();
-
-    // Clear stdout on launch option
-    ImGui::SameLine();
-    ImGui::Checkbox("Clear StdOut", &mClearStdOut);
-
-    // Layer configuration
-    ImGui::SameLine();
-    if (ImGui::Button("Layers")) {
-        ImGui::OpenPopup("Layers");
-    }
-    if (ImGui::BeginPopup("Layers")) {
-        mActiveLayers.resize(guiInfo.layerProperties.size());
-        for (size_t i = 0; i < guiInfo.layerProperties.size(); ++i) {
-            ImGui::PushID((int)i);
-            bool active = mActiveLayers[i];
-            #if 0
-            // TODO : Setup layer ordering
-            if (ImGui::SmallButton("<")) {
-            }
-            ImGui::SameLine();
-            if (ImGui::SmallButton(">")) {
-            }
-            ImGui::SameLine();
-            #endif
-            ImGui::Checkbox(guiInfo.layerProperties[i].layerName, &active);
-            mActiveLayers[i] = (int)active;
-            ImGui::PopID();
-        }
-        ImGui::EndPopup();
-    }
-
-    // Launch
-    ImGui::BeginDisabled(guiInfo.workspaceInfo.launch.empty());
+    ImGui::BeginDisabled(appRunningState);
     {
-        if (ImGui::Button("Launch")) {
-            if (guiInfo.workspaceInfo.gitsStream) {
-                #if 0
-                launch_gits_stream(guiInfo);
-                #endif
-            } else {
-                launch_application(guiInfo);
+        // Launch options
+        ImGui::Checkbox("Auto Query", &mAutoQuery);
+        ImGui::SameLine();
+        ImGui::Checkbox("Wait For Debugger", &guiInfo.workspaceInfo.waitForDebugger);
+#if 0
+        ImGui::SameLine();
+        ImGui::Checkbox("Open Terminal", &guiInfo.workspaceInfo.openTerminal);
+#endif
+
+        // GITS launch options
+        ImGui::SameLine();
+#if GVK_GITS_ENABLED
+        ImGui::BeginDisabled(guiInfo.workspaceInfo.gits.empty());
+#else
+        ImGui::BeginDisabled();
+#endif // GVK_GITS_ENABLED
+        ImGui::Checkbox("Record Stream", &guiInfo.workspaceInfo.record);
+        ImGui::EndDisabled();
+
+        // Clear stdout on launch option
+        ImGui::SameLine();
+        ImGui::Checkbox("Clear StdOut", &mClearStdOut);
+
+        // Layer configuration
+        ImGui::SameLine();
+        if (ImGui::Button("Layers")) {
+            ImGui::OpenPopup("Layers");
+        }
+        if (ImGui::BeginPopup("Layers")) {
+            mActiveLayers.resize(guiInfo.layerProperties.size());
+            for (size_t i = 0; i < guiInfo.layerProperties.size(); ++i) {
+                ImGui::PushID((int)i);
+                bool active = mActiveLayers[i];
+#if 0
+                // TODO : Setup layer ordering
+                if (ImGui::SmallButton("<")) {
+                }
+                ImGui::SameLine();
+                if (ImGui::SmallButton(">")) {
+                }
+                ImGui::SameLine();
+#endif
+                ImGui::Checkbox(guiInfo.layerProperties[i].layerName, &active);
+                mActiveLayers[i] = (int)active;
+                ImGui::PopID();
+            }
+            ImGui::EndPopup();
+        }
+
+        // Launch
+        ImGui::BeginDisabled(guiInfo.workspaceInfo.launch.empty());
+        {
+            if (ImGui::Button("Launch")) {
+                if (guiInfo.workspaceInfo.gitsStream) {
+#if 0
+                    launch_gits_stream(guiInfo);
+#endif
+                }
+                else {
+                    launch_application(guiInfo);
+                }
             }
         }
-    }
-    ImGui::EndDisabled();
+        ImGui::EndDisabled();
 
-    // Launch path
-    ImGui::PushItemWidth(-FLT_MIN);
-    ImGui::SameLine();
-    static bool sOnceDEBUG;
-    if (GvkGui::InputPath("##launch", &guiInfo.workspaceInfo.launch) || !sOnceDEBUG) {
-        sOnceDEBUG = true;
+        // Launch path
+        ImGui::PushItemWidth(-FLT_MIN);
+        ImGui::SameLine();
+        static bool sOnceDEBUG;
+        if (GvkGui::InputPath("##launch", &guiInfo.workspaceInfo.launch) || !sOnceDEBUG) {
+            sOnceDEBUG = true;
 
-        #if 0
-        guiInfo.workspaceInfo.gitsStream = false;
-        if (guiInfo.workspaceInfo.launch.empty()) {
-            // TODO : Clear stuff
-        } else {
-            std::filesystem::path launch = guiInfo.workspaceInfo.launch;
-            auto status = std::filesystem::status(launch);
-            switch (status.type()) {
-            case std::filesystem::file_type::regular: {
-                auto exec =
-                    std::filesystem::perms::owner_exec |
-                    std::filesystem::perms::group_exec |
-                    std::filesystem::perms::others_exec;
-                if ((status.permissions() & exec) != std::filesystem::perms::none) {
-
-                } else {
-                    // TODO : Clear stuff
-                }
-            } break;
-            case std::filesystem::file_type::directory: {
-                if (std::filesystem::exists(launch / "stream.gits2")) {
-                    guiInfo.workspaceInfo.gitsStream = true;
-                    get_window_manager().open<StreamPlaybackWindow>("Stream Playback");
-                } else {
-                    // TODO : Clear stuff
-                }
-            } break;
-            default: {
+#if 0
+            guiInfo.workspaceInfo.gitsStream = false;
+            if (guiInfo.workspaceInfo.launch.empty()) {
                 // TODO : Clear stuff
-            } break;
             }
-        }
-        #endif
+            else {
+                std::filesystem::path launch = guiInfo.workspaceInfo.launch;
+                auto status = std::filesystem::status(launch);
+                switch (status.type()) {
+                case std::filesystem::file_type::regular: {
+                    auto exec =
+                        std::filesystem::perms::owner_exec |
+                        std::filesystem::perms::group_exec |
+                        std::filesystem::perms::others_exec;
+                    if ((status.permissions() & exec) != std::filesystem::perms::none) {
 
-        ///////////////////////////////////////////////////////////////////////////////
-        // TODO : Sort out workspace logic
-        ///////////////////////////////////////////////////////////////////////////////
-        if (guiInfo.workspaceInfo.autoWorkingDirectory && !guiInfo.cliProvidedWorkspace) {
+                    }
+                    else {
+                        // TODO : Clear stuff
+                    }
+                } break;
+                case std::filesystem::file_type::directory: {
+                    if (std::filesystem::exists(launch / "stream.gits2")) {
+                        guiInfo.workspaceInfo.gitsStream = true;
+                        get_window_manager().open<StreamPlaybackWindow>("Stream Playback");
+                    }
+                    else {
+                        // TODO : Clear stuff
+                    }
+                } break;
+                default: {
+                    // TODO : Clear stuff
+                } break;
+                }
+            }
+#endif
+
+            ///////////////////////////////////////////////////////////////////////////////
+            // TODO : Sort out workspace logic
+            ///////////////////////////////////////////////////////////////////////////////
+            if (guiInfo.workspaceInfo.autoWorkingDirectory && !guiInfo.cliProvidedWorkspace) {
+#ifdef WIN32
+                guiInfo.workspaceInfo.workingDirectory = get_default_working_directory(guiInfo.workspaceInfo).string();
+#else
+                // TODO :
+#endif
+            }
+            if (guiInfo.workspaceInfo.autoWorkspace && !guiInfo.cliProvidedWorkspace) {
+#ifdef WIN32
+                guiInfo.workspaceInfo.workspace = get_default_workspace_path(guiInfo.workspaceInfo).string();
+#else
+                // TODO :
+#endif
+            }
+            if (guiInfo.workspaceInfo.autoLogPath && !guiInfo.cliProvidedWorkspace) {
+#ifdef WIN32
+                guiInfo.workspaceInfo.logPath = get_default_workspace_path(guiInfo.workspaceInfo).string() + "/logs";
+#else
+                // TODO :
+#endif
+            }
+            ///////////////////////////////////////////////////////////////////////////////
+        }
+
+#if 0
+        // NOTE : This is for targeting an app that's run via launcher or script, needs
+        //  more work to make it actually usable
+        ImGui::Text("Target");
+        ImGui::SameLine();
+        if (GvkGui::InputPath("##target", &guiInfo.workspaceInfo.target) && guiInfo.workspaceInfo.autoWorkspace) {
+            guiInfo.workspaceInfo.workspace = get_default_workspace_path(guiInfo.workspaceInfo).string();
+        }
+#endif
+
+        // Workload args
+        ImGui::Text("Args");
+        ImGui::SameLine();
+        GvkGui::InputPath("##args", &guiInfo.workspaceInfo.args);
+
+        ////////////////////////////////////////////////////////////////////////////////
+        ImGui::Text("Working Directory");
+        ImGui::SameLine();
+        if (ImGui::Checkbox("Auto##workingDirectory", &guiInfo.workspaceInfo.autoWorkingDirectory) && guiInfo.workspaceInfo.autoWorkingDirectory) {
 #ifdef WIN32
             guiInfo.workspaceInfo.workingDirectory = get_default_working_directory(guiInfo.workspaceInfo).string();
 #else
             // TODO :
 #endif
         }
-        if (guiInfo.workspaceInfo.autoWorkspace && !guiInfo.cliProvidedWorkspace) {
-#ifdef WIN32
-            guiInfo.workspaceInfo.workspace = get_default_workspace_path(guiInfo.workspaceInfo).string();
-#else
-            // TODO :
-#endif
+        ImGui::SameLine();
+        ImGui::BeginDisabled(guiInfo.workspaceInfo.autoWorkingDirectory);
+        {
+            guiInfo.workspaceInfo.workingDirectory = gvk::string::scrub_path(guiInfo.workspaceInfo.workingDirectory);
+            if (GvkGui::InputPath("##workingDirectory", &guiInfo.workspaceInfo.workingDirectory)) {
+            }
         }
-        if (guiInfo.workspaceInfo.autoLogPath && !guiInfo.cliProvidedWorkspace) {
+        ImGui::EndDisabled();
+
+#if GVK_GITS_ENABLED
+        // NOTE : Stream playback features WIP
+        ImGui::Text("Gits");
+        ImGui::SameLine();
+        auto gitsPathStr = gvk::string::scrub_path(guiInfo.workspaceInfo.gits);
+        if (GvkGui::InputPath("##gits", &gitsPathStr)) {
+            guiInfo.workspaceInfo.gits = gitsPathStr;
+            // TODO : Validate gits install
+        }
+        ImGui::BeginDisabled(guiInfo.workspaceInfo.gitsStream);
+        if (guiInfo.workspaceInfo.gitsStream) {
+        }
+        ImGui::EndDisabled();
+#endif // GVK_GITS_ENABLED
+
+        ////////////////////////////////////////////////////////////////////////////////
+        ImGui::Text("Log");
+        ImGui::SameLine();
+        ImGui::Checkbox("StdOut", &guiInfo.workspaceInfo.logToStdOut);
+        ImGui::BeginDisabled(guiInfo.workspaceInfo.logPath.empty());
+        ImGui::SameLine();
+        if (guiInfo.workspaceInfo.logPath.empty()) {
+            guiInfo.workspaceInfo.logToFile = false;
+        }
+        ImGui::Checkbox("File", &guiInfo.workspaceInfo.logToFile);
+        ImGui::EndDisabled();
+        ImGui::SameLine();
+        if (ImGui::Checkbox("Auto##log", &guiInfo.workspaceInfo.autoLogPath) && guiInfo.workspaceInfo.autoLogPath) {
 #ifdef WIN32
             guiInfo.workspaceInfo.logPath = get_default_workspace_path(guiInfo.workspaceInfo).string() + "/logs";
 #else
             // TODO :
 #endif
         }
-        ///////////////////////////////////////////////////////////////////////////////
-    }
-
-    #if 0
-    // NOTE : This is for targeting an app that's run via launcher or script, needs
-    //  more work to make it actually usable
-    ImGui::Text("Target");
-    ImGui::SameLine();
-    if (GvkGui::InputPath("##target", &guiInfo.workspaceInfo.target) && guiInfo.workspaceInfo.autoWorkspace) {
-        guiInfo.workspaceInfo.workspace = get_default_workspace_path(guiInfo.workspaceInfo).string();
-    }
-    #endif
-
-    // Workload args
-    ImGui::Text("Args");
-    ImGui::SameLine();
-    GvkGui::InputPath("##args", &guiInfo.workspaceInfo.args);
-
-    ////////////////////////////////////////////////////////////////////////////////
-    ImGui::Text("Working Directory");
-    ImGui::SameLine();
-    if (ImGui::Checkbox("Auto##workingDirectory", &guiInfo.workspaceInfo.autoWorkingDirectory) && guiInfo.workspaceInfo.autoWorkingDirectory) {
-#ifdef WIN32
-        guiInfo.workspaceInfo.workingDirectory = get_default_working_directory(guiInfo.workspaceInfo).string();
-#else
-        // TODO :
-#endif
-    }
-    ImGui::SameLine();
-    ImGui::BeginDisabled(guiInfo.workspaceInfo.autoWorkingDirectory);
-    {
-        guiInfo.workspaceInfo.workingDirectory = gvk::string::scrub_path(guiInfo.workspaceInfo.workingDirectory);
-        if (GvkGui::InputPath("##workingDirectory", &guiInfo.workspaceInfo.workingDirectory)) {
+        ImGui::SameLine();
+        ImGui::BeginDisabled(guiInfo.workspaceInfo.autoLogPath);
+        {
+            guiInfo.workspaceInfo.logPath = gvk::string::scrub_path(guiInfo.workspaceInfo.logPath);
+            if (GvkGui::InputPath("##log", &guiInfo.workspaceInfo.logPath)) {
+            }
         }
-    }
-    ImGui::EndDisabled();
+        ImGui::EndDisabled();
 
-    #if GVK_GITS_ENABLED
-    // NOTE : Stream playback features WIP
-    ImGui::Text("Gits");
-    ImGui::SameLine();
-    auto gitsPathStr = gvk::string::scrub_path(guiInfo.workspaceInfo.gits);
-    if (GvkGui::InputPath("##gits", &gitsPathStr)) {
-        guiInfo.workspaceInfo.gits = gitsPathStr;
-        // TODO : Validate gits install
-    }
-    ImGui::BeginDisabled(guiInfo.workspaceInfo.gitsStream);
-    if (guiInfo.workspaceInfo.gitsStream) {
+        ////////////////////////////////////////////////////////////////////////////////
+        ImGui::PopItemWidth();
     }
     ImGui::EndDisabled();
-    #endif // GVK_GITS_ENABLED
-
-    ////////////////////////////////////////////////////////////////////////////////
-    ImGui::Text("Log");
-    ImGui::SameLine();
-    ImGui::Checkbox("StdOut", &guiInfo.workspaceInfo.logToStdOut);
-    ImGui::BeginDisabled(guiInfo.workspaceInfo.logPath.empty());
-    ImGui::SameLine();
-    if (guiInfo.workspaceInfo.logPath.empty()) {
-        guiInfo.workspaceInfo.logToFile = false;
-    }
-    ImGui::Checkbox("File", &guiInfo.workspaceInfo.logToFile);
-    ImGui::EndDisabled();
-    ImGui::SameLine();
-    if (ImGui::Checkbox("Auto##log", &guiInfo.workspaceInfo.autoLogPath) && guiInfo.workspaceInfo.autoLogPath) {
-#ifdef WIN32
-        guiInfo.workspaceInfo.logPath = get_default_workspace_path(guiInfo.workspaceInfo).string() + "/logs";
-#else
-        // TODO :
-#endif
-    }
-    ImGui::SameLine();
-    ImGui::BeginDisabled(guiInfo.workspaceInfo.autoLogPath);
-    {
-        guiInfo.workspaceInfo.logPath = gvk::string::scrub_path(guiInfo.workspaceInfo.logPath);
-        if (GvkGui::InputPath("##log", &guiInfo.workspaceInfo.logPath)) {
-        }
-    }
-    ImGui::EndDisabled();
-
-    ////////////////////////////////////////////////////////////////////////////////
-    ImGui::PopItemWidth();
 }
 
 void WorkspaceWindow::draw_stream_tab(GuiInfo& guiInfo)

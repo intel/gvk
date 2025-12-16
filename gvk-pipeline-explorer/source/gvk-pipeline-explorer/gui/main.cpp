@@ -490,7 +490,7 @@ int main(int argc, const char* ppArgv[])
         guiInfo.requestInfo.warmupRangeCount = 4;
         guiInfo.requestInfo.queryRangeCount = 16;
 
-        // Createt gvk::Context
+        // Create gvk::Context
         auto applicationInfo = gvk::get_default<VkApplicationInfo>();
         applicationInfo.pApplicationName = guiInfo.windowTitle.c_str();
         auto instanceCreateInfo = gvk::get_default<VkInstanceCreateInfo>();

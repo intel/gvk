@@ -32,11 +32,12 @@ namespace gvk {
 namespace pipeline_explorer {
 namespace gui {
 
-class WorkspaceWindow final
+class ImageWindow final
     : public Window
 {
 public:
-    WorkspaceWindow(Window::Manager& windowManager);
+    ImageWindow(Window::Manager& windowManager, const std::string& name, const std::filesystem::path& imagePath);
+    static std::string get_name(const std::filesystem::path& imagePath);
 
 protected:
     void on_gui(GuiInfo& guiInfo) override final;
@@ -44,12 +45,7 @@ protected:
     void on_load(GuiInfo& guiInfo) override final;
 
 private:
-    void draw_application_tab(GuiInfo& guiInfo, bool appRunningState);
-    void draw_stream_tab(GuiInfo& guiInfo);
-    void launch_application(GuiInfo& guiInfo);
-    std::vector<int> mActiveLayers;
-    bool mClearStdOut{ };
-    bool mAutoQuery{ };
+    std::filesystem::path mImagePath;
 };
 
 } // namespace gui

@@ -19,6 +19,7 @@ gvk_add_static_library(
         gvk-structures
         gvk-system
         boost-multiprecision
+        stb
     INCLUDE_DIRECTORIES
         "${generatedIncludeDirectory}"
         "${includeDirectory}"

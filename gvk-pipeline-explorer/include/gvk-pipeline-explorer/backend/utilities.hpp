@@ -49,8 +49,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <array>
 #include <filesystem>
+#include <iostream>
 #include <string>
+#include <unordered_map>
 #include <vector>
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+#include <windows.h>
+#endif //VK_USE_PLATFORM_WIN32_KHR
+
+
 
 namespace spirv_cross {
 
@@ -93,6 +101,32 @@ BOOL get_this_module_handle(HMODULE* phModule);
 DWORD get_module_path(HMODULE hModule, std::filesystem::path* pPath);
 DWORD get_this_module_path(std::filesystem::path* pPath);
 std::string get_win32_error_str(DWORD errorCode);
+
+
+// Structure to hold process information
+class ProcessWindow 
+{
+public:
+    DWORD processId{};
+    HWND hWnd{};
+    std::string title;
+};
+
+// Structure to hold pixel data (in BRGA format) and dimensions
+class ImageData 
+{
+public:
+    std::vector<unsigned char> pixels;
+    int width{};
+    int height{};
+};
+
+ImageData capture_window_pixels(HWND hwnd);
+BOOL CALLBACK enumerate_windows_processes(HWND hwnd, LPARAM lParam);
+HWND find_window_by_pid(DWORD pid);
+bool save_pixels_to_png(const ImageData &img, std::string filename);
+std::string get_window_title(HWND hwnd);
+
 #endif // VK_USE_PLATFORM_WIN32_KHR
 
 } // namespace pipeline_explorer

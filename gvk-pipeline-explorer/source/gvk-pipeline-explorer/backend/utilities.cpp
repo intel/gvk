@@ -28,6 +28,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include /* spirv_cross/ */ "spirv_common.hpp"
 
+#include "stb/stb_image_write.h"
+
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 #include <codecvt>
 #include <locale>
@@ -207,6 +209,113 @@ std::string get_win32_error_str(DWORD errorCode)
     LocalFree(pErrorStr);
     return errorStr;
 }
+
+BOOL CALLBACK enumerate_windows_processes(HWND hwnd, LPARAM lParam)
+{
+    DWORD windowPID = 0;
+    GetWindowThreadProcessId(hwnd, &windowPID);
+
+    ProcessWindow* pData = reinterpret_cast<ProcessWindow*>(lParam);
+    if (windowPID == pData->processId && IsWindowVisible(hwnd)) {
+        pData->hWnd = hwnd;
+        return FALSE; // Stop enumeration after finding the first match
+    }
+    return TRUE;
+}
+
+HWND find_window_by_pid(DWORD pid)
+{
+    ProcessWindow data = { pid, nullptr };
+    EnumWindows(enumerate_windows_processes, reinterpret_cast<LPARAM>(&data));
+    return data.hWnd;
+}
+
+//Will return pixels in BGRA format
+ImageData capture_window_pixels(HWND hwnd)
+{
+    HBITMAP hBitmap = HBITMAP(0);
+    HDC hMemDC = HDC(0);
+    HDC hWindowDC = HDC(0);
+    std::vector<unsigned char> pixels = { 0 };
+    int width = 0;
+    int height = 0;
+
+    gvk_result_scope_begin(VK_SUCCESS) {
+        gvk_result_assert(hwnd && "invalid hwnd given to capture_window_pixels");
+
+        RECT rc = { 0,0,0,0 };
+        GetClientRect(hwnd, &rc);
+        width = rc.right - rc.left;
+        height = rc.bottom - rc.top;
+
+        hWindowDC = GetDC(hwnd);
+        hMemDC = CreateCompatibleDC(hWindowDC);
+
+        // Create a 32-bit bitmap (BGRA). We specify this so we can convert it easily into a pixel array after
+        BITMAPINFO bmi = { 0,0 };
+        bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+        bmi.bmiHeader.biWidth = width;
+        bmi.bmiHeader.biHeight = -height; // Negative for top-down bitmap
+        bmi.bmiHeader.biPlanes = 1;
+        bmi.bmiHeader.biBitCount = 32; // 4 bytes per pixel
+        bmi.bmiHeader.biCompression = BI_RGB;
+
+        void* pPixels = nullptr;
+
+        hBitmap = CreateDIBSection(hMemDC, &bmi, DIB_RGB_COLORS, &pPixels, nullptr, 0);
+        gvk_result_assert(hBitmap && "bitmap window capture unsuccesfull"); //we should configure this bitmap gvk_result_assert to not assert on failure here
+
+        SelectObject(hMemDC, hBitmap);
+
+        // Copy window content into the bitmap
+        gvk_result_assert(BitBlt(hMemDC, 0, 0, width, height, hWindowDC, 0, 0, SRCCOPY) && "BitBlt failed");
+
+        // Copy pixels from DIB section into a vector
+        size_t dataSize = width * height * 4; // 4 bytes per pixel BGRA
+        pixels.resize(dataSize);
+        auto pBytes = static_cast<unsigned char*>(pPixels);
+        for (int i = 0; i < width * height; ++i) {
+            pixels[i * 4 + 0] = pBytes[i * 4 + 2]; //B -> R
+            pixels[i * 4 + 1] = pBytes[i * 4 + 1]; //G
+            pixels[i * 4 + 2] = pBytes[i * 4 + 0]; //R -> B
+            pixels[i * 4 + 3] = pBytes[i * 4 + 3]; //A
+        }
+
+    } gvk_result_scope_end;
+        
+    if (gvkResult != VK_SUCCESS) {
+        pixels.clear();
+        height = 0;
+        width = 0;
+    }
+
+    // Cleanup and return empty struct
+    if (hBitmap) {
+        DeleteObject(hBitmap);
+    }
+    if (hMemDC) {
+        DeleteDC(hMemDC);
+    }
+    if (hWindowDC) {
+        ReleaseDC(hwnd, hWindowDC);
+    }
+
+    return { std::move(pixels), width, height };
+}
+
+bool save_pixels_to_png(const ImageData &img, std::string filename)
+{
+    //Create screens directory
+    return stbi_write_png(filename.c_str(), img.width, img.height, 4, img.pixels.data(), img.width * 4);
+}
+
+std::string get_window_title(HWND hwnd)
+{
+    std::string title(GetWindowTextLength(hwnd) + 1, '\0');
+    title.resize(GetWindowText(hwnd, title.data(), static_cast<int>(title.size())));
+    return title;
+}
+
 #endif // VK_USE_PLATFORM_WIN32_KHR
 
 } // namespace pipeline_explorer

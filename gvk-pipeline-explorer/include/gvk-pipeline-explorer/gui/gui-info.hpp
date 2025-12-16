@@ -452,6 +452,7 @@ public:
     TimestampInfo timestampInfo{ };
     PipelineStatisticsQueryInfo pipelineStatisticsQueryInfo{ };
     std::vector<WorkspaceInfo> recentWorkspaceInfos;
+    std::set<std::string> screenshots;
     std::vector<VkLayerProperties> layerProperties;
     bool resultPending{ };
     std::ofstream logFile;
