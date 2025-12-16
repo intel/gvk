@@ -32,35 +32,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace cppgen {
 
-bool is_static_const_value(const std::string& apiElementName)
-{
-    // TODO : Auto generate from XML
-    static const std::set<std::string> sStaticConstValues {
-        "VkAccessFlagBits2",
-        "VkAccessFlagBits3KHR",
-        "VkBufferUsageFlagBits2",
-        "VkBufferUsageFlagBits2KHR",
-        "VkDataGraphPipelineSessionCreateFlagBitsARM",
-        "VkFormatFeatureFlagBits2",
-        "VkMemoryDecompressionMethodFlagBitsNV",
-        "VkPhysicalDeviceSchedulingControlsFlagBitsARM",
-        "VkPipelineCreateFlagBits2",
-        "VkPipelineCreateFlagBits2KHR",
-        "VkPipelineStageFlagBits2",
-        "VkTensorCreateFlagBitsARM",
-        "VkTensorUsageFlagBitsARM",
-        "VkTensorViewCreateFlagBitsARM",
-    };
-    return sStaticConstValues.count(apiElementName);
-}
-
 bool is_strongly_typed_bitmask(const xml::Manifest& manifest, const std::string& apiElementName)
 {
     auto flagBitsTypeName = string::replace(apiElementName, "Flags", "FlagBits");
     const auto& enumerationItr = manifest.enumerations.find(flagBitsTypeName);
     if (enumerationItr != manifest.enumerations.end()) {
         const auto& enumeration = enumerationItr->second;
-        return enumeration.isBitmask && !enumeration.enumerators.empty() && !is_static_const_value(enumeration.name);
+        return enumeration.isBitmask && !enumeration.enumerators.empty() && enumeration.bitWidth != 64;
     }
     return false;
 }

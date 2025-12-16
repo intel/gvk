@@ -4,7 +4,7 @@ gvk_enable_external_module(SPIRV-Headers)
 
 set(SPIRV_SKIP_EXECUTABLES   ON CACHE BOOL "" FORCE)
 set(SKIP_SPIRV_TOOLS_INSTALL ON CACHE BOOL "" FORCE)
-set(SPIRV-Tools_VERSION 33e02568181e3312f49a3cf33df470bf96ef293a) # vulkan-sdk-1.4.321.0
+set(SPIRV-Tools_VERSION 262bdab48146c937467f826699a40da0fdfc0f1a) # vulkan-sdk-1.4.335.0
 FetchContent_Declare(
     SPIRV-Tools
     GIT_REPOSITORY "https://github.com/KhronosGroup/SPIRV-Tools.git"

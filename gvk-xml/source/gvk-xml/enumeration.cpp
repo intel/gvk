@@ -116,6 +116,7 @@ Enumeration::Enumeration(const tinyxml2::XMLElement& xmlElement)
     name = get_xml_attribute(xmlElement, "name");
     alias = get_xml_attribute(xmlElement, "alias");
     isBitmask = get_xml_attribute(xmlElement, "type") == "bitmask";
+    bitWidth = gvk::string::to_number<uint32_t>(get_xml_attribute(xmlElement, "bitwidth"));
     process_xml_elements(xmlElement, "enum",
         [&](const auto& enumXmlElement)
         {

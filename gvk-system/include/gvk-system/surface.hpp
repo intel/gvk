@@ -32,6 +32,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifdef __linux__
 #include <X11/Xlib.h>
 #include <X11/extensions/Xrandr.h>
+#ifdef Bool
+#undef Bool
+#endif
+#ifdef None
+#undef None
+#endif
+#ifdef Status
+#undef Status
+#endif
 #endif
 
 #if defined(_WIN32) || defined(_WIN64)

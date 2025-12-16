@@ -3,7 +3,7 @@ include_guard(GLOBAL)
 
 # NOTE : There's a newer version of ImGui available, but it introduces some
 #   breaking changes in ImPlot which hasn't been updated to latest ImGui yet
-set(imgui_VERSION 4806a1924ff6181180bf5e4b8b79ab4394118875) # 1.91.9b-docking
+set(imgui_VERSION 3912b3d9a9c1b3f17431aebafd86d2f40ee6e59c) # v1.92.5-docking
 FetchContent_Declare(
     imgui
     GIT_REPOSITORY "https://github.com/ocornut/imgui.git"
@@ -14,7 +14,7 @@ FetchContent_MakeAvailable(imgui)
 FetchContent_GetProperties(imgui SOURCE_DIR imgui_SOURCE_DIR)
 
 ################################################################################
-set(ImGuiColorTextEdit_VERSION 165ca5fe8be900884c88b90f16955bbf848b23ee) # `imgui_bundle` 3 March 2025
+set(ImGuiColorTextEdit_VERSION e3f369f2afed51087fe43c4ad97c33e5b440ed47) # `imgui_bundle` 16 Sep 2025
 FetchContent_Declare(
     ImGuiColorTextEdit
     GIT_REPOSITORY "https://github.com/pthom/ImGuiColorTextEdit.git"
@@ -36,7 +36,7 @@ set(ImGuiColorTextEdit_SOURCE_FILES
     "${ImGuiColorTextEdit_SOURCE_DIR}/TextEditor.cpp"
 )
 ################################################################################
-set(implot_VERSION 61af48ee1369083a3da391a849867af6d1b811a6) # `imgui_bundle` 3 Apr 2025
+set(implot_VERSION 2babf8b1bdfa9fd01cf5f401d10abb506bd504a5) # `imgui_bundle` 25 Nov 2025
 FetchContent_Declare(
     implot
     GIT_REPOSITORY "https://github.com/pthom/implot.git"

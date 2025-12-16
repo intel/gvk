@@ -32,13 +32,28 @@ NOTE : Best practices for loading dll/so libraries (ie. full paths instead of re
 */
 
 #ifdef __linux__
+
 #ifndef GVK_PLATFORM_LINUX
 #define GVK_PLATFORM_LINUX
 #endif
 #ifndef VK_USE_PLATFORM_XLIB_KHR
 #define VK_USE_PLATFORM_XLIB_KHR
 #endif
+
 #include <dlfcn.h>
+#include <X11/Xlib.h>
+#include <X11/extensions/Xrandr.h>
+
+#ifdef Bool
+#undef Bool
+#endif
+#ifdef None
+#undef None
+#endif
+#ifdef Status
+#undef Status
+#endif
+
 #ifndef gvk_dlopen
 #define gvk_dlopen(LIBRARY_NAME) (void*)dlopen(LIBRARY_NAME, RTLD_NOW | RTLD_LOCAL)
 #endif
@@ -48,9 +63,11 @@ NOTE : Best practices for loading dll/so libraries (ie. full paths instead of re
 #ifndef gvk_dlclose
 #define gvk_dlclose(LIBRARY_HANDLE) dlclose(LIBRARY_HANDLE)
 #endif
-#endif
+
+#endif // __linux__
 
 #if defined(_WIN32) || defined(_WIN64)
+
 #ifndef GVK_PLATFORM_WINDOWS
 #define GVK_PLATFORM_WINDOWS
 #endif
@@ -63,7 +80,9 @@ NOTE : Best practices for loading dll/so libraries (ie. full paths instead of re
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
+
 #include <Windows.h>
+
 #ifndef gvk_dlopen
 #define gvk_dlopen(LIBRARY_NAME) (void*)LoadLibraryA(LIBRARY_NAME)
 #endif
@@ -73,7 +92,8 @@ NOTE : Best practices for loading dll/so libraries (ie. full paths instead of re
 #ifndef gvk_dlclose
 #define gvk_dlclose(LIBRARY_HANDLE) FreeLibrary((HMODULE)LIBRARY_HANDLE)
 #endif
-#endif
+
+#endif // defined(_WIN32) || defined(_WIN64)
 
 #ifndef VK_ENABLE_BETA_EXTENSIONS
 #define VK_ENABLE_BETA_EXTENSIONS

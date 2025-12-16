@@ -32,10 +32,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "validate-structure-serialization.hpp"
 #include "validation-allocator.hpp"
 
-#ifdef VK_USE_PLATFORM_XLIB_KHR
-#undef None
-#undef Bool
-#endif
 #include "gtest/gtest.h"
 
 #include <array>

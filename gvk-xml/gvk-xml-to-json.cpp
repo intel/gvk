@@ -125,6 +125,9 @@ void gvk::print<gvk::xml::Enumeration>(gvk::Printer& printer, const gvk::xml::En
             if (obj.isBitmask) {
                 printer.print_field("isBitmask", obj.isBitmask);
             }
+            if (obj.bitWidth) {
+                printer.print_field("bitWidth", obj.bitWidth);
+            }
             if (!obj.enumerators.empty()) {
                 printer.print_collection("enumerators", obj.enumerators);
             }

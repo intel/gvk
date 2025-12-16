@@ -26,6 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
+#include <cstdint>
 #include <map>
 #include <set>
 #include <string>

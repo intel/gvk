@@ -37,7 +37,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 namespace gvk {
 namespace cppgen {
 
-bool is_static_const_value(const std::string& apiElementName);
 bool is_strongly_typed_bitmask(const xml::Manifest& manifest, const std::string& apiElementName);
 xml::Command append_return_result_parameter(xml::Command command);
 std::string get_parameter_list(const std::vector<xml::Parameter>& parameters, bool types = true, bool names = true);

@@ -1,7 +1,7 @@
 
 ################################################################################
 # Vulkan SDK options
-set(gvk-Vulkan-SDK_VERSION 1.4.321.1 CACHE STRING "")
+set(gvk-Vulkan-SDK_VERSION 1.4.335.0 CACHE STRING "")
 set(gvk-Vulkan-SDK_URL_LINUX
     "https://dependency.server.com/vulkan/sdk/linux"
     "https://sdk.lunarg.com/sdk/download/${gvk-Vulkan-SDK_VERSION}/linux"

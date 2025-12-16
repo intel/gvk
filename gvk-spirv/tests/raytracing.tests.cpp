@@ -27,13 +27,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-spirv/context.hpp"
 #include "gvk-handles/context.hpp"
 #include "gvk-structures/defaults.hpp"
-
-#ifdef VK_USE_PLATFORM_XLIB_KHR
-#undef None
-#undef Bool
-#endif
-#include "gtest/gtest.h"
 #include "spirv-validation-utilities.hpp"
+
+#include "gtest/gtest.h"
 
 TEST(spirv, RayGen_stage)
 {

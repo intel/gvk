@@ -21,3 +21,6 @@ gvk_add_static_library(
         "${infoGeneratedSourceFiles}"
         "${sourcePath}/detail/to-string-manual.cpp"
 )
+if(MSVC)
+    set_source_files_properties("${generatedSourcePath}/pipeline-explorer-structure-deserialization.cpp" PROPERTIES COMPILE_FLAGS "/bigobj")
+endif()

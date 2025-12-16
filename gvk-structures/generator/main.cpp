@@ -59,7 +59,8 @@ int main(int, const char*[])
         apiElements.includePrefix = GVK_STRUCTURES_GENERATED_INCLUDE_PREFIX;
         apiElements.sourcePath = GVK_STRUCTURES_GENERATED_SOURCE_PATH;
         for (const auto& enumerationItr : manifest.enumerations) {
-            if (enumerationItr.second.alias.empty() && !gvk::cppgen::is_static_const_value(enumerationItr.first)) {
+            const auto& enumeration = enumerationItr.second;
+            if (enumeration.alias.empty() && enumeration.bitWidth != 64) {
                 apiElements.enumerations.push_back(enumerationItr.second);
             }
         }

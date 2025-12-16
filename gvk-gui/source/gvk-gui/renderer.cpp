@@ -461,7 +461,7 @@ void Renderer::record_cmds(VkCommandBuffer vkCommandBuffer, uint32_t resourceId)
                     scissor.extent.height = (uint32_t)(clipMax.y - clipMin.y);
                     if (clipMin.x < clipMax.x && clipMin.y < clipMax.y) {
                         dispatchTable.gvkCmdSetScissor(vkCommandBuffer, 0, 1, &scissor);
-                        auto vkDescriptorSet = (VkDescriptorSet)cmd.TextureId;
+                        auto vkDescriptorSet = (VkDescriptorSet)cmd.TexRef.GetTexID();
                         dispatchTable.gvkCmdBindDescriptorSets(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, get<Pipeline>().get<PipelineLayout>(), 0, 1, &vkDescriptorSet, 0, nullptr);
                         dispatchTable.gvkCmdDrawIndexed(vkCommandBuffer, cmd.ElemCount, 1, cmd.IdxOffset + indexOffset, cmd.VtxOffset + vertexOffset, 0);
                     }

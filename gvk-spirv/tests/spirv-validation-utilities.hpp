@@ -26,14 +26,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#ifdef VK_USE_PLATFORM_XLIB_KHR
-#undef None
-#undef Bool
-#endif
-
 #include "gvk-spirv/context.hpp"
 #include "gvk-handles/context.hpp"
 #include "gvk-structures/defaults.hpp"
+
 #include "gtest/gtest.h"
 
 namespace gvk {

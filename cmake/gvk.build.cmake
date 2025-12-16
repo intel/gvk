@@ -248,28 +248,39 @@ macro(gvk_add_target_test)
                 COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --verbose --output-on-failure
             )
         endif()
-        if(gvk-build-tests)
-            set(package "${CMAKE_BINARY_DIR}/gvk-test-package/")
-            if(NOT EXISTS "${package}")
-                file(MAKE_DIRECTORY "${package}")
-            endif()
+
+        # Add to gvk-test-package
+        set(gvk-test-package "${CMAKE_BINARY_DIR}/gvk-test-package/")
+        if(NOT EXISTS "${gvk-test-package}")
+            file(MAKE_DIRECTORY "${gvk-test-package}")
+        endif()
+        add_custom_command(
+            TARGET ${ARGS_TARGET}.tests POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:${ARGS_TARGET}.tests> "${gvk-test-package}/"
+        )
+        if(type STREQUAL SHARED_LIBRARY)
+            add_dependencies(${ARGS_TARGET}.tests ${ARGS_TARGET})
             add_custom_command(
-                TARGET ${ARGS_TARGET}.tests POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:${ARGS_TARGET}.tests> "${package}/"
+                TARGET ${ARGS_TARGET} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:${ARGS_TARGET}> "${gvk-test-package}/"
             )
-            if(type STREQUAL SHARED_LIBRARY)
-                add_dependencies(${ARGS_TARGET}.tests ${ARGS_TARGET})
+            if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/${ARGS_TARGET}.json")
                 add_custom_command(
                     TARGET ${ARGS_TARGET} POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:${ARGS_TARGET}> "${package}/"
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_BINARY_DIR}/${ARGS_TARGET}.json" "${gvk-test-package}/"
                 )
-                if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/${ARGS_TARGET}.json")
-                    add_custom_command(
-                        TARGET ${ARGS_TARGET} POST_BUILD
-                        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_BINARY_DIR}/${ARGS_TARGET}.json" "${package}/"
-                    )
-                endif()
             endif()
+        endif()
+
+        # Create custom target to create gvk-test-package archive
+        if(NOT TARGET gvk-test-package-archive)
+            add_custom_target(
+                gvk-test-package-archive
+                COMMAND ${CMAKE_COMMAND} -E tar cvf "${CMAKE_BINARY_DIR}/gvk-test-package.zip" --format=zip "${gvk-test-package}/"
+                WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+                COMMENT "TODO : Documentation"
+                VERBATIM
+            )
         endif()
     endif()
 endmacro()

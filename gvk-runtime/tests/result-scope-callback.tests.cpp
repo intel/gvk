@@ -28,11 +28,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-string.hpp"
 
 #include "asio.hpp"
-
-#ifdef VK_USE_PLATFORM_XLIB_KHR
-#undef None
-#undef Bool
-#endif
 #include "gtest/gtest.h"
 
 #include <ostream>
@@ -103,7 +98,7 @@ TEST(gvk_result_scope, GlobalCallback)
     EXPECT_EQ(gvkResult, VK_ERROR_DEVICE_LOST);
     EXPECT_EQ(tlErrorInfo.vkResult, gvkResult);
     ASSERT_TRUE(tlErrorInfo.pFileLine);
-    EXPECT_TRUE(gvk::string::ends_with(gvk::string::scrub_path(tlErrorInfo.pFileLine), "gvk-runtime/tests/result-scope-callback.tests.cpp(96)")) << tlErrorInfo.pFileLine;
+    EXPECT_TRUE(gvk::string::ends_with(gvk::string::scrub_path(tlErrorInfo.pFileLine), "gvk-runtime/tests/result-scope-callback.tests.cpp(91)")) << tlErrorInfo.pFileLine;
     ASSERT_TRUE(tlErrorInfo.pGvkCall);
     EXPECT_FALSE(strcmp(tlErrorInfo.pGvkCall, "test_function_call(VK_ERROR_DEVICE_LOST)"));
     EXPECT_EQ(tlErrorInfo.threadId, std::thread::id{ });
@@ -149,7 +144,7 @@ TEST(gvk_result_scope, ThreadCallback)
                 EXPECT_EQ(gvkResult, VK_ERROR_DEVICE_LOST);
                 EXPECT_EQ(tlErrorInfo.vkResult, gvkResult);
                 ASSERT_TRUE(tlErrorInfo.pFileLine);
-                EXPECT_TRUE(gvk::string::ends_with(gvk::string::scrub_path(tlErrorInfo.pFileLine), "gvk-runtime/tests/result-scope-callback.tests.cpp(142)")) << tlErrorInfo.pFileLine;
+                EXPECT_TRUE(gvk::string::ends_with(gvk::string::scrub_path(tlErrorInfo.pFileLine), "gvk-runtime/tests/result-scope-callback.tests.cpp(137)")) << tlErrorInfo.pFileLine;
                 ASSERT_TRUE(tlErrorInfo.pGvkCall);
                 EXPECT_FALSE(strcmp(tlErrorInfo.pGvkCall, "test_function_call(VK_ERROR_DEVICE_LOST)"));
                 EXPECT_EQ(tlErrorInfo.threadId, std::this_thread::get_id());
@@ -176,7 +171,7 @@ TEST(gvk_result_scope, ThreadCallback)
     EXPECT_EQ(gvkResult, VK_ERROR_DEVICE_LOST);
     EXPECT_EQ(tlErrorInfo.vkResult, gvkResult);
     ASSERT_TRUE(tlErrorInfo.pFileLine);
-    EXPECT_TRUE(gvk::string::ends_with(gvk::string::scrub_path(tlErrorInfo.pFileLine), "gvk-runtime/tests/result-scope-callback.tests.cpp(169)")) << tlErrorInfo.pFileLine;
+    EXPECT_TRUE(gvk::string::ends_with(gvk::string::scrub_path(tlErrorInfo.pFileLine), "gvk-runtime/tests/result-scope-callback.tests.cpp(164)")) << tlErrorInfo.pFileLine;
     ASSERT_TRUE(tlErrorInfo.pGvkCall);
     EXPECT_FALSE(strcmp(tlErrorInfo.pGvkCall, "test_function_call(VK_ERROR_DEVICE_LOST)"));
     tlErrorInfo = { };

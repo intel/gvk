@@ -74,6 +74,7 @@ public:
     Enumeration(const tinyxml2::XMLElement& xmlElement);
 
     bool isBitmask { false };
+    uint32_t bitWidth { };
     std::set<Enumerator> enumerators;
 };
 

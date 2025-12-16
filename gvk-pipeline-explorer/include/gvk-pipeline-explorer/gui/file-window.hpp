@@ -32,10 +32,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma warning(push, 0)
 #endif
 
-#ifdef VK_USE_PLATFORM_XLIB_KHR
-#undef None
-#undef Bool
-#endif
 #include "TextEditor.h"
 
 #ifdef GVK_COMPILER_MSVC
