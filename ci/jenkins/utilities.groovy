@@ -15,7 +15,7 @@ def powershell(psCmd) {
 }
 
 def start_stage() {
-    echo " ${env.STAGE_NAME} > ${NODE_NAME}"
+    echo "${env.STAGE_NAME} > ${NODE_NAME}"
     cleanWs()
 }
 
