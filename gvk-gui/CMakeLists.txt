@@ -18,9 +18,13 @@ gvk_add_static_library(
         "${includeDirectory}"
     INCLUDE_FILES
         "${includePath}/renderer.hpp"
+        "${includePath}/utilities.hpp"
+        "${includePath}/window.hpp"
+        "${includePath}/window-manager.hpp"
         "${includeDirectory}/gvk-gui.hpp"
     SOURCE_FILES
         "${sourcePath}/renderer.cpp"
+        "${sourcePath}/utilities.cpp"
 )
 
 ################################################################################

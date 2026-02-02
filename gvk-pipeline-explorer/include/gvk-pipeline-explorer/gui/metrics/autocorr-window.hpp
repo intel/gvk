@@ -26,13 +26,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#ifndef GVK_AUTOCORR_ENABLED
-#define GVK_AUTOCORR_ENABLED 0
-#endif
-#ifndef GVK_MDAPI_ENABLED
-#define GVK_MDAPI_ENABLED 0
-#endif
-
 #include "gvk-pipeline-explorer/gui/window.hpp"
 
 #if GVK_AUTOCORR_ENABLED
@@ -61,7 +54,8 @@ public:
 
 protected:
     void on_gui(GuiInfo& guiInfo) override final;
-private:  
+
+private:
     gvk::Auto<GvkPipelineExplorerPerformanceQueryRequestInfo> create_request(GuiInfo& guiInfo, uint32_t group_i, uint32_t set_i);
     std::string detect_similar_metrics(std::string expectedMetricName);
 
@@ -83,4 +77,3 @@ private:
 } // namespace gui
 } // namespace pipeline_explorer
 } // namespace gvk
-

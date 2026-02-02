@@ -26,7 +26,23 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-gui/renderer.hpp"
-#include "gvk-gui/utilities.hpp"
-#include "gvk-gui/window.hpp"
-#include "gvk-gui/window-manager.hpp"
+#include "gvk-defines.hpp"
+#include "gvk-structures/detail/get-count.hpp"
+#include "gvk-structures/detail/make-tuple-manual.hpp"
+#include "gvk-structures/detail/make-tuple-utilities.hpp"
+
+#include <tuple>
+
+namespace gvk {
+
+inline auto make_tuple(const GvkResourceInfo& obj)
+{
+    return std::make_tuple(
+        obj.type,
+        obj.handle,
+        obj.dispatchableHandle,
+        detail::PNextTupleElementWrapper { obj.pCreateInfo }
+    );
+}
+
+} // namespace gvk

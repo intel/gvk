@@ -26,7 +26,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-gui/renderer.hpp"
-#include "gvk-gui/utilities.hpp"
-#include "gvk-gui/window.hpp"
-#include "gvk-gui/window-manager.hpp"
+#include "gvk-defines.hpp"
+#include "gvk-binding-info/generated/binding-info.h"
+#include "gvk-binding-info/generated/binding-info-enumerations-to-string.hpp"
+#include "gvk-binding-info/generated/binding-info-structure-comparison-operators.hpp"
+#include "gvk-binding-info/generated/binding-info-structure-create-copy.hpp"
+#include "gvk-binding-info/generated/binding-info-structure-deserialization.hpp"
+#include "gvk-binding-info/generated/binding-info-structure-destroy-copy.hpp"
+#include "gvk-binding-info/generated/binding-info-structure-get-stype.hpp"
+#include "gvk-binding-info/generated/binding-info-structure-serialization.hpp"
+#include "gvk-binding-info/generated/binding-info-structure-to-string.hpp"
+#include "gvk-binding-info/detail/binding-monitor.hpp"
+#include "gvk-binding-info/detail/binding-registry.hpp"

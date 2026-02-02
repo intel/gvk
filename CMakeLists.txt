@@ -97,6 +97,7 @@ function(gvk_enable_module gvk-module)
 endfunction()
 
 set(gvk-ide-folder "" CACHE STRING "")
+gvk_decalre_module(gvk-binding-info       ${gvk-default_ENABLED})
 gvk_decalre_module(gvk-command-structures ${gvk-default_ENABLED})
 gvk_decalre_module(gvk-containers         ${gvk-default_ENABLED})
 gvk_decalre_module(gvk-cppgen             ${gvk-default_ENABLED})

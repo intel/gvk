@@ -39,7 +39,7 @@ std::string get_structure_type_enumeration(const std::string& structureName)
     return structureTypeEnumeration;
 }
 
-void add_stype_members_to_structure(gvk::xml::Structure& structure)
+void add_stype_member_to_structure(gvk::xml::Structure& structure)
 {
     structure.vkStructureType = get_structure_type_enumeration(structure.name);
     structure.members.push_back(gvk::cppgen::create_parameter("GvkPipelineExplorerInfoStructureType", "sType"));
@@ -60,7 +60,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerRequestInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         structure.members.push_back(gvk::cppgen::create_parameter("VkBool32", "refreshActivePipelines"));
         structure.members.push_back(gvk::cppgen::create_parameter("VkBool32", "refreshAvailableMetrics"));
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pReportPath"));
@@ -87,7 +87,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerPipelineInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         gvk::cppgen::add_static_array_member_to_structure("uint8_t", "GVK_PIPELINE_EXPLORER_UUID_SIZE", "uuid", structure);
         gvk::cppgen::add_static_array_member_to_structure("uint8_t", "GVK_PIPELINE_EXPLORER_UUID_SIZE", "driverUUID", structure);
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pName"));
@@ -104,7 +104,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerMetricInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         structure.members.push_back(gvk::cppgen::create_parameter("GvkPipelineExplorerMetricId", "id"));
         structure.members.push_back(gvk::cppgen::create_parameter("GvkPipelineExplorerMetricType", "type"));
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pUri"));
@@ -118,7 +118,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerPerformanceCounterCollection";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         gvk::cppgen::add_array_members_to_structure("VkPerformanceCounterKHR", "count", "pCounters", structure);
         structure.members.push_back(gvk::cppgen::get_array_parameters("count", "pDescriptions", "VkPerformanceCounterDescriptionKHR").second);
         structures.push_back(structure);
@@ -126,21 +126,21 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerCommandCollectionRequestInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pReportPath"));
         structures.push_back(structure);
     }
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerCommandCollectionResultInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         structure.members.push_back(gvk::cppgen::create_parameter("GvkCommandCollection", "commands"));
         structures.push_back(structure);
     }
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerPerformanceQueryRequestInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pReportPath"));
         structure.members.push_back(gvk::cppgen::create_parameter("VkDevice", "device"));
         structure.members.push_back(gvk::cppgen::create_parameter("VkPipeline", "pipeline"));
@@ -152,7 +152,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerPerformanceCounterResultInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         structure.members.push_back(gvk::cppgen::create_parameter("VkPerformanceCounterKHR", "counter"));
         structure.members.push_back(gvk::cppgen::create_parameter("VkPerformanceCounterDescriptionKHR", "description"));
         structure.members.push_back(gvk::cppgen::create_parameter("double", "total"));
@@ -163,14 +163,14 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerPerformanceQueryGroupResultInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         gvk::cppgen::add_array_members_to_structure("GvkPipelineExplorerPerformanceCounterResultInfo", "counterResultCount", "pCounterResults", structure);
         structures.push_back(structure);
     }
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerPerformanceQueryResultInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pName"));
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pDate"));
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pTime"));
@@ -182,7 +182,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerTimestampQueryCmdSequenceResultInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         structure.members.push_back(gvk::cppgen::create_parameter("uint64_t", "beginTimestamp"));
         structure.members.push_back(gvk::cppgen::create_parameter("uint64_t", "endTimestamp"));
         structure.members.push_back(gvk::cppgen::create_parameter("double", "totalCmdDuration"));
@@ -194,7 +194,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerTimestampQueryCmdRangeResultInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         structure.members.push_back(gvk::cppgen::create_parameter("double", "totalCmdSequenceDuration"));
         structure.members.push_back(gvk::cppgen::create_parameter("double", "averageCmdSequenceDuration"));
         structure.members.push_back(gvk::cppgen::create_parameter("uint32_t", "totalCmdSequenceCmdCount"));
@@ -205,7 +205,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerPipelineTimestampQueryResultInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         structure.members.push_back(gvk::cppgen::create_parameter("GvkPipelineExplorerPipelineInfo", "pipelineInfo"));
         structure.members.push_back(gvk::cppgen::create_parameter("double", "totalCmdRangeDuration"));
         structure.members.push_back(gvk::cppgen::create_parameter("double", "averageCmdRangeDuration"));
@@ -217,7 +217,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerTimestampQueryResultInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pName"));
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pDate"));
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pTime"));
@@ -229,7 +229,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerMetricResultInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         structure.members.push_back(gvk::cppgen::create_parameter("GvkPipelineExplorerMetricInfo", "metricInfo"));
         gvk::cppgen::add_array_members_to_structure("double", "sampleCount", "pValues", structure);
         structure.members.push_back(gvk::cppgen::create_parameter("double", "total"));
@@ -239,7 +239,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerPipelineResultInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         structure.members.push_back(gvk::cppgen::create_parameter("GvkPipelineExplorerPipelineInfo", "pipelineInfo"));
         gvk::cppgen::add_array_members_to_structure("GvkPipelineExplorerMetricResultInfo", "metricResultCount", "pMetricResults", structure);
         structures.push_back(structure);
@@ -247,7 +247,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerResultInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         gvk::cppgen::add_string_array_members_to_structure("messageCount", "ppMessages", structure);
         gvk::cppgen::add_array_members_to_structure("GvkPipelineExplorerPipelineResultInfo", "pipelineResultCount", "pPipelineResults", structure);
         structures.push_back(structure);
@@ -255,7 +255,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerPipelineStatisticsQueryRequestInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pReportPath"));
         structure.members.push_back(gvk::cppgen::create_parameter("VkDevice", "device"));
         structure.members.push_back(gvk::cppgen::create_parameter("VkPipeline", "pipeline"));
@@ -266,7 +266,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerPipelineStatisticsQueryResultInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pName"));
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pDate"));
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pTime"));
@@ -278,14 +278,14 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerAvailableMetricsInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         gvk::cppgen::add_array_members_to_structure("GvkPipelineExplorerMetricInfo", "metricInfoCount", "pMetricInfos", structure);
         structures.push_back(structure);
     }
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerCollectionRange";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         structure.members.push_back(gvk::cppgen::create_parameter("VkDevice", "device"));
         structure.members.push_back(gvk::cppgen::create_parameter("VkPipeline", "pipeline"));
         structure.members.push_back(gvk::cppgen::create_parameter("VkPipelineBindPoint", "bindPoint"));
@@ -296,7 +296,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerWorkspaceInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         structure.members.push_back(gvk::cppgen::create_parameter("VkBool32", "waitForDebugger"));
         structure.members.push_back(gvk::cppgen::create_parameter("VkBool32", "openTerminal"));
         structure.members.push_back(gvk::cppgen::create_parameter("VkBool32", "autoWorkingDirectory"));
@@ -317,7 +317,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerGuiInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         structure.members.push_back(gvk::cppgen::create_parameter("VkExtent2D", "extent"));
         structure.members.push_back(gvk::cppgen::create_parameter("VkOffset2D", "position"));
         structure.members.push_back(gvk::cppgen::create_parameter("float", "fontScale"));
@@ -328,7 +328,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerAutoQueryResultInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         gvk::cppgen::add_array_members_to_structure("GvkPipelineExplorerPipelineResultInfo", "pipelineResultCount", "pPipelineResults", structure);
         structure.members.push_back(gvk::cppgen::create_parameter("GvkCommandCollection", "commands"));
         gvk::cppgen::add_array_members_to_structure("double", "commandCount", "pCmdDurations", structure);
@@ -337,7 +337,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerPerformanceCounterSet";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         gvk::cppgen::add_static_array_member_to_structure("uint8_t", "VK_UUID_SIZE", "uuid", structure);
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pName"));
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pDescription"));
@@ -348,7 +348,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerPerformanceCounterGroup";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         gvk::cppgen::add_static_array_member_to_structure("uint8_t", "VK_UUID_SIZE", "uuid", structure);
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pName"));
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pDescription"));
@@ -358,7 +358,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerPluginCounterInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         gvk::cppgen::add_static_array_member_to_structure("uint8_t", "VK_UUID_SIZE", "uuid", structure);
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pName"));
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pDescription"));
@@ -368,7 +368,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerPluginInitializeInfo";
-        add_stype_members_to_structure(structure);
+        add_stype_member_to_structure(structure);
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pWorkspace"));
         structure.members.push_back(gvk::cppgen::create_parameter("PFN_vkGetInstanceProcAddr", "pfnGetInstanceProcAddr"));
         structures.push_back(structure);

@@ -53,7 +53,8 @@ gvk_add_code_generator(
 # VK_LAYER_INTEL_gvk_state_tracker
 set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
 set(includePath "${includeDirectory}/gvk-state-tracker/")
-set(sourcePath "${CMAKE_CURRENT_LIST_DIR}/source/gvk-state-tracker/")
+set(sourceDirectory "${CMAKE_CURRENT_LIST_DIR}/source/")
+set(sourcePath "${sourceDirectory}/gvk-state-tracker/")
 list(APPEND interfaceFiles
     "${includeDirectory}/VK_LAYER_INTEL_gvk_state_tracker.h"
     "${includeDirectory}/VK_LAYER_INTEL_gvk_state_tracker.hpp"
@@ -132,6 +133,29 @@ if(MSVC)
     set_source_files_properties("${generatedSourcePath}/basic-state-tracker.cpp" PROPERTIES COMPILE_FLAGS "/bigobj")
     set_source_files_properties("${generatedSourcePath}/state-tracked-handles.cpp" PROPERTIES COMPILE_FLAGS "/bigobj")
 endif()
+
+################################################################################
+# VK_LAYER_INTEL_gvk_state_tracker_metadata_extractor
+gvk_add_static_library(
+    TARGET
+        VK_LAYER_INTEL_gvk_state_tracker_metadata_extractor
+    FOLDER
+        "VK_LAYER_INTEL_gvk_state_tracker/"
+    LINK_LIBRARIES
+        gvk-binding-info
+        gvk-command-structures
+        gvk-containers
+        gvk-format-info
+        gvk-runtime
+        gvk-string
+        gvk-structures
+    INCLUDE_DIRECTORIES
+        "${includeDirectory}"
+    INCLUDE_FILES
+        "${includeDirectory}/VK_LAYER_INTEL_gvk_state_tracker_metadata_extractor.hpp"
+    SOURCE_FILES
+        "${sourceDirectory}/VK_LAYER_INTEL_gvk_state_tracker_metadata_extractor.cpp"
+)
 
 ################################################################################
 # VK_LAYER_INTEL_gvk_state_tracker.tests

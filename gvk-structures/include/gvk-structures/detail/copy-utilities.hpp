@@ -65,6 +65,17 @@ inline void destroy_structure_copy(const ObjectType&, const VkAllocationCallback
 {
 }
 
+template <typename ObjectType>
+inline ObjectType create_type_erased_structure_copy(const ObjectType& obj, const VkAllocationCallbacks*)
+{
+    return obj;
+}
+
+template <typename ObjectType>
+inline void destroy_type_erased_structure_copy(const ObjectType&, const VkAllocationCallbacks*)
+{
+}
+
 inline const VkAllocationCallbacks* validate_allocation_callbacks(const VkAllocationCallbacks* pAllocator)
 {
     static const VkAllocationCallbacks sAllocator{
@@ -167,6 +178,17 @@ inline void create_static_string_copy(CharType* pDstStr, const CharType* pSrcStr
     assert(pSrcStr);
     for (size_t i = 0; i < Size && pSrcStr[i]; ++i) {
         pDstStr[i] = pSrcStr[i];
+    }
+}
+
+template <typename ObjectType>
+inline void destroy_dynamic_array(const ObjectType* pObjs, const VkAllocationCallbacks* pAllocator)
+{
+    // TODO : std::vector<> like C API for handling raw pointer collections
+    // TODO : Expose that API through gvk::Auto<>
+    if (pObjs) {
+        pAllocator = validate_allocation_callbacks(pAllocator);
+        pAllocator->pfnFree(pAllocator->pUserData, (void*)pObjs);
     }
 }
 

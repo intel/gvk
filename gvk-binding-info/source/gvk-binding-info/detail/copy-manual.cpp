@@ -24,9 +24,24 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#pragma once
+#include "gvk-binding-info/generated/binding-info-structure-create-copy.hpp"
+#include "gvk-structures.hpp"
+#include "gvk-structures/detail/get-count.hpp"
 
-#include "gvk-gui/renderer.hpp"
-#include "gvk-gui/utilities.hpp"
-#include "gvk-gui/window.hpp"
-#include "gvk-gui/window-manager.hpp"
+namespace gvk {
+namespace detail {
+
+template <> GvkResourceInfo create_structure_copy<GvkResourceInfo>(const GvkResourceInfo& obj, const VkAllocationCallbacks* pAllocator)
+{
+    auto result = obj;
+    result.pCreateInfo = (VkBaseOutStructure*)create_pnext_copy(obj.pCreateInfo, pAllocator);
+    return result;
+}
+
+template <> void destroy_structure_copy<GvkResourceInfo>(const GvkResourceInfo& obj, const VkAllocationCallbacks* pAllocator)
+{
+    destroy_pnext_copy(obj.pCreateInfo, pAllocator);
+}
+
+} // namespace detail
+} // namespace gvk

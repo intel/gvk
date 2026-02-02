@@ -185,6 +185,14 @@ void output_help_text()
     std::cout << std::endl;
     std::cout << "If any of -i, -x, or -u is specified, output will consist of all log entries matching the given includes/excludes" << std::endl;
     std::cout << "If none of -i, -x, nor -u is specified, output will consist of a list of all of the counts of each Vulkan function's use in the given log" << std::endl;
+    std::cout << "Search terms starting with \"0x\" will be treated as handles and search will match various text forms of the handle" << std::endl;
+    std::cout << std::endl;
+    std::cout << "The following cmd line parses api_dump output looking for references to VkCommandBuffer" << std::endl;
+    std::cout << "0xCDBF, it will exclude anything including the string \"Cmd\", and only show the first" << std::endl;
+    std::cout << "occurances of the strings \"Begin\", \"End\".  This can be useful for narrowing in on the" << std::endl;
+    std::cout << "ifetime of VkCommandBuffer 0xCDBF." << std::endl;
+    std::cout << std::endl;
+    std::cout << "    gvk-log-parser -f path/to/api_dump/output.log -o path/to/api_dump/filtered.log -i 0xCDBF -x Cmd -u Begin,End" << std::endl;
 }
 
 using CmdLine = std::map<std::string, std::string>;
@@ -227,6 +235,7 @@ int main(int argc, const char* ppArgv[])
     auto output = cmdLine["-o"];
 
     if (!filepath.empty()) {
+
         // parse_log() outputs progress via std::cout, so format is set and reset before
         //  and after calling the function.
         std::ios_base::fmtflags stdCoutFmtFlags(std::cout.flags());
@@ -235,7 +244,7 @@ int main(int argc, const char* ppArgv[])
         auto logEntries = parse_log(filepath);
         std::cout.flags(stdCoutFmtFlags);
 
-        // Direct output to a specififed file or std::cout
+        // Direct output to a specified file or std::cout
         std::ofstream ofstrm(output);
         auto& ostrm = ofstrm.is_open() ? ofstrm : std::cout;
 

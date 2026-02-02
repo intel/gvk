@@ -488,7 +488,7 @@ void WorkspaceWindow::launch_application(GuiInfo& guiInfo)
 
     // Prepare Environment
     gvk::Environment env;
-    env.set_env(); // TODO : Validate and route existing env to GUI
+    env.load_env(); // TODO : Validate and route existing env to GUI
     env.set_env_var("GVK_PIPELINE_EXPLORER_GUI_PID", std::to_string(GetCurrentProcessId()));
 
     // Configure Environment for layers

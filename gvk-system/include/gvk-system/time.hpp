@@ -183,22 +183,22 @@ public:
         return dateTime;
     }
 
-    inline std::string get_date_str() const
+    inline std::string get_date_str(char delimiter = '/') const
     {
         std::stringstream strStrm;
         strStrm
-            << year << "/"
-            << std::setw(2) << std::setfill('0') << (int)month << "/"
+            << year << delimiter
+            << std::setw(2) << std::setfill('0') << (int)month << delimiter
             << std::setw(2) << std::setfill('0') << dayOfTheMonth;
         return strStrm.str();
     }
 
-    inline std::string get_time_str() const
+    inline std::string get_time_str(char delimiter = ':') const
     {
         std::stringstream strStrm;
         strStrm
-            << std::setw(2) << std::setfill('0') << hour << ":"
-            << std::setw(2) << std::setfill('0') << minute << ":"
+            << std::setw(2) << std::setfill('0') << hour << delimiter
+            << std::setw(2) << std::setfill('0') << minute << delimiter
             << std::setw(2) << std::setfill('0') << second;
         return strStrm.str();
     }

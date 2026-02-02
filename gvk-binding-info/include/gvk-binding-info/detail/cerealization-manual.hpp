@@ -26,7 +26,30 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-gui/renderer.hpp"
-#include "gvk-gui/utilities.hpp"
-#include "gvk-gui/window.hpp"
-#include "gvk-gui/window-manager.hpp"
+#include "gvk-defines.hpp"
+#include "gvk-binding-info/generated/binding-info.h"
+#include "gvk-structures/detail/cerealization-utilities.hpp"
+#include "gvk-structures/detail/get-count.hpp"
+#include "gvk-structures/generated/cerealize-pnext.hpp"
+
+namespace cereal {
+
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const GvkResourceInfo& obj)
+{
+    archive(obj.type);
+    archive(obj.handle);
+    archive(obj.dispatchableHandle);
+    gvk::detail::cerealize_pnext(archive, obj.pCreateInfo);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, GvkResourceInfo& obj)
+{
+    archive(obj.type);
+    archive(obj.handle);
+    archive(obj.dispatchableHandle);
+    obj.pCreateInfo = (VkBaseOutStructure*)gvk::detail::decerealize_pnext(archive);
+}
+
+} // namespace cereal

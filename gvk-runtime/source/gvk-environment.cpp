@@ -38,7 +38,7 @@ void Environment::reset()
     mEnvVars.clear();
 }
 
-void Environment::set_env()
+void Environment::load_env()
 {
     reset();
 #ifdef GVK_PLATFORM_WINDOWS
@@ -107,18 +107,21 @@ void Environment::set_env_var(const std::string& key, const std::string& value)
     }
 }
 
+void Environment::unset_env_var(const std::string& key)
+{
+    set_env_var(key, { });
+}
+
 void Environment::append_value_to_env_var(const std::string& key, const std::string& value)
 {
-    if (!key.empty() && !value.empty()) {
-        auto itr = !key.empty() ? mEnvVars.find(key) : mEnvVars.end();
-        if (itr != mEnvVars.end()) {
 #ifdef GVK_PLATFORM_WINDOWS
-            std::string delimiter = ";";
+    static const char scDelimiter = ';';
 #else
-            std::string delimiter = ":";
+    static const char scDelimiter = ':';
 #endif
-            mEnvVars[key] = itr->second.string() + delimiter + value;
-        }
+    if (!key.empty() && !value.empty()) {
+        auto& envVar = mEnvVars[key];
+        envVar += envVar.empty() ? (scDelimiter + value) : value;
     }
 }
 

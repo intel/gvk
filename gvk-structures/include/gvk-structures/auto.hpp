@@ -103,4 +103,75 @@ private:
     StructureType mStructure { };
 };
 
+template <typename StructureType>
+class TypeErasedAuto final
+{
+public:
+    TypeErasedAuto() = default;
+
+    inline TypeErasedAuto(const StructureType& other)
+        : mpStructure{ detail::create_type_erased_structure_copy(&other, nullptr) }
+    {
+    }
+
+    inline TypeErasedAuto(const TypeErasedAuto<StructureType>& other)
+    {
+        *this = other;
+    }
+
+    inline TypeErasedAuto(TypeErasedAuto<StructureType>&& other)
+    {
+        *this = std::move(other);
+    }
+
+    inline TypeErasedAuto<StructureType>& operator=(const TypeErasedAuto<StructureType>& other)
+    {
+        if (this != &other) {
+            reset();
+            mpStructure = (const StructureType*)detail::create_type_erased_structure_copy(other.mpStructure, nullptr);
+        }
+        return *this;
+    }
+
+    inline TypeErasedAuto<StructureType>& operator=(TypeErasedAuto<StructureType>&& other)
+    {
+        if (this != &other) {
+            reset();
+            mpStructure = std::exchange(other.mpStructure, mpStructure);
+        }
+        return *this;
+    }
+
+    inline ~TypeErasedAuto()
+    {
+        reset();
+    }
+
+    inline void reset()
+    {
+        detail::destroy_type_erased_structure_copy(mpStructure, nullptr);
+        mpStructure = nullptr;
+    }
+
+    inline operator const StructureType& () const
+    {
+        assert(mpStructure);
+        return *mpStructure;
+    }
+
+    inline const StructureType& operator*() const
+    {
+        assert(mpStructure);
+        return *mpStructure;
+    }
+
+    inline const StructureType* operator->() const
+    {
+        return mpStructure;
+    }
+
+private:
+    const StructureType* mpStructure{ };
+};
+
 } // namespace gvk

@@ -24,9 +24,26 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#pragma once
+#include "gvk-binding-info/generated/binding-info-structure-to-string.hpp"
+#include "gvk-structures.hpp"
+#include "gvk-binding-info/generated/binding-info-enumerations-to-string.hpp"
+#include "gvk-structures/generated/handle-to-string.hpp"
+#include "gvk-structures/detail/get-count.hpp"
 
-#include "gvk-gui/renderer.hpp"
-#include "gvk-gui/utilities.hpp"
-#include "gvk-gui/window.hpp"
-#include "gvk-gui/window-manager.hpp"
+namespace gvk {
+
+template <> void print<GvkResourceInfo>(Printer& printer, const GvkResourceInfo& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("type", obj.type);
+            // NOTE : Casting handles to VkInstance so they print 0x/VK_NULL_HANDLE
+            printer.print_field("handle", (VkInstance)obj.handle);
+            printer.print_field("dispatchableHandle", (VkInstance)obj.dispatchableHandle);
+            gvk::detail::print_pnext(printer, "pCreateInfo", obj.pCreateInfo);
+        }
+    );
+}
+
+} // namespace gvk

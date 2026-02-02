@@ -77,3 +77,39 @@ if(gvk-layer_ENABLED)
         DESCRIPTION "Intel(R) GPA Utilities for Vulkan* sample layer"
     )
 endif()
+
+if(gvk-state-tracker_ENABLED AND MSVC)
+    gvk_add_executable(
+        TARGET gvk-metadata-extractor-sample
+        FOLDER "samples/gvk-metadata-extractor-sample/"
+        LINK_LIBRARIES
+            gvk-command-structures
+            gvk-gui
+            gvk-handles
+            gvk-system
+            VK_LAYER_INTEL_gvk_state_tracker_metadata_extractor
+        INCLUDE_FILES
+            "${CMAKE_CURRENT_LIST_DIR}/gvk-metadata-extractor-sample-utilities.hpp"
+        SOURCE_FILES
+            "${CMAKE_CURRENT_LIST_DIR}/gvk-metadata-extractor-sample.cpp"
+    )
+    gvk_add_layer(
+        TARGET VK_LAYER_INTEL_gvk_metadata_extractor_sample
+        FOLDER "samples/gvk-metadata-extractor-sample/"
+        LINK_LIBRARIES
+            gvk-containers
+            gvk-handles
+            VK_LAYER_INTEL_gvk_state_tracker_metadata_extractor
+        INCLUDE_FILES
+            "${CMAKE_CURRENT_LIST_DIR}/gvk-metadata-extractor-sample-utilities.hpp"
+        SOURCE_FILES
+            "${CMAKE_CURRENT_LIST_DIR}/gvk-metadata-extractor-sample-layer.cpp"
+        DESCRIPTION
+            "Intel(R) GPA Utilities for Vulkan* metadata extractor sample layer"
+    )
+    add_custom_command(
+        TARGET gvk-metadata-extractor-sample POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:VK_LAYER_INTEL_gvk_state_tracker>" "$<TARGET_FILE_DIR:gvk-metadata-extractor-sample>"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE_DIR:VK_LAYER_INTEL_gvk_state_tracker>/VK_LAYER_INTEL_gvk_state_tracker.json" "$<TARGET_FILE_DIR:gvk-metadata-extractor-sample>"
+    )
+endif()

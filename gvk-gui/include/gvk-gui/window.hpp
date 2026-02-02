@@ -26,7 +26,56 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-gui/renderer.hpp"
-#include "gvk-gui/utilities.hpp"
-#include "gvk-gui/window.hpp"
-#include "gvk-gui/window-manager.hpp"
+#include <string>
+
+namespace gvk {
+namespace gui {
+
+template <typename GuiInfoType>
+class Window
+{
+public:
+    class Manager;
+    class Collection;
+
+    virtual ~Window() = 0;
+
+    virtual void reset()
+    {
+    }
+
+    const std::string& get_name() const
+    {
+        return mName;
+    }
+
+    Window::Manager& get_window_manager()
+    {
+        return mWindowManager;
+    }
+
+protected:
+    Window(Manager& windowManager, const std::string& name)
+        : mWindowManager{ windowManager }
+        , mName{ name }
+    {
+    }
+
+    virtual void on_gui(GuiInfoType guiInfo) = 0;
+
+private:
+    Manager& mWindowManager;
+    std::string mName;
+    bool mOpen{ true };
+
+    Window(const Window&) = delete;
+    Window& operator=(const Window&) = delete;
+};
+
+template <typename GuiInfoType>
+Window<GuiInfoType>::~Window()
+{
+}
+
+} // namespace gui
+} // namespace gvk

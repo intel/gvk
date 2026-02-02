@@ -38,10 +38,11 @@ class Environment final
 {
 public:
     void reset();
-    void set_env();
+    void load_env();
     void get_env(uint32_t* pCount, char* pEnv) const;
     std::string get_env_var(const std::string& key) const;
     void set_env_var(const std::string& key, const std::string& value);
+    void unset_env_var(const std::string& key);
     void append_value_to_env_var(const std::string& key, const std::string& value);
 
 private:

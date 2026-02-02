@@ -1,8 +1,10 @@
 
 include_guard(GLOBAL)
+gvk_enable_module(gvk-binding-info)
 gvk_enable_module(gvk-command-structures)
 gvk_enable_module(gvk-containers)
 gvk_enable_module(gvk-cppgen)
+gvk_enable_module(gvk-format-info)
 gvk_enable_module(gvk-handles)
 gvk_enable_module(gvk-layer)
 gvk_enable_module(gvk-reference)

@@ -26,7 +26,37 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-gui/renderer.hpp"
-#include "gvk-gui/utilities.hpp"
-#include "gvk-gui/window.hpp"
-#include "gvk-gui/window-manager.hpp"
+#include "imgui.h"
+#include "imgui_stdlib.h"
+
+namespace GvkGui {
+
+class ScopeID final
+{
+public:
+    ScopeID(const char* str_id);
+    ScopeID(const char* str_id_begin, const char* str_id_end);
+    ScopeID(const void* ptr_id);
+    ScopeID(int int_id);
+    ~ScopeID();
+
+private:
+    ScopeID(const ScopeID&) = delete;
+    ScopeID& operator=(const ScopeID&) = delete;
+};
+
+class ScopeIndent final
+{
+public:
+    ScopeIndent();
+    ~ScopeIndent();
+
+private:
+    ScopeIndent(const ScopeIndent&) = delete;
+    ScopeIndent& operator=(const ScopeIndent&) = delete;
+};
+
+bool InputText(const char* label, std::string* str);
+bool InputPath(const char* label, std::string* str);
+
+} // namespace GvkGui

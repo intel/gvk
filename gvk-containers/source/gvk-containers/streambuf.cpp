@@ -24,9 +24,44 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#pragma once
+#include "gvk-containers/streambuf.hpp"
 
-#include "gvk-gui/renderer.hpp"
-#include "gvk-gui/utilities.hpp"
-#include "gvk-gui/window.hpp"
-#include "gvk-gui/window-manager.hpp"
+#include <type_traits>
+
+namespace gvk {
+
+void VectorOstreambuf::clear()
+{
+    mData.clear();
+}
+
+const uint8_t* VectorOstreambuf::data() const
+{
+    return mData.data();
+}
+
+size_t VectorOstreambuf::size() const
+{
+    return mData.size();
+}
+
+std::streambuf::int_type VectorOstreambuf::overflow(std::streambuf::int_type ch)
+{
+    if (ch != traits_type::eof()) {
+        xsputn((const char*)&ch, 1);
+    }
+    return ch;
+}
+
+std::streamsize VectorOstreambuf::xsputn(const char* pStr, std::streamsize n)
+{
+    mData.insert(mData.end(), pStr, pStr + n);
+    return n;
+}
+
+VectorIstreambuf::VectorIstreambuf(std::vector<uint8_t>& data)
+{
+    setg((char*)data.data(), (char*)data.data(), (char*)data.data() + data.size());
+}
+
+} // namespace gvk

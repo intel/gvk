@@ -15,10 +15,13 @@ gvk_add_static_library(
         "${includePath}/detail/memory-usage-validator.hpp"
         "${includePath}/contiguous-set.hpp"
         "${includePath}/interval-tree.hpp"
+        "${includePath}/streambuf.hpp"
         "${includePath}/string-array-index-map.hpp"
         "${includePath}/thread-safe-unordered-map.hpp"
+        "${includePath}/utilities.hpp"
     SOURCE_FILES
         "${sourcePath}/detail/memory-usage-validator.cpp"
+        "${sourcePath}/streambuf.cpp"
         "${sourcePath}/string-array-index-map.cpp"
 )
 

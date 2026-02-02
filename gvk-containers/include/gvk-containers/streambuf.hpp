@@ -26,7 +26,33 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-gui/renderer.hpp"
-#include "gvk-gui/utilities.hpp"
-#include "gvk-gui/window.hpp"
-#include "gvk-gui/window-manager.hpp"
+#include <cstdint>
+#include <streambuf>
+#include <vector>
+
+namespace gvk {
+
+class VectorOstreambuf final
+    : public std::streambuf
+{
+public:
+    void clear();
+    const uint8_t* data() const;
+    size_t size() const;
+
+protected:
+    int_type overflow(int_type ch) override final;
+    std::streamsize xsputn(const char* pStr, std::streamsize n) override final;
+
+private:
+    std::vector<uint8_t> mData;
+};
+
+class VectorIstreambuf
+    : public std::streambuf
+{
+public:
+    VectorIstreambuf(std::vector<uint8_t>& data);
+};
+
+} // namespace gvk
