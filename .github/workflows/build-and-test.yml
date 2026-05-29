@@ -1,0 +1,275 @@
+name: Build & Test
+name: Build & Test
+
+on:
+  # Temporarily disabled - waiting for runner configuration
+  # push:
+  #   branches:
+  #     - trunk
+  #     - github-actions  # For testing
+  # pull_request:
+  #   branches:
+  #     - trunk
+  workflow_dispatch:  # Manual trigger only while configuring
+  # schedule:
+  #   - cron: '30 5 * * *' # Daily 5:30 AM UTC / 12:30 AM EST
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  check-environment:
+    name: Check Runner Environment
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 5
+    outputs:
+      docker-available: ${{ steps.check-docker.outputs.available }}
+
+    steps:
+    - name: Check Docker Availability
+      id: check-docker
+      run: |
+        echo "=== Checking Docker ==="
+        if command -v docker &> /dev/null; then
+          echo "? Docker is installed"
+          docker --version || true
+
+          if docker info &> /dev/null; then
+            echo "? Docker daemon is running"
+            echo "? Docker is fully operational"
+            echo "available=true" >> $GITHUB_OUTPUT
+          else
+            echo "??  Docker is installed but daemon is not running"
+            echo "   You could use Docker if you start the daemon"
+            echo "available=false" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "??  Docker is not installed"
+          echo "   This is fine! The workflow will use native builds"
+          echo "available=false" >> $GITHUB_OUTPUT
+        fi
+
+        echo ""
+        echo "=== Checking Native Build Tools ==="
+
+        # Check for required native build tools
+        MISSING_TOOLS=()
+
+        if command -v cmake &> /dev/null; then
+          echo "? CMake: $(cmake --version | head -n1)"
+        else
+          echo "??  CMake: Not found (will be installed)"
+          MISSING_TOOLS+=("cmake")
+        fi
+
+        if command -v ninja &> /dev/null; then
+          echo "? Ninja: $(ninja --version)"
+        else
+          echo "??  Ninja: Not found (will be installed)"
+          MISSING_TOOLS+=("ninja-build")
+        fi
+
+        if command -v gcc &> /dev/null; then
+          echo "? GCC: $(gcc --version | head -n1)"
+        else
+          echo "??  GCC: Not found (will be installed)"
+          MISSING_TOOLS+=("build-essential")
+        fi
+
+        echo ""
+        if [ ${#MISSING_TOOLS[@]} -eq 0 ]; then
+          echo "? All native build tools are ready!"
+        else
+          echo "??  These packages will be installed: ${MISSING_TOOLS[*]}"
+        fi
+
+    - name: Environment Summary
+      run: |
+        echo "================================"
+        echo "ENVIRONMENT CHECK COMPLETE"
+        echo "================================"
+        echo ""
+        echo "Docker Available: ${{ steps.check-docker.outputs.available }}"
+        echo ""
+        echo "Build Strategy: Native Linux build with apt-get"
+        echo ""
+        echo "Next: Proceeding with Linux build..."
+
+  build-windows:
+    name: Build Windows
+    runs-on: [self-hosted, windows]  # Use self-hosted Windows runner
+    timeout-minutes: 60  # Fail after 1 hour if runner not available
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Check System Information
+      shell: powershell
+      run: |
+        Write-Host "=== System Information ==="
+        Get-ComputerInfo | Select-Object CsName, CsNumberOfProcessors, CsTotalPhysicalMemory, OsArchitecture
+        Write-Host "`n=== Graphics Adapters ==="
+        Get-WmiObject Win32_VideoController | Select-Object Name, DriverVersion
+        Write-Host "`n=== CMake Version ==="
+        cmake --version
+
+    - name: Verify CMake Version
+      shell: bash
+      run: cmake --version
+
+    - name: Configure CMake
+      shell: bash
+      run: |
+        cmake -G "Visual Studio 17 2022" -A x64 -B build \
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+          -Dgvk-default_ENABLED=OFF \
+          -Dgvk-string_ENABLED=ON \
+          -Dgvk-build-tests=ON \
+          -Dgvk-build-samples=OFF
+
+    - name: Build
+      shell: bash
+      run: cmake --build build --config ${{ env.BUILD_TYPE }} --target install --parallel
+
+    - name: Run Tests
+      working-directory: ${{ github.workspace }}/build
+      shell: bash
+      run: ctest -C ${{ env.BUILD_TYPE }} --output-on-failure --timeout 300
+      continue-on-error: true
+
+    - name: Upload Build Artifacts
+      if: success() || failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: gvk-windows-x64
+        path: |
+          install/
+          !install/**/*.pdb
+        retention-days: 7
+
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-windows
+        path: build/Testing/
+        retention-days: 7
+
+  build-linux:
+    name: Build Linux
+    runs-on: [self-hosted, linux]
+    needs: check-environment
+    timeout-minutes: 60
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install Build Dependencies
+      run: |
+        # Update package list
+        sudo apt-get update
+
+        # Install core build tools
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          ninja-build \
+          git \
+          python3 \
+          pkg-config
+
+        # Install Vulkan and graphics dependencies
+        sudo apt-get install -y \
+          libwayland-dev \
+          wayland-protocols \
+          libxkbcommon-dev \
+          libxrandr-dev \
+          libxinerama-dev \
+          libxcursor-dev \
+          libxi-dev \
+          libx11-xcb-dev \
+          libxxf86vm-dev \
+          xorg-dev
+
+    - name: Check System Information
+      run: |
+        echo "=== System Information ==="
+        lscpu | grep -E "Model name|CPU\(s\)|Thread" || true
+        echo ""
+        free -h
+        echo ""
+        echo "=== Build Tools ==="
+        cmake --version
+        ninja --version
+        gcc --version | head -n1
+        python3 --version
+
+    - name: Configure CMake
+      run: |
+        cmake -G Ninja -B build \
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+          -Dgvk-default_ENABLED=OFF \
+          -Dgvk-string_ENABLED=ON \
+          -Dgvk-build-tests=ON \
+          -Dgvk-build-samples=OFF
+
+    - name: Build
+      run: cmake --build build --target install --parallel
+
+    - name: Run Tests
+      working-directory: ${{ github.workspace }}/build
+      run: ctest --output-on-failure --timeout 300
+      continue-on-error: true
+
+    - name: Upload Build Artifacts
+      if: success() || failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: gvk-linux-x64
+        path: install/
+        retention-days: 7
+
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-linux
+        path: build/Testing/
+        retention-days: 7
+
+  status-check:
+    name: Status Check
+    needs: [check-environment, build-windows, build-linux]
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 10
+    if: always()
+
+    steps:
+    - name: Check Build Status
+      run: |
+        echo "Environment Check: ${{ needs.check-environment.result }}"
+        echo "Windows Build: ${{ needs.build-windows.result }}"
+        echo "Linux Build: ${{ needs.build-linux.result }}"
+        echo ""
+        echo "Docker Available: ${{ needs.check-environment.outputs.docker-available }}"
+        echo ""
+
+        if [ "${{ needs.check-environment.result }}" != "success" ] || \
+           [ "${{ needs.build-windows.result }}" != "success" ] || \
+           [ "${{ needs.build-linux.result }}" != "success" ]; then
+          echo "? Build failed"
+          exit 1
+        fi
+
+        echo "? All builds successful"

@@ -1,0 +1,243 @@
+name: Check Environment
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+jobs:
+  check-linux-environment:
+    name: Check Linux Environment
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 5
+
+    steps:
+    - name: System Information
+      run: |
+        echo "================================"
+        echo "SYSTEM INFORMATION"
+        echo "================================"
+        echo ""
+        echo "Hostname: $(hostname)"
+        echo "OS: $(cat /etc/os-release | grep PRETTY_NAME | cut -d'"' -f2)"
+        echo "Kernel: $(uname -r)"
+        echo "Architecture: $(uname -m)"
+        echo ""
+        echo "CPU:"
+        lscpu | grep -E "Model name|CPU\(s\):|Thread" | head -n3 || true
+        echo ""
+        echo "Memory:"
+        free -h | grep -E "Mem|Swap"
+        echo ""
+        echo "Disk Space:"
+        df -h / | tail -n1
+        echo ""
+
+    - name: Check Docker
+      id: docker-check
+      run: |
+        echo "================================"
+        echo "DOCKER CHECK"
+        echo "================================"
+        echo ""
+
+        if ! command -v docker &> /dev/null; then
+          echo "? Docker is NOT installed"
+          echo ""
+          echo "To install Docker:"
+          echo "  sudo apt-get update"
+          echo "  sudo apt-get install -y docker.io"
+          echo "  sudo systemctl start docker"
+          echo "  sudo systemctl enable docker"
+          echo "  sudo usermod -aG docker \$USER"
+          echo "  (then log out and back in)"
+          echo ""
+          echo "docker_installed=false" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+
+        echo "? Docker is installed"
+        docker --version
+        echo ""
+        echo "docker_installed=true" >> $GITHUB_OUTPUT
+
+        if ! docker info &> /dev/null 2>&1; then
+          echo "? Docker daemon is NOT running"
+          echo ""
+          echo "To start Docker:"
+          echo "  sudo systemctl start docker"
+          echo ""
+          echo "To enable on boot:"
+          echo "  sudo systemctl enable docker"
+          echo ""
+          echo "docker_running=false" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+
+        echo "? Docker daemon is running"
+        echo ""
+        echo "Docker Info:"
+        docker info | grep -E "Server Version|Storage Driver|Operating System|Total Memory" || true
+        echo ""
+        echo "docker_running=true" >> $GITHUB_OUTPUT
+
+        # Check if user can run docker without sudo
+        if groups | grep -q docker; then
+          echo "? User is in docker group (can run without sudo)"
+          echo "docker_sudo_free=true" >> $GITHUB_OUTPUT
+        else
+          echo "??  User is NOT in docker group"
+          echo ""
+          echo "To fix:"
+          echo "  sudo usermod -aG docker \$USER"
+          echo "  (then log out and back in, or restart runner service)"
+          echo ""
+          echo "docker_sudo_free=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Check Native Build Tools
+      run: |
+        echo "================================"
+        echo "NATIVE BUILD TOOLS CHECK"
+        echo "================================"
+        echo ""
+
+        MISSING=()
+
+        # Check CMake
+        if command -v cmake &> /dev/null; then
+          CMAKE_VERSION=$(cmake --version | head -n1)
+          echo "? $CMAKE_VERSION"
+        else
+          echo "? CMake: Not installed"
+          MISSING+=("cmake")
+        fi
+
+        # Check Ninja
+        if command -v ninja &> /dev/null; then
+          echo "? Ninja: $(ninja --version)"
+        else
+          echo "? Ninja: Not installed"
+          MISSING+=("ninja-build")
+        fi
+
+        # Check GCC
+        if command -v gcc &> /dev/null; then
+          echo "? $(gcc --version | head -n1)"
+        else
+          echo "? GCC: Not installed"
+          MISSING+=("build-essential")
+        fi
+
+        # Check G++
+        if command -v g++ &> /dev/null; then
+          echo "? $(g++ --version | head -n1)"
+        else
+          echo "? G++: Not installed"
+          MISSING+=("build-essential")
+        fi
+
+        # Check Python
+        if command -v python3 &> /dev/null; then
+          echo "? Python: $(python3 --version)"
+        else
+          echo "? Python3: Not installed"
+          MISSING+=("python3")
+        fi
+
+        # Check Git
+        if command -v git &> /dev/null; then
+          echo "? Git: $(git --version)"
+        else
+          echo "? Git: Not installed"
+          MISSING+=("git")
+        fi
+
+        echo ""
+        if [ ${#MISSING[@]} -eq 0 ]; then
+          echo "? All core build tools are installed!"
+        else
+          echo "??  Missing tools: ${MISSING[*]}"
+          echo ""
+          echo "These will be installed automatically by the build workflow."
+          echo ""
+          echo "Or install manually with:"
+          echo "  sudo apt-get update"
+          echo "  sudo apt-get install -y ${MISSING[*]}"
+        fi
+
+    - name: Check Vulkan Dependencies
+      run: |
+        echo "================================"
+        echo "VULKAN DEPENDENCIES CHECK"
+        echo "================================"
+        echo ""
+
+        VULKAN_DEPS=(
+          "libwayland-dev"
+          "libxkbcommon-dev"
+          "libxrandr-dev"
+          "libxinerama-dev"
+          "libxcursor-dev"
+          "libxi-dev"
+          "libx11-xcb-dev"
+          "libxxf86vm-dev"
+        )
+
+        MISSING=()
+        INSTALLED=()
+
+        for pkg in "${VULKAN_DEPS[@]}"; do
+          if dpkg -l | grep -q "^ii  $pkg"; then
+            INSTALLED+=("$pkg")
+          else
+            MISSING+=("$pkg")
+          fi
+        done
+
+        if [ ${#INSTALLED[@]} -gt 0 ]; then
+          echo "? Installed packages (${#INSTALLED[@]}/${#VULKAN_DEPS[@]}):"
+          printf '   %s\n' "${INSTALLED[@]}"
+          echo ""
+        fi
+
+        if [ ${#MISSING[@]} -eq 0 ]; then
+          echo "? All Vulkan dependencies are installed!"
+        else
+          echo "??  Missing packages (${#MISSING[@]}/${#VULKAN_DEPS[@]}):"
+          printf '   %s\n' "${MISSING[@]}"
+          echo ""
+          echo "These will be installed automatically by the build workflow."
+        fi
+
+    - name: Recommendation
+      if: always()
+      run: |
+        echo ""
+        echo "================================"
+        echo "RECOMMENDATION"
+        echo "================================"
+        echo ""
+
+        DOCKER_INSTALLED="${{ steps.docker-check.outputs.docker_installed }}"
+        DOCKER_RUNNING="${{ steps.docker-check.outputs.docker_running }}"
+
+        if [ "$DOCKER_INSTALLED" = "true" ] && [ "$DOCKER_RUNNING" = "true" ]; then
+          echo "?? You have Docker available!"
+          echo ""
+          echo "You can choose between:"
+          echo "  1. Current workflow (native builds) - Simpler, works now"
+          echo "  2. Docker workflow - More isolated, reproducible"
+          echo ""
+          echo "Recommendation: Stick with current workflow unless you"
+          echo "               specifically need Docker's features."
+        else
+          echo "? Native build approach is perfect for you!"
+          echo ""
+          echo "Your current workflow will:"
+          echo "  1. Install missing packages automatically"
+          echo "  2. Build directly on the runner"
+          echo "  3. Work great without Docker"
+          echo ""
+          echo "No changes needed - you're all set!"
+        fi
+        echo ""
+        echo "Next step: Run the 'Build & Test' workflow"

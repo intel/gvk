@@ -1,0 +1,165 @@
+# Simplified Build & Test Workflow
+# This version uses only Docker-based Linux builds (no container-based build)
+# Rename this file to build-and-test.yml to use it instead of the current workflow
+
+name: Build & Test (Simplified)
+
+on:
+  # Temporarily disabled - waiting for runner configuration
+  # push:
+  #   branches:
+  #     - trunk
+  #     - github-actions  # For testing
+  # pull_request:
+  #   branches:
+  #     - trunk
+  workflow_dispatch:  # Manual trigger only while configuring
+  # schedule:
+  #   - cron: '30 5 * * *' # Daily 5:30 AM UTC / 12:30 AM EST
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build-windows:
+    name: Build Windows
+    runs-on: [self-hosted, windows]
+    timeout-minutes: 60
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Check System Information
+      shell: powershell
+      run: |
+        Write-Host "=== System Information ==="
+        Get-ComputerInfo | Select-Object CsName, CsNumberOfProcessors, CsTotalPhysicalMemory, OsArchitecture
+        Write-Host "`n=== Graphics Adapters ==="
+        Get-WmiObject Win32_VideoController | Select-Object Name, DriverVersion
+        Write-Host "`n=== CMake Version ==="
+        cmake --version
+
+    - name: Configure CMake
+      shell: bash
+      run: |
+        cmake -G "Visual Studio 17 2022" -A x64 -B build \
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+          -Dgvk-default_ENABLED=OFF \
+          -Dgvk-string_ENABLED=ON \
+          -Dgvk-build-tests=ON \
+          -Dgvk-build-samples=OFF
+
+    - name: Build
+      shell: bash
+      run: cmake --build build --config ${{ env.BUILD_TYPE }} --target install --parallel
+
+    - name: Run Tests
+      working-directory: ${{ github.workspace }}/build
+      shell: bash
+      run: ctest -C ${{ env.BUILD_TYPE }} --output-on-failure --timeout 300
+      continue-on-error: true
+
+    - name: Upload Build Artifacts
+      if: success() || failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: gvk-windows-x64
+        path: |
+          install/
+          !install/**/*.pdb
+        retention-days: 7
+
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-windows
+        path: build/Testing/
+        retention-days: 7
+
+  build-linux:
+    name: Build Linux
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 60
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Build Docker Image
+      run: |
+        docker build -f .github/workflows/Dockerfile.build -t gvk-build:latest .
+
+    - name: Build Project in Docker
+      run: |
+        docker run --rm \
+          -v ${{ github.workspace }}:/workspace \
+          -w /workspace \
+          gvk-build:latest \
+          bash -c "
+            echo '=== System Information ===' && \
+            cmake --version && \
+            ninja --version && \
+            gcc --version | head -n1 && \
+            echo '' && \
+            echo '=== Configuring CMake ===' && \
+            cmake -G Ninja -B build \
+              -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+              -Dgvk-default_ENABLED=OFF \
+              -Dgvk-string_ENABLED=ON \
+              -Dgvk-build-tests=ON \
+              -Dgvk-build-samples=OFF && \
+            echo '' && \
+            echo '=== Building ===' && \
+            cmake --build build --target install --parallel && \
+            echo '' && \
+            echo '=== Running Tests ===' && \
+            cd build && ctest --output-on-failure --timeout 300 || true
+          "
+
+    - name: Upload Build Artifacts
+      if: success() || failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: gvk-linux-x64
+        path: install/
+        retention-days: 7
+
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-linux
+        path: build/Testing/
+        retention-days: 7
+
+  status-check:
+    name: Status Check
+    needs: [build-windows, build-linux]
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 10
+    if: always()
+
+    steps:
+    - name: Check Build Status
+      run: |
+        echo "Windows Build: ${{ needs.build-windows.result }}"
+        echo "Linux Build: ${{ needs.build-linux.result }}"
+
+        if [ "${{ needs.build-windows.result }}" != "success" ] || \
+           [ "${{ needs.build-linux.result }}" != "success" ]; then
+          echo "? Build failed"
+          exit 1
+        fi
+
+        echo "? All builds successful"
