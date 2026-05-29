@@ -2,6 +2,11 @@ name: Check Environment
 
 on:
   workflow_dispatch:  # Manual trigger only
+  push:
+    branches:
+      - setup-github-actions  # TEMPORARY: Just to make workflow visible once
+    paths:
+      - '.github/workflows/check-environment.yml'  # Only trigger if this file changes
 
 jobs:
   check-linux-environment:
