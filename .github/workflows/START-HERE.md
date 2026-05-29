@@ -14,7 +14,14 @@ Takes 30 seconds, installs nothing, shows what you have!
 
 ## What You Need to Do
 
-### 0. Check Your Environment (Optional but Recommended)
+### 0. Push Your Branch (If Testing)
+If you're on the `setup-github-actions` branch:
+```bash
+git push origin setup-github-actions
+```
+The workflow will run automatically! See [TESTING-ON-BRANCH.md](TESTING-ON-BRANCH.md) for details.
+
+### 1. Check Your Environment (Optional but Recommended)
 ?? Go to GitHub ? Actions ? **"Check Environment"** ? Run workflow
 
 This quick check (30 seconds) will tell you:

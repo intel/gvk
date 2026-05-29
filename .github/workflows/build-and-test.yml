@@ -2,15 +2,14 @@ name: Build & Test
 name: Build & Test
 
 on:
-  # Temporarily disabled - waiting for runner configuration
-  # push:
-  #   branches:
-  #     - trunk
-  #     - github-actions  # For testing
+  push:
+    branches:
+      - trunk
+      - setup-github-actions  # Testing on your branch!
   # pull_request:
   #   branches:
   #     - trunk
-  workflow_dispatch:  # Manual trigger only while configuring
+  workflow_dispatch:  # Manual trigger also available
   # schedule:
   #   - cron: '30 5 * * *' # Daily 5:30 AM UTC / 12:30 AM EST
 
