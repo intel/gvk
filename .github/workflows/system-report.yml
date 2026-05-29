@@ -1,0 +1,299 @@
+name: System Report
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+jobs:
+  report-windows:
+    name: Windows Runner Report
+    runs-on: [self-hosted, windows]
+    timeout-minutes: 10
+
+    steps:
+    - name: Generate System Report
+      shell: powershell
+      run: |
+        $reportPath = "windows-runner-report.md"
+
+        @"
+        # Windows Runner System Report
+
+        Generated: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+
+        ## System Information
+
+        ``````
+        $(Get-ComputerInfo | Select-Object CsName, CsNumberOfProcessors, CsNumberOfLogicalProcessors, CsTotalPhysicalMemory, OsArchitecture, WindowsVersion | Format-List | Out-String)
+        ``````
+
+        ## Graphics/Display
+
+        ``````
+        $(Get-WmiObject Win32_VideoController | Select-Object Name, DriverVersion, VideoModeDescription, AdapterRAM | Format-List | Out-String)
+        ``````
+
+        ## Disk Space
+
+        ``````
+        $(Get-PSDrive -PSProvider FileSystem | Where-Object {$_.Used -ne $null} | Select-Object Name, @{Name="Used(GB)";Expression={[math]::Round($_.Used/1GB,2)}}, @{Name="Free(GB)";Expression={[math]::Round($_.Free/1GB,2)}}, @{Name="Total(GB)";Expression={[math]::Round(($_.Used+$_.Free)/1GB,2)}} | Format-Table -AutoSize | Out-String)
+        ``````
+
+        ## Build Tools
+
+        ### CMake
+        ``````
+        $(cmake --version 2>&1 | Out-String)
+        ``````
+
+        ### Visual Studio
+        ``````
+        $(Get-ChildItem "C:\Program Files\Microsoft Visual Studio" -Directory -ErrorAction SilentlyContinue | Select-Object Name, FullName | Format-Table -AutoSize | Out-String)
+        ``````
+
+        ### Python
+        ``````
+        $(python --version 2>&1 | Out-String)
+        $(python -c "import sys; print(f'Location: {sys.executable}')" 2>&1 | Out-String)
+        ``````
+
+        ### Git
+        ``````
+        $(git --version 2>&1 | Out-String)
+        ``````
+
+        ## Environment Variables (Selected)
+
+        ``````
+        Path: $($env:PATH -split ';' | Select-Object -First 10)
+        ...
+
+        TEMP: $env:TEMP
+        RUNNER_WORKSPACE: $env:RUNNER_WORKSPACE
+        RUNNER_TOOL_CACHE: $env:RUNNER_TOOL_CACHE
+        ``````
+
+        ## Runner Information
+
+        ``````
+        Runner Name: $env:RUNNER_NAME
+        Runner OS: $env:RUNNER_OS
+        Runner Architecture: $env:RUNNER_ARCH
+        Runner Working Directory: $env:GITHUB_WORKSPACE
+        ``````
+
+        ## Installed Software (Sample)
+
+        ``````
+        $(Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, DisplayVersion | Where-Object {$_.DisplayName -match "Visual Studio|CMake|Python|Git|Vulkan"} | Format-Table -AutoSize | Out-String)
+        ``````
+
+        "@ | Out-File -FilePath $reportPath -Encoding UTF8
+
+        Write-Host "Report generated: $reportPath"
+
+    - name: Upload Windows Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-runner-report
+        path: windows-runner-report.md
+        retention-days: 30
+
+  report-linux:
+    name: Linux Runner Report
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 10
+
+    steps:
+    - name: Generate System Report
+      run: |
+        REPORT_FILE="linux-runner-report.md"
+
+        cat > "$REPORT_FILE" << 'EOFREPORT'
+        # Linux Runner System Report
+
+        Generated: $(date +"%Y-%m-%d %H:%M:%S")
+
+        ## System Information
+
+        ```
+        Hostname: $(hostname)
+        OS: $(cat /etc/os-release | grep PRETTY_NAME | cut -d'"' -f2 || echo "Unknown")
+        Kernel: $(uname -r)
+        Architecture: $(uname -m)
+        ```
+
+        ## CPU Information
+
+        ```
+        $(lscpu | grep -E "Model name|Architecture|CPU\(s\)|Thread|Core|Socket" || echo "lscpu not available")
+        ```
+
+        ## Memory
+
+        ```
+        $(free -h)
+        ```
+
+        ## Disk Space
+
+        ```
+        $(df -h | grep -E "Filesystem|/dev/")
+        ```
+
+        ## Graphics/Display
+
+        ```
+        $(lspci | grep -i vga || echo "No VGA controller found")
+        $(lspci | grep -i 3d || echo "No 3D controller found")
+        ```
+
+        ## Build Tools
+
+        ### CMake
+        ```
+        $(cmake --version 2>&1 || echo "CMake not installed")
+        ```
+
+        ### Ninja
+        ```
+        $(ninja --version 2>&1 || echo "Ninja not installed")
+        ```
+
+        ### GCC/G++
+        ```
+        $(gcc --version 2>&1 | head -n1 || echo "GCC not installed")
+        $(g++ --version 2>&1 | head -n1 || echo "G++ not installed")
+        ```
+
+        ### Python
+        ```
+        $(python3 --version 2>&1 || echo "Python3 not installed")
+        $(which python3 2>&1 || echo "Python3 not in PATH")
+        ```
+
+        ### Git
+        ```
+        $(git --version 2>&1 || echo "Git not installed")
+        ```
+
+        ## Docker
+
+        ```
+        $(docker --version 2>&1 || echo "Docker not installed")
+        $(docker info 2>&1 | head -n 20 || echo "Docker daemon not running or not accessible")
+        ```
+
+        ## Vulkan/Graphics Libraries
+
+        ```
+        $(dpkg -l 2>/dev/null | grep -E "vulkan|wayland|libx" | head -n 20 || echo "dpkg not available")
+        ```
+
+        ## Environment Variables (Selected)
+
+        ```
+        PATH (first 5 entries):
+        $(echo $PATH | tr ':' '\n' | head -n 5)
+        ...
+
+        HOME: $HOME
+        USER: $USER
+        RUNNER_WORKSPACE: $RUNNER_WORKSPACE
+        RUNNER_TOOL_CACHE: $RUNNER_TOOL_CACHE
+        ```
+
+        ## Runner Information
+
+        ```
+        Runner Name: $RUNNER_NAME
+        Runner OS: $RUNNER_OS
+        Runner Architecture: $RUNNER_ARCH
+        Runner Working Directory: $GITHUB_WORKSPACE
+        ```
+
+        ## Available Package Managers
+
+        ```
+        apt-get: $(which apt-get 2>&1 || echo "Not found")
+        yum: $(which yum 2>&1 || echo "Not found")
+        dnf: $(which dnf 2>&1 || echo "Not found")
+        ```
+
+        EOFREPORT
+
+        echo "Report generated: $REPORT_FILE"
+
+    - name: Upload Linux Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-runner-report
+        path: linux-runner-report.md
+        retention-days: 30
+
+  combine-reports:
+    name: Combine Reports
+    needs: [report-windows, report-linux]
+    runs-on: [self-hosted, linux]
+    if: always()
+    timeout-minutes: 5
+
+    steps:
+    - name: Download Windows Report
+      uses: actions/download-artifact@v4
+      with:
+        name: windows-runner-report
+        path: reports/
+      continue-on-error: true
+
+    - name: Download Linux Report
+      uses: actions/download-artifact@v4
+      with:
+        name: linux-runner-report
+        path: reports/
+      continue-on-error: true
+
+    - name: Combine Reports
+      run: |
+        COMBINED="combined-runner-report.md"
+
+        echo "# Combined Runner System Report" > "$COMBINED"
+        echo "" >> "$COMBINED"
+        echo "Generated: $(date +"%Y-%m-%d %H:%M:%S")" >> "$COMBINED"
+        echo "" >> "$COMBINED"
+        echo "---" >> "$COMBINED"
+        echo "" >> "$COMBINED"
+
+        if [ -f "reports/windows-runner-report.md" ]; then
+          cat reports/windows-runner-report.md >> "$COMBINED"
+          echo "" >> "$COMBINED"
+          echo "---" >> "$COMBINED"
+          echo "" >> "$COMBINED"
+        else
+          echo "# Windows Runner Report" >> "$COMBINED"
+          echo "" >> "$COMBINED"
+          echo "?? Windows report not available" >> "$COMBINED"
+          echo "" >> "$COMBINED"
+          echo "---" >> "$COMBINED"
+          echo "" >> "$COMBINED"
+        fi
+
+        if [ -f "reports/linux-runner-report.md" ]; then
+          cat reports/linux-runner-report.md >> "$COMBINED"
+        else
+          echo "# Linux Runner Report" >> "$COMBINED"
+          echo "" >> "$COMBINED"
+          echo "?? Linux report not available" >> "$COMBINED"
+        fi
+
+        echo ""
+        echo "Combined report created: $COMBINED"
+        echo ""
+        echo "Contents preview:"
+        head -n 30 "$COMBINED"
+
+    - name: Upload Combined Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: combined-runner-report
+        path: combined-runner-report.md
+        retention-days: 30

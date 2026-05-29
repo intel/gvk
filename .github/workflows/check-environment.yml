@@ -246,3 +246,105 @@ jobs:
         fi
         echo ""
         echo "Next step: Run the 'Build & Test' workflow"
+
+    - name: Save Report to File
+      if: always()
+      run: |
+        REPORT_FILE="environment-check-report.txt"
+
+        echo "==================================" > "$REPORT_FILE"
+        echo "LINUX RUNNER ENVIRONMENT REPORT" >> "$REPORT_FILE"
+        echo "==================================" >> "$REPORT_FILE"
+        echo "Generated: $(date)" >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+
+        # Re-run all checks and save to file
+        echo "SYSTEM INFORMATION" >> "$REPORT_FILE"
+        echo "----------------------------------" >> "$REPORT_FILE"
+        echo "Hostname: $(hostname)" >> "$REPORT_FILE"
+        echo "OS: $(cat /etc/os-release | grep PRETTY_NAME | cut -d'"' -f2)" >> "$REPORT_FILE"
+        echo "Kernel: $(uname -r)" >> "$REPORT_FILE"
+        echo "Architecture: $(uname -m)" >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+
+        echo "CPU:" >> "$REPORT_FILE"
+        lscpu | grep -E "Model name|CPU\(s\):|Thread" | head -n3 >> "$REPORT_FILE" || true
+        echo "" >> "$REPORT_FILE"
+
+        echo "Memory:" >> "$REPORT_FILE"
+        free -h >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+
+        echo "Disk Space:" >> "$REPORT_FILE"
+        df -h / >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+
+        echo "DOCKER CHECK" >> "$REPORT_FILE"
+        echo "----------------------------------" >> "$REPORT_FILE"
+        if command -v docker &> /dev/null; then
+          echo "Docker: INSTALLED" >> "$REPORT_FILE"
+          docker --version >> "$REPORT_FILE" 2>&1
+          if docker info &> /dev/null 2>&1; then
+            echo "Docker Daemon: RUNNING" >> "$REPORT_FILE"
+          else
+            echo "Docker Daemon: NOT RUNNING" >> "$REPORT_FILE"
+          fi
+        else
+          echo "Docker: NOT INSTALLED" >> "$REPORT_FILE"
+        fi
+        echo "" >> "$REPORT_FILE"
+
+        echo "BUILD TOOLS" >> "$REPORT_FILE"
+        echo "----------------------------------" >> "$REPORT_FILE"
+        if command -v cmake &> /dev/null; then
+          cmake --version | head -n1 >> "$REPORT_FILE"
+        else
+          echo "CMake: NOT INSTALLED" >> "$REPORT_FILE"
+        fi
+
+        if command -v ninja &> /dev/null; then
+          echo "Ninja: $(ninja --version)" >> "$REPORT_FILE"
+        else
+          echo "Ninja: NOT INSTALLED" >> "$REPORT_FILE"
+        fi
+
+        if command -v gcc &> /dev/null; then
+          gcc --version | head -n1 >> "$REPORT_FILE"
+        else
+          echo "GCC: NOT INSTALLED" >> "$REPORT_FILE"
+        fi
+
+        if command -v g++ &> /dev/null; then
+          g++ --version | head -n1 >> "$REPORT_FILE"
+        else
+          echo "G++: NOT INSTALLED" >> "$REPORT_FILE"
+        fi
+
+        if command -v python3 &> /dev/null; then
+          python3 --version >> "$REPORT_FILE"
+        else
+          echo "Python3: NOT INSTALLED" >> "$REPORT_FILE"
+        fi
+
+        if command -v git &> /dev/null; then
+          git --version >> "$REPORT_FILE"
+        else
+          echo "Git: NOT INSTALLED" >> "$REPORT_FILE"
+        fi
+        echo "" >> "$REPORT_FILE"
+
+        echo "VULKAN DEPENDENCIES" >> "$REPORT_FILE"
+        echo "----------------------------------" >> "$REPORT_FILE"
+        dpkg -l 2>/dev/null | grep -E "libwayland-dev|libxkbcommon|libxrandr|vulkan" | awk '{print $2, $3}' >> "$REPORT_FILE" || echo "dpkg not available" >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+
+        echo "Report saved to: $REPORT_FILE"
+        cat "$REPORT_FILE"
+
+    - name: Upload Environment Report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-environment-report
+        path: environment-check-report.txt
+        retention-days: 30
