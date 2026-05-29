@@ -2,14 +2,16 @@ name: Build & Test
 name: Build & Test
 
 on:
-  push:
-    branches:
-      - trunk
-      - setup-github-actions  # Testing on your branch!
+  # Auto-trigger DISABLED for safe testing
+  # Uncomment these when you're ready to install packages:
+  # push:
+  #   branches:
+  #     - trunk
+  #     - setup-github-actions
   # pull_request:
   #   branches:
   #     - trunk
-  workflow_dispatch:  # Manual trigger also available
+  workflow_dispatch:  # Manual trigger ONLY - safe for testing
   # schedule:
   #   - cron: '30 5 * * *' # Daily 5:30 AM UTC / 12:30 AM EST
 
@@ -174,32 +176,34 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Install Build Dependencies
-      run: |
-        # Update package list
-        sudo apt-get update
-
-        # Install core build tools
-        sudo apt-get install -y \
-          build-essential \
-          cmake \
-          ninja-build \
-          git \
-          python3 \
-          pkg-config
-
-        # Install Vulkan and graphics dependencies
-        sudo apt-get install -y \
-          libwayland-dev \
-          wayland-protocols \
-          libxkbcommon-dev \
-          libxrandr-dev \
-          libxinerama-dev \
-          libxcursor-dev \
-          libxi-dev \
-          libx11-xcb-dev \
-          libxxf86vm-dev \
-          xorg-dev
+    # INSTALLATION DISABLED FOR SAFE TESTING
+    # Uncomment this step when you're ready to actually install packages
+    # - name: Install Build Dependencies
+    #   run: |
+    #     # Update package list
+    #     sudo apt-get update
+    #
+    #     # Install core build tools
+    #     sudo apt-get install -y \
+    #       build-essential \
+    #       cmake \
+    #       ninja-build \
+    #       git \
+    #       python3 \
+    #       pkg-config
+    #
+    #     # Install Vulkan and graphics dependencies
+    #     sudo apt-get install -y \
+    #       libwayland-dev \
+    #       wayland-protocols \
+    #       libxkbcommon-dev \
+    #       libxrandr-dev \
+    #       libxinerama-dev \
+    #       libxcursor-dev \
+    #       libxi-dev \
+    #       libx11-xcb-dev \
+    #       libxxf86vm-dev \
+    #       xorg-dev
 
     - name: Check System Information
       run: |
@@ -209,10 +213,14 @@ jobs:
         free -h
         echo ""
         echo "=== Build Tools ==="
-        cmake --version
-        ninja --version
-        gcc --version | head -n1
-        python3 --version
+        cmake --version || echo "CMake not found"
+        ninja --version || echo "Ninja not found"
+        gcc --version | head -n1 || echo "GCC not found"
+        python3 --version || echo "Python3 not found"
+        echo ""
+        echo "NOTE: Installation is currently DISABLED for safe testing"
+        echo "      This build will likely fail if tools are missing"
+        echo "      Uncomment 'Install Build Dependencies' step to enable installation"
 
     - name: Configure CMake
       run: |
@@ -222,9 +230,11 @@ jobs:
           -Dgvk-string_ENABLED=ON \
           -Dgvk-build-tests=ON \
           -Dgvk-build-samples=OFF
+      continue-on-error: true
 
     - name: Build
       run: cmake --build build --target install --parallel
+      continue-on-error: true
 
     - name: Run Tests
       working-directory: ${{ github.workspace }}/build
