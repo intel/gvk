@@ -60,56 +60,18 @@ jobs:
         path: linux-runner-*.json
         retention-days: 30
 
-  discover-windows-runners:
-    name: Discover Windows Runners
-    runs-on: [self-hosted, windows]
-    timeout-minutes: 5
-    continue-on-error: true  # Don't fail if no Windows runner
-
-    steps:
-    - name: Report This Runner
-      shell: powershell
-      run: |
-        Write-Host "========================================="
-        Write-Host "WINDOWS RUNNER DETECTED"
-        Write-Host "========================================="
-        Write-Host ""
-        Write-Host "Runner Name: $env:RUNNER_NAME"
-        Write-Host "Runner OS: $env:RUNNER_OS"
-        Write-Host "Runner Arch: $env:RUNNER_ARCH"
-        Write-Host "Working Dir: $env:GITHUB_WORKSPACE"
-        Write-Host ""
-        Write-Host "Computer: $env:COMPUTERNAME"
-        Write-Host "OS: $(Get-ComputerInfo | Select-Object -ExpandProperty WindowsProductName)"
-        Write-Host ""
-
-        $cmakeExists = Get-Command cmake -ErrorAction SilentlyContinue
-        Write-Host "CMake: $(if($cmakeExists) { cmake --version | Select-Object -First 1 } else { 'Not installed' })"
-
-    - name: Save Runner Info
-      shell: powershell
-      run: |
-        $info = @{
-          runner_name = $env:RUNNER_NAME
-          runner_os = $env:RUNNER_OS
-          runner_arch = $env:RUNNER_ARCH
-          hostname = $env:COMPUTERNAME
-          has_cmake = [bool](Get-Command cmake -ErrorAction SilentlyContinue)
-        } | ConvertTo-Json
-
-        $info | Out-File -FilePath "windows-runner-$env:RUNNER_NAME.json" -Encoding UTF8
-        Get-Content "windows-runner-$env:RUNNER_NAME.json"
-
-    - name: Upload Runner Info
-      uses: actions/upload-artifact@v4
-      with:
-        name: runner-info-windows-${{ runner.name }}
-        path: windows-runner-*.json
-        retention-days: 30
+  # discover-windows-runners:
+  #   name: Discover Windows Runners
+  #   runs-on: [self-hosted, windows]
+  #   timeout-minutes: 5
+  #   continue-on-error: true
+  #   
+  #   Windows runners not available - commented out
+  #   Uncomment if Windows runners are added later
 
   summarize-runners:
     name: Summarize All Runners
-    needs: [discover-linux-runners, discover-windows-runners]
+    needs: [discover-linux-runners]  # Only Linux runners
     runs-on: [self-hosted, linux]
     if: always()
     timeout-minutes: 5
