@@ -1,5 +1,4 @@
 name: Build & Test
-name: Build & Test
 
 on:
   # Auto-trigger DISABLED for safe testing

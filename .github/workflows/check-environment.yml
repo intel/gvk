@@ -35,6 +35,9 @@ jobs:
         echo "Disk Space:"
         df -h / | tail -n1
         echo ""
+        echo "GPU:"
+        lspci | grep -i "vga\|3d\|display" || echo "No GPU found via lspci"
+        echo ""
 
     - name: Check Docker
       id: docker-check
@@ -154,6 +157,23 @@ jobs:
         else
           echo "? Git: Not installed"
           MISSING+=("git")
+        fi
+
+        echo ""
+        echo "=== Additional Compilers ==="
+
+        # Check Clang
+        if command -v clang &> /dev/null; then
+          echo "? $(clang --version | head -n1)"
+        else
+          echo "??  Clang: Not installed (optional, GCC is primary)"
+        fi
+
+        # Check Clang++
+        if command -v clang++ &> /dev/null; then
+          echo "? $(clang++ --version | head -n1)"
+        else
+          echo "??  Clang++: Not installed (optional, G++ is primary)"
         fi
 
         echo ""
@@ -279,6 +299,10 @@ jobs:
         df -h / >> "$REPORT_FILE"
         echo "" >> "$REPORT_FILE"
 
+        echo "GPU:" >> "$REPORT_FILE"
+        lspci | grep -i "vga\|3d\|display" >> "$REPORT_FILE" || echo "No GPU found" >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+
         echo "DOCKER CHECK" >> "$REPORT_FILE"
         echo "----------------------------------" >> "$REPORT_FILE"
         if command -v docker &> /dev/null; then
@@ -318,6 +342,18 @@ jobs:
           g++ --version | head -n1 >> "$REPORT_FILE"
         else
           echo "G++: NOT INSTALLED" >> "$REPORT_FILE"
+        fi
+
+        if command -v clang &> /dev/null; then
+          clang --version | head -n1 >> "$REPORT_FILE"
+        else
+          echo "Clang: NOT INSTALLED" >> "$REPORT_FILE"
+        fi
+
+        if command -v clang++ &> /dev/null; then
+          clang++ --version | head -n1 >> "$REPORT_FILE"
+        else
+          echo "Clang++: NOT INSTALLED" >> "$REPORT_FILE"
         fi
 
         if command -v python3 &> /dev/null; then

@@ -26,10 +26,15 @@ jobs:
         $(Get-ComputerInfo | Select-Object CsName, CsNumberOfProcessors, CsNumberOfLogicalProcessors, CsTotalPhysicalMemory, OsArchitecture, WindowsVersion | Format-List | Out-String)
         ``````
 
-        ## Graphics/Display
+        ## Graphics/Display (GPU)
 
         ``````
-        $(Get-WmiObject Win32_VideoController | Select-Object Name, DriverVersion, VideoModeDescription, AdapterRAM | Format-List | Out-String)
+        $(Get-WmiObject Win32_VideoController | Select-Object Name, DriverVersion, VideoModeDescription, @{Name="VRAM(GB)";Expression={[math]::Round($_.AdapterRAM/1GB,2)}}, Status | Format-List | Out-String)
+        ``````
+
+        ### Additional GPU Details
+        ``````
+        $(Get-WmiObject Win32_VideoController | Select-Object Name, AdapterCompatibility, CurrentRefreshRate, CurrentHorizontalResolution, CurrentVerticalResolution | Format-List | Out-String)
         ``````
 
         ## Disk Space
@@ -60,6 +65,12 @@ jobs:
         ``````
         $(git --version 2>&1 | Out-String)
         ``````
+
+        ### Clang (if available)
+        ``````
+        $(clang --version 2>&1 | Out-String)
+        ``````
+        If not found, will show error (expected if not installed)
 
         ## Environment Variables (Selected)
 
@@ -140,11 +151,24 @@ jobs:
         $(df -h | grep -E "Filesystem|/dev/")
         ```
 
-        ## Graphics/Display
+        ## Graphics/Display (GPU)
 
+        ### GPU Hardware
         ```
         $(lspci | grep -i vga || echo "No VGA controller found")
         $(lspci | grep -i 3d || echo "No 3D controller found")
+        $(lspci | grep -i display || echo "No display controller found")
+        ```
+
+        ### OpenGL/Vulkan Information (if available)
+        ```
+        $(glxinfo 2>/dev/null | grep -E "OpenGL vendor|OpenGL renderer|OpenGL version" || echo "glxinfo not available (install mesa-utils)")
+        $(vulkaninfo 2>/dev/null | grep -E "GPU|deviceName|driverVersion" | head -n 10 || echo "vulkaninfo not available")
+        ```
+
+        ### GPU Driver Modules
+        ```
+        $(lsmod | grep -E "nvidia|amdgpu|i915|nouveau" || echo "No common GPU drivers loaded")
         ```
 
         ## Build Tools
@@ -163,6 +187,13 @@ jobs:
         ```
         $(gcc --version 2>&1 | head -n1 || echo "GCC not installed")
         $(g++ --version 2>&1 | head -n1 || echo "G++ not installed")
+        ```
+
+        ### Clang/Clang++
+        ```
+        $(clang --version 2>&1 | head -n1 || echo "Clang not installed")
+        $(clang++ --version 2>&1 | head -n1 || echo "Clang++ not installed")
+        $(which clang 2>&1 || echo "Clang not in PATH")
         ```
 
         ### Python
