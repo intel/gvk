@@ -1,0 +1,213 @@
+name: Runner Discovery
+
+on:
+  workflow_dispatch:  # Manual trigger only
+  push:
+    branches:
+      - setup-github-actions
+    paths:
+      - '.github/workflows/runner-discovery.yml'
+
+jobs:
+  discover-linux-runners:
+    name: Discover Linux Runners
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 5
+
+    steps:
+    - name: Report This Runner
+      run: |
+        echo "========================================="
+        echo "LINUX RUNNER DETECTED"
+        echo "========================================="
+        echo ""
+        echo "Runner Name: $RUNNER_NAME"
+        echo "Runner OS: $RUNNER_OS"
+        echo "Runner Arch: $RUNNER_ARCH"
+        echo "Working Dir: $GITHUB_WORKSPACE"
+        echo ""
+        echo "Hostname: $(hostname)"
+        echo "OS: $(cat /etc/os-release | grep PRETTY_NAME | cut -d'"' -f2 || echo "Unknown")"
+        echo "Kernel: $(uname -r)"
+        echo "Architecture: $(uname -m)"
+        echo ""
+        echo "Docker: $(docker --version 2>&1 || echo "Not installed")"
+        echo "CMake: $(cmake --version 2>&1 | head -n1 || echo "Not installed")"
+        echo "GCC: $(gcc --version 2>&1 | head -n1 || echo "Not installed")"
+        echo ""
+
+    - name: Save Runner Info
+      run: |
+        cat > linux-runner-${{ runner.name }}.json << EOF
+        {
+          "runner_name": "$RUNNER_NAME",
+          "runner_os": "$RUNNER_OS",
+          "runner_arch": "$RUNNER_ARCH",
+          "hostname": "$(hostname)",
+          "os": "$(cat /etc/os-release | grep PRETTY_NAME | cut -d'"' -f2 || echo "Unknown")",
+          "kernel": "$(uname -r)",
+          "has_docker": $(command -v docker &> /dev/null && echo "true" || echo "false"),
+          "has_cmake": $(command -v cmake &> /dev/null && echo "true" || echo "false"),
+          "has_gcc": $(command -v gcc &> /dev/null && echo "true" || echo "false")
+        }
+        EOF
+        cat linux-runner-${{ runner.name }}.json
+
+    - name: Upload Runner Info
+      uses: actions/upload-artifact@v4
+      with:
+        name: runner-info-linux-${{ runner.name }}
+        path: linux-runner-*.json
+        retention-days: 30
+
+  discover-windows-runners:
+    name: Discover Windows Runners
+    runs-on: [self-hosted, windows]
+    timeout-minutes: 5
+    continue-on-error: true  # Don't fail if no Windows runner
+
+    steps:
+    - name: Report This Runner
+      shell: powershell
+      run: |
+        Write-Host "========================================="
+        Write-Host "WINDOWS RUNNER DETECTED"
+        Write-Host "========================================="
+        Write-Host ""
+        Write-Host "Runner Name: $env:RUNNER_NAME"
+        Write-Host "Runner OS: $env:RUNNER_OS"
+        Write-Host "Runner Arch: $env:RUNNER_ARCH"
+        Write-Host "Working Dir: $env:GITHUB_WORKSPACE"
+        Write-Host ""
+        Write-Host "Computer: $env:COMPUTERNAME"
+        Write-Host "OS: $(Get-ComputerInfo | Select-Object -ExpandProperty WindowsProductName)"
+        Write-Host ""
+
+        $cmakeExists = Get-Command cmake -ErrorAction SilentlyContinue
+        Write-Host "CMake: $(if($cmakeExists) { cmake --version | Select-Object -First 1 } else { 'Not installed' })"
+
+    - name: Save Runner Info
+      shell: powershell
+      run: |
+        $info = @{
+          runner_name = $env:RUNNER_NAME
+          runner_os = $env:RUNNER_OS
+          runner_arch = $env:RUNNER_ARCH
+          hostname = $env:COMPUTERNAME
+          has_cmake = [bool](Get-Command cmake -ErrorAction SilentlyContinue)
+        } | ConvertTo-Json
+
+        $info | Out-File -FilePath "windows-runner-$env:RUNNER_NAME.json" -Encoding UTF8
+        Get-Content "windows-runner-$env:RUNNER_NAME.json"
+
+    - name: Upload Runner Info
+      uses: actions/upload-artifact@v4
+      with:
+        name: runner-info-windows-${{ runner.name }}
+        path: windows-runner-*.json
+        retention-days: 30
+
+  summarize-runners:
+    name: Summarize All Runners
+    needs: [discover-linux-runners, discover-windows-runners]
+    runs-on: [self-hosted, linux]
+    if: always()
+    timeout-minutes: 5
+
+    steps:
+    - name: Download All Runner Info
+      uses: actions/download-artifact@v4
+      with:
+        pattern: runner-info-*
+        path: runner-data/
+        merge-multiple: true
+      continue-on-error: true
+
+    - name: Generate Summary Report
+      run: |
+        SUMMARY="runner-summary.md"
+
+        echo "# All Available Runners Report" > "$SUMMARY"
+        echo "" >> "$SUMMARY"
+        echo "Generated: $(date +"%Y-%m-%d %H:%M:%S")" >> "$SUMMARY"
+        echo "" >> "$SUMMARY"
+        echo "---" >> "$SUMMARY"
+        echo "" >> "$SUMMARY"
+
+        # Count runners
+        LINUX_COUNT=$(ls runner-data/linux-runner-*.json 2>/dev/null | wc -l)
+        WINDOWS_COUNT=$(ls runner-data/windows-runner-*.json 2>/dev/null | wc -l)
+        TOTAL=$((LINUX_COUNT + WINDOWS_COUNT))
+
+        echo "## Summary" >> "$SUMMARY"
+        echo "" >> "$SUMMARY"
+        echo "- **Total Runners Detected:** $TOTAL" >> "$SUMMARY"
+        echo "- **Linux Runners:** $LINUX_COUNT" >> "$SUMMARY"
+        echo "- **Windows Runners:** $WINDOWS_COUNT" >> "$SUMMARY"
+        echo "" >> "$SUMMARY"
+        echo "---" >> "$SUMMARY"
+        echo "" >> "$SUMMARY"
+
+        # List Linux runners
+        if [ $LINUX_COUNT -gt 0 ]; then
+          echo "## Linux Runners ($LINUX_COUNT)" >> "$SUMMARY"
+          echo "" >> "$SUMMARY"
+          for file in runner-data/linux-runner-*.json; do
+            if [ -f "$file" ]; then
+              echo "### Runner: $(basename "$file" .json)" >> "$SUMMARY"
+              echo '```json' >> "$SUMMARY"
+              cat "$file" >> "$SUMMARY"
+              echo '```' >> "$SUMMARY"
+              echo "" >> "$SUMMARY"
+            fi
+          done
+        fi
+
+        # List Windows runners
+        if [ $WINDOWS_COUNT -gt 0 ]; then
+          echo "## Windows Runners ($WINDOWS_COUNT)" >> "$SUMMARY"
+          echo "" >> "$SUMMARY"
+          for file in runner-data/windows-runner-*.json; do
+            if [ -f "$file" ]; then
+              echo "### Runner: $(basename "$file" .json)" >> "$SUMMARY"
+              echo '```json' >> "$SUMMARY"
+              cat "$file" >> "$SUMMARY"
+              echo '```' >> "$SUMMARY"
+              echo "" >> "$SUMMARY"
+            fi
+          done
+        fi
+
+        echo "---" >> "$SUMMARY"
+        echo "" >> "$SUMMARY"
+        echo "## Next Steps" >> "$SUMMARY"
+        echo "" >> "$SUMMARY"
+        echo "Based on the runners detected:" >> "$SUMMARY"
+        echo "" >> "$SUMMARY"
+
+        if [ $LINUX_COUNT -gt 0 ] && [ $WINDOWS_COUNT -eq 0 ]; then
+          echo "- ? Linux runners available ($LINUX_COUNT)" >> "$SUMMARY"
+          echo "- ? No Windows runners detected" >> "$SUMMARY"
+          echo "- ?? Configure workflows for Linux-only" >> "$SUMMARY"
+        elif [ $LINUX_COUNT -gt 0 ] && [ $WINDOWS_COUNT -gt 0 ]; then
+          echo "- ? Linux runners available ($LINUX_COUNT)" >> "$SUMMARY"
+          echo "- ? Windows runners available ($WINDOWS_COUNT)" >> "$SUMMARY"
+          echo "- ?? Can run multi-platform builds!" >> "$SUMMARY"
+        elif [ $LINUX_COUNT -eq 0 ] && [ $WINDOWS_COUNT -gt 0 ]; then
+          echo "- ? No Linux runners detected" >> "$SUMMARY"
+          echo "- ? Windows runners available ($WINDOWS_COUNT)" >> "$SUMMARY"
+          echo "- ?? Configure workflows for Windows-only" >> "$SUMMARY"
+        else
+          echo "- ??  No runners detected (this shouldn't happen!)" >> "$SUMMARY"
+        fi
+
+        echo "" >> "$SUMMARY"
+
+        cat "$SUMMARY"
+
+    - name: Upload Summary Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: runner-summary-report
+        path: runner-summary.md
+        retention-days: 30

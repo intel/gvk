@@ -95,73 +95,13 @@ jobs:
         echo ""
         echo "Next: Proceeding with Linux build..."
 
-  build-windows:
-    name: Build Windows
-    runs-on: [self-hosted, windows]  # Use self-hosted Windows runner
-    timeout-minutes: 60  # Fail after 1 hour if runner not available
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
-
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.x'
-
-    - name: Check System Information
-      shell: powershell
-      run: |
-        Write-Host "=== System Information ==="
-        Get-ComputerInfo | Select-Object CsName, CsNumberOfProcessors, CsTotalPhysicalMemory, OsArchitecture
-        Write-Host "`n=== Graphics Adapters ==="
-        Get-WmiObject Win32_VideoController | Select-Object Name, DriverVersion
-        Write-Host "`n=== CMake Version ==="
-        cmake --version
-
-    - name: Verify CMake Version
-      shell: bash
-      run: cmake --version
-
-    - name: Configure CMake
-      shell: bash
-      run: |
-        cmake -G "Visual Studio 17 2022" -A x64 -B build \
-          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
-          -Dgvk-default_ENABLED=OFF \
-          -Dgvk-string_ENABLED=ON \
-          -Dgvk-build-tests=ON \
-          -Dgvk-build-samples=OFF
-
-    - name: Build
-      shell: bash
-      run: cmake --build build --config ${{ env.BUILD_TYPE }} --target install --parallel
-
-    - name: Run Tests
-      working-directory: ${{ github.workspace }}/build
-      shell: bash
-      run: ctest -C ${{ env.BUILD_TYPE }} --output-on-failure --timeout 300
-      continue-on-error: true
-
-    - name: Upload Build Artifacts
-      if: success() || failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: gvk-windows-x64
-        path: |
-          install/
-          !install/**/*.pdb
-        retention-days: 7
-
-    - name: Upload Test Results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results-windows
-        path: build/Testing/
-        retention-days: 7
+  # build-windows:
+  #   name: Build Windows
+  #   runs-on: [self-hosted, windows]
+  #   timeout-minutes: 60
+  #   
+  #   Windows runner not available - commented out
+  #   Uncomment this section when Windows runner is set up
 
   build-linux:
     name: Build Linux
@@ -258,7 +198,7 @@ jobs:
 
   status-check:
     name: Status Check
-    needs: [check-environment, build-windows, build-linux]
+    needs: [check-environment, build-linux]  # Only Linux runner available
     runs-on: [self-hosted, linux]
     timeout-minutes: 10
     if: always()
@@ -267,14 +207,12 @@ jobs:
     - name: Check Build Status
       run: |
         echo "Environment Check: ${{ needs.check-environment.result }}"
-        echo "Windows Build: ${{ needs.build-windows.result }}"
         echo "Linux Build: ${{ needs.build-linux.result }}"
         echo ""
         echo "Docker Available: ${{ needs.check-environment.outputs.docker-available }}"
         echo ""
 
         if [ "${{ needs.check-environment.result }}" != "success" ] || \
-           [ "${{ needs.build-windows.result }}" != "success" ] || \
            [ "${{ needs.build-linux.result }}" != "success" ]; then
           echo "? Build failed"
           exit 1

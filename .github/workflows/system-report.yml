@@ -9,110 +9,13 @@ on:
       - '.github/workflows/system-report.yml'  # Only triggers when this file changes
 
 jobs:
-  report-windows:
-    name: Windows Runner Report
-    runs-on: [self-hosted, windows]
-    timeout-minutes: 10
-
-    steps:
-    - name: Generate System Report
-      shell: powershell
-      run: |
-        $reportPath = "windows-runner-report.md"
-
-        @"
-        # Windows Runner System Report
-
-        Generated: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
-
-        ## System Information
-
-        ``````
-        $(Get-ComputerInfo | Select-Object CsName, CsNumberOfProcessors, CsNumberOfLogicalProcessors, CsTotalPhysicalMemory, OsArchitecture, WindowsVersion | Format-List | Out-String)
-        ``````
-
-        ## Graphics/Display (GPU)
-
-        ``````
-        $(Get-WmiObject Win32_VideoController | Select-Object Name, DriverVersion, VideoModeDescription, @{Name="VRAM(GB)";Expression={[math]::Round($_.AdapterRAM/1GB,2)}}, Status | Format-List | Out-String)
-        ``````
-
-        ### Additional GPU Details
-        ``````
-        $(Get-WmiObject Win32_VideoController | Select-Object Name, AdapterCompatibility, CurrentRefreshRate, CurrentHorizontalResolution, CurrentVerticalResolution | Format-List | Out-String)
-        ``````
-
-        ## Disk Space
-
-        ``````
-        $(Get-PSDrive -PSProvider FileSystem | Where-Object {$_.Used -ne $null} | Select-Object Name, @{Name="Used(GB)";Expression={[math]::Round($_.Used/1GB,2)}}, @{Name="Free(GB)";Expression={[math]::Round($_.Free/1GB,2)}}, @{Name="Total(GB)";Expression={[math]::Round(($_.Used+$_.Free)/1GB,2)}} | Format-Table -AutoSize | Out-String)
-        ``````
-
-        ## Build Tools
-
-        ### CMake
-        ``````
-        $(cmake --version 2>&1 | Out-String)
-        ``````
-
-        ### Visual Studio
-        ``````
-        $(Get-ChildItem "C:\Program Files\Microsoft Visual Studio" -Directory -ErrorAction SilentlyContinue | Select-Object Name, FullName | Format-Table -AutoSize | Out-String)
-        ``````
-
-        ### Python
-        ``````
-        $(python --version 2>&1 | Out-String)
-        $(python -c "import sys; print(f'Location: {sys.executable}')" 2>&1 | Out-String)
-        ``````
-
-        ### Git
-        ``````
-        $(git --version 2>&1 | Out-String)
-        ``````
-
-        ### Clang (if available)
-        ``````
-        $(clang --version 2>&1 | Out-String)
-        ``````
-        If not found, will show error (expected if not installed)
-
-        ## Environment Variables (Selected)
-
-        ``````
-        Path: $($env:PATH -split ';' | Select-Object -First 10)
-        ...
-
-        TEMP: $env:TEMP
-        RUNNER_WORKSPACE: $env:RUNNER_WORKSPACE
-        RUNNER_TOOL_CACHE: $env:RUNNER_TOOL_CACHE
-        ``````
-
-        ## Runner Information
-
-        ``````
-        Runner Name: $env:RUNNER_NAME
-        Runner OS: $env:RUNNER_OS
-        Runner Architecture: $env:RUNNER_ARCH
-        Runner Working Directory: $env:GITHUB_WORKSPACE
-        ``````
-
-        ## Installed Software (Sample)
-
-        ``````
-        $(Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, DisplayVersion | Where-Object {$_.DisplayName -match "Visual Studio|CMake|Python|Git|Vulkan"} | Format-Table -AutoSize | Out-String)
-        ``````
-
-        "@ | Out-File -FilePath $reportPath -Encoding UTF8
-
-        Write-Host "Report generated: $reportPath"
-
-    - name: Upload Windows Report
-      uses: actions/upload-artifact@v4
-      with:
-        name: windows-runner-report
-        path: windows-runner-report.md
-        retention-days: 30
+  # report-windows:
+  #   name: Windows Runner Report
+  #   runs-on: [self-hosted, windows]
+  #   timeout-minutes: 10
+  #   
+  #   Windows runner not available - commented out
+  #   Uncomment this section when Windows runner is set up
 
   report-linux:
     name: Linux Runner Report
@@ -268,18 +171,18 @@ jobs:
 
   combine-reports:
     name: Combine Reports
-    needs: [report-windows, report-linux]
+    needs: [report-linux]  # Only Linux runner available
     runs-on: [self-hosted, linux]
     if: always()
     timeout-minutes: 5
 
     steps:
-    - name: Download Windows Report
-      uses: actions/download-artifact@v4
-      with:
-        name: windows-runner-report
-        path: reports/
-      continue-on-error: true
+    # - name: Download Windows Report  # No Windows runner available
+    #   uses: actions/download-artifact@v4
+    #   with:
+    #     name: windows-runner-report
+    #     path: reports/
+    #   continue-on-error: true
 
     - name: Download Linux Report
       uses: actions/download-artifact@v4
