@@ -1,0 +1,322 @@
+name: Multi-Runner System Report
+
+on:
+  workflow_dispatch:  # Manual trigger
+  push:
+    branches:
+      - setup-github-actions
+    paths:
+      - '.github/workflows/multi-runner-system-report.yml'
+
+jobs:
+  report-all-runners:
+    name: Report - ${{ matrix.runner-name }}
+    strategy:
+      matrix:
+        include:
+          - runner-name: godzilla
+            runner-label: nvidia-rtx6000
+          - runner-name: mage-b580
+            runner-label: intel-b580
+      fail-fast: false  # Continue even if one runner fails
+
+    runs-on: [self-hosted, Linux, X64, ${{ matrix.runner-label }}]
+    timeout-minutes: 10
+
+    steps:
+    - name: Generate System Report
+      run: |
+        REPORT_FILE="${{ matrix.runner-name }}-report.md"
+
+        cat > "$REPORT_FILE" << 'EOFREPORT'
+        # System Report: ${{ matrix.runner-name }}
+
+        **Generated:** $(date +"%Y-%m-%d %H:%M:%S")  
+        **Runner Label:** `${{ matrix.runner-label }}`
+
+        ---
+
+        ## Runner Information
+
+        ```
+        Runner Name: $RUNNER_NAME
+        Runner OS: $RUNNER_OS
+        Runner Architecture: $RUNNER_ARCH
+        Hostname: $(hostname)
+        User: $(whoami)
+        ```
+
+        ---
+
+        ## Operating System
+
+        ```
+        $(cat /etc/os-release)
+        ```
+
+        **Kernel:** `$(uname -r)`  
+        **Architecture:** `$(uname -m)`
+
+        ---
+
+        ## Hardware
+
+        ### CPU
+        ```
+        $(lscpu | grep -E "Model name|Architecture|CPU\(s\):|Thread|Core|Socket|Vendor ID")
+        ```
+
+        ### Memory
+        ```
+        $(free -h)
+        ```
+
+        ### Disk Space
+        ```
+        $(df -h | grep -E "Filesystem|/dev/")
+        ```
+
+        ---
+
+        ## GPU Information
+
+        ### PCI Devices
+        ```
+        $(lspci | grep -i "vga\|3d\|display")
+        ```
+
+        ### GPU Driver Modules
+        ```
+        $(lsmod | grep -E "nvidia|amdgpu|i915|xe" | head -n 10 || echo "No GPU drivers loaded")
+        ```
+
+        ### NVIDIA Info (if applicable)
+        ```
+        $(nvidia-smi 2>/dev/null || echo "nvidia-smi not available")
+        ```
+
+        ### Intel GPU Info (if applicable)
+        ```
+        $(cat /sys/kernel/debug/dri/*/name 2>/dev/null || echo "Intel GPU debug info not available")
+        ```
+
+        ---
+
+        ## Vulkan Support
+
+        ### Vulkan Loader
+        ```
+        $(ldconfig -p | grep vulkan || echo "Vulkan loader not found in ldconfig")
+        ```
+
+        ### Vulkan Info (if available)
+        ```
+        $(vulkaninfo --summary 2>/dev/null || echo "vulkaninfo not available - will be installed in Docker")
+        ```
+
+        ### Vulkan ICD
+        ```
+        $(ls -la /etc/vulkan/icd.d/ 2>/dev/null || echo "No Vulkan ICD directory")
+        $(ls -la /usr/share/vulkan/icd.d/ 2>/dev/null || echo "No Vulkan ICD in /usr/share")
+        ```
+
+        ---
+
+        ## Docker
+
+        ### Docker Version
+        ```
+        $(docker --version 2>&1 || echo "Docker not installed")
+        ```
+
+        ### Docker Info
+        ```
+        $(docker info 2>&1 | head -n 30 || echo "Docker daemon not running or not accessible")
+        ```
+
+        ### Docker Buildx (for BuildKit)
+        ```
+        $(docker buildx version 2>&1 || echo "Buildx not available")
+        ```
+
+        ---
+
+        ## Build Tools
+
+        ### CMake
+        ```
+        $(cmake --version 2>&1 || echo "CMake not installed")
+        ```
+
+        ### Ninja
+        ```
+        $(ninja --version 2>&1 || echo "Ninja not installed")
+        ```
+
+        ### GCC/G++
+        ```
+        $(gcc --version 2>&1 | head -n1 || echo "GCC not installed")
+        $(g++ --version 2>&1 | head -n1 || echo "G++ not installed")
+        ```
+
+        ### Clang/Clang++
+        ```
+        $(clang --version 2>&1 | head -n1 || echo "Clang not installed")
+        $(clang++ --version 2>&1 | head -n1 || echo "Clang++ not installed")
+        ```
+
+        ### Python
+        ```
+        $(python3 --version 2>&1 || echo "Python3 not installed")
+        ```
+
+        ### Git
+        ```
+        $(git --version 2>&1 || echo "Git not installed")
+        ```
+
+        ---
+
+        ## Environment Variables (Selected)
+
+        ```
+        PATH (first 10 entries):
+        $(echo $PATH | tr ':' '\n' | head -n 10)
+
+        LD_LIBRARY_PATH: ${LD_LIBRARY_PATH:-<not set>}
+        VULKAN_SDK: ${VULKAN_SDK:-<not set>}
+        VK_ICD_FILENAMES: ${VK_ICD_FILENAMES:-<not set>}
+        ```
+
+        EOFREPORT
+
+        echo "Report generated: $REPORT_FILE"
+        cat "$REPORT_FILE"
+
+    - name: Upload Runner Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: report-${{ matrix.runner-name }}
+        path: ${{ matrix.runner-name }}-report.md
+        retention-days: 30
+
+  compare-runners:
+    name: Compare Runners
+    needs: [report-all-runners]
+    runs-on: [self-hosted, Linux, X64]
+    if: always()
+    timeout-minutes: 5
+
+    steps:
+    - name: Download All Reports
+      uses: actions/download-artifact@v4
+      with:
+        pattern: report-*
+        path: reports/
+        merge-multiple: true
+
+    - name: Generate Comparison Report
+      run: |
+        COMPARISON="runner-comparison.md"
+
+        echo "# Runner Comparison Report" > "$COMPARISON"
+        echo "" >> "$COMPARISON"
+        echo "**Generated:** $(date +"%Y-%m-%d %H:%M:%S")" >> "$COMPARISON"
+        echo "" >> "$COMPARISON"
+        echo "---" >> "$COMPARISON"
+        echo "" >> "$COMPARISON"
+
+        # Count available reports
+        GODZILLA_EXISTS=$([ -f "reports/godzilla-report.md" ] && echo "yes" || echo "no")
+        MAGE_EXISTS=$([ -f "reports/mage-b580-report.md" ] && echo "yes" || echo "no")
+
+        echo "## Runners Detected" >> "$COMPARISON"
+        echo "" >> "$COMPARISON"
+        echo "- **godzilla (NVIDIA RTX 6000):** $GODZILLA_EXISTS" >> "$COMPARISON"
+        echo "- **mage-b580 (Intel B580):** $MAGE_EXISTS" >> "$COMPARISON"
+        echo "" >> "$COMPARISON"
+        echo "---" >> "$COMPARISON"
+        echo "" >> "$COMPARISON"
+
+        # Extract key information for comparison
+        echo "## Quick Comparison" >> "$COMPARISON"
+        echo "" >> "$COMPARISON"
+        echo "| Feature | godzilla | mage-b580 |" >> "$COMPARISON"
+        echo "|---------|----------|-----------|" >> "$COMPARISON"
+
+        # Docker version
+        if [ -f "reports/godzilla-report.md" ]; then
+          GODZILLA_DOCKER=$(grep -A 3 "### Docker Version" reports/godzilla-report.md | grep -v "###" | grep -v '```' | xargs || echo "N/A")
+        else
+          GODZILLA_DOCKER="Report missing"
+        fi
+
+        if [ -f "reports/mage-b580-report.md" ]; then
+          MAGE_DOCKER=$(grep -A 3 "### Docker Version" reports/mage-b580-report.md | grep -v "###" | grep -v '```' | xargs || echo "N/A")
+        else
+          MAGE_DOCKER="Report missing"
+        fi
+
+        echo "| Docker | $GODZILLA_DOCKER | $MAGE_DOCKER |" >> "$COMPARISON"
+
+        # GPU
+        if [ -f "reports/godzilla-report.md" ]; then
+          GODZILLA_GPU=$(grep -A 3 "### PCI Devices" reports/godzilla-report.md | grep -i "vga\|3d\|display" | head -n1 | cut -d: -f3- | xargs || echo "N/A")
+        else
+          GODZILLA_GPU="Report missing"
+        fi
+
+        if [ -f "reports/mage-b580-report.md" ]; then
+          MAGE_GPU=$(grep -A 3 "### PCI Devices" reports/mage-b580-report.md | grep -i "vga\|3d\|display" | head -n1 | cut -d: -f3- | xargs || echo "N/A")
+        else
+          MAGE_GPU="Report missing"
+        fi
+
+        echo "| GPU | $GODZILLA_GPU | $MAGE_GPU |" >> "$COMPARISON"
+
+        echo "" >> "$COMPARISON"
+        echo "---" >> "$COMPARISON"
+        echo "" >> "$COMPARISON"
+
+        # Include full reports
+        echo "## Full Reports" >> "$COMPARISON"
+        echo "" >> "$COMPARISON"
+
+        if [ -f "reports/godzilla-report.md" ]; then
+          cat reports/godzilla-report.md >> "$COMPARISON"
+          echo "" >> "$COMPARISON"
+          echo "---" >> "$COMPARISON"
+          echo "" >> "$COMPARISON"
+        fi
+
+        if [ -f "reports/mage-b580-report.md" ]; then
+          cat reports/mage-b580-report.md >> "$COMPARISON"
+        fi
+
+        echo "" >> "$COMPARISON"
+        echo "---" >> "$COMPARISON"
+        echo "" >> "$COMPARISON"
+        echo "## Recommendations" >> "$COMPARISON"
+        echo "" >> "$COMPARISON"
+
+        # Check if Docker versions match
+        if [ "$GODZILLA_DOCKER" = "$MAGE_DOCKER" ] && [ "$GODZILLA_DOCKER" != "N/A" ] && [ "$GODZILLA_DOCKER" != "Report missing" ]; then
+          echo "? **Docker versions match** - Good for consistent builds" >> "$COMPARISON"
+        else
+          echo "??  **Docker versions differ** - May need to handle differences" >> "$COMPARISON"
+        fi
+        echo "" >> "$COMPARISON"
+
+        echo "?? **Testing Strategy:**" >> "$COMPARISON"
+        echo "- Build in Docker on any available runner" >> "$COMPARISON"
+        echo "- Test on both godzilla (NVIDIA) and mage-b580 (Intel)" >> "$COMPARISON"
+        echo "- This will catch GPU/driver-specific Vulkan issues" >> "$COMPARISON"
+
+        cat "$COMPARISON"
+
+    - name: Upload Comparison Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: runner-comparison-report
+        path: runner-comparison.md
+        retention-days: 30
