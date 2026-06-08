@@ -1,0 +1,202 @@
+name: Build and Test (gvk-string only)
+
+on:
+  workflow_dispatch:  # Manual trigger for now
+  # push:
+  #   branches:
+  #     - trunk
+  #     - setup-github-actions
+  # pull_request:
+  #   branches:
+  #     - trunk
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    name: Build
+    runs-on: [self-hosted, Linux, X64]  # Use any available runner
+    timeout-minutes: 30
+
+    # Run inside Docker container - GitHub Actions handles this!
+    container:
+      image: ubuntu:22.04
+      options: --device=/dev/dri --cap-add CAP_PERFMON
+
+    outputs:
+      artifact-name: ${{ steps.upload.outputs.artifact-name }}
+
+    steps:
+    - name: Install Dependencies in Container
+      run: |
+        apt-get update
+        apt-get install -y \
+          build-essential \
+          cmake \
+          ninja-build \
+          git \
+          python3 \
+          pkg-config \
+          libwayland-dev \
+          wayland-protocols \
+          libxkbcommon-dev \
+          libxrandr-dev \
+          libxinerama-dev \
+          libxcursor-dev \
+          libxi-dev \
+          libx11-xcb-dev \
+          libxxf86vm-dev \
+          xorg-dev
+
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Configure CMake
+      run: |
+        cmake -G Ninja -B build \
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+          -Dgvk-default_ENABLED=OFF \
+          -Dgvk-string_ENABLED=ON \
+          -Dgvk-build-tests=ON \
+          -Dgvk-build-samples=OFF
+
+    - name: Build gvk-string Only
+      run: |
+        cmake --build build --target gvk-string --parallel $(nproc)
+
+    - name: Upload Build Artifacts
+      id: upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: gvk-build-${{ github.sha }}
+        path: |
+          install/
+          build/
+        retention-days: 7
+
+  test-godzilla:
+    name: Test on godzilla (NVIDIA RTX 6000)
+    needs: build
+    runs-on: [self-hosted, Linux, X64, nvidia-rtx6000]
+    timeout-minutes: 15
+
+    container:
+      image: ubuntu:22.04
+      options: --device=/dev/dri --cap-add CAP_PERFMON
+
+    steps:
+    - name: Download Build Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: gvk-build-${{ github.sha }}
+
+    - name: Install Test Dependencies
+      run: |
+        apt-get update
+        apt-get install -y \
+          libwayland-dev \
+          libxkbcommon-dev \
+          libx11-xcb-dev \
+          vulkan-tools \
+          mesa-vulkan-drivers
+
+    - name: Check GPU
+      run: |
+        echo "=== GPU Information ==="
+        ls -la /dev/dri/ || echo "No /dev/dri"
+        vulkaninfo --summary || echo "vulkaninfo failed"
+
+    - name: Run Tests (gvk-string)
+      working-directory: build
+      run: |
+        # Run only gvk-string tests
+        ctest -R "gvk-string" --output-on-failure --timeout 300 || true
+        echo "Test run completed (continue-on-error enabled)"
+      continue-on-error: true
+
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-godzilla-${{ github.sha }}
+        path: build/Testing/
+        retention-days: 7
+
+  test-mage:
+    name: Test on mage-b580 (Intel B580)
+    needs: build
+    runs-on: [self-hosted, Linux, X64, intel-b580]
+    timeout-minutes: 15
+
+    container:
+      image: ubuntu:22.04
+      options: --device=/dev/dri --cap-add CAP_PERFMON
+
+    steps:
+    - name: Download Build Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: gvk-build-${{ github.sha }}
+
+    - name: Install Test Dependencies
+      run: |
+        apt-get update
+        apt-get install -y \
+          libwayland-dev \
+          libxkbcommon-dev \
+          libx11-xcb-dev \
+          vulkan-tools \
+          mesa-vulkan-drivers
+
+    - name: Check GPU
+      run: |
+        echo "=== GPU Information ==="
+        ls -la /dev/dri/ || echo "No /dev/dri"
+        vulkaninfo --summary || echo "vulkaninfo failed"
+
+    - name: Run Tests (gvk-string)
+      working-directory: build
+      run: |
+        # Run only gvk-string tests
+        ctest -R "gvk-string" --output-on-failure --timeout 300 || true
+        echo "Test run completed (continue-on-error enabled)"
+      continue-on-error: true
+
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-mage-${{ github.sha }}
+        path: build/Testing/
+        retention-days: 7
+
+  status:
+    name: Build & Test Status
+    needs: [build, test-godzilla, test-mage]
+    runs-on: [self-hosted, Linux, X64]
+    if: always()
+    timeout-minutes: 5
+
+    steps:
+    - name: Check Status
+      run: |
+        echo "Build: ${{ needs.build.result }}"
+        echo "Test godzilla (NVIDIA): ${{ needs.test-godzilla.result }}"
+        echo "Test mage-b580 (Intel): ${{ needs.test-mage.result }}"
+
+        if [ "${{ needs.build.result }}" != "success" ]; then
+          echo "? Build failed"
+          exit 1
+        fi
+
+        # Test failures are warnings, not hard failures (for now)
+        if [ "${{ needs.test-godzilla.result }}" != "success" ] || \
+           [ "${{ needs.test-mage.result }}" != "success" ]; then
+          echo "??  Some tests failed - check test results"
+          # Don't exit 1 yet - we want to see test results first
+        fi
+
+        echo "? Build completed, check test results"

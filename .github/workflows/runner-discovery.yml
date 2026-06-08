@@ -2,11 +2,11 @@ name: Runner Discovery
 
 on:
   workflow_dispatch:  # Manual trigger only
-  push:
-    branches:
-      - setup-github-actions
-    paths:
-      - '.github/workflows/runner-discovery.yml'
+  # push:  # Disabled - manual trigger only
+  #   branches:
+  #     - setup-github-actions
+  #   paths:
+  #     - '.github/workflows/runner-discovery.yml'
 
 jobs:
   discover-linux-runners:

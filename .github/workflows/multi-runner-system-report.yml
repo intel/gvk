@@ -1,12 +1,12 @@
 name: Multi-Runner System Report
 
 on:
-  workflow_dispatch:  # Manual trigger
-  push:
-    branches:
-      - setup-github-actions
-    paths:
-      - '.github/workflows/multi-runner-system-report.yml'
+  workflow_dispatch:  # Manual trigger only
+  # push:  # Disabled - manual trigger only
+  #   branches:
+  #     - setup-github-actions
+  #   paths:
+  #     - '.github/workflows/multi-runner-system-report.yml'
 
 jobs:
   report-all-runners:
@@ -158,6 +158,11 @@ jobs:
         echo "Report generated successfully"
         cat "$REPORT_FILE"
 
+    - name: Display Report in Job Summary
+      run: |
+        REPORT_FILE="${{ matrix.runner-name }}-report.md"
+        cat "$REPORT_FILE" >> $GITHUB_STEP_SUMMARY
+
     - name: Upload Runner Report
       uses: actions/upload-artifact@v4
       with:
@@ -285,3 +290,7 @@ jobs:
         name: runner-comparison-report
         path: runner-comparison.md
         retention-days: 30
+
+    - name: Display Comparison in Job Summary
+      run: |
+        cat runner-comparison.md >> $GITHUB_STEP_SUMMARY

@@ -12,3 +12,6 @@ documentation/latex/
 *.reg
 _*
 -*
+
+# GitHub Actions reference materials
+.github/pti-reference/

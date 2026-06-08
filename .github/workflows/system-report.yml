@@ -2,11 +2,11 @@ name: System Report
 
 on:
   workflow_dispatch:  # Manual trigger only
-  push:
-    branches:
-      - setup-github-actions  # TEMPORARY: To make workflow visible
-    paths:
-      - '.github/workflows/system-report.yml'  # Only triggers when this file changes
+  # push:  # Disabled - manual trigger only
+  #   branches:
+  #     - setup-github-actions
+  #   paths:
+  #     - '.github/workflows/system-report.yml'
 
 jobs:
   # report-windows:
