@@ -15,12 +15,12 @@ jobs:
       matrix:
         include:
           - runner-name: godzilla
-            runner-label: nvidia-rtx6000
+            runner-labels: [self-hosted, Linux, X64, nvidia-rtx6000]
           - runner-name: mage-b580
-            runner-label: intel-b580
+            runner-labels: [self-hosted, Linux, X64, intel-b580]
       fail-fast: false  # Continue even if one runner fails
 
-    runs-on: [self-hosted, Linux, X64, ${{ matrix.runner-label }}]
+    runs-on: ${{ matrix.runner-labels }}
     timeout-minutes: 10
 
     steps:
@@ -32,7 +32,7 @@ jobs:
         # System Report: ${{ matrix.runner-name }}
 
         **Generated:** $(date +"%Y-%m-%d %H:%M:%S")  
-        **Runner Label:** `${{ matrix.runner-label }}`
+        **Runner Labels:** ${{ join(matrix.runner-labels, ', ') }}
 
         ---
 
