@@ -28,169 +28,134 @@ jobs:
       run: |
         REPORT_FILE="${{ matrix.runner-name }}-report.md"
 
-        cat > "$REPORT_FILE" << EOFREPORT
-        # System Report: ${{ matrix.runner-name }}
+        echo "# System Report: ${{ matrix.runner-name }}" > "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+        echo "**Generated:** $(date +"%Y-%m-%d %H:%M:%S")" >> "$REPORT_FILE"
+        echo "**Runner Labels:** ${{ join(matrix.runner-labels, ', ') }}" >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+        echo "---" >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
 
-        **Generated:** $(date +"%Y-%m-%d %H:%M:%S")  
-        **Runner Labels:** ${{ join(matrix.runner-labels, ', ') }}
+        echo "## Runner Information" >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        echo "Runner Name: $RUNNER_NAME" >> "$REPORT_FILE"
+        echo "Runner OS: $RUNNER_OS" >> "$REPORT_FILE"
+        echo "Runner Architecture: $RUNNER_ARCH" >> "$REPORT_FILE"
+        echo "Hostname: $(hostname)" >> "$REPORT_FILE"
+        echo "User: $(whoami)" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+        echo "---" >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
 
-        ---
+        echo "## Operating System" >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        cat /etc/os-release >> "$REPORT_FILE" 2>&1
+        echo '```' >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+        echo "**Kernel:** \`$(uname -r)\`" >> "$REPORT_FILE"
+        echo "**Architecture:** \`$(uname -m)\`" >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+        echo "---" >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
 
-        ## Runner Information
+        echo "## Hardware" >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+        echo "### CPU" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        lscpu | grep -E "Model name|Architecture|CPU\(s\):|Thread|Core|Socket|Vendor ID" >> "$REPORT_FILE" 2>&1
+        echo '```' >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
 
-        ```
-        Runner Name: $RUNNER_NAME
-        Runner OS: $RUNNER_OS
-        Runner Architecture: $RUNNER_ARCH
-        Hostname: $(hostname)
-        User: $(whoami)
-        ```
+        echo "### Memory" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        free -h >> "$REPORT_FILE" 2>&1
+        echo '```' >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
 
-        ---
+        echo "### Disk Space" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        df -h | grep -E "Filesystem|/dev/" >> "$REPORT_FILE" 2>&1
+        echo '```' >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+        echo "---" >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
 
-        ## Operating System
+        echo "## GPU Information" >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+        echo "### PCI Devices" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        lspci | grep -i "vga\|3d\|display" >> "$REPORT_FILE" 2>&1 || echo "No GPU found" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
 
-        ```
-        $(cat /etc/os-release)
-        ```
+        echo "### GPU Driver Modules" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        lsmod | grep -E "nvidia|amdgpu|i915|xe" >> "$REPORT_FILE" 2>&1 || echo "No GPU drivers loaded" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
 
-        **Kernel:** `$(uname -r)`  
-        **Architecture:** `$(uname -m)`
+        echo "### NVIDIA Info" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        nvidia-smi >> "$REPORT_FILE" 2>&1 || echo "nvidia-smi not available" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+        echo "---" >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
 
-        ---
+        echo "## Docker" >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+        echo "### Docker Version" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        docker --version >> "$REPORT_FILE" 2>&1 || echo "Docker not installed" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
 
-        ## Hardware
+        echo "### Docker Info" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        docker info 2>&1 | head -n 30 >> "$REPORT_FILE" || echo "Docker daemon not running" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+        echo "---" >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
 
-        ### CPU
-        ```
-        $(lscpu | grep -E "Model name|Architecture|CPU\(s\):|Thread|Core|Socket|Vendor ID")
-        ```
+        echo "## Build Tools" >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
+        echo "### CMake" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        cmake --version >> "$REPORT_FILE" 2>&1 || echo "CMake not installed" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
 
-        ### Memory
-        ```
-        $(free -h)
-        ```
+        echo "### Ninja" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        ninja --version >> "$REPORT_FILE" 2>&1 || echo "Ninja not installed" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
 
-        ### Disk Space
-        ```
-        $(df -h | grep -E "Filesystem|/dev/")
-        ```
+        echo "### GCC/G++" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        gcc --version 2>&1 | head -n1 >> "$REPORT_FILE" || echo "GCC not installed" >> "$REPORT_FILE"
+        g++ --version 2>&1 | head -n1 >> "$REPORT_FILE" || echo "G++ not installed" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
 
-        ---
+        echo "### Clang/Clang++" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        clang --version 2>&1 | head -n1 >> "$REPORT_FILE" || echo "Clang not installed" >> "$REPORT_FILE"
+        clang++ --version 2>&1 | head -n1 >> "$REPORT_FILE" || echo "Clang++ not installed" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
 
-        ## GPU Information
+        echo "### Vulkan Tools" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        vulkaninfo --summary >> "$REPORT_FILE" 2>&1 || echo "vulkaninfo not available" >> "$REPORT_FILE"
+        echo '```' >> "$REPORT_FILE"
+        echo "" >> "$REPORT_FILE"
 
-        ### PCI Devices
-        ```
-        $(lspci | grep -i "vga\|3d\|display")
-        ```
-
-        ### GPU Driver Modules
-        ```
-        $(lsmod | grep -E "nvidia|amdgpu|i915|xe" | head -n 10 || echo "No GPU drivers loaded")
-        ```
-
-        ### NVIDIA Info (if applicable)
-        ```
-        $(nvidia-smi 2>/dev/null || echo "nvidia-smi not available")
-        ```
-
-        ### Intel GPU Info (if applicable)
-        ```
-        $(cat /sys/kernel/debug/dri/*/name 2>/dev/null || echo "Intel GPU debug info not available")
-        ```
-
-        ---
-
-        ## Vulkan Support
-
-        ### Vulkan Loader
-        ```
-        $(ldconfig -p | grep vulkan || echo "Vulkan loader not found in ldconfig")
-        ```
-
-        ### Vulkan Info (if available)
-        ```
-        $(vulkaninfo --summary 2>/dev/null || echo "vulkaninfo not available - will be installed in Docker")
-        ```
-
-        ### Vulkan ICD
-        ```
-        $(ls -la /etc/vulkan/icd.d/ 2>/dev/null || echo "No Vulkan ICD directory")
-        $(ls -la /usr/share/vulkan/icd.d/ 2>/dev/null || echo "No Vulkan ICD in /usr/share")
-        ```
-
-        ---
-
-        ## Docker
-
-        ### Docker Version
-        ```
-        $(docker --version 2>&1 || echo "Docker not installed")
-        ```
-
-        ### Docker Info
-        ```
-        $(docker info 2>&1 | head -n 30 || echo "Docker daemon not running or not accessible")
-        ```
-
-        ### Docker Buildx (for BuildKit)
-        ```
-        $(docker buildx version 2>&1 || echo "Buildx not available")
-        ```
-
-        ---
-
-        ## Build Tools
-
-        ### CMake
-        ```
-        $(cmake --version 2>&1 || echo "CMake not installed")
-        ```
-
-        ### Ninja
-        ```
-        $(ninja --version 2>&1 || echo "Ninja not installed")
-        ```
-
-        ### GCC/G++
-        ```
-        $(gcc --version 2>&1 | head -n1 || echo "GCC not installed")
-        $(g++ --version 2>&1 | head -n1 || echo "G++ not installed")
-        ```
-
-        ### Clang/Clang++
-        ```
-        $(clang --version 2>&1 | head -n1 || echo "Clang not installed")
-        $(clang++ --version 2>&1 | head -n1 || echo "Clang++ not installed")
-        ```
-
-        ### Python
-        ```
-        $(python3 --version 2>&1 || echo "Python3 not installed")
-        ```
-
-        ### Git
-        ```
-        $(git --version 2>&1 || echo "Git not installed")
-        ```
-
-        ---
-
-        ## Environment Variables (Selected)
-
-        ```
-        PATH (first 10 entries):
-        $(echo $PATH | tr ':' '\n' | head -n 10)
-
-        LD_LIBRARY_PATH: ${LD_LIBRARY_PATH:-<not set>}
-        VULKAN_SDK: ${VULKAN_SDK:-<not set>}
-        VK_ICD_FILENAMES: ${VK_ICD_FILENAMES:-<not set>}
-        ```
-
-        EOFREPORT
-
-        echo "Report generated: $REPORT_FILE"
+        echo "Report generated successfully"
         cat "$REPORT_FILE"
 
     - name: Upload Runner Report
