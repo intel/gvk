@@ -1,11 +1,16 @@
 name: Build and Test (gvk-string only)
 
 on:
-  workflow_dispatch:  # Manual trigger for now
+  workflow_dispatch:  # Manual trigger
+  push:  # TEMPORARY: To make workflow visible in GitHub UI
+    branches:
+      - setup-github-actions
+    paths:
+      - '.github/workflows/build-and-test-docker.yml'
+  # After first run, remove the push trigger above
   # push:
   #   branches:
   #     - trunk
-  #     - setup-github-actions
   # pull_request:
   #   branches:
   #     - trunk
