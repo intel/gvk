@@ -28,7 +28,7 @@ jobs:
       run: |
         REPORT_FILE="${{ matrix.runner-name }}-report.md"
 
-        cat > "$REPORT_FILE" << 'EOFREPORT'
+        cat > "$REPORT_FILE" << EOFREPORT
         # System Report: ${{ matrix.runner-name }}
 
         **Generated:** $(date +"%Y-%m-%d %H:%M:%S")  
