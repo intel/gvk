@@ -59,8 +59,10 @@ Format::Format(const tinyxml2::XMLElement& xmlElement)
     packed = string::to_number<uint32_t>(get_xml_attribute(xmlElement, "packed"));
     uint32_t dimension_i = 0;
     for (const auto& dimension : string::split(get_xml_attribute(xmlElement, "blockExtent"), ",")) {
-        assert(dimension_i < blockExtent.size());
-        blockExtent[dimension_i++] = string::to_number<uint32_t>(dimension);
+        assert(dimension_i < blockExtent.size() && "Unexpected blockExtent size; gvk maintenance required");
+        if (dimension_i < blockExtent.size()) {
+            blockExtent[dimension_i++] = string::to_number<uint32_t>(dimension);
+        }
     }
     for (auto& dimension : blockExtent) {
         if (!dimension) {
