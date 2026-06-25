@@ -1,4 +1,5 @@
 name: Build and Test (gvk-string only)
+name: Build and Test (gvk-string only)
 
 on:
   workflow_dispatch:  # Manual trigger
@@ -72,18 +73,22 @@ jobs:
           -Dgvk-build-tests=ON \
           -Dgvk-build-samples=OFF
 
-    - name: Build gvk-string Only
+    - name: Build gvk-string Tests
       run: |
-        cmake --build build --target gvk-string --parallel $(nproc)
+        # Build the test target - this also builds gvk-string and populates gvk-test-package
+        cmake --build build --target gvk-string.tests --parallel $(nproc)
 
-    - name: Upload Build Artifacts
+    - name: Verify gvk-test-package Created
+      run: |
+        echo "=== Contents of gvk-test-package ==="
+        ls -lah build/gvk-test-package/ || echo "gvk-test-package not found!"
+
+    - name: Upload Test Package
       id: upload
       uses: actions/upload-artifact@v4
       with:
-        name: gvk-build-${{ github.sha }}
-        path: |
-          install/
-          build/
+        name: gvk-test-package-${{ github.sha }}
+        path: build/gvk-test-package/
         retention-days: 7
 
   test-godzilla:
@@ -97,10 +102,11 @@ jobs:
       options: --device=/dev/dri --cap-add CAP_PERFMON
 
     steps:
-    - name: Download Build Artifacts
+    - name: Download Test Package
       uses: actions/download-artifact@v4
       with:
-        name: gvk-build-${{ github.sha }}
+        name: gvk-test-package-${{ github.sha }}
+        path: gvk-test-package
 
     - name: Install Test Dependencies
       run: |
@@ -118,40 +124,30 @@ jobs:
         ls -la /dev/dri/ || echo "No /dev/dri"
         vulkaninfo --summary || echo "vulkaninfo failed"
 
-    - name: Run Tests (gvk-string)
-      working-directory: build
+    - name: List Test Package Contents
       run: |
-        # Run only gvk-string tests
-        ctest -R "gvk-string" --output-on-failure --timeout 300 || true
+        echo "=== Test Package Contents ==="
+        ls -lah gvk-test-package/
+
+    - name: Run Tests (gvk-string)
+      working-directory: gvk-test-package
+      run: |
+        # Make test executable if needed
+        chmod +x gvk-string.tests || true
+
+        # Run gvk-string tests directly from test package
+        echo "=== Running gvk-string.tests ==="
+        ./gvk-string.tests || true
         echo "Test run completed (continue-on-error enabled)"
       continue-on-error: true
 
     - name: Display Test Results
       if: always()
-      working-directory: build
       run: |
         echo "## Test Results - godzilla (NVIDIA RTX 6000)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo '```' >> $GITHUB_STEP_SUMMARY
-        ctest -R "gvk-string" -N || true
-        echo '```' >> $GITHUB_STEP_SUMMARY
+        echo "Tests executed from gvk-test-package" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        if [ -f Testing/Temporary/LastTest.log ]; then
-          echo "<details><summary>Full Test Log</summary>" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          tail -n 100 Testing/Temporary/LastTest.log >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "</details>" >> $GITHUB_STEP_SUMMARY
-        fi
-
-    - name: Upload Test Results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results-godzilla-${{ github.sha }}
-        path: build/Testing/
-        retention-days: 7
 
   test-mage:
     name: Test on mage-b580 (Intel B580)
@@ -164,10 +160,11 @@ jobs:
       options: --device=/dev/dri --cap-add CAP_PERFMON
 
     steps:
-    - name: Download Build Artifacts
+    - name: Download Test Package
       uses: actions/download-artifact@v4
       with:
-        name: gvk-build-${{ github.sha }}
+        name: gvk-test-package-${{ github.sha }}
+        path: gvk-test-package
 
     - name: Install Test Dependencies
       run: |
@@ -185,40 +182,30 @@ jobs:
         ls -la /dev/dri/ || echo "No /dev/dri"
         vulkaninfo --summary || echo "vulkaninfo failed"
 
-    - name: Run Tests (gvk-string)
-      working-directory: build
+    - name: List Test Package Contents
       run: |
-        # Run only gvk-string tests
-        ctest -R "gvk-string" --output-on-failure --timeout 300 || true
+        echo "=== Test Package Contents ==="
+        ls -lah gvk-test-package/
+
+    - name: Run Tests (gvk-string)
+      working-directory: gvk-test-package
+      run: |
+        # Make test executable if needed
+        chmod +x gvk-string.tests || true
+
+        # Run gvk-string tests directly from test package
+        echo "=== Running gvk-string.tests ==="
+        ./gvk-string.tests || true
         echo "Test run completed (continue-on-error enabled)"
       continue-on-error: true
 
     - name: Display Test Results
       if: always()
-      working-directory: build
       run: |
         echo "## Test Results - mage-b580 (Intel B580)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo '```' >> $GITHUB_STEP_SUMMARY
-        ctest -R "gvk-string" -N || true
-        echo '```' >> $GITHUB_STEP_SUMMARY
+        echo "Tests executed from gvk-test-package" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        if [ -f Testing/Temporary/LastTest.log ]; then
-          echo "<details><summary>Full Test Log</summary>" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          tail -n 100 Testing/Temporary/LastTest.log >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "</details>" >> $GITHUB_STEP_SUMMARY
-        fi
-
-    - name: Upload Test Results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results-mage-${{ github.sha }}
-        path: build/Testing/
-        retention-days: 7
 
   status:
     name: Build & Test Status
