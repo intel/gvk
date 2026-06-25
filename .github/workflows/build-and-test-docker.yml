@@ -54,12 +54,14 @@ jobs:
           libxxf86vm-dev \
           xorg-dev
 
+    - name: Fix Git Safe Directory
+      run: |
+        git config --global --add safe.directory '*'
+
     - name: Checkout
       uses: actions/checkout@v4
       with:
         submodules: recursive
-        # Fix git safe directory for container builds
-        set-safe-directory: true
 
     - name: Configure CMake
       run: |
