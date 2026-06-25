@@ -58,6 +58,8 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: recursive
+        # Fix git safe directory for container builds
+        set-safe-directory: true
 
     - name: Configure CMake
       run: |
