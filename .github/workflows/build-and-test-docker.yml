@@ -107,7 +107,11 @@ jobs:
             label: intel-b580
             check_name: "mage-b580 - Intel B580"
 
-    runs-on: [self-hosted, Linux, X64, ${{ matrix.runner.label }}]
+    runs-on: 
+      - self-hosted
+      - Linux
+      - X64
+      - ${{ matrix.runner.label }}
 
     container:
       image: ubuntu:22.04
