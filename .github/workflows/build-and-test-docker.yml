@@ -94,7 +94,6 @@ jobs:
   test:
     name: Test on ${{ matrix.runner.name }}
     needs: build
-    runs-on: [self-hosted, Linux, X64, ${{ matrix.runner.label }}]
     timeout-minutes: 15
 
     strategy:
@@ -107,6 +106,8 @@ jobs:
           - name: "mage-b580 (Intel B580)"
             label: intel-b580
             check_name: "mage-b580 - Intel B580"
+
+    runs-on: [self-hosted, Linux, X64, ${{ matrix.runner.label }}]
 
     container:
       image: ubuntu:22.04
