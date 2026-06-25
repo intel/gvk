@@ -134,19 +134,82 @@ jobs:
         # Make test executable if needed
         chmod +x gvk-string.tests || true
 
-        # Run gvk-string tests directly from test package
+        # Run gvk-string tests with XML output for GitHub integration
+        # Full output goes to stdout (for step-by-step inspection)
+        # XML output goes to file (for GitHub test results summary)
         echo "=== Running gvk-string.tests ==="
-        ./gvk-string.tests || true
-        echo "Test run completed (continue-on-error enabled)"
+        set +e  # Don't exit on test failures
+        ./gvk-string.tests --gtest_output=xml:test-results.xml 2>&1 | tee test-output.txt
+        TEST_EXIT_CODE=${PIPESTATUS[0]}
+        set -e
+
+        echo "Test exit code: $TEST_EXIT_CODE"
+
+        # Show XML file was created
+        if [ -f test-results.xml ]; then
+          echo "? Test results XML generated"
+          ls -lh test-results.xml
+        fi
+
+        exit $TEST_EXIT_CODE
       continue-on-error: true
 
     - name: Display Test Results
       if: always()
+      working-directory: gvk-test-package
       run: |
         echo "## Test Results - godzilla (NVIDIA RTX 6000)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "Tests executed from gvk-test-package" >> $GITHUB_STEP_SUMMARY
+
+        if [ -f test-results.xml ]; then
+          # Parse XML for accurate test counts
+          TESTS=$(grep -oP 'tests="\K\d+' test-results.xml | head -1 || echo "0")
+          FAILURES=$(grep -oP 'failures="\K\d+' test-results.xml | head -1 || echo "0")
+          ERRORS=$(grep -oP 'errors="\K\d+' test-results.xml | head -1 || echo "0")
+          PASSED=$((TESTS - FAILURES - ERRORS))
+
+          if [ "$FAILURES" = "0" ] && [ "$ERRORS" = "0" ] && [ "$TESTS" != "0" ]; then
+            echo "? **All tests passed!** ($TESTS tests)" >> $GITHUB_STEP_SUMMARY
+          elif [ "$FAILURES" != "0" ] || [ "$ERRORS" != "0" ]; then
+            echo "? **Some tests failed:** $FAILURES failed, $ERRORS errors, $PASSED passed (of $TESTS total)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "??  **Test results unclear**" >> $GITHUB_STEP_SUMMARY
+          fi
+        elif [ -f test-output.txt ]; then
+          # Fallback to text parsing if XML not available
+          PASSED=$(grep -oP '\[  PASSED  \] \K\d+' test-output.txt | tail -1 || echo "0")
+          FAILED=$(grep -oP '\[  FAILED  \] \K\d+' test-output.txt | tail -1 || echo "0")
+
+          if [ "$FAILED" = "0" ] && [ "$PASSED" != "0" ]; then
+            echo "? **All tests passed!** ($PASSED tests)" >> $GITHUB_STEP_SUMMARY
+          elif [ "$FAILED" != "0" ]; then
+            echo "? **Some tests failed:** $FAILED failed, $PASSED passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "??  **Test results unclear**" >> $GITHUB_STEP_SUMMARY
+          fi
+        else
+          echo "??  No test output captured" >> $GITHUB_STEP_SUMMARY
+        fi
+
         echo "" >> $GITHUB_STEP_SUMMARY
+        echo "?? Detailed test results available in step logs above" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+    - name: Upload Test Results (XML)
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-xml-godzilla-${{ github.sha }}
+        path: gvk-test-package/test-results.xml
+        retention-days: 30
+
+    - name: Publish Test Results
+      if: always()
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      with:
+        files: gvk-test-package/test-results.xml
+        check_name: "Test Results (godzilla - NVIDIA RTX 6000)"
+        comment_mode: off
 
   test-mage:
     name: Test on mage-b580 (Intel B580)
@@ -192,19 +255,82 @@ jobs:
         # Make test executable if needed
         chmod +x gvk-string.tests || true
 
-        # Run gvk-string tests directly from test package
+        # Run gvk-string tests with XML output for GitHub integration
+        # Full output goes to stdout (for step-by-step inspection)
+        # XML output goes to file (for GitHub test results summary)
         echo "=== Running gvk-string.tests ==="
-        ./gvk-string.tests || true
-        echo "Test run completed (continue-on-error enabled)"
+        set +e  # Don't exit on test failures
+        ./gvk-string.tests --gtest_output=xml:test-results.xml 2>&1 | tee test-output.txt
+        TEST_EXIT_CODE=${PIPESTATUS[0]}
+        set -e
+
+        echo "Test exit code: $TEST_EXIT_CODE"
+
+        # Show XML file was created
+        if [ -f test-results.xml ]; then
+          echo "? Test results XML generated"
+          ls -lh test-results.xml
+        fi
+
+        exit $TEST_EXIT_CODE
       continue-on-error: true
 
     - name: Display Test Results
       if: always()
+      working-directory: gvk-test-package
       run: |
         echo "## Test Results - mage-b580 (Intel B580)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "Tests executed from gvk-test-package" >> $GITHUB_STEP_SUMMARY
+
+        if [ -f test-results.xml ]; then
+          # Parse XML for accurate test counts
+          TESTS=$(grep -oP 'tests="\K\d+' test-results.xml | head -1 || echo "0")
+          FAILURES=$(grep -oP 'failures="\K\d+' test-results.xml | head -1 || echo "0")
+          ERRORS=$(grep -oP 'errors="\K\d+' test-results.xml | head -1 || echo "0")
+          PASSED=$((TESTS - FAILURES - ERRORS))
+
+          if [ "$FAILURES" = "0" ] && [ "$ERRORS" = "0" ] && [ "$TESTS" != "0" ]; then
+            echo "? **All tests passed!** ($TESTS tests)" >> $GITHUB_STEP_SUMMARY
+          elif [ "$FAILURES" != "0" ] || [ "$ERRORS" != "0" ]; then
+            echo "? **Some tests failed:** $FAILURES failed, $ERRORS errors, $PASSED passed (of $TESTS total)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "??  **Test results unclear**" >> $GITHUB_STEP_SUMMARY
+          fi
+        elif [ -f test-output.txt ]; then
+          # Fallback to text parsing if XML not available
+          PASSED=$(grep -oP '\[  PASSED  \] \K\d+' test-output.txt | tail -1 || echo "0")
+          FAILED=$(grep -oP '\[  FAILED  \] \K\d+' test-output.txt | tail -1 || echo "0")
+
+          if [ "$FAILED" = "0" ] && [ "$PASSED" != "0" ]; then
+            echo "? **All tests passed!** ($PASSED tests)" >> $GITHUB_STEP_SUMMARY
+          elif [ "$FAILED" != "0" ]; then
+            echo "? **Some tests failed:** $FAILED failed, $PASSED passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "??  **Test results unclear**" >> $GITHUB_STEP_SUMMARY
+          fi
+        else
+          echo "??  No test output captured" >> $GITHUB_STEP_SUMMARY
+        fi
+
         echo "" >> $GITHUB_STEP_SUMMARY
+        echo "?? Detailed test results available in step logs above" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+    - name: Upload Test Results (XML)
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-xml-mage-${{ github.sha }}
+        path: gvk-test-package/test-results.xml
+        retention-days: 30
+
+    - name: Publish Test Results
+      if: always()
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      with:
+        files: gvk-test-package/test-results.xml
+        check_name: "Test Results (mage-b580 - Intel B580)"
+        comment_mode: off
 
   status:
     name: Build & Test Status
