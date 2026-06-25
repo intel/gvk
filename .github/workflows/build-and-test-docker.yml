@@ -126,6 +126,25 @@ jobs:
         echo "Test run completed (continue-on-error enabled)"
       continue-on-error: true
 
+    - name: Display Test Results
+      if: always()
+      working-directory: build
+      run: |
+        echo "## Test Results - godzilla (NVIDIA RTX 6000)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        ctest -R "gvk-string" -N || true
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [ -f Testing/Temporary/LastTest.log ]; then
+          echo "<details><summary>Full Test Log</summary>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          tail -n 100 Testing/Temporary/LastTest.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
+        fi
+
     - name: Upload Test Results
       if: always()
       uses: actions/upload-artifact@v4
@@ -173,6 +192,25 @@ jobs:
         ctest -R "gvk-string" --output-on-failure --timeout 300 || true
         echo "Test run completed (continue-on-error enabled)"
       continue-on-error: true
+
+    - name: Display Test Results
+      if: always()
+      working-directory: build
+      run: |
+        echo "## Test Results - mage-b580 (Intel B580)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        ctest -R "gvk-string" -N || true
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [ -f Testing/Temporary/LastTest.log ]; then
+          echo "<details><summary>Full Test Log</summary>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          tail -n 100 Testing/Temporary/LastTest.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
+        fi
 
     - name: Upload Test Results
       if: always()
