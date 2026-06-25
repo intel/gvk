@@ -205,7 +205,7 @@ jobs:
         exit $TEST_EXIT_CODE
 
     - name: Display Test Results
-      if: always()
+      if: always() && steps.run-tests.outcome != 'skipped'
       working-directory: gvk-test-package
       run: |
         echo "## Test Results - ${{ matrix.runner.name }}" >> $GITHUB_STEP_SUMMARY
@@ -246,7 +246,7 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
 
     - name: Upload Test Results (XML)
-      if: always()
+      if: always() && steps.run-tests.outcome != 'skipped'
       uses: actions/upload-artifact@v4
       with:
         name: test-results-xml-${{ matrix.runner.label }}-${{ github.sha }}
@@ -254,7 +254,7 @@ jobs:
         retention-days: 1  # TODO: Increase to 30+ days for production (reduced for debug/development)
 
     - name: Publish Test Results
-      if: always()
+      if: always() && steps.run-tests.outcome != 'skipped'
       uses: EnricoMi/publish-unit-test-result-action@v2
       with:
         files: gvk-test-package/test-results.xml
