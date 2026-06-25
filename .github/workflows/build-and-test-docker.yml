@@ -7,7 +7,7 @@ on:
       - setup-github-actions
     paths:
       - '.github/workflows/build-and-test-docker.yml'
-  # After first run, remove the push trigger above
+  # After Docker permissions fixed, ready to test!
   # push:
   #   branches:
   #     - trunk
