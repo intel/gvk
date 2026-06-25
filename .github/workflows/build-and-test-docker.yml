@@ -1,4 +1,5 @@
-name: Build and Test (gvk-string only)
+
+name: Build and Test
 
 on:
   workflow_dispatch:  # Manual trigger
@@ -33,7 +34,9 @@ jobs:
       artifact-name: ${{ steps.upload.outputs.artifact-name }}
 
     steps:
+################################################################################
     - name: Install Dependencies in Container
+#------------------------------------------------------------------------------#
       run: |
         apt-get update
         apt-get install -y \
@@ -54,35 +57,48 @@ jobs:
           libxxf86vm-dev \
           xorg-dev
 
+################################################################################
     - name: Fix Git Safe Directory
+#------------------------------------------------------------------------------#
       run: |
         git config --global --add safe.directory '*'
 
+################################################################################
     - name: Checkout
+#------------------------------------------------------------------------------#
       uses: actions/checkout@v4
       with:
         submodules: recursive
 
-    - name: Configure CMake
+################################################################################
+    - name: Configure
+#------------------------------------------------------------------------------#
       run: |
         cmake -G Ninja -B build \
-          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
-          -Dgvk-default_ENABLED=OFF \
-          -Dgvk-string_ENABLED=ON \
-          -Dgvk-build-tests=ON \
-          -Dgvk-build-samples=OFF
+          -D CMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+          -D gvk-default_ENABLED=OFF \
+          -D gvk-reference_ENABLED=ON \
+          -D gvk-runtime_ENABLED=ON \
+          -D gvk-string_ENABLED=ON \
+          -D gvk-xml_ENABLED=ON \
+          -D gvk-build-tests=ON \
+          -D gvk-build-samples=OFF
 
-    - name: Build gvk-string Tests
-      run: |
-        # Build the test target - this also builds gvk-string and populates gvk-test-package
-        cmake --build build --target gvk-string.tests --parallel $(nproc)
+################################################################################
+    - name: Build
+#------------------------------------------------------------------------------#
+      run: cmake --build build --target install --parallel $(nproc)
 
+################################################################################
     - name: Verify gvk-test-package Created
+#------------------------------------------------------------------------------#
       run: |
         echo "=== Contents of gvk-test-package ==="
         ls -lah build/gvk-test-package/ || echo "gvk-test-package not found!"
 
+################################################################################
     - name: Upload Test Package
+#------------------------------------------------------------------------------#
       id: upload
       uses: actions/upload-artifact@v4
       with:
@@ -117,7 +133,9 @@ jobs:
     # for GPU passthrough. Build job uses container because it doesn't need GPU.
 
     steps:
+################################################################################
     - name: Download Test Package
+#------------------------------------------------------------------------------#
       uses: actions/download-artifact@v4
       with:
         name: gvk-test-package-${{ github.sha }}
@@ -143,7 +161,9 @@ jobs:
         echo "Test package verified successfully"
         ls -lh gvk-test-package/
 
+################################################################################
     - name: Check GPU (Host)
+#------------------------------------------------------------------------------#
       run: |
         echo "=== GPU Information ==="
         echo "DRI Devices:"
@@ -171,69 +191,121 @@ jobs:
       run: |
         echo "=== Test Package Contents ==="
         ls -lah gvk-test-package/
+        echo ""
+        echo "=== Test Executables Found ==="
+        find gvk-test-package -name "*.tests" -type f -executable
 
-    - name: Run Tests (gvk-string)
+################################################################################
+    - name: Run Tests
+#------------------------------------------------------------------------------#
       id: run-tests
       working-directory: gvk-test-package
       run: |
-        # Make test executable if needed
-        chmod +x gvk-string.tests || true
+        # Make all test executables executable
+        chmod +x *.tests 2>/dev/null || true
 
-        # Run gvk-string tests with XML output for GitHub integration
-        # Full output goes to stdout (for step-by-step inspection)
-        # XML output goes to file (for GitHub test results summary)
-        echo "=== Running gvk-string.tests ==="
+        # Run all test executables and collect results
+        echo "=== Running All Tests ==="
 
-        # Run tests and capture exit code
-        set +e
-        ./gvk-string.tests --gtest_output=xml:test-results.xml 2>&1 | tee test-output.txt
-        TEST_EXIT_CODE=${PIPESTATUS[0]}
-        set -e
+        OVERALL_EXIT_CODE=0
+        TEST_COUNT=0
 
-        echo "Test exit code: $TEST_EXIT_CODE"
+        # Find all .tests executables
+        for test_exe in *.tests; do
+          if [ -x "$test_exe" ]; then
+            TEST_COUNT=$((TEST_COUNT + 1))
+            echo ""
+            echo "=========================================="
+            echo "Running: $test_exe"
+            echo "=========================================="
 
-        # Show XML file was created
-        if [ -f test-results.xml ]; then
-          echo "Test results XML generated"
-          ls -lh test-results.xml
-        else
-          echo "WARNING: test-results.xml was not generated!"
-        fi
+            # Generate unique XML filename for each test suite
+            xml_file="${test_exe%.tests}-results.xml"
 
-        # Exit with test exit code so job fails if tests fail
-        # Note: Removed continue-on-error so test failures are properly reported
-        exit $TEST_EXIT_CODE
+            # Run test and capture output
+            set +e
+            ./"$test_exe" --gtest_output=xml:"$xml_file" 2>&1 | tee "${test_exe%.tests}-output.txt"
+            EXIT_CODE=${PIPESTATUS[0]}
+            set -e
 
+            echo "$test_exe exit code: $EXIT_CODE"
+
+            # Track if any test failed
+            if [ $EXIT_CODE -ne 0 ]; then
+              OVERALL_EXIT_CODE=$EXIT_CODE
+              echo "WARNING: $test_exe failed!"
+            fi
+
+            # Verify XML was created
+            if [ -f "$xml_file" ]; then
+              echo "$xml_file generated successfully"
+            else
+              echo "WARNING: $xml_file was not generated!"
+            fi
+          fi
+        done
+
+        echo ""
+        echo "=========================================="
+        echo "Test Execution Summary"
+        echo "=========================================="
+        echo "Test executables run: $TEST_COUNT"
+        echo "Overall exit code: $OVERALL_EXIT_CODE"
+
+        # List all generated XML files
+        echo ""
+        echo "XML Results Files:"
+        ls -lh *-results.xml 2>/dev/null || echo "No XML files generated"
+
+        # Exit with failure if any test failed
+        exit $OVERALL_EXIT_CODE
+
+################################################################################
     - name: Display Test Results
+#------------------------------------------------------------------------------#
       if: always() && steps.run-tests.outcome != 'skipped'
       working-directory: gvk-test-package
       run: |
         echo "## Test Results - ${{ matrix.runner.name }}" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
 
-        if [ -f test-results.xml ]; then
-          # Parse XML for accurate test counts
-          TESTS=$(grep -oP 'tests="\K\d+' test-results.xml | head -1 || echo "0")
-          FAILURES=$(grep -oP 'failures="\K\d+' test-results.xml | head -1 || echo "0")
-          ERRORS=$(grep -oP 'errors="\K\d+' test-results.xml | head -1 || echo "0")
-          PASSED=$((TESTS - FAILURES - ERRORS))
+        # Aggregate results from all XML files
+        TOTAL_TESTS=0
+        TOTAL_FAILURES=0
+        TOTAL_ERRORS=0
+        XML_COUNT=0
 
-          if [ "$FAILURES" = "0" ] && [ "$ERRORS" = "0" ] && [ "$TESTS" != "0" ]; then
-            echo "**All tests passed:** $TESTS tests" >> $GITHUB_STEP_SUMMARY
-          elif [ "$FAILURES" != "0" ] || [ "$ERRORS" != "0" ]; then
-            echo "**Some tests failed:** $FAILURES failed, $ERRORS errors, $PASSED passed (of $TESTS total)" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "**Test results unclear**" >> $GITHUB_STEP_SUMMARY
+        for xml_file in *-results.xml; do
+          if [ -f "$xml_file" ]; then
+            XML_COUNT=$((XML_COUNT + 1))
+
+            # Parse this XML file
+            TESTS=$(grep -oP 'tests="\K\d+' "$xml_file" | head -1 || echo "0")
+            FAILURES=$(grep -oP 'failures="\K\d+' "$xml_file" | head -1 || echo "0")
+            ERRORS=$(grep -oP 'errors="\K\d+' "$xml_file" | head -1 || echo "0")
+
+            # Aggregate totals
+            TOTAL_TESTS=$((TOTAL_TESTS + TESTS))
+            TOTAL_FAILURES=$((TOTAL_FAILURES + FAILURES))
+            TOTAL_ERRORS=$((TOTAL_ERRORS + ERRORS))
+
+            # Show per-suite results
+            SUITE_NAME="${xml_file%-results.xml}"
+            SUITE_PASSED=$((TESTS - FAILURES - ERRORS))
+            echo "- **$SUITE_NAME**: $SUITE_PASSED/$TESTS passed" >> $GITHUB_STEP_SUMMARY
           fi
-        elif [ -f test-output.txt ]; then
-          # Fallback to text parsing if XML not available
-          PASSED=$(grep -oP '\[  PASSED  \] \K\d+' test-output.txt | tail -1 || echo "0")
-          FAILED=$(grep -oP '\[  FAILED  \] \K\d+' test-output.txt | tail -1 || echo "0")
+        done
 
-          if [ "$FAILED" = "0" ] && [ "$PASSED" != "0" ]; then
-            echo "**All tests passed:** $PASSED tests" >> $GITHUB_STEP_SUMMARY
-          elif [ "$FAILED" != "0" ]; then
-            echo "**Some tests failed:** $FAILED failed, $PASSED passed" >> $GITHUB_STEP_SUMMARY
+        if [ $XML_COUNT -gt 0 ]; then
+          TOTAL_PASSED=$((TOTAL_TESTS - TOTAL_FAILURES - TOTAL_ERRORS))
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Overall Results" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$TOTAL_FAILURES" = "0" ] && [ "$TOTAL_ERRORS" = "0" ] && [ "$TOTAL_TESTS" != "0" ]; then
+            echo "**All tests passed:** $TOTAL_TESTS tests across $XML_COUNT suites" >> $GITHUB_STEP_SUMMARY
+          elif [ "$TOTAL_FAILURES" != "0" ] || [ "$TOTAL_ERRORS" != "0" ]; then
+            echo "**Some tests failed:** $TOTAL_FAILURES failed, $TOTAL_ERRORS errors, $TOTAL_PASSED passed (of $TOTAL_TESTS total)" >> $GITHUB_STEP_SUMMARY
           else
             echo "**Test results unclear**" >> $GITHUB_STEP_SUMMARY
           fi
@@ -245,19 +317,23 @@ jobs:
         echo "Detailed test results available in step logs above" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
 
+################################################################################
     - name: Upload Test Results (XML)
+#------------------------------------------------------------------------------#
       if: always() && steps.run-tests.outcome != 'skipped'
       uses: actions/upload-artifact@v4
       with:
         name: test-results-xml-${{ matrix.runner.label }}-${{ github.sha }}
-        path: gvk-test-package/test-results.xml
+        path: gvk-test-package/*-results.xml
         retention-days: 1  # TODO: Increase to 30+ days for production (reduced for debug/development)
 
+################################################################################
     - name: Publish Test Results
+#------------------------------------------------------------------------------#
       if: always() && steps.run-tests.outcome != 'skipped'
       uses: EnricoMi/publish-unit-test-result-action@v2
       with:
-        files: gvk-test-package/test-results.xml
+        files: gvk-test-package/*-results.xml
         check_name: "Test Results (${{ matrix.runner.check_name }})"
         comment_mode: off
 
@@ -269,7 +345,9 @@ jobs:
     timeout-minutes: 5
 
     steps:
+################################################################################
     - name: Check Status
+#------------------------------------------------------------------------------#
       run: |
         echo "Build: ${{ needs.build.result }}"
         echo "Test: ${{ needs.test.result }}"
