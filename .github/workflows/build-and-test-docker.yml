@@ -1,4 +1,5 @@
 name: Build and Test (gvk-string only)
+name: Build and Test (gvk-string only)
 
 on:
   workflow_dispatch:  # Manual trigger
@@ -88,7 +89,7 @@ jobs:
       with:
         name: gvk-test-package-${{ github.sha }}
         path: build/gvk-test-package/
-        retention-days: 7
+        retention-days: 1  # TODO: Increase to 7+ days for production (reduced for debug/development)
 
   test:
     name: Test on ${{ matrix.runner.name }}
@@ -112,9 +113,9 @@ jobs:
       - X64
       - ${{ matrix.runner.label }}
 
-    container:
-      image: ubuntu:22.04
-      options: --device=/dev/dri --cap-add CAP_PERFMON
+    # NOTE: Not using container for test jobs - we need direct GPU access
+    # The host already has GPU drivers installed, and containers add complexity
+    # for GPU passthrough. Build job uses container because it doesn't need GPU.
 
     steps:
     - name: Download Test Package
@@ -123,20 +124,16 @@ jobs:
         name: gvk-test-package-${{ github.sha }}
         path: gvk-test-package
 
-    - name: Install Test Dependencies
-      run: |
-        apt-get update
-        apt-get install -y \
-          libwayland-dev \
-          libxkbcommon-dev \
-          libx11-xcb-dev \
-          vulkan-tools \
-          mesa-vulkan-drivers
-
-    - name: Check GPU
+    - name: Check GPU (Host)
       run: |
         echo "=== GPU Information ==="
+        echo "DRI Devices:"
         ls -la /dev/dri/ || echo "No /dev/dri"
+        echo ""
+        echo "Vulkan ICDs:"
+        ls -la /usr/share/vulkan/icd.d/ || echo "No ICDs"
+        echo ""
+        echo "Vulkan Devices:"
         vulkaninfo --summary || echo "vulkaninfo failed"
 
     - name: List Test Package Contents
@@ -217,7 +214,7 @@ jobs:
       with:
         name: test-results-xml-${{ matrix.runner.label }}-${{ github.sha }}
         path: gvk-test-package/test-results.xml
-        retention-days: 30
+        retention-days: 1  # TODO: Increase to 30+ days for production (reduced for debug/development)
 
     - name: Publish Test Results
       if: always()
