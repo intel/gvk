@@ -95,7 +95,7 @@ jobs:
     - name: Check Vulkan SDK Cache Status
       run: |
         echo "Required SDK version: ${{ steps.detect-sdk-version.outputs.sdk-version }}"
-        if [ "${{ steps.cache-vulkan-sdk.outputs.cache-hit }}" == "true" ]; then
+        if [ "${{ steps.cache-vulkan-sdk.outputs.cache-hit }}" = "true" ]; then
           echo "? Vulkan SDK restored from cache"
           ls -lh build/_deps/VulkanSDK/ || echo "Cache directory exists but empty"
         else
