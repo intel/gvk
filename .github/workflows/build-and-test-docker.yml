@@ -122,6 +122,26 @@ jobs:
       with:
         name: gvk-test-package-${{ github.sha }}
         path: gvk-test-package
+      # Retry on network failures (common with self-hosted runners)
+      timeout-minutes: 10
+      continue-on-error: false
+
+    - name: Verify Test Package Downloaded
+      run: |
+        echo "=== Verifying test package download ==="
+        if [ ! -d "gvk-test-package" ]; then
+          echo "ERROR: gvk-test-package directory not found!"
+          exit 1
+        fi
+
+        if [ ! -f "gvk-test-package/gvk-string.tests" ]; then
+          echo "ERROR: gvk-string.tests not found in test package!"
+          ls -la gvk-test-package/
+          exit 1
+        fi
+
+        echo "Test package verified successfully"
+        ls -lh gvk-test-package/
 
     - name: Check GPU (Host)
       run: |
@@ -133,7 +153,19 @@ jobs:
         ls -la /usr/share/vulkan/icd.d/ || echo "No ICDs"
         echo ""
         echo "Vulkan Devices:"
-        vulkaninfo --summary || echo "vulkaninfo failed"
+        # Check if vulkaninfo is available, if not suggest installing vulkan-tools
+        if command -v vulkaninfo &> /dev/null; then
+          vulkaninfo --summary || echo "vulkaninfo failed"
+        else
+          echo "vulkaninfo not found (install vulkan-tools on host)"
+          echo "Using VK_ICD_FILENAMES to probe GPUs..."
+          # List available ICDs
+          for icd in /usr/share/vulkan/icd.d/*.json; do
+            if [ -f "$icd" ]; then
+              echo "Found ICD: $(basename $icd)"
+            fi
+          done
+        fi
 
     - name: List Test Package Contents
       run: |
@@ -141,6 +173,7 @@ jobs:
         ls -lah gvk-test-package/
 
     - name: Run Tests (gvk-string)
+      id: run-tests
       working-directory: gvk-test-package
       run: |
         # Make test executable if needed
@@ -150,7 +183,9 @@ jobs:
         # Full output goes to stdout (for step-by-step inspection)
         # XML output goes to file (for GitHub test results summary)
         echo "=== Running gvk-string.tests ==="
-        set +e  # Don't exit on test failures
+
+        # Run tests and capture exit code
+        set +e
         ./gvk-string.tests --gtest_output=xml:test-results.xml 2>&1 | tee test-output.txt
         TEST_EXIT_CODE=${PIPESTATUS[0]}
         set -e
@@ -161,10 +196,13 @@ jobs:
         if [ -f test-results.xml ]; then
           echo "Test results XML generated"
           ls -lh test-results.xml
+        else
+          echo "WARNING: test-results.xml was not generated!"
         fi
 
+        # Exit with test exit code so job fails if tests fail
+        # Note: Removed continue-on-error so test failures are properly reported
         exit $TEST_EXIT_CODE
-      continue-on-error: true
 
     - name: Display Test Results
       if: always()
@@ -241,10 +279,11 @@ jobs:
           exit 1
         fi
 
-        # Test failures are warnings, not hard failures (for now)
+        # Test job result reflects ALL matrix jobs
+        # If any test job fails, the overall test result is 'failure'
         if [ "${{ needs.test.result }}" != "success" ]; then
-          echo "Some tests failed - check test results"
-          # Don't exit 1 yet - we want to see test results first
+          echo "Test failures detected - check individual test jobs above"
+          exit 1
         fi
 
-        echo "Build completed, check test results"
+        echo "Build and all tests passed successfully"
