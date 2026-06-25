@@ -71,6 +71,38 @@ jobs:
         submodules: recursive
 
 ################################################################################
+    - name: Detect Vulkan SDK Version
+#------------------------------------------------------------------------------#
+      id: detect-sdk-version
+      run: |
+        # Extract Vulkan SDK version from CMakeLists.txt
+        SDK_VERSION=$(grep -oP 'set\(gvk-Vulkan-SDK_VERSION \K[0-9.]+' CMakeLists.txt || echo "unknown")
+        echo "Detected Vulkan SDK version: $SDK_VERSION"
+        echo "sdk-version=$SDK_VERSION" >> $GITHUB_OUTPUT
+
+################################################################################
+    - name: Restore Vulkan SDK Cache
+#------------------------------------------------------------------------------#
+      id: cache-vulkan-sdk
+      uses: actions/cache@v4
+      with:
+        path: build/_deps/VulkanSDK
+        key: vulkan-sdk-${{ steps.detect-sdk-version.outputs.sdk-version }}-linux-${{ runner.os }}
+        restore-keys: |
+          vulkan-sdk-${{ steps.detect-sdk-version.outputs.sdk-version }}-linux-
+          vulkan-sdk-
+
+    - name: Check Vulkan SDK Cache Status
+      run: |
+        echo "Required SDK version: ${{ steps.detect-sdk-version.outputs.sdk-version }}"
+        if [ "${{ steps.cache-vulkan-sdk.outputs.cache-hit }}" == "true" ]; then
+          echo "? Vulkan SDK restored from cache"
+          ls -lh build/_deps/VulkanSDK/ || echo "Cache directory exists but empty"
+        else
+          echo "? Vulkan SDK not in cache, will be downloaded during configure"
+        fi
+
+################################################################################
     - name: Configure
 #------------------------------------------------------------------------------#
       run: |
@@ -83,6 +115,25 @@ jobs:
           -D gvk-xml_ENABLED=ON \
           -D gvk-build-tests=ON \
           -D gvk-build-samples=OFF
+
+################################################################################
+    - name: Cache Vulkan SDK
+#------------------------------------------------------------------------------#
+      if: steps.cache-vulkan-sdk.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: build/_deps/VulkanSDK
+        key: vulkan-sdk-${{ steps.detect-sdk-version.outputs.sdk-version }}-linux-${{ runner.os }}
+
+    - name: Verify Vulkan SDK Cached
+      run: |
+        echo "SDK Version: ${{ steps.detect-sdk-version.outputs.sdk-version }}"
+        if [ -d "build/_deps/VulkanSDK" ]; then
+          echo "? Vulkan SDK directory exists"
+          ls -lh build/_deps/VulkanSDK/
+        else
+          echo "? Vulkan SDK directory not found (may not be needed for this build)"
+        fi
 
 ################################################################################
     - name: Build
