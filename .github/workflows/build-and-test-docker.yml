@@ -1,5 +1,4 @@
 name: Build and Test (gvk-string only)
-name: Build and Test (gvk-string only)
 
 on:
   workflow_dispatch:  # Manual trigger
