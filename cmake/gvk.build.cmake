@@ -49,11 +49,26 @@ endfunction()
 function(gvk_setup_target)
     cmake_parse_arguments(ARGS "" "TARGET;FOLDER" "LINK_LIBRARIES;INCLUDE_DIRECTORIES;INCLUDE_FILES;SOURCE_FILES;COMPILE_DEFINITIONS" ${ARGN})
     string(FIND ${CMAKE_CURRENT_SOURCE_DIR} "${CMAKE_SOURCE_DIR}/internal/" gvkInternal)
-    if(gvkInternal GREATER_EQUAL 0)
-        target_include_directories(${ARGS_TARGET} PUBLIC "$<BUILD_INTERFACE:$<JOIN:${ARGS_INCLUDE_DIRECTORIES},\\;>>" INTERFACE $<INSTALL_INTERFACE:internal/include>)
-    else()
-        target_include_directories(${ARGS_TARGET} PUBLIC "$<BUILD_INTERFACE:$<JOIN:${ARGS_INCLUDE_DIRECTORIES},\\;>>" INTERFACE $<INSTALL_INTERFACE:include>)
+
+
+    #### if(gvkInternal GREATER_EQUAL 0)
+    ####     target_include_directories(${ARGS_TARGET} PUBLIC "$<BUILD_INTERFACE:$<JOIN:${ARGS_INCLUDE_DIRECTORIES},\\;>>" INTERFACE $<INSTALL_INTERFACE:internal/include>)
+    #### else()
+    ####     target_include_directories(${ARGS_TARGET} PUBLIC "$<BUILD_INTERFACE:$<JOIN:${ARGS_INCLUDE_DIRECTORIES},\\;>>" INTERFACE $<INSTALL_INTERFACE:include>)
+    #### endif()
+
+
+    # FIX: Use separate target properties commands to isolate compilation versus downstream consumers
+    if(ARGS_INCLUDE_DIRECTORIES)
+        target_include_directories(${ARGS_TARGET} PRIVATE "${ARGS_INCLUDE_DIRECTORIES}")
     endif()
+    if(gvkInternal GREATER_EQUAL 0)
+        target_include_directories(${ARGS_TARGET} INTERFACE $<INSTALL_INTERFACE:internal/include>)
+    else()
+        target_include_directories(${ARGS_TARGET} INTERFACE $<INSTALL_INTERFACE:include>)
+    endif()
+
+
     target_compile_definitions(${ARGS_TARGET} PUBLIC "${ARGS_COMPILE_DEFINITIONS}")
     target_link_libraries(${ARGS_TARGET} PUBLIC ${ARGS_LINK_LIBRARIES})
     set_target_properties(${ARGS_TARGET} PROPERTIES LINKER_LANGUAGE CXX)
