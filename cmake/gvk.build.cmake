@@ -132,7 +132,7 @@ function(gvk_add_code_generator)
     add_custom_command(
         OUTPUT ${ARGS_OUTPUT_FILES}
         COMMAND "${ARGS_TARGET}" "${ARGS_INPUT_FILES}"
-        DEPENDS ${ARGS_TARGET} ${ARGS_INPUT_FILES}
+        DEPENDS ${ARGS_TARGET} ${ARGS_INPUT_FILES} ${ARGS_LINK_LIBRARIES}
     )
 endfunction()
 
