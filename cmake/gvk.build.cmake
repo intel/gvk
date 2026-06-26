@@ -120,12 +120,7 @@ function(gvk_setup_target)
 
     target_compile_definitions(${ARGS_TARGET} PUBLIC "${ARGS_COMPILE_DEFINITIONS}")
     
-    # 3. Dynamic Linker Assignment
-    if(targetType STREQUAL "EXECUTABLE")
-        target_link_libraries(${ARGS_TARGET} PRIVATE ${ARGS_LINK_LIBRARIES})
-    else()
-        target_link_libraries(${ARGS_TARGET} PUBLIC ${ARGS_LINK_LIBRARIES})
-    endif()
+    target_link_libraries(${ARGS_TARGET} ${ARGS_LINK_LIBRARIES})
 
     set_target_properties(${ARGS_TARGET} PROPERTIES LINKER_LANGUAGE CXX)
     target_compile_options(${ARGS_TARGET} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX> $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror -fPIC>)
