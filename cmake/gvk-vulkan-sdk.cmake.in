@@ -159,21 +159,53 @@ endfunction()
 function(gvk_download_vulkan_sdk)
     cmake_parse_arguments(ARG "" "WORKING_DIRECTORY" "URL" ${ARGN})
     get_filename_component(ARG_WORKING_DIRECTORY "${ARG_WORKING_DIRECTORY}" ABSOLUTE)
+    set(package "${ARG_WORKING_DIRECTORY}/${gvk-Vulkan-SDK_PACKAGE}")
+
+    # Check if Vulkan SDK package already exists with expected hash
+    if (EXISTS "${package}")
+        message(STATUS "Found '${package}'")
+        file(SHA256 "${package}" hash)
+        if(hash STREQUAL gvk-Vulkan-SDK_SHA256)
+            return()
+        else()
+            message(WARNING "    status: [Hash mismatch; removing archive]")
+            file(REMOVE "${package}")
+        endif()
+    endif()
+
+    # Attempt download from each given URL til one succeeds
     foreach(URL IN LISTS ARG_URL)
         set(URL "${URL}/${gvk-Vulkan-SDK_PACKAGE}")
-        file(DOWNLOAD "${URL}" RANGE_END 1 STATUS status)
-        message("Downloading '${gvk-Vulkan-SDK_PACKAGE}'")
-        message("    origin: '${URL}'")
+        message(STATUS "Downloading '${gvk-Vulkan-SDK_PACKAGE}'")
+        message(STATUS "    origin: '${URL}'")
+
+        # Attempt to download a single byte to check if the URL is valid
+        set(tmp "${ARG_WORKING_DIRECTORY}/tmp")
+        file(DOWNLOAD "${URL}" "${tmp}" RANGE_END 1 TIMEOUT 10 STATUS status)
+        file(REMOVE "${tmp}")
+
+        # If successful then attempt to download the entire archive
         list(GET status 0 result)
         if(result EQUAL 0)
-            message("    output: '${ARG_WORKING_DIRECTORY}/${gvk-Vulkan-SDK_PACKAGE}'")
-            set(package "${ARG_WORKING_DIRECTORY}/${gvk-Vulkan-SDK_PACKAGE}")
-            file(DOWNLOAD "${URL}" "${package}" EXPECTED_HASH SHA256=${gvk-Vulkan-SDK_SHA256} STATUS status SHOW_PROGRESS)
+            message(STATUS "    output: '${package}'")
+            file(
+                DOWNLOAD "${URL}" "${package}"
+                EXPECTED_HASH SHA256=${gvk-Vulkan-SDK_SHA256}
+                INACTIVITY_TIMEOUT 20
+                TIMEOUT 300
+                STATUS status
+                SHOW_PROGRESS
+            )
         endif()
-        message("    status: [${status}]")
+        message(STATUS "    status: [${status}]")
+
+        # Break on download success, otherwise cleanup any partial/corrupt download and
+        #   move onto the next URL
         list(GET status 0 result)
         if(result EQUAL 0)
             break()
+        elseif(EXISTS "${package}")
+            file(REMOVE "${package}")
         endif()
     endforeach()
 endfunction()
@@ -188,9 +220,9 @@ function(gvk_extract_vulkan_sdk)
     endif()
     get_filename_component(ARG_EXTRACT "${ARG_EXTRACT}" ABSOLUTE)
     set(package "${ARG_WORKING_DIRECTORY}/${gvk-Vulkan-SDK_PACKAGE}")
-    message("Extracting '${gvk-Vulkan-SDK_PACKAGE}'")
-    message("    origin: '${package}'")
-    message("    output: '${ARG_EXTRACT}'")
+    message(STATUS "Extracting '${gvk-Vulkan-SDK_PACKAGE}'")
+    message(STATUS "    origin: '${package}'")
+    message(STATUS "    output: '${ARG_EXTRACT}'")
     if(NOT EXISTS "${ARG_EXTRACT}")
         string(FIND ${gvk-Vulkan-SDK_PACKAGE} ".tar." tar)
         string(FIND ${gvk-Vulkan-SDK_PACKAGE} ".exe" exe)
@@ -204,12 +236,12 @@ function(gvk_extract_vulkan_sdk)
             execute_process(COMMAND ${cmd} RESULT_VARIABLE result)
         endif()
         if(result)
-            message("    result: [\"${result}\"]")
+            message(STATUS "    result: [\"${result}\"]")
         else()
-            message("    result: [0;\"No error\"]")
+            message(STATUS "    result: [0;\"No error\"]")
         endif()
     else()
-        message("    result: [0;\"skipping extraction as '${ARG_EXTRACT}' already exists\"]")
+        message(STATUS "    result: [0;\"skipping extraction as '${ARG_EXTRACT}' already exists\"]")
     endif()
 endfunction()
 
