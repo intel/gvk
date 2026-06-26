@@ -47,11 +47,13 @@ function(gvk_get_directory_targets directory outTargets)
 endfunction()
 
 function(gvk_setup_target)
-    cmake_parse_arguments(ARGS "" "TARGET;FOLDER" "LINK_LIBRARIES;INCLUDE_DIRECTORIES;INCLUDE_FILES;SOURCE_FILES;COMPILE_DEFINITIONS" ${ARGN})
+    # cmake_parse_arguments(ARGS "" "TARGET;FOLDER" "LINK_LIBRARIES;INCLUDE_DIRECTORIES;INCLUDE_FILES;SOURCE_FILES;COMPILE_DEFINITIONS" ${ARGN})
     get_target_property(targetType ${ARGS_TARGET} TYPE)
     string(FIND ${CMAKE_CURRENT_SOURCE_DIR} "${CMAKE_SOURCE_DIR}/internal/" gvkInternal)
     if(targetType STREQUAL "EXECUTABLE")
-        target_include_directories(${ARGS_TARGET} PRIVATE "$<BUILD_INTERFACE:${ARGS_INCLUDE_DIRECTORIES}>")
+        if(ARGS_INCLUDE_DIRECTORIES)
+            target_include_directories(${ARGS_TARGET} PRIVATE "$<BUILD_INTERFACE:${ARGS_INCLUDE_DIRECTORIES}>")
+        endif()
     else()
         if(gvkInternal GREATER_EQUAL 0)
             target_include_directories(${ARGS_TARGET} PUBLIC "$<BUILD_INTERFACE:${ARGS_INCLUDE_DIRECTORIES}>" INTERFACE "$<INSTALL_INTERFACE:internal/include>")
@@ -91,13 +93,13 @@ function(gvk_add_static_library)
     cmake_parse_arguments(ARGS "" "TARGET;FOLDER" "LINK_LIBRARIES;INCLUDE_DIRECTORIES;INCLUDE_FILES;SOURCE_FILES;COMPILE_DEFINITIONS" ${ARGN})
     add_library(${ARGS_TARGET} STATIC "${ARGS_INCLUDE_FILES}" "${ARGS_SOURCE_FILES}")
     gvk_setup_target(
-        TARGET               ${ARGS_TARGET}
-        FOLDER              "${ARGS_FOLDER}"
-        LINK_LIBRARIES       ${ARGS_LINK_LIBRARIES}
-        INCLUDE_DIRECTORIES  ${ARGS_INCLUDE_DIRECTORIES}
-        INCLUDE_FILES       "${ARGS_INCLUDE_FILES}"
-        SOURCE_FILES        "${ARGS_SOURCE_FILES}"
-        COMPILE_DEFINITIONS "${ARGS_COMPILE_DEFINITIONS}"
+     TARGET               ${ARGS_TARGET}
+     FOLDER              "${ARGS_FOLDER}"
+     LINK_LIBRARIES       ${ARGS_LINK_LIBRARIES}
+     INCLUDE_DIRECTORIES  ${ARGS_INCLUDE_DIRECTORIES}
+     INCLUDE_FILES       "${ARGS_INCLUDE_FILES}"
+     SOURCE_FILES        "${ARGS_SOURCE_FILES}"
+     COMPILE_DEFINITIONS  ${ARGS_COMPILE_DEFINITIONS}
     )
 endfunction()
 
@@ -111,7 +113,7 @@ function(gvk_add_executable)
         INCLUDE_DIRECTORIES  ${ARGS_INCLUDE_DIRECTORIES}
         INCLUDE_FILES       "${ARGS_INCLUDE_FILES}"
         SOURCE_FILES        "${ARGS_SOURCE_FILES}"
-        COMPILE_DEFINITIONS "${ARGS_COMPILE_DEFINITIONS}"
+        COMPILE_DEFINITIONS  ${ARGS_COMPILE_DEFINITIONS}
     )
     set_target_properties(${ARGS_TARGET} PROPERTIES GVK_EXECUTABLE TRUE)
 endfunction()
@@ -125,7 +127,7 @@ function(gvk_add_code_generator)
         INCLUDE_DIRECTORIES  ${ARGS_INCLUDE_DIRECTORIES}
         INCLUDE_FILES       "${ARGS_INCLUDE_FILES}"
         SOURCE_FILES        "${ARGS_SOURCE_FILES}"
-        COMPILE_DEFINITIONS "${ARGS_COMPILE_DEFINITIONS}"
+        COMPILE_DEFINITIONS  ${ARGS_COMPILE_DEFINITIONS}
     )
     add_custom_command(
         OUTPUT ${ARGS_OUTPUT_FILES}
