@@ -108,6 +108,7 @@ jobs:
 ################################################################################
     - name: Configure
       run: |
+        cmake --version \
         cmake -G "Unix Makefiles" -B build \
           -D CMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
           -D gvk-default_ENABLED=OFF \
