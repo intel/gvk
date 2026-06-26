@@ -95,27 +95,38 @@ function(gvk_setup_target)
     cmake_parse_arguments(ARGS "" "TARGET;FOLDER" "LINK_LIBRARIES;INCLUDE_DIRECTORIES;INCLUDE_FILES;SOURCE_FILES;COMPILE_DEFINITIONS" ${ARGN})
     string(FIND ${CMAKE_CURRENT_SOURCE_DIR} "${CMAKE_SOURCE_DIR}/internal/" gvkInternal)
 
-    # Provide local paths PRIVATELY for immediate object compilation.  This guarantees
-    #   local -I paths are always available.
-    if(ARGS_INCLUDE_DIRECTORIES)
-        target_include_directories(${ARGS_TARGET} PRIVATE "${ARGS_INCLUDE_DIRECTORIES}")
-    endif()
-
-    # Keep INTERFACE for downstream package installation layouts
-    if(gvkInternal GREATER_EQUAL 0)
-        target_include_directories(${ARGS_TARGET} INTERFACE $<INSTALL_INTERFACE:internal/include>)
-    else()
-        target_include_directories(${ARGS_TARGET} INTERFACE $<INSTALL_INTERFACE:include>)
-    endif()
-
+    # 1. Query the target type natively
     get_target_property(targetType ${ARGS_TARGET} TYPE)
+
+    # 2. Dynamic Scope Assignment
+    if(targetType STREQUAL "EXECUTABLE")
+        # Executables have no downstream consumers; they use PRIVATE for their own build directories
+        if(ARGS_INCLUDE_DIRECTORIES)
+            target_include_directories(${ARGS_TARGET} PRIVATE "${ARGS_INCLUDE_DIRECTORIES}")
+        endif()
+    else()
+        # Libraries MUST use PUBLIC so downstream consumers can inherit their headers!
+        if(ARGS_INCLUDE_DIRECTORIES)
+            target_include_directories(${ARGS_TARGET} PUBLIC "$<BUILD_INTERFACE:${ARGS_INCLUDE_DIRECTORIES}>")
+        endif()
+
+        # Handle your package installation export boundaries for libraries only
+        if(gvkInternal GREATER_EQUAL 0)
+            target_include_directories(${ARGS_TARGET} INTERFACE "$<INSTALL_INTERFACE:internal/include>")
+        else()
+            target_include_directories(${ARGS_TARGET} INTERFACE "$<INSTALL_INTERFACE:include>")
+        endif()
+    endif()
+
+    target_compile_definitions(${ARGS_TARGET} PUBLIC "${ARGS_COMPILE_DEFINITIONS}")
+    
+    # 3. Dynamic Linker Assignment
     if(targetType STREQUAL "EXECUTABLE")
         target_link_libraries(${ARGS_TARGET} PRIVATE ${ARGS_LINK_LIBRARIES})
     else()
         target_link_libraries(${ARGS_TARGET} PUBLIC ${ARGS_LINK_LIBRARIES})
     endif()
 
-    target_compile_definitions(${ARGS_TARGET} PUBLIC "${ARGS_COMPILE_DEFINITIONS}")
     set_target_properties(${ARGS_TARGET} PROPERTIES LINKER_LANGUAGE CXX)
     target_compile_options(${ARGS_TARGET} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX> $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror -fPIC>)
     gvk_create_file_group("${ARGS_INCLUDE_FILES}")
