@@ -88,8 +88,8 @@ function(gvk_add_static_library)
     gvk_setup_target(
         TARGET               ${ARGS_TARGET}
         FOLDER              "${ARGS_FOLDER}"
-        LINK_LIBRARIES      "${ARGS_LINK_LIBRARIES}"
-        INCLUDE_DIRECTORIES "${ARGS_INCLUDE_DIRECTORIES}"
+        LINK_LIBRARIES       ${ARGS_LINK_LIBRARIES}
+        INCLUDE_DIRECTORIES  ${ARGS_INCLUDE_DIRECTORIES}
         INCLUDE_FILES       "${ARGS_INCLUDE_FILES}"
         SOURCE_FILES        "${ARGS_SOURCE_FILES}"
         COMPILE_DEFINITIONS "${ARGS_COMPILE_DEFINITIONS}"
@@ -102,8 +102,8 @@ function(gvk_add_executable)
     gvk_setup_target(
         TARGET               ${ARGS_TARGET}
         FOLDER              "${ARGS_FOLDER}"
-        LINK_LIBRARIES      "${ARGS_LINK_LIBRARIES}"
-        INCLUDE_DIRECTORIES "${ARGS_INCLUDE_DIRECTORIES}"
+        LINK_LIBRARIES       ${ARGS_LINK_LIBRARIES}
+        INCLUDE_DIRECTORIES  ${ARGS_INCLUDE_DIRECTORIES}
         INCLUDE_FILES       "${ARGS_INCLUDE_FILES}"
         SOURCE_FILES        "${ARGS_SOURCE_FILES}"
         COMPILE_DEFINITIONS "${ARGS_COMPILE_DEFINITIONS}"
@@ -116,8 +116,8 @@ function(gvk_add_code_generator)
     gvk_add_executable(
         TARGET               ${ARGS_TARGET}
         FOLDER              "${ARGS_FOLDER}"
-        LINK_LIBRARIES      "${ARGS_LINK_LIBRARIES}"
-        INCLUDE_DIRECTORIES "${ARGS_INCLUDE_DIRECTORIES}"
+        LINK_LIBRARIES       ${ARGS_LINK_LIBRARIES}
+        INCLUDE_DIRECTORIES  ${ARGS_INCLUDE_DIRECTORIES}
         INCLUDE_FILES       "${ARGS_INCLUDE_FILES}"
         SOURCE_FILES        "${ARGS_SOURCE_FILES}"
         COMPILE_DEFINITIONS "${ARGS_COMPILE_DEFINITIONS}"
