@@ -85,46 +85,43 @@ endfunction()
 function(gvk_add_static_library)
     cmake_parse_arguments(ARGS "" "TARGET;FOLDER" "LINK_LIBRARIES;INCLUDE_DIRECTORIES;INCLUDE_FILES;SOURCE_FILES;COMPILE_DEFINITIONS" ${ARGN})
     add_library(${ARGS_TARGET} STATIC "${ARGS_INCLUDE_FILES}" "${ARGS_SOURCE_FILES}")
-    # gvk_setup_target(
-    #     TARGET               ${ARGS_TARGET}
-    #     FOLDER              "${ARGS_FOLDER}"
-    #     LINK_LIBRARIES      "${ARGS_LINK_LIBRARIES}"
-    #     INCLUDE_DIRECTORIES "${ARGS_INCLUDE_DIRECTORIES}"
-    #     INCLUDE_FILES       "${ARGS_INCLUDE_FILES}"
-    #     SOURCE_FILES        "${ARGS_SOURCE_FILES}"
-    #     COMPILE_DEFINITIONS "${ARGS_COMPILE_DEFINITIONS}"
-    # )
-    gvk_setup_target("${ARG}")
+    gvk_setup_target(
+        TARGET               ${ARGS_TARGET}
+        FOLDER              "${ARGS_FOLDER}"
+        LINK_LIBRARIES      "${ARGS_LINK_LIBRARIES}"
+        INCLUDE_DIRECTORIES "${ARGS_INCLUDE_DIRECTORIES}"
+        INCLUDE_FILES       "${ARGS_INCLUDE_FILES}"
+        SOURCE_FILES        "${ARGS_SOURCE_FILES}"
+        COMPILE_DEFINITIONS "${ARGS_COMPILE_DEFINITIONS}"
+    )
 endfunction()
 
 function(gvk_add_executable)
     cmake_parse_arguments(ARGS "" "TARGET;FOLDER" "LINK_LIBRARIES;INCLUDE_DIRECTORIES;INCLUDE_FILES;SOURCE_FILES;COMPILE_DEFINITIONS" ${ARGN})
     add_executable(${ARGS_TARGET} "${ARGS_INCLUDE_FILES}" "${ARGS_SOURCE_FILES}")
-    # gvk_setup_target(
-    #     TARGET               ${ARGS_TARGET}
-    #     FOLDER              "${ARGS_FOLDER}"
-    #     LINK_LIBRARIES      "${ARGS_LINK_LIBRARIES}"
-    #     INCLUDE_DIRECTORIES "${ARGS_INCLUDE_DIRECTORIES}"
-    #     INCLUDE_FILES       "${ARGS_INCLUDE_FILES}"
-    #     SOURCE_FILES        "${ARGS_SOURCE_FILES}"
-    #     COMPILE_DEFINITIONS "${ARGS_COMPILE_DEFINITIONS}"
-    # )
-    gvk_setup_target("${ARG}")
+    gvk_setup_target(
+        TARGET               ${ARGS_TARGET}
+        FOLDER              "${ARGS_FOLDER}"
+        LINK_LIBRARIES      "${ARGS_LINK_LIBRARIES}"
+        INCLUDE_DIRECTORIES "${ARGS_INCLUDE_DIRECTORIES}"
+        INCLUDE_FILES       "${ARGS_INCLUDE_FILES}"
+        SOURCE_FILES        "${ARGS_SOURCE_FILES}"
+        COMPILE_DEFINITIONS "${ARGS_COMPILE_DEFINITIONS}"
+    )
     set_target_properties(${ARGS_TARGET} PROPERTIES GVK_EXECUTABLE TRUE)
 endfunction()
 
 function(gvk_add_code_generator)
     cmake_parse_arguments(ARGS "" "TARGET;FOLDER" "LINK_LIBRARIES;INCLUDE_DIRECTORIES;INCLUDE_FILES;SOURCE_FILES;INPUT_FILES;OUTPUT_FILES;COMPILE_DEFINITIONS" ${ARGN})
-    # gvk_add_executable(
-    #     TARGET               ${ARGS_TARGET}
-    #     FOLDER              "${ARGS_FOLDER}"
-    #     LINK_LIBRARIES      "${ARGS_LINK_LIBRARIES}"
-    #     INCLUDE_DIRECTORIES "${ARGS_INCLUDE_DIRECTORIES}"
-    #     INCLUDE_FILES       "${ARGS_INCLUDE_FILES}"
-    #     SOURCE_FILES        "${ARGS_SOURCE_FILES}"
-    #     COMPILE_DEFINITIONS "${ARGS_COMPILE_DEFINITIONS}"
-    # )
-    gvk_setup_target("${ARG}")
+    gvk_add_executable(
+        TARGET               ${ARGS_TARGET}
+        FOLDER              "${ARGS_FOLDER}"
+        LINK_LIBRARIES      "${ARGS_LINK_LIBRARIES}"
+        INCLUDE_DIRECTORIES "${ARGS_INCLUDE_DIRECTORIES}"
+        INCLUDE_FILES       "${ARGS_INCLUDE_FILES}"
+        SOURCE_FILES        "${ARGS_SOURCE_FILES}"
+        COMPILE_DEFINITIONS "${ARGS_COMPILE_DEFINITIONS}"
+    )
     add_custom_command(
         OUTPUT ${ARGS_OUTPUT_FILES}
         COMMAND "${ARGS_TARGET}" "${ARGS_INPUT_FILES}"
