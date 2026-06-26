@@ -108,7 +108,7 @@ jobs:
 ################################################################################
     - name: Configure
       run: |
-        cmake -G "Ninja" -B build \
+        cmake -G "Unix Makefiles" -B build \
           -D CMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
           -D gvk-default_ENABLED=OFF \
           -D gvk-reference_ENABLED=ON \
