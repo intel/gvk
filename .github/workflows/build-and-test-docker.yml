@@ -6,8 +6,10 @@ on:
   push:  # TEMPORARY: To make workflow visible in GitHub UI
     branches:
       - setup-github-actions
-    paths:
-      - '.github/workflows/build-and-test-docker.yml'
+#    paths:
+#      - '.github/workflows/build-and-test-docker.yml'
+
+
   # After Docker permissions fixed, ready to test!
   # push:
   #   branches:
