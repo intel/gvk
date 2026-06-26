@@ -28,7 +28,7 @@ include_guard(GLOBAL)
 include(CMakeParseArguments)
 
 set(gvk-Vulkan-SDK_VERSION @gvk-Vulkan-SDK_VERSION@ CACHE STRING "")
-set(gvk-Vulkan-SDK_EXTRACT ON CACHE BOOL "")
+set(gvk-Vulkan-SDK_EXTRACT OFF CACHE BOOL "")
 
 set(gvk-Vulkan-SDK_URL_LINUX "https://sdk.lunarg.com/sdk/download/${gvk-Vulkan-SDK_VERSION}/linux" CACHE STRING "")
 set(gvk-Vulkan-SDK_PACKAGE_LINUX @gvk-Vulkan-SDK_PACKAGE_LINUX@ CACHE STRING "")
