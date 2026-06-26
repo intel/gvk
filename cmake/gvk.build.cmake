@@ -47,7 +47,7 @@ function(gvk_get_directory_targets directory outTargets)
 endfunction()
 
 function(gvk_setup_target)
-    # cmake_parse_arguments(ARGS "" "TARGET;FOLDER" "LINK_LIBRARIES;INCLUDE_DIRECTORIES;INCLUDE_FILES;SOURCE_FILES;COMPILE_DEFINITIONS" ${ARGN})
+    cmake_parse_arguments(ARGS "" "TARGET;FOLDER" "LINK_LIBRARIES;INCLUDE_DIRECTORIES;INCLUDE_FILES;SOURCE_FILES;COMPILE_DEFINITIONS" ${ARGN})
     string(FIND ${CMAKE_CURRENT_SOURCE_DIR} "${CMAKE_SOURCE_DIR}/internal/" gvkInternal)
 
     if(gvkInternal GREATER_EQUAL 0)
