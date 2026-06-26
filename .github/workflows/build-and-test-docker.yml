@@ -64,9 +64,16 @@ jobs:
         git config --global --add safe.directory '*'
 
 ################################################################################
+    - name: Clean
+      run: |
+        rm -rf build
+        rm -rf install
+
+################################################################################
     - name: Checkout
       uses: actions/checkout@v4
-      run: rm -rf build/
+      with:
+        clean: true
 
 ################################################################################
     - name: Detect Vulkan SDK Version
@@ -101,7 +108,7 @@ jobs:
 ################################################################################
     - name: Configure
       run: |
-        cmake -G "Ninja" -B build \
+        cmake --fresh -G "Ninja" -B build \
           -D CMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
           -D gvk-default_ENABLED=OFF \
           -D gvk-reference_ENABLED=ON \
