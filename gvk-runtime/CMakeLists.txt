@@ -18,6 +18,7 @@ gvk_add_code_generator(
         "gvk-runtime/"
     LINK_LIBRARIES
         gvk-cppgen
+        gvk-xml # TODO : Documentation : NOTE : Already linked by gvk-cppgen
     INCLUDE_DIRECTORIES
         "${generatorSourcePath}/"
     INCLUDE_FILES
