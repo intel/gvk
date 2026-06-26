@@ -94,7 +94,7 @@ function(gvk_add_static_library)
     #     SOURCE_FILES        "${ARGS_SOURCE_FILES}"
     #     COMPILE_DEFINITIONS "${ARGS_COMPILE_DEFINITIONS}"
     # )
-    gvk_setup_target(${ARG})
+    gvk_setup_target("${ARG}")
 endfunction()
 
 function(gvk_add_executable)
@@ -109,7 +109,7 @@ function(gvk_add_executable)
     #     SOURCE_FILES        "${ARGS_SOURCE_FILES}"
     #     COMPILE_DEFINITIONS "${ARGS_COMPILE_DEFINITIONS}"
     # )
-    gvk_setup_target(${ARG})
+    gvk_setup_target("${ARG}")
     set_target_properties(${ARGS_TARGET} PROPERTIES GVK_EXECUTABLE TRUE)
 endfunction()
 
@@ -124,7 +124,7 @@ function(gvk_add_code_generator)
     #     SOURCE_FILES        "${ARGS_SOURCE_FILES}"
     #     COMPILE_DEFINITIONS "${ARGS_COMPILE_DEFINITIONS}"
     # )
-    gvk_setup_target(${ARG})
+    gvk_setup_target("${ARG}")
     add_custom_command(
         OUTPUT ${ARGS_OUTPUT_FILES}
         COMMAND "${ARGS_TARGET}" "${ARGS_INPUT_FILES}"
