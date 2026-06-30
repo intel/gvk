@@ -211,6 +211,35 @@ jobs:
         ls -lh gvk-test-package/
 
 ################################################################################
+    - name: Log Hardware System Information
+      run: |
+        echo "=== CPU Information ==="
+        lscpu | grep -E "Model name|Core\(s\) per socket|Socket\(s\)|Thread\(s\) per core"
+        
+        echo -e "\n=== Total CPU Cores ==="
+        nproc
+        
+        echo -e "\n=== Memory Information ==="
+        free -h
+        
+        echo -e "\n=== Disk Space Usage ==="
+        df -h /
+
+      - name: Log Software and Tool Versions
+        run: |
+          echo "=== Compiler Versions ==="
+          gcc --version | head -n 1 || echo "gcc not installed"
+          g++ --version | head -n 1 || echo "g++ not installed"
+          clang --version | head -n 1 || echo "clang not installed"
+          
+          echo -e "\n=== Build & Runtime Tools ==="
+          cmake --version | head -n 1 || echo "cmake not installed"
+          python3 --version || echo "python3 not installed"
+          
+          echo -e "\n=== System C Library (glibc) Version ==="
+          ldd --version | head -n 1 || echo "ldd not found"
+
+################################################################################
     - name: Check GPU (Host)
       run: |
         echo "=== GPU Information ==="
@@ -242,6 +271,33 @@ jobs:
         echo ""
         echo "=== Test Executables Found ==="
         find gvk-test-package -name "*.tests" -type f -executable
+
+################################################################################
+      - name: Check Docker GPU Capabilities
+        id: gpu_check
+        # Continue running the pipeline even if this specific step fails
+        continue-on-error: true
+        run: |
+          echo "=== Testing Docker GPU Pass-through ==="
+          if docker run --rm --gpus all ubuntu:22.04 nvidia-smi > /dev/null 2>&1; then
+            echo "SUCCESS: Docker GPU acceleration is fully functional."
+            echo "has_gpu=true" >> $GITHUB_OUTPUT
+          else
+            echo "WARNING: Docker GPU acceleration is NOT available on this runner."
+            echo "has_gpu=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Execute Tests With Full GPU Power
+        # This step only executes if the check above returned true
+        if: steps.gpu_check.outputs.has_gpu == 'true'
+        run: |
+          chmod +x ./gvk-reference.tests
+          ./gvk-reference.tests
+
+      - name: Log Warning If Skipped
+        if: steps.gpu_check.outputs.has_gpu != 'true'
+        run: |
+          echo "Skipping test execution block because this machine lacks a configured NVIDIA Docker runtime."
 
 ################################################################################
     - name: Run Tests
