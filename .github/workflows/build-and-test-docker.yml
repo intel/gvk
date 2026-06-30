@@ -211,32 +211,7 @@ jobs:
         ls -lh gvk-test-package/
 
 ################################################################################
-    - name: Check System
-      run: |
-        echo "=== GPU Information ==="
-        echo "DRI Devices:"
-        ls -la /dev/dri/ || echo "No /dev/dri"
-        echo ""
-        echo "Vulkan ICDs:"
-        ls -la /usr/share/vulkan/icd.d/ || echo "No ICDs"
-        echo ""
-        echo "Vulkan Devices:"
-        # Check if vulkaninfo is available, if not suggest installing vulkan-tools
-        if command -v vulkaninfo &> /dev/null; then
-          vulkaninfo --summary || echo "vulkaninfo failed"
-        else
-          echo "vulkaninfo not found (install vulkan-tools on host)"
-          echo "Using VK_ICD_FILENAMES to probe GPUs..."
-          # List available ICDs
-          for icd in /usr/share/vulkan/icd.d/*.json; do
-            if [ -f "$icd" ]; then
-              echo "Found ICD: $(basename $icd)"
-            fi
-          done
-        fi
-
-################################################################################
-    - name: Check GPU
+    - name: Check GPU (Host)
       run: |
         echo "=== GPU Information ==="
         echo "DRI Devices:"
@@ -267,33 +242,6 @@ jobs:
         echo ""
         echo "=== Test Executables Found ==="
         find gvk-test-package -name "*.tests" -type f -executable
-
-################################################################################
-      - name: Check Docker GPU Capabilities
-        id: gpu_check
-        # Continue running the pipeline even if this specific step fails
-        continue-on-error: true
-        run: |
-          echo "=== Testing Docker GPU Pass-through ==="
-          if docker run --rm --gpus all ubuntu:22.04 nvidia-smi > /dev/null 2>&1; then
-            echo "SUCCESS: Docker GPU acceleration is fully functional."
-            echo "has_gpu=true" >> $GITHUB_OUTPUT
-          else
-            echo "WARNING: Docker GPU acceleration is NOT available on this runner."
-            echo "has_gpu=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Execute Tests With Full GPU Power
-        # This step only executes if the check above returned true
-        if: steps.gpu_check.outputs.has_gpu == 'true'
-        run: |
-          chmod +x ./gvk-reference.tests
-          ./gvk-reference.tests
-
-      - name: Log Warning If Skipped
-        if: steps.gpu_check.outputs.has_gpu != 'true'
-        run: |
-          echo "Skipping test execution block because this machine lacks a configured NVIDIA Docker runtime."
 
 ################################################################################
     - name: Run Tests
