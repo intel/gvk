@@ -211,36 +211,32 @@ jobs:
         ls -lh gvk-test-package/
 
 ################################################################################
-    - name: Log Hardware System Information
+    - name: Check System
       run: |
-        echo "=== CPU Information ==="
-        lscpu | grep -E "Model name|Core\(s\) per socket|Socket\(s\)|Thread\(s\) per core"
-        
-        echo -e "\n=== Total CPU Cores ==="
-        nproc
-        
-        echo -e "\n=== Memory Information ==="
-        free -h
-        
-        echo -e "\n=== Disk Space Usage ==="
-        df -h /
-
-      - name: Log Software and Tool Versions
-        run: |
-          echo "=== Compiler Versions ==="
-          gcc --version | head -n 1 || echo "gcc not installed"
-          g++ --version | head -n 1 || echo "g++ not installed"
-          clang --version | head -n 1 || echo "clang not installed"
-          
-          echo -e "\n=== Build & Runtime Tools ==="
-          cmake --version | head -n 1 || echo "cmake not installed"
-          python3 --version || echo "python3 not installed"
-          
-          echo -e "\n=== System C Library (glibc) Version ==="
-          ldd --version | head -n 1 || echo "ldd not found"
+        echo "=== GPU Information ==="
+        echo "DRI Devices:"
+        ls -la /dev/dri/ || echo "No /dev/dri"
+        echo ""
+        echo "Vulkan ICDs:"
+        ls -la /usr/share/vulkan/icd.d/ || echo "No ICDs"
+        echo ""
+        echo "Vulkan Devices:"
+        # Check if vulkaninfo is available, if not suggest installing vulkan-tools
+        if command -v vulkaninfo &> /dev/null; then
+          vulkaninfo --summary || echo "vulkaninfo failed"
+        else
+          echo "vulkaninfo not found (install vulkan-tools on host)"
+          echo "Using VK_ICD_FILENAMES to probe GPUs..."
+          # List available ICDs
+          for icd in /usr/share/vulkan/icd.d/*.json; do
+            if [ -f "$icd" ]; then
+              echo "Found ICD: $(basename $icd)"
+            fi
+          done
+        fi
 
 ################################################################################
-    - name: Check GPU (Host)
+    - name: Check GPU
       run: |
         echo "=== GPU Information ==="
         echo "DRI Devices:"
