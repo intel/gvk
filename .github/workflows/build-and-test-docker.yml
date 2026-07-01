@@ -308,37 +308,6 @@ jobs:
           '
 
   status:
-    name: Overall Status
-          else
-            echo "**Test results unclear**" >> $GITHUB_STEP_SUMMARY
-          fi
-        else
-          echo "**No test output captured**" >> $GITHUB_STEP_SUMMARY
-        fi
-
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "Detailed test results available in step logs above" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-
-#==============================================================================#
-    - name: Upload Test Results (XML)
-      if: always() && steps.run-tests.outcome != 'skipped'
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results-xml-${{ matrix.runner.label }}-${{ github.sha }}
-        path: gvk-test-package/*-results.xml
-        retention-days: 1  # TODO: Increase to 30+ days for production (reduced for debug/development)
-
-#==============================================================================#
-    - name: Publish Test Results
-      if: always() && steps.run-tests.outcome != 'skipped'
-      uses: EnricoMi/publish-unit-test-result-action@v2
-      with:
-        files: gvk-test-package/*-results.xml
-        check_name: "Test Results (${{ matrix.runner.check_name }})"
-        comment_mode: off
-
-  status:
     name: Build & Test Status
     needs: [build, test]
     runs-on: [self-hosted, Linux, X64]
