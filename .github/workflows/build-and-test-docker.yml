@@ -228,7 +228,7 @@ jobs:
         # Run tests inside Docker container
         docker run --rm \
           $DOCKER_GPU_OPTS \
-          -v "$(pwd)/gvk-test-package:/workspace:ro" \
+          -v "$(pwd)/gvk-test-package:/workspace" \
           -w /workspace \
           -e DISPLAY=:0 \
           -e XDG_RUNTIME_DIR=/tmp \
@@ -257,26 +257,47 @@ jobs:
             echo "=== GPU Detection ==="
             if [ "${{ matrix.runner.gpu_vendor }}" = "nvidia" ]; then
               echo "NVIDIA devices:"
-              ls -la /dev/nvidia* 2>/dev/null || echo "No NVIDIA devices"
+              ls -la /dev/nvidia* 2>/dev/null || echo "? No NVIDIA devices"
+              echo ""
               echo "NVIDIA libraries:"
-              ls /usr/local/nvidia/lib64/ 2>/dev/null | head -5 || echo "No NVIDIA libraries"
-              echo "Env: LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+              if [ -d "/usr/local/nvidia/lib64" ]; then
+                echo "? Found NVIDIA libraries:"
+                ls /usr/local/nvidia/lib64/ 2>/dev/null | head -10
+              else
+                echo "? No NVIDIA libraries mounted"
+                echo "  (--gpus all might not be working)"
+              fi
+              echo ""
+              echo "Environment:"
+              echo "  LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+              echo "  NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES"
             else
               echo "DRI devices:"
-              ls -la /dev/dri/ 2>/dev/null || echo "No DRI devices"
+              ls -la /dev/dri/ 2>/dev/null || echo "? No DRI devices"
             fi
             echo ""
 
             echo "=== Vulkan Check ==="
-            vulkaninfo --summary 2>&1 | head -50 || echo "vulkaninfo failed"
+            vulkaninfo --summary 2>&1 | head -80
+            echo ""
+
+            echo "=== Test Package Contents ==="
+            echo "Files in /workspace:"
+            ls -lah | head -20
+            echo ""
+            echo "Test executables:"
+            ls -lah *.tests 2>/dev/null || echo "No *.tests files found"
             echo ""
 
             echo "=== Running Tests ==="
+            # Make sure test files are executable
+            chmod +x *.tests 2>/dev/null || true
+
             OVERALL_EXIT_CODE=0
             TEST_COUNT=0
 
             for test_exe in *.tests; do
-              if [ -x "$test_exe" ]; then
+              if [ -f "$test_exe" ]; then
                 TEST_COUNT=$((TEST_COUNT + 1))
                 echo ""
                 echo "=========================================="
