@@ -182,8 +182,10 @@ jobs:
     # The host already has GPU drivers installed, and containers add complexity
     # for GPU passthrough. Build job uses container because it doesn't need GPU.
 
-    steps:
 ################################################################################
+# TODO : Documentation
+    steps:
+#==============================================================================#
     - name: Download Test Package
       uses: actions/download-artifact@v4
       with:
@@ -210,7 +212,43 @@ jobs:
         echo "Test package verified successfully"
         ls -lh gvk-test-package/
 
-################################################################################
+#==============================================================================#
+    - name: Check Host OS and Docker GPU Support
+      run: |
+        echo "=== Host OS Information ==="
+        cat /etc/os-release || echo "os-release not available"
+        echo ""
+        echo "=== glibc Version ==="
+        ldd --version | head -1
+        echo ""
+        echo "=== libstdc++ Versions (last 5) ==="
+        strings /usr/lib64/libstdc++.so.6 2>/dev/null | grep GLIBCXX | tail -5 || \
+        strings /usr/lib/x86_64-linux-gnu/libstdc++.so.6 2>/dev/null | grep GLIBCXX | tail -5 || \
+        echo "libstdc++.so.6 not found in expected locations"
+        echo ""
+        echo "=== Docker Version ==="
+        docker --version || echo "Docker not installed"
+        echo ""
+        echo "=== Docker GPU Runtime Support ==="
+        docker info 2>/dev/null | grep -i runtime || echo "Could not check Docker runtimes"
+        echo ""
+        echo "=== NVIDIA Container Toolkit ==="
+        if command -v nvidia-container-cli &> /dev/null; then
+          nvidia-container-cli --version
+          echo "? NVIDIA Container Toolkit is installed"
+        else
+          echo "? NVIDIA Container Toolkit not found (needed for --gpus flag)"
+        fi
+        echo ""
+        echo "=== Intel GPU Support in Docker ==="
+        if [ -d "/dev/dri" ]; then
+          echo "? Intel GPU device files found in /dev/dri"
+          ls -la /dev/dri/
+        else
+          echo "? No /dev/dri (Intel GPU device files not available)"
+        fi
+
+#==============================================================================#
     - name: Check GPU (Host)
       run: |
         echo "=== GPU Information ==="
@@ -243,7 +281,7 @@ jobs:
         echo "=== Test Executables Found ==="
         find gvk-test-package -name "*.tests" -type f -executable
 
-################################################################################
+#==============================================================================#
     - name: Run Tests
       id: run-tests
       working-directory: gvk-test-package
@@ -307,7 +345,7 @@ jobs:
         # Exit with failure if any test failed
         exit $OVERALL_EXIT_CODE
 
-################################################################################
+#==============================================================================#
     - name: Display Test Results
       if: always() && steps.run-tests.outcome != 'skipped'
       working-directory: gvk-test-package
@@ -363,7 +401,7 @@ jobs:
         echo "Detailed test results available in step logs above" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
 
-################################################################################
+#==============================================================================#
     - name: Upload Test Results (XML)
       if: always() && steps.run-tests.outcome != 'skipped'
       uses: actions/upload-artifact@v4
@@ -372,7 +410,7 @@ jobs:
         path: gvk-test-package/*-results.xml
         retention-days: 1  # TODO: Increase to 30+ days for production (reduced for debug/development)
 
-################################################################################
+#==============================================================================#
     - name: Publish Test Results
       if: always() && steps.run-tests.outcome != 'skipped'
       uses: EnricoMi/publish-unit-test-result-action@v2
@@ -388,8 +426,9 @@ jobs:
     if: always()
     timeout-minutes: 5
 
-    steps:
 ################################################################################
+    steps:
+#==============================================================================#
     - name: Check Status
       run: |
         echo "Build: ${{ needs.build.result }}"
