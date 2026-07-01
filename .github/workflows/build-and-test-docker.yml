@@ -169,10 +169,12 @@ jobs:
             label: nvidia-rtx6000
             check_name: "godzilla - NVIDIA RTX 6000"
             container_options: "--gpus all --device=/dev/dri"
+            gpu_vendor: "nvidia"
           - name: "mage-b580 (Intel B580)"
             label: intel-b580
             check_name: "mage-b580 - Intel B580"
             container_options: "--device=/dev/dri --group-add video"
+            gpu_vendor: "intel"
 
     runs-on: 
       - self-hosted
@@ -180,47 +182,18 @@ jobs:
       - X64
       - ${{ matrix.runner.label }}
 
-    # Run tests in Ubuntu 22.04 container with GPU access
-    # - NVIDIA runner: Uses --gpus all (requires NVIDIA Container Toolkit)
-    # - Intel runner: Uses --device=/dev/dri for GPU passthrough
-    # This eliminates ABI compatibility issues between build and test environments
-    container:
-      image: ubuntu:22.04
-      options: ${{ matrix.runner.container_options }}
+    # NOTE: Cannot use job-level 'container:' with --gpus flag
+    # GitHub Actions' container feature doesn't support --gpus (uses docker create, not docker run)
+    # Solution: Run steps on host, use manual docker run for test execution
 
 ################################################################################
     steps:
-#==============================================================================#
-    - name: Install Runtime Dependencies in Container
-      run: |
-        apt-get update
-        apt-get install -y \
-          libwayland-client0 \
-          libxkbcommon0 \
-          libx11-6 \
-          libxext6 \
-          libxcb1 \
-          vulkan-tools \
-          ca-certificates
-
-        # Install GPU-specific Vulkan ICDs based on runner
-        # NVIDIA runner needs nvidia-vulkan-icd (connects to host NVIDIA drivers)
-        # Intel runner needs mesa-vulkan-drivers (Intel GPU support)
-        if [ -f /dev/nvidia0 ] || [ -d /usr/local/nvidia ]; then
-          echo "NVIDIA GPU detected - installing nvidia-vulkan-icd"
-          apt-get install -y nvidia-vulkan-icd || echo "nvidia-vulkan-icd not available, will use mesa"
-        fi
-
-        # Always install mesa drivers as fallback
-        apt-get install -y mesa-vulkan-drivers
-
 #==============================================================================#
     - name: Download Test Package
       uses: actions/download-artifact@v4
       with:
         name: gvk-test-package-${{ github.sha }}
         path: gvk-test-package
-      # Retry on network failures (common with self-hosted runners)
       timeout-minutes: 10
       continue-on-error: false
 
@@ -242,162 +215,100 @@ jobs:
         ls -lh gvk-test-package/
 
 #==============================================================================#
-    - name: Check Container Environment and GPU Access
+    - name: Run Tests in Docker Container with GPU
       run: |
-        echo "=== Container OS Information ==="
-        cat /etc/os-release | head -5
-        echo ""
-        echo "=== Container glibc Version ==="
-        ldd --version | head -1
-        echo ""
-        echo "=== Container libstdc++ Version ==="
-        strings /usr/lib/x86_64-linux-gnu/libstdc++.so.6 2>/dev/null | grep GLIBCXX | tail -5 || \
-        echo "libstdc++.so.6 not found"
-        echo ""
-        echo "=== GPU Device Access (in container) ==="
-        if [ -d "/dev/dri" ]; then
-          echo "? GPU devices accessible in container:"
-          ls -la /dev/dri/
-        else
-          echo "? No /dev/dri in container"
-        fi
+        # Prepare Docker run command with GPU-specific options
+        DOCKER_GPU_OPTS="${{ matrix.runner.container_options }}"
 
-#==============================================================================#
-    - name: Check GPU (Vulkan)
-      run: |
-        # Set environment variables for headless Vulkan
-        export DISPLAY=:0
-        export XDG_RUNTIME_DIR=/tmp
-
-        echo "=== Vulkan Device Detection ==="
-        echo "Checking for NVIDIA devices:"
-        ls -la /dev/nvidia* 2>/dev/null || echo "No NVIDIA devices"
+        echo "=== Running tests in Ubuntu 22.04 container with GPU access ==="
+        echo "GPU Vendor: ${{ matrix.runner.gpu_vendor }}"
+        echo "Docker options: $DOCKER_GPU_OPTS"
         echo ""
 
-        echo "Checking NVIDIA libraries:"
-        ls -la /usr/local/nvidia/lib64/ 2>/dev/null || echo "No NVIDIA libraries mounted"
-        echo ""
-
-        echo "Running vulkaninfo --summary:"
-        vulkaninfo --summary 2>&1 | grep -A 20 "^GPU" || echo "Could not detect GPUs"
-
-    - name: List Test Package Contents
-      run: |
-        echo "=== Test Package Contents ==="
-        ls -lah gvk-test-package/
-        echo ""
-        echo "=== Test Executables Found ==="
-        find gvk-test-package -name "*.tests" -type f -executable
-
-#==============================================================================#
-    - name: Run Tests
-      id: run-tests
-      working-directory: gvk-test-package
-      run: |
-        # Make all test executables executable
-        chmod +x *.tests 2>/dev/null || true
-
-        # Run all test executables and collect results
-        echo "=== Running All Tests ==="
-
-        OVERALL_EXIT_CODE=0
-        TEST_COUNT=0
-
-        # Find all .tests executables
-        for test_exe in *.tests; do
-          if [ -x "$test_exe" ]; then
-            TEST_COUNT=$((TEST_COUNT + 1))
-            echo ""
-            echo "=========================================="
-            echo "Running: $test_exe"
-            echo "=========================================="
-
-            # Generate unique XML filename for each test suite
-            xml_file="${test_exe%.tests}-results.xml"
-
-            # Run test and capture output and exit code
-            set +e
-            ./"$test_exe" --gtest_output=xml:"$xml_file" 2>&1 | tee "${test_exe%.tests}-output.txt"
-            EXIT_CODE=$?
+        # Run tests inside Docker container
+        docker run --rm \
+          $DOCKER_GPU_OPTS \
+          -v "$(pwd)/gvk-test-package:/workspace:ro" \
+          -w /workspace \
+          -e DISPLAY=:0 \
+          -e XDG_RUNTIME_DIR=/tmp \
+          ubuntu:22.04 \
+          bash -c '
             set -e
 
-            echo "$test_exe exit code: $EXIT_CODE"
+            echo "=== Installing Dependencies in Container ===" 
+            apt-get update -qq
+            apt-get install -y -qq \
+              libwayland-client0 \
+              libxkbcommon0 \
+              libx11-6 \
+              libxext6 \
+              libxcb1 \
+              vulkan-tools \
+              mesa-vulkan-drivers \
+              ca-certificates
 
-            # Track if any test failed
-            if [ $EXIT_CODE -ne 0 ]; then
-              OVERALL_EXIT_CODE=$EXIT_CODE
-              echo "WARNING: $test_exe failed!"
-            fi
+            echo ""
+            echo "=== Container Environment ==="
+            cat /etc/os-release | head -3
+            ldd --version | head -1
+            echo ""
 
-            # Verify XML was created
-            if [ -f "$xml_file" ]; then
-              echo "$xml_file generated successfully"
+            echo "=== GPU Detection ==="
+            if [ "${{ matrix.runner.gpu_vendor }}" = "nvidia" ]; then
+              echo "NVIDIA devices:"
+              ls -la /dev/nvidia* 2>/dev/null || echo "No NVIDIA devices"
+              echo "NVIDIA libraries:"
+              ls /usr/local/nvidia/lib64/ 2>/dev/null | head -5 || echo "No NVIDIA libraries"
+              echo "Env: LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
             else
-              echo "WARNING: $xml_file was not generated!"
+              echo "DRI devices:"
+              ls -la /dev/dri/ 2>/dev/null || echo "No DRI devices"
             fi
-          fi
-        done
+            echo ""
 
-        echo ""
-        echo "=========================================="
-        echo "Test Execution Summary"
-        echo "=========================================="
-        echo "Test executables run: $TEST_COUNT"
-        echo "Overall exit code: $OVERALL_EXIT_CODE"
+            echo "=== Vulkan Check ==="
+            vulkaninfo --summary 2>&1 | head -50 || echo "vulkaninfo failed"
+            echo ""
 
-        # List all generated XML files
-        echo ""
-        echo "XML Results Files:"
-        ls -lh *-results.xml 2>/dev/null || echo "No XML files generated"
+            echo "=== Running Tests ==="
+            OVERALL_EXIT_CODE=0
+            TEST_COUNT=0
 
-        # Exit with failure if any test failed
-        exit $OVERALL_EXIT_CODE
+            for test_exe in *.tests; do
+              if [ -x "$test_exe" ]; then
+                TEST_COUNT=$((TEST_COUNT + 1))
+                echo ""
+                echo "=========================================="
+                echo "Running: $test_exe"
+                echo "=========================================="
 
-#==============================================================================#
-    - name: Display Test Results
-      if: always() && steps.run-tests.outcome != 'skipped'
-      working-directory: gvk-test-package
-      run: |
-        echo "## Test Results - ${{ matrix.runner.name }}" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
+                set +e
+                ./"$test_exe" --gtest_output=xml:"${test_exe%.tests}-results.xml"
+                EXIT_CODE=$?
+                set -e
 
-        # Aggregate results from all XML files
-        TOTAL_TESTS=0
-        TOTAL_FAILURES=0
-        TOTAL_ERRORS=0
-        XML_COUNT=0
+                echo "$test_exe exit code: $EXIT_CODE"
 
-        for xml_file in *-results.xml; do
-          if [ -f "$xml_file" ]; then
-            XML_COUNT=$((XML_COUNT + 1))
+                if [ $EXIT_CODE -ne 0 ]; then
+                  OVERALL_EXIT_CODE=$EXIT_CODE
+                  echo "WARNING: $test_exe failed!"
+                fi
+              fi
+            done
 
-            # Parse this XML file
-            TESTS=$(grep -oP 'tests="\K\d+' "$xml_file" | head -1 || echo "0")
-            FAILURES=$(grep -oP 'failures="\K\d+' "$xml_file" | head -1 || echo "0")
-            ERRORS=$(grep -oP 'errors="\K\d+' "$xml_file" | head -1 || echo "0")
+            echo ""
+            echo "=========================================="
+            echo "Test Execution Summary"
+            echo "=========================================="
+            echo "Test executables run: $TEST_COUNT"
+            echo "Overall exit code: $OVERALL_EXIT_CODE"
 
-            # Aggregate totals
-            TOTAL_TESTS=$((TOTAL_TESTS + TESTS))
-            TOTAL_FAILURES=$((TOTAL_FAILURES + FAILURES))
-            TOTAL_ERRORS=$((TOTAL_ERRORS + ERRORS))
+            exit $OVERALL_EXIT_CODE
+          '
 
-            # Show per-suite results
-            SUITE_NAME="${xml_file%-results.xml}"
-            SUITE_PASSED=$((TESTS - FAILURES - ERRORS))
-            echo "- **$SUITE_NAME**: $SUITE_PASSED/$TESTS passed" >> $GITHUB_STEP_SUMMARY
-          fi
-        done
-
-        if [ $XML_COUNT -gt 0 ]; then
-          TOTAL_PASSED=$((TOTAL_TESTS - TOTAL_FAILURES - TOTAL_ERRORS))
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Overall Results" >> $GITHUB_STEP_SUMMARY
-
-          if [ "$TOTAL_FAILURES" = "0" ] && [ "$TOTAL_ERRORS" = "0" ] && [ "$TOTAL_TESTS" != "0" ]; then
-            echo "**All tests passed:** $TOTAL_TESTS tests across $XML_COUNT suites" >> $GITHUB_STEP_SUMMARY
-          elif [ "$TOTAL_FAILURES" != "0" ] || [ "$TOTAL_ERRORS" != "0" ]; then
-            echo "**Some tests failed:** $TOTAL_FAILURES failed, $TOTAL_ERRORS errors, $TOTAL_PASSED passed (of $TOTAL_TESTS total)" >> $GITHUB_STEP_SUMMARY
+  status:
+    name: Overall Status
           else
             echo "**Test results unclear**" >> $GITHUB_STEP_SUMMARY
           fi
