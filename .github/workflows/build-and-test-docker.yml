@@ -296,10 +296,10 @@ jobs:
             # Generate unique XML filename for each test suite
             xml_file="${test_exe%.tests}-results.xml"
 
-            # Run test and capture output
+            # Run test and capture output and exit code
             set +e
             ./"$test_exe" --gtest_output=xml:"$xml_file" 2>&1 | tee "${test_exe%.tests}-output.txt"
-            EXIT_CODE=${PIPESTATUS[0]}
+            EXIT_CODE=$?
             set -e
 
             echo "$test_exe exit code: $EXIT_CODE"
