@@ -168,9 +168,11 @@ jobs:
           - name: "godzilla (NVIDIA RTX 6000)"
             label: nvidia-rtx6000
             check_name: "godzilla - NVIDIA RTX 6000"
+            container_options: "--gpus all --device=/dev/dri"
           - name: "mage-b580 (Intel B580)"
             label: intel-b580
             check_name: "mage-b580 - Intel B580"
+            container_options: "--device=/dev/dri --group-add video"
 
     runs-on: 
       - self-hosted
@@ -178,13 +180,26 @@ jobs:
       - X64
       - ${{ matrix.runner.label }}
 
-    # NOTE: Not using container for test jobs - we need direct GPU access
-    # The host already has GPU drivers installed, and containers add complexity
-    # for GPU passthrough. Build job uses container because it doesn't need GPU.
+    # Run tests in Ubuntu 22.04 container with GPU access
+    # - NVIDIA runner: Uses --gpus all (requires NVIDIA Container Toolkit)
+    # - Intel runner: Uses --device=/dev/dri for GPU passthrough
+    # This eliminates ABI compatibility issues between build and test environments
+    container:
+      image: ubuntu:22.04
+      options: ${{ matrix.runner.container_options }}
 
 ################################################################################
-# TODO : Documentation
     steps:
+#==============================================================================#
+    - name: Install Runtime Dependencies in Container
+      run: |
+        apt-get update
+        apt-get install -y \
+          libwayland-client0 \
+          libxkbcommon0 \
+          ca-certificates
+        # Note: GPU drivers/Vulkan ICDs come from host via container runtime
+
 #==============================================================================#
     - name: Download Test Package
       uses: actions/download-artifact@v4
@@ -213,64 +228,38 @@ jobs:
         ls -lh gvk-test-package/
 
 #==============================================================================#
-    - name: Check Host OS and Docker GPU Support
+    - name: Check Container Environment and GPU Access
       run: |
-        echo "=== Host OS Information ==="
-        cat /etc/os-release || echo "os-release not available"
+        echo "=== Container OS Information ==="
+        cat /etc/os-release | head -5
         echo ""
-        echo "=== glibc Version ==="
+        echo "=== Container glibc Version ==="
         ldd --version | head -1
         echo ""
-        echo "=== libstdc++ Versions (last 5) ==="
-        strings /usr/lib64/libstdc++.so.6 2>/dev/null | grep GLIBCXX | tail -5 || \
+        echo "=== Container libstdc++ Version ==="
         strings /usr/lib/x86_64-linux-gnu/libstdc++.so.6 2>/dev/null | grep GLIBCXX | tail -5 || \
-        echo "libstdc++.so.6 not found in expected locations"
+        echo "libstdc++.so.6 not found"
         echo ""
-        echo "=== Docker Version ==="
-        docker --version || echo "Docker not installed"
-        echo ""
-        echo "=== Docker GPU Runtime Support ==="
-        docker info 2>/dev/null | grep -i runtime || echo "Could not check Docker runtimes"
-        echo ""
-        echo "=== NVIDIA Container Toolkit ==="
-        if command -v nvidia-container-cli &> /dev/null; then
-          nvidia-container-cli --version
-          echo "? NVIDIA Container Toolkit is installed"
-        else
-          echo "? NVIDIA Container Toolkit not found (needed for --gpus flag)"
-        fi
-        echo ""
-        echo "=== Intel GPU Support in Docker ==="
+        echo "=== GPU Device Access (in container) ==="
         if [ -d "/dev/dri" ]; then
-          echo "? Intel GPU device files found in /dev/dri"
+          echo "? GPU devices accessible in container:"
           ls -la /dev/dri/
         else
-          echo "? No /dev/dri (Intel GPU device files not available)"
+          echo "? No /dev/dri in container"
         fi
 
 #==============================================================================#
-    - name: Check GPU (Host)
+    - name: Check GPU (Vulkan)
       run: |
-        echo "=== GPU Information ==="
-        echo "DRI Devices:"
-        ls -la /dev/dri/ || echo "No /dev/dri"
+        echo "=== Installing Vulkan Tools ==="
+        apt-get update -qq
+        apt-get install -y -qq vulkan-tools mesa-vulkan-drivers 2>&1 | grep -E "(Reading|Unpacking|Setting up)" | head -20
         echo ""
-        echo "Vulkan ICDs:"
-        ls -la /usr/share/vulkan/icd.d/ || echo "No ICDs"
-        echo ""
-        echo "Vulkan Devices:"
-        # Check if vulkaninfo is available, if not suggest installing vulkan-tools
+        echo "=== Vulkan Device Detection ==="
         if command -v vulkaninfo &> /dev/null; then
           vulkaninfo --summary || echo "vulkaninfo failed"
         else
-          echo "vulkaninfo not found (install vulkan-tools on host)"
-          echo "Using VK_ICD_FILENAMES to probe GPUs..."
-          # List available ICDs
-          for icd in /usr/share/vulkan/icd.d/*.json; do
-            if [ -f "$icd" ]; then
-              echo "Found ICD: $(basename $icd)"
-            fi
-          done
+          echo "vulkaninfo not available"
         fi
 
     - name: List Test Package Contents
