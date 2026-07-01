@@ -215,19 +215,96 @@ jobs:
         ls -lh gvk-test-package/
 
 #==============================================================================#
-    - name: Run Tests in Docker Container with GPU
+    - name: Check Container Environment
       run: |
-        # Prepare Docker run command with GPU-specific options
-        DOCKER_GPU_OPTS="${{ matrix.runner.container_options }}"
+        echo "=== Checking Docker and Container Runtime ==="
+        docker --version
+        echo ""
 
-        echo "=== Running tests in Ubuntu 22.04 container with GPU access ==="
+        echo "=== Testing Container Startup ==="
+        docker run --rm ubuntu:22.04 bash -c '
+          echo "Container OS:"
+          cat /etc/os-release | head -3
+          echo ""
+          echo "glibc version:"
+          ldd --version | head -1
+        '
+
+#==============================================================================#
+    - name: Check GPU Access in Container
+      run: |
+        echo "=== GPU Vendor: ${{ matrix.runner.gpu_vendor }} ==="
+        echo "=== Docker GPU options: ${{ matrix.runner.container_options }} ==="
+        echo ""
+
+        docker run --rm \
+          ${{ matrix.runner.container_options }} \
+          ubuntu:22.04 \
+          bash -c '
+            echo "=== GPU Device Detection ==="
+
+            if [ "${{ matrix.runner.gpu_vendor }}" = "nvidia" ]; then
+              echo "NVIDIA devices in container:"
+              ls -la /dev/nvidia* 2>/dev/null || echo "? No NVIDIA devices"
+              echo ""
+
+              echo "NVIDIA Container Toolkit libraries:"
+              if [ -d "/usr/local/nvidia/lib64" ]; then
+                echo "? NVIDIA libraries mounted at /usr/local/nvidia/lib64:"
+                ls /usr/local/nvidia/lib64/ 2>/dev/null | head -10
+                echo ""
+                echo "Total library files: $(ls /usr/local/nvidia/lib64/ | wc -l)"
+              else
+                echo "? /usr/local/nvidia/lib64 not found"
+                echo "  This means --gpus all did not mount NVIDIA drivers"
+                echo "  Check: docker info | grep -i runtime"
+              fi
+              echo ""
+
+              echo "NVIDIA environment variables:"
+              echo "  LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+              echo "  NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES"
+              echo "  NVIDIA_DRIVER_CAPABILITIES=$NVIDIA_DRIVER_CAPABILITIES"
+
+            else
+              echo "Intel/DRI devices in container:"
+              ls -la /dev/dri/ 2>/dev/null || echo "? No DRI devices"
+            fi
+          '
+
+#==============================================================================#
+    - name: Check Vulkan in Container
+      run: |
+        echo "=== Installing Vulkan tools and checking GPU detection ==="
+        echo ""
+
+        docker run --rm \
+          ${{ matrix.runner.container_options }} \
+          ubuntu:22.04 \
+          bash -c '
+            apt-get update -qq
+            apt-get install -y -qq vulkan-tools mesa-vulkan-drivers ca-certificates
+
+            echo ""
+            echo "=== Vulkan Device Detection ==="
+            export DISPLAY=:0
+            export XDG_RUNTIME_DIR=/tmp
+
+            vulkaninfo --summary 2>&1 | head -100
+          '
+
+#==============================================================================#
+    - name: Run Tests in Docker Container
+      id: run-tests
+      run: |
+        echo "=== Running all tests in Ubuntu 22.04 container with GPU access ==="
         echo "GPU Vendor: ${{ matrix.runner.gpu_vendor }}"
-        echo "Docker options: $DOCKER_GPU_OPTS"
+        echo "Container options: ${{ matrix.runner.container_options }}"
         echo ""
 
         # Run tests inside Docker container
         docker run --rm \
-          $DOCKER_GPU_OPTS \
+          ${{ matrix.runner.container_options }} \
           -v "$(pwd)/gvk-test-package:/workspace" \
           -w /workspace \
           -e DISPLAY=:0 \
@@ -236,7 +313,7 @@ jobs:
           bash -c '
             set -e
 
-            echo "=== Installing Dependencies in Container ===" 
+            echo "=== Installing Runtime Dependencies ===" 
             apt-get update -qq
             apt-get install -y -qq \
               libwayland-client0 \
@@ -244,55 +321,19 @@ jobs:
               libx11-6 \
               libxext6 \
               libxcb1 \
-              vulkan-tools \
-              mesa-vulkan-drivers \
-              ca-certificates
-
-            echo ""
-            echo "=== Container Environment ==="
-            cat /etc/os-release | head -3
-            ldd --version | head -1
-            echo ""
-
-            echo "=== GPU Detection ==="
-            if [ "${{ matrix.runner.gpu_vendor }}" = "nvidia" ]; then
-              echo "NVIDIA devices:"
-              ls -la /dev/nvidia* 2>/dev/null || echo "? No NVIDIA devices"
-              echo ""
-              echo "NVIDIA libraries:"
-              if [ -d "/usr/local/nvidia/lib64" ]; then
-                echo "? Found NVIDIA libraries:"
-                ls /usr/local/nvidia/lib64/ 2>/dev/null | head -10
-              else
-                echo "? No NVIDIA libraries mounted"
-                echo "  (--gpus all might not be working)"
-              fi
-              echo ""
-              echo "Environment:"
-              echo "  LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
-              echo "  NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES"
-            else
-              echo "DRI devices:"
-              ls -la /dev/dri/ 2>/dev/null || echo "? No DRI devices"
-            fi
-            echo ""
-
-            echo "=== Vulkan Check ==="
-            vulkaninfo --summary 2>&1 | head -80
+              ca-certificates \
+              2>&1 | grep -E "Setting up|Unpacking" | head -20
+            echo "Dependencies installed"
             echo ""
 
             echo "=== Test Package Contents ==="
-            echo "Files in /workspace:"
-            ls -lah | head -20
-            echo ""
-            echo "Test executables:"
-            ls -lah *.tests 2>/dev/null || echo "No *.tests files found"
+            ls -lh *.tests 2>/dev/null || echo "No test executables found"
             echo ""
 
-            echo "=== Running Tests ==="
-            # Make sure test files are executable
+            # Make test executables runnable
             chmod +x *.tests 2>/dev/null || true
 
+            echo "=== Running Tests ==="
             OVERALL_EXIT_CODE=0
             TEST_COUNT=0
 
