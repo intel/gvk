@@ -197,8 +197,22 @@ jobs:
         apt-get install -y \
           libwayland-client0 \
           libxkbcommon0 \
+          libx11-6 \
+          libxext6 \
+          libxcb1 \
+          vulkan-tools \
           ca-certificates
-        # Note: GPU drivers/Vulkan ICDs come from host via container runtime
+
+        # Install GPU-specific Vulkan ICDs based on runner
+        # NVIDIA runner needs nvidia-vulkan-icd (connects to host NVIDIA drivers)
+        # Intel runner needs mesa-vulkan-drivers (Intel GPU support)
+        if [ -f /dev/nvidia0 ] || [ -d /usr/local/nvidia ]; then
+          echo "NVIDIA GPU detected - installing nvidia-vulkan-icd"
+          apt-get install -y nvidia-vulkan-icd || echo "nvidia-vulkan-icd not available, will use mesa"
+        fi
+
+        # Always install mesa drivers as fallback
+        apt-get install -y mesa-vulkan-drivers
 
 #==============================================================================#
     - name: Download Test Package
@@ -251,16 +265,21 @@ jobs:
 #==============================================================================#
     - name: Check GPU (Vulkan)
       run: |
-        echo "=== Installing Vulkan Tools ==="
-        apt-get update -qq
-        apt-get install -y -qq vulkan-tools mesa-vulkan-drivers 2>&1 | grep -E "(Reading|Unpacking|Setting up)" | head -20
-        echo ""
+        # Set environment variables for headless Vulkan
+        export DISPLAY=:0
+        export XDG_RUNTIME_DIR=/tmp
+
         echo "=== Vulkan Device Detection ==="
-        if command -v vulkaninfo &> /dev/null; then
-          vulkaninfo --summary || echo "vulkaninfo failed"
-        else
-          echo "vulkaninfo not available"
-        fi
+        echo "Checking for NVIDIA devices:"
+        ls -la /dev/nvidia* 2>/dev/null || echo "No NVIDIA devices"
+        echo ""
+
+        echo "Checking NVIDIA libraries:"
+        ls -la /usr/local/nvidia/lib64/ 2>/dev/null || echo "No NVIDIA libraries mounted"
+        echo ""
+
+        echo "Running vulkaninfo --summary:"
+        vulkaninfo --summary 2>&1 | grep -A 20 "^GPU" || echo "Could not detect GPUs"
 
     - name: List Test Package Contents
       run: |
