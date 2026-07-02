@@ -395,6 +395,14 @@ jobs:
         docker run --rm --gpus 0 ubuntu:22.04 bash -c 'echo "NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES"' || echo "FAILED"
         echo ""
 
+        echo "Test 6: --runtime=nvidia with manual env vars"
+        docker run --rm --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all ubuntu:22.04 bash -c 'echo "NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES" && echo "NVIDIA_DRIVER_CAPABILITIES=$NVIDIA_DRIVER_CAPABILITIES"' || echo "FAILED"
+        echo ""
+
+        echo "Test 7: Check if nvidia-smi works with --runtime=nvidia"
+        docker run --rm --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all ubuntu:22.04 bash -c 'ls -la /usr/local/nvidia/lib64/ 2>/dev/null | head -5 || echo "No libs mounted"' || echo "FAILED"
+        echo ""
+
 #==============================================================================#
     - name: Check GPU Access in Container
       run: |
