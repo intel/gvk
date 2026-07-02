@@ -238,7 +238,7 @@ jobs:
         echo ""
 
         # Create a Dockerfile with GPU-specific drivers
-        cat > Dockerfile.gpu-test <<'EOF'
+        cat > Dockerfile.gpu-test <<'DOCKERFILE'
 FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -278,7 +278,7 @@ RUN if [ "$GPU_VENDOR" = "intel" ]; then \
     fi
 
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
-EOF
+DOCKERFILE
 
         # Build image with GPU-specific drivers
         docker build \
