@@ -403,6 +403,23 @@ jobs:
         docker run --rm --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all ubuntu:22.04 bash -c 'ls -la /usr/local/nvidia/lib64/ 2>/dev/null | head -5 || echo "No libs mounted"' || echo "FAILED"
         echo ""
 
+        echo "Test 8: Check Docker daemon NVIDIA configuration"
+        cat /etc/docker/daemon.json 2>/dev/null || echo "No daemon.json found"
+        echo ""
+
+        echo "Test 9: Check NVIDIA Container Runtime config"
+        cat /etc/nvidia-container-runtime/config.toml 2>/dev/null || echo "No config.toml found"
+        echo ""
+
+        echo "Test 10: Try bypassing runtime entirely - manual device mount"
+        docker run --rm \
+          --device=/dev/nvidia0:/dev/nvidia0 \
+          --device=/dev/nvidiactl:/dev/nvidiactl \
+          --device=/dev/nvidia-uvm:/dev/nvidia-uvm \
+          --device=/dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools \
+          ubuntu:22.04 bash -c 'ls -la /dev/nvidia* && echo "Devices accessible!"' || echo "FAILED"
+        echo ""
+
 #==============================================================================#
     - name: Check GPU Access in Container
       run: |
