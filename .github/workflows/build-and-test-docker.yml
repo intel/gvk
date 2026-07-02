@@ -238,47 +238,47 @@ jobs:
         echo ""
 
         # Create a Dockerfile with GPU-specific drivers
-        cat > Dockerfile.gpu-test <<'DOCKERFILE'
-FROM ubuntu:22.04
+        cat > Dockerfile.gpu-test <<DOCKERFILE
+        FROM ubuntu:22.04
 
-ENV DEBIAN_FRONTEND=noninteractive
+        ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update -qq && \
-    apt-get install -y -qq \
-      libwayland-client0 \
-      libxkbcommon0 \
-      libx11-6 \
-      libxext6 \
-      libxcb1 \
-      ca-certificates \
-      wget \
-      gpg \
-      software-properties-common
+        RUN apt-get update -qq && \\
+            apt-get install -y -qq \\
+              libwayland-client0 \\
+              libxkbcommon0 \\
+              libx11-6 \\
+              libxext6 \\
+              libxcb1 \\
+              ca-certificates \\
+              wget \\
+              gpg \\
+              software-properties-common
 
-# Install Intel GPU drivers if needed
-ARG GPU_VENDOR=unknown
-RUN if [ "$GPU_VENDOR" = "intel" ]; then \
-      echo "Installing Intel Graphics PPA..." && \
-      wget -qO - https://repositories.intel.com/gpu/intel-graphics.key | \
-        gpg --dearmor --output /usr/share/keyrings/intel-graphics.gpg && \
-      echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.gpg] \
-        https://repositories.intel.com/gpu/ubuntu jammy client" \
-        > /etc/apt/sources.list.d/intel-graphics.list && \
-      apt-get update -qq && \
-      apt-get install -y -qq \
-        intel-opencl-icd \
-        intel-level-zero-gpu \
-        level-zero \
-        mesa-vulkan-drivers \
-        libigdgmm12 \
-        vulkan-tools && \
-      echo "Intel GPU drivers installed"; \
-    elif [ "$GPU_VENDOR" = "nvidia" ]; then \
-      apt-get install -y -qq mesa-vulkan-drivers vulkan-tools; \
-    fi
+        # Install Intel GPU drivers if needed
+        ARG GPU_VENDOR=unknown
+        RUN if [ "\$GPU_VENDOR" = "intel" ]; then \\
+              echo "Installing Intel Graphics PPA..." && \\
+              wget -qO - https://repositories.intel.com/gpu/intel-graphics.key | \\
+                gpg --dearmor --output /usr/share/keyrings/intel-graphics.gpg && \\
+              echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.gpg] \\
+                https://repositories.intel.com/gpu/ubuntu jammy client" \\
+                > /etc/apt/sources.list.d/intel-graphics.list && \\
+              apt-get update -qq && \\
+              apt-get install -y -qq \\
+                intel-opencl-icd \\
+                intel-level-zero-gpu \\
+                level-zero \\
+                mesa-vulkan-drivers \\
+                libigdgmm12 \\
+                vulkan-tools && \\
+              echo "Intel GPU drivers installed"; \\
+            elif [ "\$GPU_VENDOR" = "nvidia" ]; then \\
+              apt-get install -y -qq mesa-vulkan-drivers vulkan-tools; \\
+            fi
 
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
-DOCKERFILE
+        RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+        DOCKERFILE
 
         # Build image with GPU-specific drivers
         docker build \
