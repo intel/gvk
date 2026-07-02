@@ -291,6 +291,82 @@ jobs:
         echo "Container image built: gvk-test-${{ matrix.runner.gpu_vendor }}:local"
 
 #==============================================================================#
+    - name: Check Host GPU Setup
+      run: |
+        echo "=========================================="
+        echo "=== HOST GPU DIAGNOSTICS ==="
+        echo "=========================================="
+        echo ""
+        echo "--- GPU Vendor: ${{ matrix.runner.gpu_vendor }} ---"
+        echo ""
+
+        if [ "${{ matrix.runner.gpu_vendor }}" = "nvidia" ]; then
+          echo "=== NVIDIA Driver Check ==="
+          if command -v nvidia-smi &> /dev/null; then
+            echo "? nvidia-smi found"
+            nvidia-smi
+          else
+            echo "? nvidia-smi NOT found - NVIDIA drivers may not be installed on host"
+          fi
+          echo ""
+
+          echo "=== NVIDIA Kernel Modules ==="
+          if lsmod | grep -i nvidia &> /dev/null; then
+            echo "? NVIDIA kernel modules loaded:"
+            lsmod | grep -i nvidia
+          else
+            echo "? No NVIDIA kernel modules loaded"
+          fi
+          echo ""
+
+          echo "=== NVIDIA Device Nodes ==="
+          if ls /dev/nvidia* &> /dev/null; then
+            echo "? NVIDIA device nodes exist:"
+            ls -la /dev/nvidia*
+          else
+            echo "? No NVIDIA device nodes found"
+          fi
+          echo ""
+
+          echo "=== Docker NVIDIA Runtime ==="
+          if docker info 2>/dev/null | grep -i nvidia &> /dev/null; then
+            echo "? NVIDIA runtime detected:"
+            docker info 2>/dev/null | grep -i runtime
+          else
+            echo "? NVIDIA runtime NOT detected in Docker"
+            echo "Available runtimes:"
+            docker info 2>/dev/null | grep -i runtime
+          fi
+          echo ""
+
+          echo "=== NVIDIA Container Toolkit ==="
+          if command -v nvidia-container-cli &> /dev/null; then
+            echo "? nvidia-container-cli found"
+            nvidia-container-cli --version
+            echo ""
+            echo "NVIDIA Container CLI info:"
+            nvidia-container-cli info || echo "Failed to get container info"
+          else
+            echo "? nvidia-container-cli NOT found - Container Toolkit may not be installed"
+          fi
+          echo ""
+
+        else
+          echo "=== DRI/Intel GPU Check ==="
+          if ls /dev/dri/* &> /dev/null; then
+            echo "? DRI devices found:"
+            ls -la /dev/dri/
+          else
+            echo "? No DRI devices found"
+          fi
+        fi
+
+        echo ""
+        echo "=========================================="
+        echo "=== END HOST DIAGNOSTICS ==="
+        echo "=========================================="
+
+#==============================================================================#
     - name: Check GPU Access in Container
       run: |
         echo "=== GPU Vendor: ${{ matrix.runner.gpu_vendor }} ==="
