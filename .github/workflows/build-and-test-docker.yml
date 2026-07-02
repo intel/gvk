@@ -168,7 +168,7 @@ jobs:
           - name: "godzilla (NVIDIA RTX 6000)"
             label: nvidia-rtx6000
             check_name: "godzilla - NVIDIA RTX 6000"
-            container_options: "--gpus all --device=/dev/dri"
+            container_options: "--gpus all"
             gpu_vendor: "nvidia"
           - name: "mage-b580 (Intel B580)"
             label: intel-b580
