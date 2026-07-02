@@ -420,6 +420,35 @@ jobs:
           ubuntu:22.04 bash -c 'ls -la /dev/nvidia* && echo "Devices accessible!"' || echo "FAILED"
         echo ""
 
+        echo "Test 11: Find NVIDIA libraries on host"
+        echo "Looking for libcuda.so..."
+        find /usr -name "libcuda.so*" 2>/dev/null | head -5 || echo "Not found in /usr"
+        echo ""
+        echo "Looking in standard NVIDIA paths..."
+        ls -la /usr/lib/x86_64-linux-gnu/libcuda.so* 2>/dev/null || echo "Not in /usr/lib/x86_64-linux-gnu"
+        ls -la /usr/lib64/libcuda.so* 2>/dev/null || echo "Not in /usr/lib64"
+        ls -la /usr/local/lib/libcuda.so* 2>/dev/null || echo "Not in /usr/local/lib"
+        echo ""
+
+        echo "Test 12: Manual device + library mount test"
+        NVIDIA_LIB_PATH=$(find /usr/lib* -name "libcuda.so.1" 2>/dev/null | head -1 | xargs dirname)
+        if [ -n "$NVIDIA_LIB_PATH" ]; then
+          echo "Found NVIDIA libraries at: $NVIDIA_LIB_PATH"
+          docker run --rm \
+            --device=/dev/nvidia0 \
+            --device=/dev/nvidiactl \
+            --device=/dev/nvidia-uvm \
+            --device=/dev/nvidia-uvm-tools \
+            -v "$NVIDIA_LIB_PATH:/usr/local/nvidia/lib64:ro" \
+            -e LD_LIBRARY_PATH=/usr/local/nvidia/lib64 \
+            -e NVIDIA_VISIBLE_DEVICES=0 \
+            -e NVIDIA_DRIVER_CAPABILITIES=all \
+            ubuntu:22.04 bash -c 'echo "Libs: $(ls /usr/local/nvidia/lib64/ | wc -l) files" && echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" && echo "NVIDIA_VISIBLE_DEVICES=$NVIDIA_VISIBLE_DEVICES"'
+        else
+          echo "Could not find NVIDIA libraries"
+        fi
+        echo ""
+
 #==============================================================================#
     - name: Check GPU Access in Container
       run: |
