@@ -231,6 +231,66 @@ jobs:
         '
 
 #==============================================================================#
+    - name: Install GPU Drivers in Container Image
+      run: |
+        echo "=== Building container image with GPU drivers ==="
+        echo "GPU Vendor: ${{ matrix.runner.gpu_vendor }}"
+        echo ""
+
+        # Create a Dockerfile with GPU-specific drivers
+        cat > Dockerfile.gpu-test <<'EOF'
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update -qq && \
+    apt-get install -y -qq \
+      libwayland-client0 \
+      libxkbcommon0 \
+      libx11-6 \
+      libxext6 \
+      libxcb1 \
+      ca-certificates \
+      wget \
+      gpg \
+      software-properties-common
+
+# Install Intel GPU drivers if needed
+ARG GPU_VENDOR=unknown
+RUN if [ "$GPU_VENDOR" = "intel" ]; then \
+      echo "Installing Intel Graphics PPA..." && \
+      wget -qO - https://repositories.intel.com/gpu/intel-graphics.key | \
+        gpg --dearmor --output /usr/share/keyrings/intel-graphics.gpg && \
+      echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.gpg] \
+        https://repositories.intel.com/gpu/ubuntu jammy client" \
+        > /etc/apt/sources.list.d/intel-graphics.list && \
+      apt-get update -qq && \
+      apt-get install -y -qq \
+        intel-opencl-icd \
+        intel-level-zero-gpu \
+        level-zero \
+        mesa-vulkan-drivers \
+        libigdgmm12 \
+        vulkan-tools && \
+      echo "Intel GPU drivers installed"; \
+    elif [ "$GPU_VENDOR" = "nvidia" ]; then \
+      apt-get install -y -qq mesa-vulkan-drivers vulkan-tools; \
+    fi
+
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+EOF
+
+        # Build image with GPU-specific drivers
+        docker build \
+          --build-arg GPU_VENDOR=${{ matrix.runner.gpu_vendor }} \
+          -t gvk-test-${{ matrix.runner.gpu_vendor }}:local \
+          -f Dockerfile.gpu-test \
+          .
+
+        echo ""
+        echo "Container image built: gvk-test-${{ matrix.runner.gpu_vendor }}:local"
+
+#==============================================================================#
     - name: Check GPU Access in Container
       run: |
         echo "=== GPU Vendor: ${{ matrix.runner.gpu_vendor }} ==="
@@ -239,7 +299,7 @@ jobs:
 
         docker run --rm \
           ${{ matrix.runner.container_options }} \
-          ubuntu:22.04 \
+          gvk-test-${{ matrix.runner.gpu_vendor }}:local \
           bash -c '
             echo "=== GPU Device Detection ==="
 
@@ -275,68 +335,21 @@ jobs:
 #==============================================================================#
     - name: Check Vulkan in Container
       run: |
-        echo "=== Installing Vulkan tools and checking GPU detection ==="
+        echo "=== Vulkan Device Detection ==="
         echo ""
 
         docker run --rm \
           ${{ matrix.runner.container_options }} \
-          ubuntu:22.04 \
+          gvk-test-${{ matrix.runner.gpu_vendor }}:local \
           bash -c '
-            set -e
-            apt-get update -qq
-
-            # Install Intel graphics drivers from Intel PPA if Intel GPU
-            if [ "${{ matrix.runner.gpu_vendor }}" = "intel" ]; then
-              echo "Installing Intel Graphics PPA for Arc GPU support..."
-              apt-get install -y -qq wget gpg software-properties-common
-
-              # Add Intel Graphics PPA
-              wget -qO - https://repositories.intel.com/gpu/intel-graphics.key | gpg --dearmor --output /usr/share/keyrings/intel-graphics.gpg
-              echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/gpu/ubuntu jammy client" > /etc/apt/sources.list.d/intel-graphics.list
-
-              apt-get update -qq
-
-              # Install Intel Vulkan drivers
-              apt-get install -y -qq \
-                intel-opencl-icd \
-                intel-level-zero-gpu \
-                level-zero \
-                intel-media-va-driver-non-free \
-                libmfx1 \
-                libmfxgen1 \
-                libvpl2 \
-                libegl-mesa0 \
-                libegl1-mesa \
-                libegl1-mesa-dev \
-                libgbm1 \
-                libgl1-mesa-dev \
-                libgl1-mesa-dri \
-                libglapi-mesa \
-                libgles2-mesa-dev \
-                libglx-mesa0 \
-                libigdgmm12 \
-                libxatracker2 \
-                mesa-va-drivers \
-                mesa-vdpau-drivers \
-                mesa-vulkan-drivers \
-                va-driver-all \
-                vainfo \
-                hwinfo \
-                clinfo
-
-              echo "Intel graphics drivers installed"
-            else
-              # NVIDIA: just install basic Vulkan tools
-              apt-get install -y -qq mesa-vulkan-drivers
-            fi
-
-            apt-get install -y -qq vulkan-tools ca-certificates
-
-            echo ""
-            echo "=== Vulkan Device Detection ==="
             export DISPLAY=:0
             export XDG_RUNTIME_DIR=/tmp
 
+            echo "Vulkan tools version:"
+            vulkaninfo --version 2>&1 | head -3
+            echo ""
+
+            echo "=== Vulkan GPU Detection ==="
             vulkaninfo --summary 2>&1 | head -100
           '
 
@@ -349,54 +362,25 @@ jobs:
         echo "Container options: ${{ matrix.runner.container_options }}"
         echo ""
 
-        # Run tests inside Docker container
+        # Run tests inside Docker container with pre-installed drivers
         docker run --rm \
           ${{ matrix.runner.container_options }} \
           -v "$(pwd)/gvk-test-package:/workspace" \
           -w /workspace \
           -e DISPLAY=:0 \
           -e XDG_RUNTIME_DIR=/tmp \
-          ubuntu:22.04 \
+          gvk-test-${{ matrix.runner.gpu_vendor }}:local \
           bash -c '
             set -e
 
-            echo "=== Installing Runtime Dependencies ===" 
-            apt-get update -qq
-
-            # Install Intel graphics drivers if Intel GPU
-            if [ "${{ matrix.runner.gpu_vendor }}" = "intel" ]; then
-              echo "Installing Intel Graphics PPA..."
-              apt-get install -y -qq wget gpg software-properties-common
-
-              wget -qO - https://repositories.intel.com/gpu/intel-graphics.key | gpg --dearmor --output /usr/share/keyrings/intel-graphics.gpg
-              echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/gpu/ubuntu jammy client" > /etc/apt/sources.list.d/intel-graphics.list
-
-              apt-get update -qq
-
-              # Install Intel Vulkan and compute drivers
-              apt-get install -y -qq \
-                intel-opencl-icd \
-                intel-level-zero-gpu \
-                level-zero \
-                mesa-vulkan-drivers \
-                libigdgmm12
-
-              echo "Intel GPU drivers installed"
-            fi
-
-            # Install common runtime dependencies
-            apt-get install -y -qq \
-              libwayland-client0 \
-              libxkbcommon0 \
-              libx11-6 \
-              libxext6 \
-              libxcb1 \
-              ca-certificates \
-              2>&1 | grep -E "Setting up|Unpacking" | head -20
-            echo "Dependencies installed"
+            echo "=== Test Package Contents ==="
+            ls -lh *.tests 2>/dev/null || echo "No test executables found"
             echo ""
 
-            echo "=== Test Package Contents ==="
+            # Make test executables runnable
+            chmod +x *.tests 2>/dev/null || true
+
+            echo "=== Running Tests ==="
             ls -lh *.tests 2>/dev/null || echo "No test executables found"
             echo ""
 
