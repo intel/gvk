@@ -373,16 +373,8 @@ jobs:
         echo "=== Docker GPU options: ${{ matrix.runner.container_options }} ==="
         echo ""
 
-        # For NVIDIA, explicitly set environment variables
-        if [ "${{ matrix.runner.gpu_vendor }}" = "nvidia" ]; then
-          GPU_ENV_VARS="-e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all"
-        else
-          GPU_ENV_VARS=""
-        fi
-
         docker run --rm \
           ${{ matrix.runner.container_options }} \
-          $GPU_ENV_VARS \
           gvk-test-${{ matrix.runner.gpu_vendor }}:local \
           bash -c '
             echo "=== GPU Device Detection ==="
@@ -422,16 +414,8 @@ jobs:
         echo "=== Vulkan Device Detection ==="
         echo ""
 
-        # For NVIDIA, explicitly set environment variables
-        if [ "${{ matrix.runner.gpu_vendor }}" = "nvidia" ]; then
-          GPU_ENV_VARS="-e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all"
-        else
-          GPU_ENV_VARS=""
-        fi
-
         docker run --rm \
           ${{ matrix.runner.container_options }} \
-          $GPU_ENV_VARS \
           gvk-test-${{ matrix.runner.gpu_vendor }}:local \
           bash -c '
             export DISPLAY=:0
@@ -454,17 +438,9 @@ jobs:
         echo "Container options: ${{ matrix.runner.container_options }}"
         echo ""
 
-        # For NVIDIA, explicitly set environment variables
-        if [ "${{ matrix.runner.gpu_vendor }}" = "nvidia" ]; then
-          GPU_ENV_VARS="-e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=all"
-        else
-          GPU_ENV_VARS=""
-        fi
-
         # Run tests inside Docker container with pre-installed drivers
         docker run --rm \
           ${{ matrix.runner.container_options }} \
-          $GPU_ENV_VARS \
           -v "$(pwd)/gvk-test-package:/workspace" \
           -w /workspace \
           -e DISPLAY=:0 \
