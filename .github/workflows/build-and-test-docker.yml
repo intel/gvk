@@ -282,8 +282,55 @@ jobs:
           ${{ matrix.runner.container_options }} \
           ubuntu:22.04 \
           bash -c '
+            set -e
             apt-get update -qq
-            apt-get install -y -qq vulkan-tools mesa-vulkan-drivers ca-certificates
+
+            # Install Intel graphics drivers from Intel PPA if Intel GPU
+            if [ "${{ matrix.runner.gpu_vendor }}" = "intel" ]; then
+              echo "Installing Intel Graphics PPA for Arc GPU support..."
+              apt-get install -y -qq wget gpg software-properties-common
+
+              # Add Intel Graphics PPA
+              wget -qO - https://repositories.intel.com/gpu/intel-graphics.key | gpg --dearmor --output /usr/share/keyrings/intel-graphics.gpg
+              echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/gpu/ubuntu jammy client" > /etc/apt/sources.list.d/intel-graphics.list
+
+              apt-get update -qq
+
+              # Install Intel Vulkan drivers
+              apt-get install -y -qq \
+                intel-opencl-icd \
+                intel-level-zero-gpu \
+                level-zero \
+                intel-media-va-driver-non-free \
+                libmfx1 \
+                libmfxgen1 \
+                libvpl2 \
+                libegl-mesa0 \
+                libegl1-mesa \
+                libegl1-mesa-dev \
+                libgbm1 \
+                libgl1-mesa-dev \
+                libgl1-mesa-dri \
+                libglapi-mesa \
+                libgles2-mesa-dev \
+                libglx-mesa0 \
+                libigdgmm12 \
+                libxatracker2 \
+                mesa-va-drivers \
+                mesa-vdpau-drivers \
+                mesa-vulkan-drivers \
+                va-driver-all \
+                vainfo \
+                hwinfo \
+                clinfo
+
+              echo "Intel graphics drivers installed"
+            else
+              # NVIDIA: just install basic Vulkan tools
+              apt-get install -y -qq mesa-vulkan-drivers
+            fi
+
+            apt-get install -y -qq vulkan-tools ca-certificates
 
             echo ""
             echo "=== Vulkan Device Detection ==="
@@ -315,6 +362,29 @@ jobs:
 
             echo "=== Installing Runtime Dependencies ===" 
             apt-get update -qq
+
+            # Install Intel graphics drivers if Intel GPU
+            if [ "${{ matrix.runner.gpu_vendor }}" = "intel" ]; then
+              echo "Installing Intel Graphics PPA..."
+              apt-get install -y -qq wget gpg software-properties-common
+
+              wget -qO - https://repositories.intel.com/gpu/intel-graphics.key | gpg --dearmor --output /usr/share/keyrings/intel-graphics.gpg
+              echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/gpu/ubuntu jammy client" > /etc/apt/sources.list.d/intel-graphics.list
+
+              apt-get update -qq
+
+              # Install Intel Vulkan and compute drivers
+              apt-get install -y -qq \
+                intel-opencl-icd \
+                intel-level-zero-gpu \
+                level-zero \
+                mesa-vulkan-drivers \
+                libigdgmm12
+
+              echo "Intel GPU drivers installed"
+            fi
+
+            # Install common runtime dependencies
             apt-get install -y -qq \
               libwayland-client0 \
               libxkbcommon0 \
