@@ -1,0 +1,124 @@
+SESSION 0005 - Grid Visualization Tools
+Date: Completed
+Status: Milestone 1 Complete + Debug Visualizations
+
+================================================================================
+COMPLETED THIS SESSION
+================================================================================
+
+Milestone 1: Basic Grid Structure
+  * Dynamic grid sizing (cell size = SPH smoothing radius = 0.3f)
+  * Grid dimensions: approximately 119 x 67 x 67 = 534K cells
+  * GridCell struct with metadata (particleCount, startIndex, awakeCount)
+  * Helper functions: grid_cell_index(), world_to_grid_cell()
+
+Grid Wireframe Visualization
+  * New pipeline for rendering grid lines (LINE_LIST topology)
+  * GUI toggle: "Show Grid"
+  * Semi-transparent blue wireframe overlay
+  * Proper VkRenderPassCreateInfo/CreateInfo2 handling
+
+Grid Occupancy Heatmap
+  * New pipeline for colored triangles (per-vertex color)
+  * GUI toggle: "Show Grid Occupancy"
+  * Color scheme: Gray=empty, Blue=sparse, Yellow=medium, Red=dense
+  * CPU-side binning (temporary debug tool)
+  * Performance optimizations: throttled updates, static allocation
+
+================================================================================
+FILES MODIFIED
+================================================================================
+
+create-grid-visualization-pipeline.hpp (NEW FILE)
+  * GridLineVertex and GridCellVertex structs
+  * create_grid_visualization_pipeline() - wireframe pipeline
+  * create_grid_cell_pipeline() - colored cells pipeline
+  * generate_grid_lines() - static wireframe geometry
+  * generate_grid_cell_occupancy() - CPU binning with color mapping
+  * get_occupancy_color() - heatmap color scheme helper
+
+main.cpp
+  * Created both visualization pipelines
+  * Allocated gridLineBuffer (static) and gridCellBuffer (dynamic)
+  * Added GUI checkboxes with tooltips
+  * Render loop updates and draws both visualization modes
+  * Throttled occupancy updates (every 10 frames when running)
+
+utilities.hpp
+  * Added showGrid and showGridOccupancy flags to SimulationParameters
+  * GridCell struct definition
+  * grid_cell_index() and world_to_grid_cell() helper functions
+
+================================================================================
+KNOWN ISSUES
+================================================================================
+
+Grid Occupancy Performance
+  * CPU-side computation is expensive (534K cell loop + 10K particle loop)
+  * Causes performance drops even with throttling
+  * Particle interaction can feel sluggish when enabled
+
+This is INTENTIONAL - temporary debug tool
+  * Proper solution: Move to GPU in Milestone 2 (binning pass)
+  * GPU will be 100x+ faster (parallel, no CPU overhead)
+  * Current version useful for paused screenshots and debugging
+
+Recommendation: 
+  * Use "Show Grid Occupancy" only when paused or for analysis
+  * Disable during interactive use or performance testing
+
+================================================================================
+LESSONS LEARNED
+================================================================================
+
+1. VkRenderPassCreateInfo vs CreateInfo2
+   * Must check sType and handle both versions
+   * Pattern: if (sType == CreateInfo) else CreateInfo2
+   * Use std::max() across all attachments for sample count
+
+2. Vertex Buffer Binding
+   * WRONG: &(VkBuffer&)gvkBuffer (creates temporary reference)
+   * RIGHT: VkBuffer vkBuf = gvkBuffer.get<VkBuffer>(); &vkBuf
+
+3. Variable Lifetime
+   * Temporary vectors destroyed after initialization
+   * Store persistent data separately (gridLineVertexCount)
+   * Cannot call .size() on destroyed std::vector
+
+4. Build Directory Mistakes (REPEATED MULTIPLE TIMES)
+   * NEVER edit files in build/ directory
+   * Changes lost on rebuild
+   * Always work in samples/ source directory
+
+================================================================================
+COMMIT INFORMATION
+================================================================================
+
+Branch: sph-nbody-perf
+Commit: bb3cb9fc
+Message: "Session 0005: Add grid visualization tools"
+
+Changes: 3 files, 343 insertions, 2 deletions
+Status: Committed and pushed to origin successfully
+
+================================================================================
+NEXT STEPS (Milestone 2: GPU Binning Pass)
+================================================================================
+
+High Priority:
+  * Create compute shader for particle binning
+  * Allocate gridCellBuffer on GPU (534K * 16 bytes = 8.5 MB)
+  * Clear cell counters at frame start (compute pass)
+  * Atomic increment per particle's cell (parallel)
+  * Replace CPU occupancy with GPU buffer readback
+  * Verify with debug output and visualization
+
+This will provide:
+  * Real-time occupancy at 60 FPS
+  * Foundation for neighbor search optimization
+  * Foundation for indirect dispatch (Milestone 4)
+  * Massive performance improvement
+
+================================================================================
+END OF SESSION 0005
+================================================================================

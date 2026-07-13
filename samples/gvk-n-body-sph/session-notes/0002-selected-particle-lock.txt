@@ -1,0 +1,156 @@
+/*******************************************************************************
+SESSION: 0002 - Selected Particle Lock (Rock in Fluid)
+================================================================================
+
+QUICK SUMMARY (Skim This First):
+• Implemented "rock in fluid" behavior for selected particle
+• Selected particle now stays locked in position (no movement)
+• Can still scale selected particle with mouse wheel
+• Other particles interact with locked particle (pushes, flows around it)
+• Physics forces calculated but position/velocity locked for selected particle
+• Successfully builds and compiles
+
+FILES MODIFIED:
+• utilities.hpp - Added selectedParticleIndex to ComputePushConstants struct
+• create-compute-pipeline.hpp - Added lock logic in compute shader
+  - Save position before physics
+  - Restore position and zero velocity after physics if selected
+• main.cpp - Pass selectedParticleIndex in compute push constants
+
+DETAILED NOTES:
+================================================================================
+
+CONTEXT:
+User requested ability to lock selected particle in place, like a rock in the
+fluid. The particle should be selectable, scalable, but immovable - acting as
+a fixed obstacle that other particles flow around.
+
+APPROACH:
+Rather than skip physics entirely for the selected particle, we let it
+participate in force calculations (so other particles interact with it
+properly), but we lock its position and zero its velocity after integration.
+
+This ensures:
+  1. Other particles "see" the selected particle and collide with it
+  2. SPH forces from selected particle affect neighbors
+  3. Selected particle doesn't move (position locked)
+  4. No velocity accumulation (zeroed each frame)
+
+IMPLEMENTATION DETAILS:
+
+1. C++ Structure Change (utilities.hpp):
+   Added field to ComputePushConstants:
+     uint32_t selectedParticleIndex;  // UINT32_MAX if none selected
+
+   This matches the graphics push constants pattern.
+
+2. Compute Shader (create-compute-pipeline.hpp):
+
+   Early in main() after loading particle:
+     vec3 savedPosition = p.position.xyz;
+     bool isSelectedParticle = (index == pushConstants.selectedParticleIndex);
+
+   After position integration (line 257-258):
+     // Lock selected particle in place (acts like a rock in the fluid)
+     if (isSelectedParticle) {
+         p.position.xyz = savedPosition;  // Restore original position
+         p.velocity.xyz = vec3(0.0);      // Zero velocity (no movement)
+     }
+
+   Reasoning: We save position BEFORE any physics calculations, then restore
+   it AFTER integration. This means the particle participates in density,
+   pressure, and collision calculations (other particles push against it), but
+   ultimately stays in place.
+
+3. Push Constants (main.cpp):
+   Line 386:
+     computePushConstants.selectedParticleIndex = 
+       selectedParticleIndex >= 0 ? (uint32_t)selectedParticleIndex : UINT32_MAX;
+
+   Uses same pattern as graphics pipeline - UINT32_MAX means no selection.
+
+TESTING:
+? Code compiles successfully (C++14, Visual Studio)
+? Build completed without errors
+? Runtime testing pending (needs visual confirmation)
+
+Expected Behavior:
+  • Click a particle to select it
+  • Selected particle highlights (yellow/orange)
+  • Scroll mouse wheel to change scale
+  • Selected particle stays in exact same position
+  • Other particles flow around it, collide, bounce off
+  • Acts like a fixed obstacle in the fluid
+
+DECISIONS MADE:
+
+Decision: Let particle participate in physics before locking
+Reasoning: If we skip physics entirely, other particles won't interact with it
+properly. By calculating forces but locking position/velocity, we get proper
+interaction without movement.
+
+Decision: Save position early, restore late
+Reasoning: Ensures all physics calculations use correct (locked) position.
+Restore happens after integration, boundaries, and all other updates.
+
+Decision: Zero velocity instead of preserving it
+Reasoning: Prevents velocity accumulation from forces. Selected particle truly
+acts as a stationary object, not a "heavy" object that slowly drifts.
+
+Decision: Use UINT32_MAX as "no selection" sentinel
+Reasoning: Matches existing pattern in graphics pipeline. -1 in int32_t is
+UINT32_MAX in uint32_t, so conversion is safe.
+
+LESSONS LEARNED:
+
+? Good:
+  • Separating "participate in physics" from "apply physics result" gives
+    flexibility for special behaviors
+  • Saving state early in shader, restoring late is clean pattern
+  • Using UINT32_MAX as sentinel works well with existing selection code
+  • Testing the build immediately caught no issues
+
+?? Observations:
+  • Compute shader already had good structure for adding special cases
+  • Push constant size didn't change (sizeof stayed same with new field)
+  • No need to modify particle struct - just pass index through push constants
+
+OPEN QUESTIONS:
+• Should locked particle show visual indicator (different color/outline)?
+• Should locked particle still update its color based on density?
+  (Currently it does - might be confusing if it's not participating in flow)
+• Should we allow multiple locked particles? (Currently only one at a time)
+• Performance impact of this check for every particle? (Likely negligible)
+
+NEXT SESSION PRIORITIES:
+1. Test the implementation visually
+   - Select particle
+   - Verify it doesn't move
+   - Verify other particles flow around it
+   - Try different scales
+2. Consider visual feedback improvements
+   - Different highlight color for locked particle?
+   - Outline or "pin" icon?
+3. If working well, document this feature in session-startup.txt
+
+PERFORMANCE NOTES:
+Build time: Normal (no noticeable increase)
+Code changes: Minimal (3 files, ~10 lines total)
+Expected runtime impact: Negligible (single conditional per particle per frame)
+
+CONTEXT FOR FUTURE SESSIONS:
+The lock behavior is implemented at the physics integration stage, not by
+skipping physics. This is important if we add more complex interactions later
+(e.g., heat transfer, chemical reactions, etc.) - the locked particle would
+still participate in those systems.
+
+If we ever implement the sleep/wake system, locked particles should probably
+be treated as awake (so they still interact with neighbors), but their sleep
+counter should never increment.
+
+================================================================================
+Session Number: 0002
+Message Count: ~12 exchanges
+Build Status: ? Successful
+Last Modified: 0002
+*******************************************************************************/

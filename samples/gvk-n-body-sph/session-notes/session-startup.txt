@@ -1,0 +1,434 @@
+/*******************************************************************************
+SESSION STARTUP GUIDE - SPH N-Body Simulation Project
+================================================================================
+
+?? QUICK START CHECKLIST
+--------------------------------------------------------------------------------
+1. Read this entire file to understand the project context
+2. Review the MOST RECENT session note (highest date in filename)
+3. Skim 1-2 previous session notes to understand recent trajectory
+4. Check PROJECT STATUS section below for current implementation state
+5. Note any TODO items from recent sessions before starting work
+
+?? SESSION NOTES SYSTEM
+--------------------------------------------------------------------------------
+Purpose: Maintain context across chat sessions to prevent context bloat and
+         preserve learning/decisions from previous work.
+
+File Naming Convention:
+  ####-TOPIC.txt (where #### is sequential: 0000, 0001, 0002, etc.)
+  Example: 0000-sleep-wake-implementation.txt
+           0001-context-management.txt
+           0002-performance-profiling.txt
+
+Each Session Note Structure:
+  ???????????????????????????????????????????????????????????????????
+  ? [BULLET POINT SUMMARY] - Skim this for quick context refresh    ?
+  ? • Key changes made                                               ?
+  ? • Problems encountered                                           ?
+  ? • Solutions found                                                ?
+  ? • Decisions made                                                 ?
+  ? • Next steps identified                                          ?
+  ?                                                                  ?
+  ? [DETAILED BODY] - Reference this when you need specifics         ?
+  ? • Full context of what was attempted                             ?
+  ? • Code changes with file paths                                   ?
+  ? • Reasoning behind decisions                                     ?
+  ? • Performance data / test results                                ?
+  ? • Open questions / unresolved issues                             ?
+  ???????????????????????????????????????????????????????????????????
+
+?? CONTEXT MANAGEMENT STRATEGY
+--------------------------------------------------------------------------------
+WHY: GitHub Copilot chat sessions fail with "400 Bad Request" when context
+     exceeds ~1.18 MB (typically 20-30 message exchanges with large files).
+
+PREVENTION:
+  • Extract large code sections into separate header files
+  • Use targeted line ranges when reading files (avoid full file reads)
+  • Create session notes proactively every 10-15 exchanges
+  • Watch for warning signs: slower responses, re-reading files, long pauses
+
+CHECKPOINT STRATEGY:
+  1. After 10-15 message exchanges, say: "Create checkpoint session notes"
+  2. Copilot will create ####-TOPIC.txt (next number) with current work summary
+  3. Save your work, commit if appropriate
+  4. Start a NEW chat session
+  5. In new session: "Review session-startup.txt and most recent session notes"
+  6. Continue working with fresh context
+
+?? PROJECT OVERVIEW
+================================================================================
+
+PROJECT: SPH N-Body Simulation with Sleep/Wake Performance Optimization
+GOAL: Interactive UI for millions of particles at 60 FPS
+TECH: C++14, Vulkan, Visual Studio 2022
+
+Git Repository:
+  Location: C:\intel\gvk\
+  Branch: sph-nbody-perf
+  Remote: origin (https://github.com/intel/applications.analyzers.gpa.backend.gvk)
+
+Workspace Structure:
+  ROOT (Git Repo):     C:\intel\gvk\
+  SOURCE (Edit here):  C:\intel\gvk\samples\gvk-n-body-sph\
+  BUILD (Don't edit):  C:\intel\gvk\build\
+
+  ?? CRITICAL: VS Code workspace root is at build\ but always edit files in samples\!
+
+Core Concept:
+  - Each particle represents clickable data/info (can scale 0.1x to 128x)
+  - 2D SPH (Smoothed Particle Hydrodynamics) fluid simulation
+  - Hard sphere collisions (particles never overlap visually)
+  - Sleep/wake optimization: 90-99% particles asleep = 40x performance boost
+
+Target Performance:
+  - 500K-1M+ particles at 60 FPS
+  - <10% particles awake at steady state
+  - Smooth interaction with mouse click/scale
+
+?? PROJECT STRUCTURE
+================================================================================
+
+Directory Layout:
+  C:\intel\gvk\                [GIT ROOT]
+  ??? samples\gvk-n-body-sph\               [SOURCE - Always edit here!]
+      ??? main.cpp                           Main application & render loop
+      ??? utilities.hpp                      Particle struct & SphContext
+      ??? utilities.cpp                      Initialization functions
+      ??? defines.hpp                        Constants & defines
+      ??? create-compute-pipeline.hpp        Particle, ComputePushConstants, compute shader
+      ??? create-graphics-pipeline.hpp       QuadVertex, RenderPushConstants, graphics shaders
+      ??? session-notes\                     This directory
+          ??? session-startup.txt            This file
+          ??? ####-*.txt                     Session logs (highest number = most recent)
+
+  C:\intel\gvk\build\           [BUILD OUTPUT - Do not edit!]
+  ??? samples\gvk-n-body-sph\               Generated binaries
+      ??? gvk-n-body-sph.exe                Executable
+
+??? CRITICAL PATH WARNING:
+  - VS Code workspace root: C:\intel\gvk\build\
+  - But SOURCE files are at:  C:\intel\gvk\samples\gvk-n-body-sph\
+  - Relative paths: Use ../samples/gvk-n-body-sph/ from workspace root
+  - NEVER edit files in build\ directory - changes will be overwritten!
+  - ALWAYS verify you're editing source files, not generated build files
+
+?? PROJECT STATUS
+================================================================================
+
+COMPLETED FEATURES ?
+--------------------------------------------------------------------------------
+? 2D SPH fluid simulation (Z-axis locked to 0)
+? Hard sphere collision system
+   - Scale-aware collision detection
+   - Particles never overlap visually
+   - Quadratic overlap scaling for realistic response
+? Per-particle persistent scale (0.1x to 128x range)
+? Mouse interaction
+   - Left click: Ray-cast picking (scale-aware)
+   - Mouse wheel: Adjust selected particle scale
+   - Right click: Camera look
+   - Middle click: Reset FOV
+? Real-time GUI control panel (ImGui)
+   - All simulation parameters adjustable
+   - Particle count, forces, domain size, etc.
+? SPH forces: Pressure, viscosity, gravity
+? Adaptive sampling for large particle counts
+   - Full quality <50K particles
+   - Smart sampling >50K (checkInterval = particleCount/50000)
+? Selection highlighting
+   - Selected particle = bright yellow/orange
+   - Color override in fragment shader
+? Shader extraction
+   - Compute shader in create-compute-pipeline.hpp
+   - Graphics shaders in create-graphics-pipeline.hpp
+   - Reduces context bloat from main.cpp
+
+IN PROGRESS ??
+--------------------------------------------------------------------------------
+?? Sleep/Wake System
+   - Fields added to Particle struct (C++ & shaders)
+   - Constants defined (SLEEP_THRESHOLD=20, VELOCITY_THRESHOLD=0.01)
+   - Currently DISABLED for debugging base physics
+   - Ready to enable once physics are verified
+
+TODO ?
+--------------------------------------------------------------------------------
+? Sleep/Wake System Implementation
+   1. Re-enable early-exit for sleeping particles in compute shader
+   2. Implement wake-up neighbor scanning logic
+   3. Implement sleep-counter increment logic at end of frame
+   4. Add "StableGrid" initialization mode (all particles pre-asleep)
+   5. Add GUI controls for sleep debugging
+      - Awake particle count
+      - Wake events visualization
+      - Sleep threshold adjustment
+
+? Performance Profiling
+   - Measure baseline performance without sleep/wake
+   - Measure performance gain with sleep/wake enabled
+   - Identify bottlenecks at various particle counts
+
+? Future Enhancements
+   - Spatial grid acceleration (gridCell field exists but unused)
+   - Multiple particle types/behaviors
+   - Save/load configurations
+   - Benchmark mode with automated testing
+
+??? ARCHITECTURE NOTES
+================================================================================
+
+Particle Struct (GPU-Matched Layout):
+  struct Particle {
+      glm::vec4 position;      // xyz=position, w=radius
+      glm::vec4 velocity;      // xyz=velocity, w=mass
+      glm::vec4 color;         // rgba color
+      glm::vec4 force;         // xyz=force, w=padding
+      glm::vec4 homePosition;  // xyz=original position, w=padding
+      float density;           // SPH density
+      float pressure;          // SPH pressure
+      float scale;             // Visual scale (0.1x to 128x)
+      float wakeRadius;        // Wake detection radius
+      uint32_t gridCell;       // Spatial grid cell (unused currently)
+      uint32_t sleepCounter;   // 0=awake, >=SLEEP_THRESHOLD=asleep
+      float padding1, padding2;
+  };
+
+Sleep/Wake Constants:
+  - SLEEP_THRESHOLD = 20 frames (marker value for asleep state)
+  - SLEEP_VELOCITY_THRESHOLD = 0.01 (immediate sleep if below)
+  - WAKE_RADIUS_MULTIPLIER = 1.2 (wake detection margin)
+
+Sleep/Wake Logic (When Re-Enabled):
+  - Sleep: velocity < 0.01 ? immediately mark as asleep (counter=20)
+  - Wake: sleeping AND awake particle within wakeRadius ? set counter=0
+  - User interaction (click/scale) ? immediate wake (counter=0)
+  - Physics: Skip ALL physics for sleeping particles (early return)
+
+Initialization Modes:
+  1. UniformRandom (DEFAULT) - Even distribution
+  2. GaussianCloud - Clustered in center
+  3. MultipleClusters - Multiple groups
+  4. Explosion - Radial velocity pattern
+  5. StableGrid (TODO) - Pre-spaced grid, all asleep
+
+Performance Optimizations:
+  - Adaptive sampling: Skip physics checks when count > 50K
+  - Distance culling: Squared distance checks, skip beyond interaction radius
+  - 2D optimized: All Z calculations eliminated
+  - Sleep system: Skip physics entirely for sleeping particles (when enabled)
+  - Hard collision priority: Collision forces override SPH when overlapping
+
+Rendering:
+  - Compute shader: SPH physics (256 threads per workgroup)
+  - Vertex shader: Instanced billboard quads (one quad per particle)
+  - Fragment shader: Circle with soft/hard edges, selection highlighting
+
+Critical Implementation Notes:
+  - Particle buffer allocated at kMaxParticleCount (1M) for runtime resizing
+  - All structs MUST match between C++, compute shader, and vertex shader
+  - Collision strength = 5000 base, scaled with particle size
+  - Selected particle uses color override (yellow/orange)
+  - Mouse picking uses screen-space projection (not ray-cast)
+
+?? DEVELOPMENT WORKFLOW
+================================================================================
+
+Starting a New Session:
+  1. Open this file (session-startup.txt)
+  2. Review most recent ####-*.txt session note (highest number)
+  3. Skim 1-2 previous notes if recent work is unclear
+  4. Identify current task from TODO section or recent session notes
+  5. Begin work with fresh context
+
+During a Session:
+  • Make incremental changes
+  • Test frequently
+  • Document decisions in chat
+  • Watch message count (~10-15 exchanges = checkpoint time)
+  • Note any performance observations
+  • Track what works and what doesn't
+
+Before Session Ends:
+  1. Request: "Create checkpoint session notes"
+  2. Copilot creates ####-TOPIC.txt (next sequential number) with:
+     - Bullet point summary at top
+     - Detailed work description
+     - Files changed
+     - Decisions made
+     - Next steps
+  3. Commit code changes if appropriate
+  4. Git branch: sph-nbody-perf
+
+If Session Becomes Unresponsive:
+  • Save current state immediately
+  • Document what you were working on
+  • Create manual session notes if needed
+  • Start fresh session with checkpoint notes
+
+?? SESSION NOTE TEMPLATE
+================================================================================
+When creating session notes, use this structure:
+
+/*******************************************************************************
+SESSION: #### - [TOPIC] (where #### is the next sequential number)
+================================================================================
+
+QUICK SUMMARY (Skim This First):
+• [What was the main goal of this session?]
+• [Key changes made - list files modified]
+• [Problems encountered]
+• [Solutions found/decisions made]
+• [What works now that didn't before?]
+• [What still doesn't work?]
+• [Next steps identified]
+
+FILES MODIFIED:
+• path/to/file1.cpp - [What changed]
+• path/to/file2.hpp - [What changed]
+
+DETAILED NOTES:
+================================================================================
+
+[Detailed description of work done, reasoning behind decisions, code snippets
+if helpful, performance observations, etc.]
+
+LESSONS LEARNED:
+• [Things that worked well]
+• [Things that didn't work]
+• [Gotchas to remember]
+
+OPEN QUESTIONS:
+• [Unresolved issues]
+• [Things to investigate further]
+
+NEXT SESSION PRIORITIES:
+1. [Most important next step]
+2. [Secondary priority]
+3. [Nice to have]
+
+*******************************************************************************/
+
+?? COMMON TASKS QUICK REFERENCE
+================================================================================
+
+Viewing Particle Struct:
+  File: utilities.hpp
+  Lines: Search for "struct Particle"
+
+Modifying Compute Shader (Physics):
+  File: create-compute-pipeline.hpp
+  Note: Particle struct must match utilities.hpp exactly
+
+Modifying Graphics Shaders (Rendering):
+  File: create-graphics-pipeline.hpp
+  Note: Particle struct must match utilities.hpp exactly
+
+Changing Constants:
+  File: defines.hpp
+  Common constants: kMaxParticleCount, kDefaultParticleCount, etc.
+
+Adding Initialization Modes:
+  File: utilities.cpp
+  Functions: initialize_uniform_random, initialize_gaussian_cloud, etc.
+
+Building:
+  Location: C:\intel\gvk\build\
+  Command: Build in Visual Studio or use MSBuild
+
+Running:
+  Executable: C:\intel\gvk\build\samples\gvk-n-body-sph\gvk-n-body-sph.exe
+
+?? COMMON PITFALLS
+================================================================================
+
+!!! CRITICAL PATH RULE (READ THIS FIRST) !!!
+--------------------------------------------------------------------------------
+WORKSPACE ROOT IS IN BUILD DIRECTORY BUT SOURCE IS IN SAMPLES DIRECTORY!
+
+VS Code Workspace Root: C:\intel\gvk\build\
+Source Files Location:  C:\intel\gvk\samples\gvk-n-body-sph\
+
+ALWAYS USE RELATIVE PATH: ..\samples\gvk-n-body-sph\
+
+File operations MUST use:
+  - ..\samples\gvk-n-body-sph\file.hpp (for create_file, replace_string_in_file)
+  - Absolute paths: C:\intel\gvk\samples\gvk-n-body-sph\file.hpp (for terminal)
+  - NEVER edit files in build\ directory - changes will be overwritten on rebuild!
+
+Example paths:
+  CORRECT: ..\samples\gvk-n-body-sph\main.cpp
+  CORRECT: C:\intel\gvk\samples\gvk-n-body-sph\main.cpp
+  WRONG:   samples\gvk-n-body-sph\main.cpp (missing ..\ or C:\)
+  WRONG:   C:\intel\gvk\build\samples\gvk-n-body-sph\main.cpp (in build!)
+
+Session 0005 mistake: Created files in build directory multiple times.
+Always double-check paths before file operations!
+--------------------------------------------------------------------------------
+
+1. STRUCT MISMATCH
+   Problem: Particle struct differs between C++ and shaders
+   Symptom: Particles render at wrong positions, strange behavior
+   Fix: Verify ALL three match exactly (utilities.hpp, compute shader, vertex shader)
+
+2. EDITING BUILD DIRECTORY
+   Problem: Changed files in build\ instead of samples\
+   Symptom: Changes lost on rebuild
+   Fix: Always edit in C:\intel\gvk\samples\gvk-n-body-sph\
+
+3. CONTEXT BLOAT
+   Problem: Session becomes unresponsive after many exchanges
+   Symptom: Slow responses, 400 Bad Request errors
+   Fix: Create checkpoint notes every 10-15 exchanges, start fresh session
+
+4. READING FULL FILES
+   Problem: Using get_file without line ranges on large files
+   Symptom: Context fills up quickly
+   Fix: Use targeted line ranges, reference separate header files
+
+5. SLEEP SYSTEM CONFUSION
+   Problem: Forgetting sleep system is currently disabled
+   Symptom: Expecting performance gains that aren't there
+   Fix: Check compute shader for "SLEEP/WAKE SYSTEM: Disabled" comment
+
+?? ASKING FOR HELP
+================================================================================
+
+When you need Copilot's help, be specific:
+  ? GOOD: "In create-compute-pipeline.hpp, re-enable the sleep/wake early-exit
+           logic and implement the wake-up neighbor scan. Sleep threshold is 20."
+
+  ? BAD: "Make the particles sleep"
+
+Provide context efficiently:
+  • Reference file names and approximate line numbers
+  • Mention what you already tried
+  • State what behavior you expect vs what you observe
+  • Include relevant error messages if any
+
+Remember:
+  • Copilot can read specific files/line ranges efficiently
+  • Copilot can search for concepts/functions across the codebase
+  • Copilot can build, test, and verify changes
+  • Copilot benefits from your domain knowledge (you know the goals!)
+
+?? TIPS FOR SUCCESS
+================================================================================
+
+1. Work in small increments - Test each change before moving on
+2. Keep sessions short - 10-15 exchanges max, then checkpoint
+3. Document decisions - Future you will thank present you
+4. Commit frequently - Small commits are easier to debug
+5. Trust the process - Session notes prevent lost work
+6. Stay organized - Date-stamped notes create natural progression
+7. Review regularly - Skim old notes occasionally for insights
+
+When in doubt:
+  • Check session-startup.txt (this file)
+  • Review most recent session note
+  • Ask Copilot to summarize current state
+
+================================================================================
+Last Updated: Session 0001 (Update this when making significant changes)
+*******************************************************************************/

@@ -1,0 +1,95 @@
+/*******************************************************************************
+CHECKPOINT CREATION CHECKLIST
+================================================================================
+
+Use this checklist when creating session checkpoint notes (every 10-15 exchanges)
+
+? BEFORE CREATING CHECKPOINT:
+  ? Save all open files
+  ? Make sure code compiles (if applicable)
+  ? Test current changes (verify they work)
+  ? Note current message count in this session (~10-15 is checkpoint time)
+
+? CREATING THE CHECKPOINT:
+  ? Say to Copilot: "Create checkpoint session notes"
+  ? Copilot will create: ####-TOPIC.txt (next sequential number)
+  ? Review the generated file
+  ? Ensure bullet summary is clear and complete
+  ? Add any missing context that Copilot might not know
+  ? Save the session notes file
+
+? VERIFICATION (Quick Check):
+  ? Bullet summary covers: goal, changes, problems, solutions, next steps
+  ? Files modified section lists all changed files
+  ? Key decisions are documented
+  ? Next session priorities are clear
+  ? Number is sequential (next in the sequence)
+
+? COMMITTING (If Appropriate):
+  ? Review git status
+  ? Stage files: git add [changed files]
+  ? Commit with descriptive message
+  ? Example: "Add sleep/wake early-exit logic to compute shader"
+  ? Include session note in commit if helpful
+  ? Push to remote if working in shared branch
+
+? STARTING NEW SESSION:
+  ? Close current chat window
+  ? Open new chat window
+  ? First message: "Review session-startup.txt and most recent session notes"
+  ? Copilot will read and summarize context
+  ? Verify understanding before continuing work
+  ? Continue from where you left off
+
+? IF SESSION FAILED BEFORE CHECKPOINT:
+  ? Don't panic - your code is saved
+  ? Create manual session notes using TEMPLATE-session-notes.txt
+  ? Copy template, fill in what you remember
+  ? Even partial notes are better than none
+  ? Save with next number: ####-TOPIC.txt
+  ? Start new session as normal
+
+================================================================================
+
+?? TIMING GUIDELINES:
+  • Checkpoint every 10-15 message exchanges
+  • Don't wait until 20+ exchanges (too close to failure threshold)
+  • If in doubt, checkpoint early rather than late
+  • Better to have many small session notes than lose context
+
+?? NAMING EXAMPLES:
+  Good:
+    0000-sleep-wake-implementation.txt
+    0001-collision-optimization.txt
+    0002-gui-controls-debugging.txt
+
+  Bad:
+    session1.txt                    (not four digits)
+    notes.txt                        (not descriptive)
+    15.txt                           (no topic)
+    sleep-wake.txt                   (no number)
+
+?? TIPS:
+  • Include performance numbers if you measured any
+  • Document WHY not just WHAT (future you will thank you)
+  • Note what DIDN'T work (save future you from trying it again)
+  • Link to related sessions if this continues previous work
+  • Update session-startup.txt if project status changed significantly
+
+?? COMMON MISTAKES:
+  ? Forgetting to use next sequential number
+  ? Not documenting decisions (just documenting code changes)
+  ? Waiting too long to checkpoint (>20 exchanges)
+  ? Not testing before checkpointing
+  ? Bullet summary too vague ("made changes")
+
+? GOOD PRACTICES:
+  ? Specific bullet points ("Added early-exit for sleeping particles")
+  ? Performance measurements ("FPS improved from 30 to 55")
+  ? Clear next steps ("Next: implement wake-up scanning")
+  ? Document problems AND solutions
+  ? Include reasoning behind decisions
+
+================================================================================
+Keep this checklist open during sessions as a reminder!
+*******************************************************************************/

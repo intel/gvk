@@ -1,0 +1,244 @@
+/*******************************************************************************
+SESSION: 0001 - Context Management and Session Recovery
+================================================================================
+
+QUICK SUMMARY (Skim This First):
+• Analyzed root cause of chat session failures (3 occurrences)
+• Created session notes system to prevent data loss
+• Documented context bloat prevention strategies
+• Renamed chat-logs to session-notes
+• Created session-startup.txt guide for future sessions
+• Established date-stamped naming convention (YYYY-MM-DD-TOPIC.txt)
+
+FILES CREATED:
+• session-notes/session-startup.txt - Comprehensive startup guide
+• session-notes/2024-01-XX-sleep-wake-initial-implementation.txt - First session log
+• session-notes/2024-01-XX-context-management.txt - This file
+
+FILES RENAMED:
+• chat-logs/ ? session-notes/ (better naming convention)
+
+DETAILED NOTES:
+================================================================================
+
+PROBLEM:
+Chat sessions were becoming unusable after 20-30 message exchanges. This
+happened 3 times, disrupting work and losing context about decisions made.
+
+ROOT CAUSE:
+GitHub Copilot API returns "400 Bad Request" when context size exceeds
+approximately 1.18 MB. This happens when:
+  1. Large files are read repeatedly (main.cpp with embedded shaders)
+  2. Context accumulates across many exchanges
+  3. No pruning mechanism exists
+  4. File contents stay in context even after work moves on
+
+ERROR DETAILS:
+  Error: HttpRequestFailure
+  Status: 400 Bad Request
+  Message: "Bad Request"
+  Context Size: ~1.18 MB at failure
+  Message Count: ~25-30 exchanges
+
+WARNING SIGNS:
+  • Responses becoming noticeably slower
+  • Copilot re-reading files it already read earlier
+  • Long pauses (10+ seconds) before responses
+  • When approaching 20-30 message exchanges
+  • When working with files >1000 lines repeatedly
+
+SOLUTION - SESSION NOTES SYSTEM:
+================================================================================
+
+GOAL:
+Preserve context and decisions across sessions while preventing context bloat
+from making sessions unusable.
+
+STRUCTURE:
+  session-notes/
+    ??? session-startup.txt           # Read this at start of every session
+    ??? YYYY-MM-DD-TOPIC.txt          # One per session, date-stamped
+
+FILE NAMING CONVENTION:
+  Format: YYYY-MM-DD-TOPIC.txt
+  Examples:
+    2024-01-15-sleep-wake-implementation.txt
+    2024-01-16-performance-profiling.txt
+    2024-01-17-spatial-grid-optimization.txt
+
+Why This Format:
+  • Chronological sorting is natural (by filename)
+  • Date is immediately visible
+  • Topic gives context without opening file
+  • Works well with file systems and version control
+
+SESSION NOTE FORMAT:
+Each session note has two parts:
+
+  1. QUICK SUMMARY (Bullet Points)
+     - Skim-able in 30 seconds
+     - Key changes, problems, solutions, decisions
+     - Next steps identified
+     - Used for rapid context refresh
+
+  2. DETAILED BODY
+     - Full context of what was attempted
+     - Code changes with reasoning
+     - Performance data / test results
+     - Lessons learned
+     - Open questions
+     - Used when you need specifics
+
+SESSION-STARTUP.TXT:
+Comprehensive guide containing:
+  • Quick start checklist
+  • Session notes system documentation
+  • Context management strategy
+  • Complete project overview
+  • Current project status (TODO, in-progress, completed)
+  • Architecture notes
+  • Development workflow
+  • Common tasks quick reference
+  • Common pitfalls to avoid
+  • Tips for success
+
+WORKFLOW:
+================================================================================
+
+Starting a Session:
+  1. Read session-startup.txt (or skim if recently read)
+  2. Review most recent YYYY-MM-DD-*.txt file (highest date)
+  3. Skim 1-2 previous notes if needed for context
+  4. Identify current task from TODO or recent session notes
+  5. Begin work with fresh context
+
+During a Session:
+  • Make incremental changes
+  • Test frequently
+  • Document decisions in chat
+  • Watch message count (~10-15 exchanges = checkpoint time)
+  • Note performance observations
+  • Track what works and what doesn't
+
+Creating Checkpoint (Every 10-15 Exchanges):
+  1. User says: "Create checkpoint session notes"
+  2. Copilot creates new YYYY-MM-DD-TOPIC.txt with:
+     - Bullet summary at top
+     - Detailed work description
+     - Files changed
+     - Decisions made
+     - Next steps
+  3. User saves work, commits if appropriate
+  4. User starts NEW chat session
+  5. In new session: "Review session-startup.txt and most recent session notes"
+
+CONTEXT BLOAT PREVENTION:
+================================================================================
+
+CODE ORGANIZATION:
+? Extract large code sections into separate header files
+   Example: Shaders moved from main.cpp to:
+     - create-compute-pipeline.hpp (compute shader)
+     - create-graphics-pipeline.hpp (graphics shaders)
+
+? Use targeted line ranges when reading files
+   Example: get_file(filename, startLine=100, endLine=200)
+   vs: get_file(filename) which reads entire file
+
+? Reference separate header files instead of monolithic files
+   Example: "Look at create-compute-pipeline.hpp"
+   vs: "Look at main.cpp" (which has everything)
+
+SESSION MANAGEMENT:
+? Create session notes proactively (every 10-15 exchanges)
+? Start fresh sessions regularly
+? Don't wait until session is unresponsive
+? Keep exchange count visible (mental counter or note in editor)
+
+FILE READING STRATEGY:
+? Read specific line ranges only
+? Don't re-read files already in context
+? Use code_search for concepts instead of reading full files
+? Keep file reads under 200-300 lines when possible
+
+DECISIONS MADE:
+================================================================================
+
+1. SESSION NOTES SYSTEM
+   - Date-stamped naming (YYYY-MM-DD-TOPIC.txt)
+   - Two-part format (bullet summary + detailed body)
+   - session-startup.txt as central guide
+
+2. SHADER EXTRACTION
+   - Separate header files for compute and graphics pipelines
+   - Reduces main.cpp from ~2000 lines to ~500 lines
+   - Each shader file is focused and manageable
+
+3. PROACTIVE CHECKPOINTING
+   - Every 10-15 exchanges, not waiting for problems
+   - User-initiated ("Create checkpoint session notes")
+   - Always start fresh session after checkpoint
+
+4. DIRECTORY NAMING
+   - "session-notes" instead of "chat-logs"
+   - More descriptive of purpose
+   - Located in project directory for version control
+
+LESSONS LEARNED:
+================================================================================
+
+? What Worked:
+• Extracting shaders to separate files drastically reduced context bloat
+• Date-stamped session notes make chronology obvious
+• Bullet summaries enable fast context refresh without reading everything
+• session-startup.txt prevents having to explain project every time
+
+? What Didn't Work:
+• Keeping all shaders in main.cpp (too large for repeated reads)
+• Not tracking message count during sessions
+• Waiting for session to fail before creating notes
+• Generic filenames (session-context-0.txt) - no context from name
+
+?? Gotchas:
+• Context bloat is sneaky - sessions feel fine until they suddenly fail
+• "400 Bad Request" gives no warning - just fails
+• Once failed, cannot recover session - must start fresh
+• File size on disk (1.18 MB) indicates already too late
+• 20-30 messages is the practical limit, not a hard number
+
+METRICS:
+================================================================================
+
+Context Overflow Characteristics:
+  • Failure Point: ~1.18 MB context size
+  • Message Count: ~25-30 exchanges
+  • Warning Signs: Noticeable slowdown after ~15-20 exchanges
+  • File Size: main.cpp with shaders was ~2000 lines
+
+After Optimization:
+  • main.cpp: ~500 lines (much more manageable)
+  • create-compute-pipeline.hpp: ~300 lines
+  • create-graphics-pipeline.hpp: ~150 lines
+  • Expected messages before bloat: ~40-50 (improvement of ~60%)
+
+OPEN QUESTIONS:
+• Is 10-15 exchanges the optimal checkpoint frequency? (needs testing)
+• Should we auto-remind user to checkpoint at 15 exchanges? (probably not)
+• Would summarization help? (Copilot doesn't have this feature currently)
+
+NEXT SESSION PRIORITIES:
+1. Use the new session notes system in practice
+2. Test checkpoint workflow (create note after 10-15 exchanges)
+3. Validate that fresh sessions with notes work as expected
+4. Refine session-startup.txt based on experience
+
+FUTURE IMPROVEMENTS:
+• Consider adding automated context size estimation
+• Add session duration tracking
+• Create template files for common tasks
+• Document common error patterns and solutions
+
+================================================================================
+Session Number: 0001
+Last Modified: 0001
+*******************************************************************************/

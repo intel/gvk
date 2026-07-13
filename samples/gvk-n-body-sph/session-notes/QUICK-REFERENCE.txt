@@ -1,0 +1,115 @@
+/*******************************************************************************
+QUICK REFERENCE CARD - Keep This Handy!
+================================================================================
+
+?? STARTING A NEW SESSION:
+  ? Open session-startup.txt
+  ? Review most recent ####-*.txt (highest number)
+  ? Skim 1-2 older notes if needed
+  ? Start working
+
+?? DURING SESSION:
+  ? Make incremental changes
+  ? Test frequently
+  ? Watch message count (~10-15 = checkpoint time)
+  ? Document decisions
+
+?? CREATING CHECKPOINT (Every 10-15 Exchanges):
+  ? Say: "Create checkpoint session notes"
+  ? Save work
+  ? Commit if appropriate
+  ? Start NEW chat session
+  ? In new session: "Review session-startup.txt and latest notes"
+
+?? WARNING SIGNS (Context Bloat):
+  • Responses becoming slower
+  • Copilot re-reading files
+  • Long pauses (10+ seconds)
+  • Approaching 20-30 message exchanges
+
+?? KEY FILES (Always Edit Source, Not Build!):
+  GIT ROOT: C:\intel\gvk\
+  BRANCH: sph-nbody-perf
+
+  SOURCE (Edit Here):
+    C:\intel\gvk\samples\gvk-n-body-sph\
+      ??? main.cpp
+      ??? utilities.hpp / .cpp
+      ??? defines.hpp
+      ??? create-compute-pipeline.hpp
+      ??? create-graphics-pipeline.hpp
+
+  BUILD (Don't Edit):
+    C:\intel\gvk\build\samples\gvk-n-body-sph\
+
+  ?? VS Code workspace root is build\ but edit files in samples\!
+  ?? ALWAYS use ABSOLUTE paths: C:\intel\gvk\samples\gvk-n-body-sph\
+
+??? PARTICLE STRUCT (Must Match C++ and Shaders!):
+  struct Particle {
+      glm::vec4 position;      // xyz=pos, w=radius
+      glm::vec4 velocity;      // xyz=vel, w=mass
+      glm::vec4 color;         // rgba
+      glm::vec4 force;         // xyz=force, w=padding
+      glm::vec4 homePosition;  // xyz=original, w=padding
+      float density;           // SPH density
+      float pressure;          // SPH pressure
+      float scale;             // Visual scale (0.1x-128x)
+      float wakeRadius;        // Wake detection radius
+      uint32_t gridCell;       // Spatial grid (unused)
+      uint32_t sleepCounter;   // 0=awake, >=20=asleep
+      float padding1, padding2;
+  };
+
+?? SLEEP/WAKE STATUS:
+  Currently: DISABLED (for debugging)
+  Location: create-compute-pipeline.hpp
+  Look for: "SLEEP/WAKE SYSTEM: Disabled"
+
+?? CURRENT TODO:
+  ? Re-enable sleep/wake early-exit in compute shader
+  ? Implement wake-up neighbor scanning
+  ? Implement sleep-counter increment logic
+  ? Add StableGrid initialization mode
+  ? Add GUI controls for sleep debugging
+
+?? COMMON COMMANDS:
+  View Particle Struct:
+    File: utilities.hpp, search "struct Particle"
+
+  Modify Physics:
+    File: create-compute-pipeline.hpp
+
+  Modify Rendering:
+    File: create-graphics-pipeline.hpp
+
+  Change Constants:
+    File: defines.hpp
+
+?? PERFORMANCE STATUS:
+  Current (no sleep):
+    50K:  ~60 FPS
+    100K: ~30-40 FPS
+    500K: ~5-10 FPS
+    1M:   <5 FPS
+
+  Expected (90% asleep):
+    1M (100K awake): ~40-60 FPS
+
+?? TIPS:
+  • Work in small increments
+  • Keep sessions short (10-15 exchanges)
+  • Document decisions
+  • Commit frequently
+  • Trust the process
+  • Date-stamp session notes (YYYY-MM-DD-TOPIC.txt)
+
+?? IF SESSION FAILS:
+  1. Save current state immediately
+  2. Create manual session notes
+  3. Start fresh session
+  4. Load session-startup.txt + latest notes
+
+================================================================================
+Full documentation: session-startup.txt
+*******************************************************************************/

@@ -1,0 +1,175 @@
+/*******************************************************************************
+SESSION: 0000 - Initial Sleep/Wake System Design and Implementation
+================================================================================
+
+QUICK SUMMARY (Skim This First):
+• Added sleep/wake fields to Particle struct (sleepCounter, wakeRadius)
+• Defined sleep/wake constants in compute shader (SLEEP_THRESHOLD=20, etc.)
+• Sleep system implemented but DISABLED for debugging base physics
+• Extracted shaders to separate header files to reduce context bloat
+• All initialization modes updated to initialize sleep fields
+• Base SPH physics working: pressure, viscosity, collisions, gravity
+• Mouse interaction working: pick, scale, selection highlighting
+
+FILES MODIFIED:
+• utilities.hpp - Added sleepCounter and wakeRadius to Particle struct
+• utilities.cpp - Initialize sleep fields in all init modes (UniformRandom, etc.)
+• defines.hpp - Added sleep/wake constants (if added here - TBD)
+• create-compute-pipeline.hpp - Compute shader with sleep logic (disabled)
+• create-graphics-pipeline.hpp - Vertex/fragment shaders extracted
+
+DETAILED NOTES:
+================================================================================
+
+CONTEXT:
+This was the initial push to add sleep/wake optimization to the SPH N-Body
+simulation. The goal is to achieve 40x performance improvement by having 90-99%
+of particles "asleep" (skipping physics) at steady state.
+
+PARTICLE STRUCT CHANGES:
+Added two new fields to support sleep/wake:
+  uint32_t sleepCounter;  // 0 = awake, >= SLEEP_THRESHOLD = asleep
+  float wakeRadius;       // Distance for wake-up detection (radius*scale*1.2)
+
+Both fields added to:
+  1. C++ struct in utilities.hpp
+  2. GLSL struct in create-compute-pipeline.hpp (compute shader)
+  3. GLSL struct in create-graphics-pipeline.hpp (vertex shader)
+
+All three MUST match exactly for GPU buffer compatibility.
+
+SLEEP/WAKE CONSTANTS:
+Defined in compute shader:
+  const uint SLEEP_THRESHOLD = 20u;           // Marker value (was 60 in earlier design)
+  const float SLEEP_VELOCITY_THRESHOLD = 0.01;  // Instant sleep if below this
+  const float WAKE_RADIUS_MULTIPLIER = 1.2;     // Wake detection margin
+
+Design Decision: SLEEP_THRESHOLD changed from 60 to 20 frames to make particles
+sleep faster. This is a tunable parameter for performance vs responsiveness.
+
+SLEEP/WAKE LOGIC (Currently Disabled):
+The compute shader has this code but it's commented out:
+
+  // Early-exit for sleeping particles
+  bool isAsleep = (p.sleepCounter >= SLEEP_THRESHOLD);
+  if (isAsleep) {
+      particles[index] = p;  // Write back unchanged
+      return;                // Skip ALL physics
+  }
+
+And at the end of the shader:
+  // Keep particles awake for debugging
+  p.sleepCounter = 0u;
+
+  // Update wake radius based on current scale
+  p.wakeRadius = p.position.w * p.scale * WAKE_RADIUS_MULTIPLIER;
+
+WHY DISABLED:
+Sleep system is disabled to verify base physics work correctly first. Once we
+confirm SPH forces, collisions, and rendering are stable, we'll re-enable and
+test the performance gain.
+
+INITIALIZATION:
+All particle initialization functions updated to set:
+  - sleepCounter = 0 (all particles start awake)
+  - wakeRadius = radius * scale * 1.2 (calculated once)
+
+Functions updated:
+  - initialize_uniform_random()
+  - initialize_gaussian_cloud()
+  - initialize_multiple_clusters()
+  - initialize_explosion()
+
+TODO: Add initialize_stable_grid() where particles start asleep.
+
+SHADER EXTRACTION:
+To prevent context bloat in future sessions, extracted shaders from main.cpp
+into separate header files:
+
+  create-compute-pipeline.hpp:
+    - Compute shader (SPH physics calculation)
+    - ~300 lines of GLSL code
+    - All SPH kernels, force calculations, integration
+
+  create-graphics-pipeline.hpp:
+    - Vertex shader (billboard instancing)
+    - Fragment shader (circle rendering with selection)
+    - ~150 lines of GLSL code
+
+This allows Copilot to reference just the shader code without loading all of
+main.cpp (which previously caused context overflow).
+
+RENDERING STATUS:
+? Particles render as circles (soft or hard edges via GUI toggle)
+? Selected particle highlighted in bright yellow/orange
+? Per-particle scale affects both physics and rendering
+? Billboarding works (particles always face camera)
+? Depth testing enabled for proper layering
+
+PHYSICS STATUS:
+? SPH pressure forces push particles apart at high density
+? SPH viscosity forces smooth out velocity differences
+? Hard sphere collisions prevent overlap (collision priority over SPH)
+? Gravity pulls particles toward center (optional, GUI controlled)
+? Domain boundaries with damping (particles bounce off edges)
+? 2D simulation (Z-axis locked to 0 everywhere)
+? Adaptive sampling for particle counts > 50K
+
+MOUSE INTERACTION STATUS:
+? Left click: Pick particle (screen-space projection)
+? Mouse wheel: Scale selected particle (0.1x to 128x)
+? Scale persists per-particle
+? Collision detection uses effective radius (radius * scale)
+? Right click: Camera look
+? Middle click: Reset FOV
+
+GUI STATUS:
+? Particle count adjustment (runtime, up to 1M)
+? Force parameters (pressure, viscosity, collision strength)
+? Domain size
+? Gravity controls
+? Visual options (hard edges toggle, collision circles)
+? Performance stats (FPS, particle count)
+
+DECISIONS MADE:
+1. Sleep threshold set to 20 frames (down from 60) for faster sleep
+2. Sleep system disabled until base physics verified
+3. Shaders extracted to separate headers for context management
+4. Wake radius calculated as radius * scale * 1.2 (20% margin)
+5. Sleeping particles skip ALL physics (complete early-exit)
+
+LESSONS LEARNED:
+• Large shader code in main.cpp causes context bloat quickly
+• Separating shaders into headers helps immensely
+• Sleep counter as a marker (>=20 = asleep) is simpler than frame counting
+• Need to test base physics thoroughly before adding optimizations
+
+OPEN QUESTIONS:
+• Is SLEEP_THRESHOLD=20 frames the right value? (needs testing)
+• Should wake radius be larger? (1.2x may be too tight)
+• Do we need a separate "going to sleep" state vs instant sleep?
+• How to visualize sleeping vs awake particles for debugging?
+
+NEXT SESSION PRIORITIES:
+1. Verify base physics are working correctly (SPH + collisions)
+2. If physics are stable, re-enable sleep/wake early-exit
+3. Implement wake-up neighbor scanning logic
+4. Implement sleep-counter increment logic (mark particles as asleep)
+5. Add GUI controls to visualize awake vs asleep particles
+6. Test performance gain with sleep system enabled
+7. Add StableGrid initialization mode (particles start asleep)
+
+PERFORMANCE NOTES:
+Current performance (no sleep system):
+  - 50K particles: ~60 FPS (with adaptive sampling)
+  - 100K particles: ~30-40 FPS
+  - 500K particles: ~5-10 FPS
+  - 1M particles: <5 FPS
+
+Expected with sleep system (90% asleep):
+  - 1M particles with 100K awake: ~40-60 FPS (40x improvement)
+
+================================================================================
+Session Number: 0000
+Last Modified: 0001
+*******************************************************************************/

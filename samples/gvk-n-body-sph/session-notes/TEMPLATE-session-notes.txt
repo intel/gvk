@@ -1,0 +1,142 @@
+/*******************************************************************************
+SESSION: #### - [TOPIC - Replace with descriptive topic]
+================================================================================
+
+QUICK SUMMARY (Skim This First):
+• [Main goal of this session?]
+• [Key changes made - which files?]
+• [Problems encountered?]
+• [Solutions found / decisions made?]
+• [What works now that didn't before?]
+• [What still doesn't work?]
+• [Next steps identified?]
+
+FILES MODIFIED:
+• path/to/file1.cpp - [Brief description of what changed]
+• path/to/file2.hpp - [Brief description of what changed]
+• path/to/file3.glsl - [Brief description of what changed]
+
+FILES CREATED:
+• path/to/newfile.cpp - [Purpose of new file]
+
+FILES DELETED:
+• path/to/oldfile.cpp - [Reason for deletion]
+
+DETAILED NOTES:
+================================================================================
+
+CONTEXT:
+[Describe what led to this session. What was the state before? What problem
+were you trying to solve? What was the motivation?]
+
+APPROACH:
+[What approach did you take? Why this approach over alternatives? What were
+you thinking going into this work?]
+
+CHANGES MADE:
+[Detailed description of changes. Include code snippets if helpful but keep
+them brief. Focus on WHY not just WHAT.]
+
+Example:
+  Modified compute shader to add early-exit for sleeping particles:
+
+    if (p.sleepCounter >= SLEEP_THRESHOLD) {
+        particles[index] = p;
+        return;  // Skip all physics
+    }
+
+  Reasoning: This ensures sleeping particles consume zero compute cycles.
+  The write-back is necessary to maintain buffer consistency.
+
+TESTING:
+[What testing did you do? What worked? What didn't? Performance observations?]
+
+Example:
+  • Tested with 100K particles - no visual artifacts
+  • FPS improved from 30 to 55 with 90% particles asleep
+  • Collision detection still working correctly
+  • Wake-up logic triggering as expected
+
+DECISIONS MADE:
+[Document any important decisions and the reasoning behind them]
+
+Example:
+  Decision: Use sleep counter as marker (>=20) rather than frame counter
+  Reasoning: Simpler logic, immediate sleep/wake, no overflow concerns
+
+CHALLENGES ENCOUNTERED:
+[What problems did you run into? How did you solve them or work around them?]
+
+Example:
+  Problem: Particles not waking up when scaled
+  Cause: Scale interaction wasn't updating wakeRadius
+  Solution: Recalculate wakeRadius when user scales particle
+
+CODE SNIPPETS (If Helpful):
+[Include brief, relevant code snippets with explanations. Don't paste entire
+files - just the key parts that illustrate important points.]
+
+PERFORMANCE NOTES:
+[Any performance measurements, FPS observations, profiling data, etc.]
+
+Example:
+  Before: 100K particles = 30 FPS
+  After:  100K particles (90% asleep) = 55 FPS
+  Improvement: 83% faster (1.83x speedup)
+
+LESSONS LEARNED:
+• [What worked well that you should do again?]
+• [What didn't work that you should avoid?]
+• [Any "aha!" moments or insights?]
+• [Gotchas to remember for future work?]
+
+Example:
+  ? Good: Testing with extreme cases (all asleep, all awake) found edge cases
+  ? Good: Incremental changes with frequent testing caught issues early
+  ? Bad: Changing multiple things at once made debugging harder
+  ?? Insight: Wake radius needs to be larger than expected for smooth interaction
+
+OPEN QUESTIONS:
+• [Unresolved issues or things you're not sure about]
+• [Areas that need more investigation]
+• [Design decisions that might need revisiting]
+
+Example:
+  • Is SLEEP_THRESHOLD=20 optimal? Should it be configurable?
+  • Should wake radius scale with particle velocity?
+  • Do we need a "drowsy" state for gradual sleep/wake?
+
+NEXT SESSION PRIORITIES:
+1. [Most important next step - what should be done first?]
+2. [Second priority - what comes after #1?]
+3. [Third priority - nice to have but not critical]
+4. [Future work - things to consider but not immediate]
+
+Example:
+1. Add GUI controls to visualize awake vs asleep particles
+2. Test performance with 1M particles (target case)
+3. Implement StableGrid initialization mode
+4. Consider spatial grid acceleration (future optimization)
+
+RELATED SESSIONS:
+• [Link to related previous sessions if relevant]
+• [Example: See 2024-01-15-sleep-wake-implementation.txt for initial design]
+
+CONTEXT FOR FUTURE SESSIONS:
+[Anything important for your future self to know when reading this months later?
+Things that might not be obvious from the code alone.]
+
+Example:
+  The sleep threshold was set to 20 frames after testing showed that 60 was
+  too slow. Users expect immediate response when interacting, so we err on
+  the side of waking up more particles rather than fewer. Performance is still
+  excellent with this setting.
+
+================================================================================
+Session Number: #### [Replace with next sequential number: 0000, 0001, etc.]
+Session Duration: [Optional: How long did this session take?]
+Message Count: [Optional: How many exchanges in this session?]
+Last Modified: #### [Update this if you revise the notes later]
+
+REMINDER: Replace #### with the next sequential number (e.g., 0003, 0004, etc.)
+*******************************************************************************/

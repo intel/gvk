@@ -1,0 +1,146 @@
+/*******************************************************************************
+WORKSPACE PATHS REFERENCE - Critical Path Information
+================================================================================
+
+??? WORKSPACE ROOT CONFUSION WARNING
+--------------------------------------------------------------------------------
+VS Code workspace root is at: C:\intel\gvk\build\
+BUT you must edit files at:   C:\intel\gvk\samples\gvk-n-body-sph\
+
+Why this matters:
+  - VS Code opens with build\ as the workspace root
+  - Source files are OUTSIDE the workspace root (in ../samples/)
+  - Build files are INSIDE the workspace root
+  - Editing build files = CHANGES WILL BE OVERWRITTEN on next build!
+
+?? GIT REPOSITORY
+================================================================================
+Git Root:   C:\intel\gvk\
+Branch:     sph-nbody-perf
+Remote:     origin (https://github.com/intel/gvk)
+
+?? DIRECTORY STRUCTURE
+================================================================================
+
+C:\intel\gvk\                           [GIT ROOT]
+???
+????????? samples\
+???   ????????? gvk-n-body-sph\                          [SOURCE - EDIT HERE]
+???       ????????? main.cpp                             ?????? Your code
+???       ????????? utilities.hpp                        ?????? Your code
+???       ????????? utilities.cpp                        ?????? Your code
+???       ????????? defines.hpp                          ?????? Your code
+???       ????????? create-compute-pipeline.hpp          ?????? Your code
+???       ????????? create-graphics-pipeline.hpp         ?????? Your code
+???       ????????? session-notes\                       ?????? Documentation
+???           ????????? session-startup.txt
+???           ????????? 0000-*.txt, 0001-*.txt, etc.
+???
+????????? build\                                         [VS CODE WORKSPACE ROOT]
+    ????????? samples\
+        ????????? gvk-n-body-sph\                      [BUILD OUTPUT - DON'T EDIT]
+            ????????? gvk-n-body-sph.exe               ?????? Generated binary
+            ????????? *.obj, *.pdb, etc.               ?????? Build artifacts
+
+?? RELATIVE PATHS FROM VS CODE
+================================================================================
+
+When using file_search, get_file, or other tools from VS Code workspace:
+
+Workspace Root:  C:\intel\gvk\build\
+
+To access SOURCE files, use:
+  ../samples/gvk-n-body-sph/main.cpp
+  ../samples/gvk-n-body-sph/utilities.hpp
+  ../samples/gvk-n-body-sph/create-compute-pipeline.hpp
+  ../samples/gvk-n-body-sph/session-notes/session-startup.txt
+
+To access BUILD files (read-only reference):
+  samples/gvk-n-body-sph/gvk-n-body-sph.exe
+
+?? ABSOLUTE PATHS
+================================================================================
+
+SOURCE (Edit):
+  C:\intel\gvk\samples\gvk-n-body-sph\main.cpp
+  C:\intel\gvk\samples\gvk-n-body-sph\utilities.hpp
+  C:\intel\gvk\samples\gvk-n-body-sph\utilities.cpp
+  C:\intel\gvk\samples\gvk-n-body-sph\defines.hpp
+  C:\intel\gvk\samples\gvk-n-body-sph\create-compute-pipeline.hpp
+  C:\intel\gvk\samples\gvk-n-body-sph\create-graphics-pipeline.hpp
+  C:\intel\gvk\samples\gvk-n-body-sph\session-notes\
+
+BUILD (Read-only):
+  C:\intel\gvk\build\samples\gvk-n-body-sph\gvk-n-body-sph.exe
+  C:\intel\gvk\build\samples\gvk-n-body-sph\*.obj
+  C:\intel\gvk\build\samples\gvk-n-body-sph\*.pdb
+
+?? COMMON MISTAKES
+================================================================================
+
+??? MISTAKE: Editing files in build\ directory
+   Example: C:\intel\gvk\build\samples\gvk-n-body-sph\main.cpp
+   Problem: Changes overwritten on next build
+   Fix: Edit C:\intel\gvk\samples\gvk-n-body-sph\main.cpp instead
+
+??? MISTAKE: Using absolute paths without build\ in them
+   Example: "Edit main.cpp" (VS Code might find build\main.cpp)
+   Fix: Use explicit relative paths: "../samples/gvk-n-body-sph/main.cpp"
+
+??? MISTAKE: Forgetting VS Code is opened from build\ directory
+   Example: Assuming workspace root is gvk\
+   Fix: Remember to use ../ to go up to gvk\ then down to samples\
+
+?? VERIFICATION CHECKLIST
+================================================================================
+
+Before editing a file, verify you're in the SOURCE directory:
+
+??? Check path contains: samples\gvk-n-body-sph\
+??? Check path does NOT contain: build\samples\
+??? If using get_file, use: ../samples/gvk-n-body-sph/filename
+??? If using absolute path: C:\intel\gvk\samples\gvk-n-body-sph\
+
+After making changes:
+
+??? Run build from VS Code workspace (build\ directory)
+??? Build generates new binaries in build\samples\gvk-n-body-sph\
+??? Source files remain in samples\gvk-n-body-sph\
+
+?? FILE REFERENCES FOR COPILOT TOOLS
+================================================================================
+
+When asking Copilot to read/edit files:
+
+CORRECT:
+  "Read ../samples/gvk-n-body-sph/main.cpp"
+  "Edit ../samples/gvk-n-body-sph/utilities.hpp"
+  "Search in ../samples/gvk-n-body-sph/"
+
+WRONG:
+  "Read main.cpp" (might find build\main.cpp)
+  "Edit samples/gvk-n-body-sph/main.cpp" (missing ../)
+  "Read C:\intel\gvk\build\samples\...\main.cpp" (build directory)
+
+?? BUILDING AND RUNNING
+================================================================================
+
+Building:
+  Location: C:\intel\gvk\build\
+  Method: Visual Studio build system or MSBuild
+  Output: C:\intel\gvk\build\samples\gvk-n-body-sph\gvk-n-body-sph.exe
+
+Running:
+  Executable: C:\intel\gvk\build\samples\gvk-n-body-sph\gvk-n-body-sph.exe
+  Working Dir: Build directory (for shaders, assets, etc.)
+
+Git Operations:
+  Working Dir: C:\intel\gvk\
+  Branch: sph-nbody-perf
+  Commit: Changes in samples\gvk-n-body-sph\
+  Ignore: Everything in build\ (should be in .gitignore)
+
+================================================================================
+Keep this file open as reference when working with paths!
+Last Updated: Session 0002
+*******************************************************************************/

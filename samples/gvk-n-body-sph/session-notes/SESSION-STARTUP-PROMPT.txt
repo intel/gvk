@@ -1,0 +1,61 @@
+/*******************************************************************************
+SESSION STARTUP PROMPT - Copy and paste this at the start of each session
+================================================================================
+
+Copy everything below the line and paste it as your first message to Copilot:
+
+--------------------------------------------------------------------------------
+
+/*******************************************************************************
+SPH N-Body Simulation Session Startup
+
+PROJECT: Interactive SPH fluid simulation with sleep/wake optimization
+LOCATION: C:\intel\gvk\samples\gvk-n-body-sph\
+BRANCH: sph-nbody-perf
+BUILD: C++14, Visual Studio, Vulkan
+
+INSTRUCTIONS:
+1. Review session-startup.txt in session-notes/ directory
+2. Read the most recent session note (highest number: 0000, 0001, 0002, etc.)
+3. Summarize:
+   - Current project status (what's working, what's in progress)
+   - Last completed work
+   - Next priorities
+4. Ready to continue work
+
+Key files to reference:
+- session-notes/session-startup.txt (full project context)
+- session-notes/####-*.txt (most recent session log)
+- session-notes/QUICK-REFERENCE.txt (common tasks)
+
+Working directory structure:
+  C:\intel\gvk\samples\gvk-n-body-sph\  [SOURCE - edit here]
+  C:\intel\gvk\build\                    [BUILD - don't edit]
+
+Ready to work!
+*******************************************************************************/
+
+--------------------------------------------------------------------------------
+
+ALTERNATIVE SHORT VERSION (if context is tight):
+
+--------------------------------------------------------------------------------
+
+/*
+SPH N-Body Sim - Session Start
+Location: C:\intel\gvk\samples\gvk-n-body-sph\
+Branch: sph-nbody-perf
+
+Review session-notes/session-startup.txt and latest session note (0000, 0001, 0002...).
+Summarize status and next priorities. Ready to continue!
+*/
+
+--------------------------------------------------------------------------------
+
+NOTES:
+- Use the full version for first session or after long break
+- Use short version for continuing work from previous day
+- Copilot will read session-startup.txt and recent session notes automatically
+- This prevents having to re-explain the project each time
+
+*******************************************************************************/

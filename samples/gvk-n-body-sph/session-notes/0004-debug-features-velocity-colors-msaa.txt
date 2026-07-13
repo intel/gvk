@@ -1,0 +1,182 @@
+SESSION 0004 - Debug Features: Velocity Colors & MSAA Fix
+Date: 2026-05-15 13:36
+Status: COMPLETE - All features working, MSAA fixed
+
+================================================================================
+SUMMARY
+================================================================================
+Added velocity-based debug coloring with GUI toggle. Attempted runtime MSAA
+toggling but backed out due to complexity. Fixed MSAA startup configuration
+by handling both VkRenderPassCreateInfo versions.
+
+================================================================================
+FEATURES ADDED
+================================================================================
+
+1. VELOCITY COLOR DEBUG VISUALIZATION
+   - Colors particles based on velocity magnitude
+   - Blue (slow) ? Green (medium) ? Red (fast)
+   - Toggle via "Velocity Colors" checkbox in GUI
+   - Implemented in fragment shader with velocityToColor() function
+   - Works perfectly at runtime
+
+2. HARD EDGES DEFAULT
+   - Changed default from soft edges to hard edges
+   - Provides crisp, solid particle rendering
+   - Still toggleable at runtime via "Hard Edges" checkbox
+
+3. MSAA SUPPORT (STARTUP ONLY)
+   - 4x multisampling for smoother edges
+   - Configured via simParams.msaaEnabled at startup
+   - Currently defaults to true in utilities.hpp
+   - Can be changed before compilation
+
+================================================================================
+TECHNICAL CHALLENGES
+================================================================================
+
+ISSUE 1: Push Constants Alignment Mismatch
+Problem: GUI checkboxes had no effect (velocity colors, hard edges)
+Cause: GLSL std140 layout aligns vec3 to 16 bytes, C++ glm::vec3 is 12 bytes
+Solution: Added alignas(16) to C++ vec3 fields, updated push constant range to 112 bytes
+Files: main.cpp, create-graphics-pipeline.hpp
+
+ISSUE 2: Runtime MSAA Toggling Complexity
+Attempted: Dynamic WSI context/pipeline recreation when checkbox toggled
+Problems: 
+  - Flickering/corruption when recreating during frame
+  - Attempted deferred recreation after queue_present
+  - Still unstable and complex
+Decision: BACKED OUT all runtime MSAA toggling code
+Result: MSAA now startup-only, simpler and stable
+
+ISSUE 3: MSAA Validation Error on Startup
+Error: "rasterizationSamples (1) does not match RenderPass samples (4)"
+Cause: Graphics pipeline only checked VkRenderPassCreateInfo (Vulkan 1.1)
+       On Vulkan 1.2+, WSI creates VkRenderPassCreateInfo2 instead
+       Pipeline got empty struct ? default VK_SAMPLE_COUNT_1_BIT
+Solution: Check both renderPassCreateInfo and renderPassCreateInfo2
+Files: create-graphics-pipeline.hpp
+
+================================================================================
+CODE CHANGES
+================================================================================
+
+utilities.hpp:
+  - Added: bool showVelocityColors = false
+  - Added: bool msaaEnabled = true  
+  - Changed: bool hardEdges = true (was false)
+
+main.cpp:
+  - Added: GraphicsPushConstants.showVelocityColors (with alignas fixes)
+  - Added: GUI checkbox for "Velocity Colors"
+  - Removed: All runtime MSAA toggling code (backed out)
+
+create-graphics-pipeline.hpp:
+  - Vertex shader: Added fsVelocityMag output, compute length(velocity.xyz)
+  - Vertex shader: Added showVelocityColors to push constants
+  - Fragment shader: Added fsVelocityMag input
+  - Fragment shader: Added velocityToColor() function
+  - Fragment shader: Added showVelocityColors to push constants
+  - Fragment shader: Use velocity color when enabled
+  - Fixed: Check both VkRenderPassCreateInfo AND VkRenderPassCreateInfo2
+  - Fixed: Updated push constant range from 104 ? 112 bytes
+
+================================================================================
+CURRENT STATE
+================================================================================
+
+Particles:
+  ? 60 FPS @ 10K particles
+  ? Hard edges enabled by default
+  ? MSAA 4x working at startup
+  ? Velocity color debug mode working
+
+GUI Controls Working:
+  ? Hard Edges checkbox (runtime toggle)
+  ? Velocity Colors checkbox (runtime toggle)
+  ? All SPH parameters
+  ? Particle selection and scaling
+  ? Pause/Reset
+
+Not Implemented:
+  ? Runtime MSAA toggle (too complex, backed out)
+  ? Sleep/wake system (still disabled from session 0001)
+
+================================================================================
+LESSONS LEARNED
+================================================================================
+
+1. GLSL std140 Alignment Matters
+   - vec3 in GLSL is 16-byte aligned (padded like vec4)
+   - Must use alignas(16) in C++ for matching structs
+   - Push constant size must account for padding
+
+2. GVK Handles Multiple Vulkan Versions
+   - Check both VkRenderPassCreateInfo and VkRenderPassCreateInfo2
+   - Pattern used throughout GVK codebase (gui/renderer.cpp, wsi-context.cpp)
+   - Always check sType before accessing struct fields
+
+3. Runtime Resource Recreation is Tricky
+   - WSI context recreation requires careful synchronization
+   - Must wait for GPU idle + recreate dependent resources
+   - Deferred recreation (flag ? recreate after frame) is cleaner
+   - Sometimes "startup only" is the right answer for complexity/benefit
+
+4. Code Smells to Watch For
+   - Tracking state with "previous" variables across frames
+   - Checking for changes every frame instead of on-event
+   - Better: Use ImGui return values, flag events, handle once
+
+================================================================================
+FILES MODIFIED
+================================================================================
+
+utilities.hpp - Added showVelocityColors, msaaEnabled; hardEdges default true
+utilities.cpp - Updated create_wsi_context signature (enableMSAA parameter)
+main.cpp - GUI checkboxes, push constant alignment fixes, backed out MSAA runtime
+create-graphics-pipeline.hpp - Velocity shader code, MSAA sample count fix
+
+================================================================================
+TESTING NOTES
+================================================================================
+
+To Test Velocity Colors:
+  1. Run application
+  2. Check "Velocity Colors" in GUI
+  3. Particles should change from blue (slow) ? green ? red (fast)
+  4. Uncheck to return to normal colors
+
+To Change MSAA Setting:
+  1. Edit utilities.hpp: bool msaaEnabled = true/false
+  2. Rebuild
+  3. Launch - MSAA takes effect at startup
+
+Known Good State:
+  - MSAA enabled: Smooth edges, slight GPU overhead
+  - MSAA disabled: Hard edges may show aliasing, max performance
+  - Hard edges + MSAA = best visual quality
+
+================================================================================
+NEXT STEPS (RECOMMENDATIONS)
+================================================================================
+
+High Priority:
+  1. Re-enable sleep/wake system (from session 0001)
+  2. Implement wake-up neighbor scanning
+  3. Test performance with 1M particles + 90% asleep
+  4. Add StableGrid initialization mode for testing sleep
+
+Medium Priority:
+  5. Add sleep/wake debug visualization
+  6. Display awake/asleep particle counts in GUI
+  7. Verify spatial grid is still disabled (session 0003)
+
+Low Priority:
+  8. Consider MSAA as compile-time define instead of runtime variable
+  9. Document push constant alignment requirements
+  10. Add session note about when to use alignas(16)
+
+================================================================================
+END OF SESSION 0004
+================================================================================
