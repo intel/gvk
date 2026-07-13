@@ -35,85 +35,111 @@ PipelinesWindow::PipelinesWindow(Window::Manager& windowManager)
 {
 }
 
-void PipelinesWindow::on_gui(GuiInfo& guiInfo)
+void PipelinesWindow::set_selected_pipeline(GuiInfo& guiInfo, const gvk::HandleId<VkDevice, VkPipeline>& pipeline)
+{
+    guiInfo.selectedPipeline = pipeline;
+    guiInfo.rangeInfo.selectedCmd = std::numeric_limits<uint64_t>::max();
+}
+
+void PipelinesWindow::update_experiment(GuiInfo& guiInfo, const PipelineInfo& pipelineInfo)
+{
+    (void)guiInfo;
+    (void)pipelineInfo;
+#ifdef GVK_PLATFORM_WINDOWS
+    auto pipelinePath = get_pipeline_path(guiInfo, pipelineInfo.pipeline.get_dispatchable_handle(), pipelineInfo.pipeline.get_handle());
+    auto pipelineRequestInfo = gvk::get_default<GvkPipelineExplorerPipelineRequestInfo>();
+    pipelineRequestInfo.device = pipelineInfo.pipeline.get_dispatchable_handle();
+    pipelineRequestInfo.experimentEnabled = pipelineInfo.experimentEnabled;
+    pipelineRequestInfo.pExperimentPipelinePath = !pipelinePath.empty() ? pipelinePath.c_str() : nullptr;
+    pipelineRequestInfo.experimentPipeline = pipelineInfo.pipeline.get_handle();
+    guiInfo.ipcMessenger.write("GvkPipelineExplorerPipelineRequestInfo", pipelineRequestInfo);
+#endif
+}
+
+void PipelinesWindow::on_launch(GuiInfo& guiInfo)
+{
+    (void)guiInfo;
+}
+
+void PipelinesWindow::on_update(GuiInfo& guiInfo)
 {
     // TODO : Unify timestamp query behavior
-    ImGui::BeginDisabled(!guiInfo.applicationInfo.running && !guiInfo.cliProvidedWorkspace);
-    {
-        guiInfo.requestInfo.refreshActivePipelines = ImGui::Button("Refresh Active Pipelines");
 
-        #if 0
-        // DEBUGGING :
-        static std::unordered_map<gvk::HandleId<VkDevice, VkPipeline>, std::pair<double, double>> sTimestamps;
-        if (guiInfo.timestampInfo.requestResult.pending()) {
-            if (guiInfo.timestampInfo.requestResult.check_result(guiInfo.workspaceInfo.workspace) == VK_SUCCESS) {
-                guiInfo.timestampInfo.available = guiInfo.timestampInfo.requestResult.get_result();
-                for (uint32_t i = 0; i < guiInfo.timestampInfo.available->pipelineTimestampQueryResultCount; ++i) {
-                    const auto& pipelineTimestampQueryResult = guiInfo.timestampInfo.available->pPipelineTimestampQueryResults[i];
+    (void)guiInfo;
 
-                    sTimestamps[{
-                        pipelineTimestampQueryResult.pipelineInfo.device,
-                        pipelineTimestampQueryResult.pipelineInfo.pipeline
-                    }] = {
-                        pipelineTimestampQueryResult.averageCmdRangeCmdCount,
-                        pipelineTimestampQueryResult.averageCmdRangeDuration
-                    };
+#ifdef GVK_PLATFORM_WINDOWS
+    // Process pipelines reported from backend
+    const auto& messageItr = guiInfo.incomingIpcMessages.find("GvkPipelineExplorerPipelineInfo");
+    if (messageItr != guiInfo.incomingIpcMessages.end() && !messageItr->second.empty()) {
+        for (const auto& message : messageItr->second) {
+            std::istringstream istrm(std::string((char*)message.data.data(), message.data.size()));
+            gvk::Auto<GvkPipelineExplorerPipelineInfo> pipelineExplorerPipelineInfo;
+            gvk::deserialize(istrm, nullptr, pipelineExplorerPipelineInfo);
+            // TODO : Validate pipelineExplorerPipelineInfo
 
-                    for (uint32_t j = 0; j < pipelineTimestampQueryResult.cmdRangeResultCount; ++j) {
-                        const auto& cmdRangeResult = pipelineTimestampQueryResult.pCmdRangeResults[j];
-                        for (uint32_t k = 0; k < cmdRangeResult.cmdSequenceCount; ++k) {
-                            const auto& cmdSequenceResult = cmdRangeResult.pCmdSequences[k];
-                            for (uint32_t l = 0; l < cmdSequenceResult.cmdCount; ++l) {
-                                auto cmdType = cmdSequenceResult.pCmdTypes[l];
-                                (void)cmdType;
-                            }
-                        }
-                    }
-                }
+            // Setup pipeline info
+            auto device = pipelineExplorerPipelineInfo->device;
+            auto pipeline = pipelineExplorerPipelineInfo->pipeline;
+            guiInfo.activePipelines.insert({ device, pipeline });
+            auto& pipelineInfo = guiInfo.pipelineInfos[{ device, pipeline }];
+            boost::multiprecision::import_bits(pipelineInfo.uuid, pipelineExplorerPipelineInfo->uuid, pipelineExplorerPipelineInfo->uuid + GVK_PIPELINE_EXPLORER_UUID_SIZE, 8);
+            boost::multiprecision::import_bits(pipelineInfo.driverUUID, pipelineExplorerPipelineInfo->driverUUID, pipelineExplorerPipelineInfo->driverUUID + GVK_PIPELINE_EXPLORER_UUID_SIZE, 8);
+            pipelineInfo.pipeline = { device, pipeline };
+            pipelineInfo.bindPoint = pipelineExplorerPipelineInfo->bindPoint;
+            auto printerFlags = gvk::Printer::Default & ~gvk::Printer::EnumValue;
+            pipelineInfo.bindPointStr = gvk::string::remove(gvk::to_string(pipelineExplorerPipelineInfo->bindPoint, printerFlags), "\"");
+            pipelineInfo.uuidStr = uuid_to_string(pipelineExplorerPipelineInfo->uuid, 18);
+            pipelineInfo.driverUUIDStr = uuid_to_string(pipelineExplorerPipelineInfo->driverUUID, 18);
+            pipelineInfo.handleStr = gvk::to_hex_string(pipeline);
+            pipelineInfo.name = pipelineExplorerPipelineInfo->pName;
+
+            // Calculate pipeline color
+            // TODO : Calculate in backend
+            std::stringstream strStrm;
+            strStrm << std::hex << pipelineInfo.uuidStr.substr(2, 6);
+            uint32_t hexColorValue = 0;
+            strStrm >> hexColorValue;
+            pipelineInfo.highlightColor.x = (float)(hexColorValue >> 16 & 0xFF) / 255.0f;
+            pipelineInfo.highlightColor.y = (float)(hexColorValue >> 8 & 0xFF) / 255.0f;
+            pipelineInfo.highlightColor.z = (float)(hexColorValue & 0xFF) / 255.0f;
+            pipelineInfo.highlightColor.w = 1.0f;
+            if (pipelineInfo.bindPoint == VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR) {
+                pipelineInfo.highlightColor.x = std::min(pipelineInfo.highlightColor.x, 0.5f);
+                pipelineInfo.highlightColor.y = std::min(pipelineInfo.highlightColor.y, 0.5f);
+                pipelineInfo.highlightColor.z = std::min(pipelineInfo.highlightColor.z, 0.5f);
             }
         }
 
-        // Generate timestamp query report
-        ImGui::SameLine();
-        ImGui::BeginDisabled(guiInfo.timestampInfo.requestResult.pending());
-        if (ImGui::Button("Generate Timestamp Query Report")) {
-            auto request = gvk::get_default<GvkPipelineExplorerPerformanceQueryRequestInfo>();
-            std::string reportPath = guiInfo.reportEnabled ? (std::filesystem::path(guiInfo.workspaceInfo.workspace) / "reports").string() : std::string();
-            request.pReportPath = !reportPath.empty() ? reportPath.c_str() : nullptr;
-            request.warmupRangeCount = guiInfo.requestInfo.warmupRangeCount;
-            request.queryRangeCount = guiInfo.requestInfo.queryRangeCount;
-            guiInfo.timestampInfo.requestResult.submit_request(guiInfo.workspaceInfo.workspace, request, "TimestampQueryRequest");
+        // TODO : Insert sorted...
+        guiInfo.sortedPipelines.clear();
+        for (auto activePipeline : guiInfo.activePipelines) {
+            guiInfo.sortedPipelines.push_back(activePipeline);
         }
-        ImGui::EndDisabled();
-        #endif
+        sort_pipelines(guiInfo);
     }
-    ImGui::EndDisabled();
+#endif // GVK_PLATFORM_WINDOWS
+}
 
+void PipelinesWindow::on_gui(GuiInfo& guiInfo)
+{
     // Draw pipelines table
     if (ImGui::BeginChild("##Pipelines Table")) {
         auto tableFlags =
             ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable |
-            ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders |
+            ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY |
             ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti;
         if (ImGui::BeginTable("Pipelines-Table", 10, tableFlags)) {
             ImGui::TableSetupScrollFreeze(0, 1);
-            ImGui::TableSetupColumn("UUID",                  ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_NoReorder);
-            ImGui::TableSetupColumn("Driver UUID",           ImGuiTableColumnFlags_DefaultHide);
-            ImGui::TableSetupColumn("Handle",                ImGuiTableColumnFlags_DefaultHide);
-            ImGui::TableSetupColumn("Name",                  ImGuiTableColumnFlags_DefaultHide);
-            ImGui::TableSetupColumn("Bind Point",            ImGuiTableColumnFlags_DefaultHide);
-            ImGui::TableSetupColumn("Avg. Executions/Frame");
-            ImGui::TableSetupColumn("Avg. Time/Frame (ns)");
-            ImGui::TableSetupColumn("Highlight");
-            ImGui::TableSetupColumn("Experiment",            ImGuiTableColumnFlags_DefaultHide);
-            ImGui::TableSetupColumn("Metrics",               ImGuiTableColumnFlags_DefaultHide);
-            
-            #if 0
-            // DEBUGGING :
-            ImGui::TableSetupColumn("AvgExecutionsEx", 0, 0, 10);
-            ImGui::TableSetupColumn("AvgTimeEx",       0, 0, 11);
-            #endif
-
+            ImGui::TableSetupColumn("UUID",                /* ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_NoReorder */ 0, 0.0f, 0);
+            ImGui::TableSetupColumn("Driver UUID",         ImGuiTableColumnFlags_DefaultHide, 0.0f, 1);
+            ImGui::TableSetupColumn("Handle",              ImGuiTableColumnFlags_DefaultHide, 0.0f, 2);
+            ImGui::TableSetupColumn("Name",                ImGuiTableColumnFlags_DefaultHide, 0.0f, 3);
+            ImGui::TableSetupColumn("Bind Point",                                          0, 0.0f, 4);
+            ImGui::TableSetupColumn("Total Executions",                                    0, 0.0f, 5);
+            ImGui::TableSetupColumn("Total Duration (ns)",                                 0, 0.0f, 6);
+            ImGui::TableSetupColumn("Avg Duration (ns)",                                   0, 0.0f, 7);
+            ImGui::TableSetupColumn("Experiment",          ImGuiTableColumnFlags_DefaultHide, 0.0f, 8);
+            ImGui::TableSetupColumn("Highlight",                                           0, 0.0f, 9);
             ImGui::TableHeadersRow();
 
             auto pTableSortSpecs = ImGui::TableGetSortSpecs();
@@ -130,60 +156,87 @@ void PipelinesWindow::on_gui(GuiInfo& guiInfo)
                 for (int row_n = clipper.DisplayStart; row_n < clipper.DisplayEnd; ++row_n) {
                     auto pipeline = guiInfo.sortedPipelines[row_n];
                     auto& pipelineInfo = guiInfo.pipelineInfos[pipeline];
-                    if (!guiInfo.selectedPipeline.get_handle()) {
-                        guiInfo.selectedPipeline = pipelineInfo.pipeline;
-                    }
-                    ImGui::PushID(pipeline.get_handle());
+                    const auto& pipelineExecutionInfo = guiInfo.rangeInfo.pipelineExecutionInfos[pipeline];
+                    auto selected = guiInfo.selectedPipeline == pipelineInfo.pipeline;
+
+                    ImGui::PushID(row_n);
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
-                    if (ImGui::Selectable(pipelineInfo.uuidStr.c_str(), pipelineInfo.sampleMetrics)) {
-                        guiInfo.selectedPipeline = pipeline;
+                    if (ImGui::Selectable(pipelineInfo.uuidStr.c_str(), selected)) {
+                        set_selected_pipeline(guiInfo, pipeline);
                     }
                     ImGui::TableNextColumn();
-                    if (ImGui::Selectable(pipelineInfo.driverUUIDStr.c_str(), pipelineInfo.sampleMetrics)) {
-                        guiInfo.selectedPipeline = pipeline;
+                    if (ImGui::Selectable(pipelineInfo.driverUUIDStr.c_str(), selected)) {
+                        set_selected_pipeline(guiInfo, pipeline);
                     }
                     ImGui::TableNextColumn();
-                    if (ImGui::Selectable(pipelineInfo.handleStr.c_str(), pipelineInfo.sampleMetrics)) {
-                        guiInfo.selectedPipeline = pipeline;
+                    if (ImGui::Selectable(pipelineInfo.handleStr.c_str(), selected)) {
+                        set_selected_pipeline(guiInfo, pipeline);
                     }
                     ImGui::TableNextColumn();
-                    if (ImGui::Selectable(pipelineInfo.name.c_str(), pipelineInfo.sampleMetrics)) {
-                        guiInfo.selectedPipeline = pipeline;
+                    if (ImGui::Selectable(pipelineInfo.name.c_str(), selected)) {
+                        set_selected_pipeline(guiInfo, pipeline);
                     }
                     ImGui::TableNextColumn();
-                    if (ImGui::Selectable(pipelineInfo.bindPointStr.c_str(), pipelineInfo.sampleMetrics)) {
-                        guiInfo.selectedPipeline = pipeline;
+                    if (ImGui::Selectable(pipelineInfo.bindPointStr.c_str(), selected)) {
+                        set_selected_pipeline(guiInfo, pipeline);
                     }
 
                     // Execution count
                     ImGui::TableNextColumn();
-                    for (const auto& metrics : pipelineInfo.metrics) {
-                        if (metrics.first.x == GVK_PIPELINE_EXPLORER_METRIC_ID_EXECUTION_COUNT) {
-                            if (ImGui::Selectable(std::to_string(metrics.second->average).c_str(), pipelineInfo.sampleMetrics)) {
-                                guiInfo.selectedPipeline = pipeline;
-                            }
-                            break;
-                        }
+                    ImGui::PushID("Execution Count");
+                    if (ImGui::Selectable("", selected)) {
+                        set_selected_pipeline(guiInfo, pipeline);
                     }
+                    ImGui::SameLine();
+#ifdef GVK_PLATFORM_WINDOWS
+                    ImGui::Text("%d", pipelineExecutionInfo.executionCount);
+#endif
+                    ImGui::PopID();
 
-                    // Duration
+                    // Total duration
                     ImGui::TableNextColumn();
-                    for (const auto& metrics : pipelineInfo.metrics) {
-                        if (metrics.first.x == GVK_PIPELINE_EXPLORER_METRIC_ID_TIMESTAMP_QUERY) {
-                            if (ImGui::Selectable(std::to_string(metrics.second->average).c_str(), pipelineInfo.sampleMetrics)) {
-                                guiInfo.selectedPipeline = pipeline;
-                            }
-                            break;
+                    ImGui::PushID("Total Duration");
+                    if (ImGui::Selectable("", selected)) {
+                        set_selected_pipeline(guiInfo, pipeline);
+                    }
+                    ImGui::SameLine();
+                    ImGui::Text("%.2f", (double)pipelineExecutionInfo.totalDurationNs);
+                    ImGui::PopID();
+
+                    // Avg duration
+                    ImGui::TableNextColumn();
+                    ImGui::PushID("Avg Duration");
+                    if (ImGui::Selectable("", selected)) {
+                        set_selected_pipeline(guiInfo, pipeline);
+                    }
+                    ImGui::SameLine();
+                    ImGui::Text("%.2f", pipelineExecutionInfo.executionCount ? (double)pipelineExecutionInfo.totalDurationNs / (double)pipelineExecutionInfo.executionCount : 0);
+                    ImGui::PopID();
+
+                    // Experiment
+                    ImGui::TableNextColumn();
+                    if (ImGui::Checkbox("##Experiment Enabled", &pipelineInfo.experimentEnabled)) {
+                        guiInfo.requestInfo.experimentPipeline = pipelineInfo.pipeline.get_handle();
+                        guiInfo.requestInfo.experimentEnabled = pipelineInfo.experimentEnabled;
+                        update_experiment(guiInfo, pipelineInfo);
+                        if (!guiInfo.selectedPipeline.get_handle()) {
+                            set_selected_pipeline(guiInfo, pipeline);
                         }
                     }
 
+                    // TODO : Highlight is overloaded...highlight for chart vs in scene. Need to separate these concepts and UI
                     // Highlight
                     ImGui::TableNextColumn();
-                    ImGui::BeginDisabled(!(pipelineInfo.bindPoint == VK_PIPELINE_BIND_POINT_GRAPHICS || pipelineInfo.bindPoint == VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR));
                     bool highlightStateChanged = false;
                     if (ImGui::ColorEdit4("Highlight Color", (float*)&pipelineInfo.highlightColor, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel)) {
+                        #if 0
+                        // TODO : Want to be able to change color without forcing a shader recompile.
+                        //  Maybe a timer that delays the highlight pipeline update until the user is
+                        //  done changing the color...ImGui has something like this built in, maybe can
+                        //  leverage that.
                         pipelineInfo.highlightEnabled = false;
+                        #endif
                         highlightStateChanged = true;
                     }
                     ImGui::SameLine();
@@ -192,43 +245,25 @@ void PipelinesWindow::on_gui(GuiInfo& guiInfo)
                         guiInfo.requestInfo.highlightPipeline = pipelineInfo.pipeline.get_handle();
                         guiInfo.requestInfo.highlightEnabled = pipelineInfo.highlightEnabled;
                         memcpy(guiInfo.requestInfo.highlightColor, &pipelineInfo.highlightColor, sizeof(pipelineInfo.highlightColor));
+                        if (!guiInfo.selectedPipeline.get_handle()) {
+                            set_selected_pipeline(guiInfo, pipeline);
+                        }
                     }
-                    ImGui::EndDisabled();
-
-                    // Experiment
-                    ImGui::TableNextColumn();
-                    if (ImGui::Checkbox("##Experiment Enabled", &pipelineInfo.experimentEnabled)) {
-                        guiInfo.requestInfo.experimentPipeline = pipelineInfo.pipeline.get_handle();
-                        guiInfo.requestInfo.experimentEnabled = pipelineInfo.experimentEnabled;
-                    }
-
-                    // Metrics
-                    ImGui::TableNextColumn();
-                    if (ImGui::Checkbox("##Metrics Enabled", &pipelineInfo.sampleMetrics)) {
-                        guiInfo.selectedPipeline = pipeline;
-                    }
-
-                    #if 0
-                    // DEBUGGING :
-                    const auto& timestamp = sTimestamps[pipelineInfo.pipeline];
-                    ImGui::TableNextColumn();
-                    if (ImGui::Selectable(std::to_string(timestamp.first).c_str(), pipelineInfo.sampleMetrics)) {
-                        guiInfo.selectedPipeline = pipeline;
-                    }
-                    ImGui::TableNextColumn();
-                    if (ImGui::Selectable(std::to_string(timestamp.second).c_str(), pipelineInfo.sampleMetrics)) {
-                        guiInfo.selectedPipeline = pipeline;
-                    }
-                    #endif
 
                     ImGui::PopID();
                 }
-
-                // Force one pipeline selection for metrics
-                for (auto& pipelineInfo : guiInfo.pipelineInfos) {
-                    pipelineInfo.second.sampleMetrics = pipelineInfo.first == guiInfo.selectedPipeline;
-                }
             }
+
+            // Detect click in table but not on any row to deselect
+            if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                set_selected_pipeline(guiInfo, { });
+            }
+
+            // Force one pipeline selection for metrics
+            for (auto& pipelineInfo : guiInfo.pipelineInfos) {
+                pipelineInfo.second.sampleMetrics = pipelineInfo.first == guiInfo.selectedPipeline;
+            }
+
             ImGui::EndTable();
         }
     }

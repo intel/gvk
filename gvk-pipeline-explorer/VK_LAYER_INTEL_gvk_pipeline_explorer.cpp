@@ -32,9 +32,61 @@ namespace layer {
 
 void on_load(const VkInstanceCreateInfo* pInstanceCreateInfo, Registry& registry)
 {
+
+#ifdef GVK_PLATFORM_WINDOWS
+
+    // Get layer path
+    std::filesystem::path layerPath;
+    (void)gvk::get_this_module_path(&layerPath);
+
+    // Get application name
+    std::filesystem::path applicationName;
+    (void)gvk::get_this_process_name(&applicationName);
+
+    // Wait for debugger
+    if (gvk::get_env_var_true("GVK_PIPELINE_EXPLORER_WAIT_FOR_DEBUGGER")) {
+        MessageBox(0, (layerPath.string() + "\n\n" + applicationName.string()).c_str(), "Attach Debugger Now", MB_OK);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////
+    // NOTE : Duplicated from "gvk/gvk-state-tracker/source/gvk-state-tracker/state-tracker.cpp"
+    // TODO : Move this logic to gvk-layer so that any/all layers have access to it
+
+    // Check if VK_LAYER_KHRONOS_validation is enabled
+    bool validationEnabled =
+        gvk::string::contains(gvk::get_env_var("VK_INSTANCE_LAYERS"), "validation") ||
+        gvk::string::contains(gvk::get_env_var("VK_LOADER_LAYERS_ENABLE"), "validation");
+    if (!validationEnabled && pInstanceCreateInfo) {
+        for (uint32_t layer_i = 0; layer_i < pInstanceCreateInfo->enabledLayerCount; ++layer_i) {
+            if (!strcmp(pInstanceCreateInfo->ppEnabledLayerNames[layer_i], "VK_LAYER_KHRONOS_validation")) {
+                validationEnabled = true;
+                break;
+            }
+        }
+    }
+
+    // If VK_LAYER_KHRONOS_validation is enabled, ensure that VK_KHRONOS_VALIDATION_UNIQUE_HANDLES
+    //  is also enabled, otherwise enable UniqueHandlesManager
+    if (validationEnabled) {
+        gvk::set_env_var("VK_KHRONOS_VALIDATION_UNIQUE_HANDLES", "true");
+    } else {
+#if 0
+        // TODO : Need to get this turned back on
+        registry.uniqueHandlesManager.enabled = true;
+#endif
+    }
+
+    // TODO : Option to disable all besides VK_KHRONOS_VALIDATION_UNIQUE_HANDLES
+
+    // TODO : Validate that validation layer is closest to driver
+    ////////////////////////////////////////////////////////////////////////////////
+
+#endif
+
     (void)pInstanceCreateInfo;
     auto pPipelineExplorer = new gvk::PipelineExplorer;
     pPipelineExplorer->vkLayer = true;
+    assert(!registry.apiCallHandler);
     registry.apiCallHandler.reset(pPipelineExplorer);
 }
 

@@ -203,6 +203,30 @@ inline void load(ArchiveType& archive, GvkCommandStructureCmdSetFragmentShadingR
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// GvkCommandStructureCmdUpdateBuffer
+template <typename ArchiveType>
+inline void save(ArchiveType& archive, const GvkCommandStructureCmdUpdateBuffer& obj)
+{
+    archive(obj.sType);
+    gvk::detail::cerealize_handle(archive, obj.commandBuffer);
+    gvk::detail::cerealize_handle(archive, obj.dstBuffer);
+    archive(obj.dstOffset);
+    archive(obj.dataSize);
+    gvk::detail::cerealize_dynamic_array(archive, (size_t)obj.dataSize, (const uint8_t*)obj.pData);
+}
+
+template <typename ArchiveType>
+inline void load(ArchiveType& archive, GvkCommandStructureCmdUpdateBuffer& obj)
+{
+    archive(obj.sType);
+    obj.commandBuffer = gvk::detail::decerealize_handle<VkCommandBuffer>(archive);
+    obj.dstBuffer = gvk::detail::decerealize_handle<VkBuffer>(archive);
+    archive(obj.dstOffset);
+    archive(obj.dataSize);
+    obj.pData = gvk::detail::decerealize_dynamic_array<uint8_t>(archive);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // GvkCommandStructureCmdSetSampleMaskEXT
 template <typename ArchiveType>
 inline void save(ArchiveType& archive, const GvkCommandStructureCmdSetSampleMaskEXT& obj)

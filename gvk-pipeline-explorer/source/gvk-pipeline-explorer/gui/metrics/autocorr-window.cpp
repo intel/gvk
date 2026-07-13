@@ -145,7 +145,7 @@ gvk::Auto<GvkPipelineExplorerPerformanceQueryRequestInfo> AutocorrWindow::create
     auto counter = gvk::get_default<VkPerformanceCounterKHR>();
     set_uuid_indices<VK_UUID_SIZE>(counter.uuid, group_i, set_i, 0, 0);
     auto requestInfo = gvk::get_default<GvkPipelineExplorerPerformanceQueryRequestInfo>();
-    std::string reportPath = guiInfo.reportEnabled ? (std::filesystem::path(guiInfo.workspaceInfo.workspace) / "reports").string() : std::string();
+    std::string reportPath = guiInfo.reportEnabled ? (std::filesystem::path(guiInfo.workspace) / "reports").string() : std::string();
     requestInfo.pReportPath = !reportPath.empty() ? reportPath.c_str() : nullptr;
     requestInfo.device = guiInfo.selectedPipeline.get_dispatchable_handle();
     requestInfo.pipeline = guiInfo.selectedPipeline.get_handle();

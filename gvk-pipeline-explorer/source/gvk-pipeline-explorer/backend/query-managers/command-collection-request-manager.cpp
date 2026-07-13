@@ -24,13 +24,18 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "gvk-pipeline-explorer/backend/command-collection-request-manager.hpp"
+#include "gvk-pipeline-explorer/backend/query-managers/command-collection-request-manager.hpp"
 #include "gvk-pipeline-explorer.hpp"
 #include "gvk-structures.hpp"
 #include "gvk-system.hpp"
 
 namespace gvk {
 namespace pipeline_explorer {
+
+uint64_t CommandCollectionRequestManager::get_type_id() const
+{
+    return Tool::get_type_id<CommandCollectionRequestManager>();
+}
 
 const GvkPipelineExplorerCommandCollectionRequestInfo& CommandCollectionRequestManager::get_request() const
 {
@@ -40,7 +45,7 @@ const GvkPipelineExplorerCommandCollectionRequestInfo& CommandCollectionRequestM
 void CommandCollectionRequestManager::process_incoming_requests(const std::filesystem::path& workspace)
 {
     mWorkspace = workspace;
-#if WIN32
+#ifdef GVK_PLATFORM_WINDOWS
     if (mRequest->sType != gvk::get_stype<GvkPipelineExplorerCommandCollectionRequestInfo>()) {
         switch (gvk::read_serialized_structure(mWorkspace / ".data", mRequest)) {
             // NOOP :
@@ -55,7 +60,12 @@ void CommandCollectionRequestManager::process_incoming_requests(const std::files
     }
 #else
     // TODO :
-#endif // WIN32
+#endif // GVK_PLATFORM_WINDOWS
+}
+
+bool CommandCollectionRequestManager::tool_command(const GvkCommandBaseStructure* pCommand, VkDevice vkDevice, VkQueue vkQueue, VkPipeline vkPipeline) const
+{
+    return Tool::tool_command(pCommand, vkDevice, vkQueue, vkPipeline);
 }
 
 VkResult CommandCollectionRequestManager::pre_process_range()
@@ -88,8 +98,8 @@ VkResult CommandCollectionRequestManager::post_process_cmd(const GvkPipelineExpl
 {
     gvk_result_scope_begin(VK_SUCCESS) {
         if (mRequest->sType == gvk::get_stype<GvkPipelineExplorerCommandCollectionRequestInfo>()) {
-            gvk_result(toolInfo.cmdIndex < toolInfo.cmdCount ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-            gvk_result(toolInfo.ppCmds ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result_assert(toolInfo.cmdIndex < toolInfo.cmdCount);
+            gvk_result_assert(toolInfo.ppCmds);
             const auto& pCmd = toolInfo.ppCmds[toolInfo.cmdIndex];
             if (pCmd->sType != gvk::get_stype<GvkCommandStructureBeginCommandBuffer>() &&
                 pCmd->sType != gvk::get_stype<GvkCommandStructureEndCommandBuffer>()) {
@@ -149,7 +159,7 @@ VkResult CommandCollectionRequestManager::publish_result() const
 
         const auto& commands = mCommandRecorder.get_commands();
         auto commandCollectionResultInfo = gvk::get_default<GvkPipelineExplorerCommandCollectionResultInfo>();
-        commandCollectionResultInfo.commands.commandCount = (uint32_t)commands.size();
+        commandCollectionResultInfo.commands.commandCount = commands.size();
         commandCollectionResultInfo.commands.ppCommands = !commands.empty() ? commands.data() : nullptr;
 
         // Get date and time strings
@@ -169,11 +179,11 @@ VkResult CommandCollectionRequestManager::publish_result() const
 
         // Send message to frontend
         if (!mWorkspace.empty()) {
-#if WIN32
+#ifdef GVK_PLATFORM_WINDOWS
             gvk::write_serialized_structure(mWorkspace / ".data", commandCollectionResultInfo);
 #else
             // TODO :
-#endif // WIN32
+#endif // GVK_PLATFORM_WINDOWS
         }
     } gvk_result_scope_end;
     return gvkResult;

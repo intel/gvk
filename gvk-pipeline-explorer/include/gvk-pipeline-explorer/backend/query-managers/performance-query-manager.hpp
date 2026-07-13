@@ -26,25 +26,29 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-pipeline-explorer/backend/query-manager.hpp"
+#include "gvk-pipeline-explorer/backend/query-managers/query-manager.hpp"
+#include "gvk-containers/contiguous-set.hpp"
 
+#include <array>
 #include <filesystem>
 #include <map>
 
 namespace gvk {
 namespace pipeline_explorer {
 
-class PipelineStatisticsQueryManager final
+class PerformanceQueryManager final
     : public gvk::pipeline_explorer::QueryManager
 {
 public:
-    PipelineStatisticsQueryManager() = default;
+    PerformanceQueryManager() = default;
+    uint64_t get_type_id() const override final;
     void reset() override final;
-    const GvkPipelineExplorerPipelineStatisticsQueryRequestInfo& get_request() const;
-    VkResult submit_request(const std::filesystem::path& workspace, gvk::Auto<GvkPipelineExplorerPipelineStatisticsQueryRequestInfo>&& request);
+    const GvkPipelineExplorerPerformanceQueryRequestInfo& get_request() const;
+    VkResult submit_request(const std::filesystem::path& workspace, gvk::Auto<GvkPipelineExplorerPerformanceQueryRequestInfo>&& request);
     bool collect_metrics(VkDevice device, VkPipeline pipeline) const;
 
 protected:
+    bool tool_command(const GvkCommandBaseStructure* pCommand, VkDevice vkDevice, VkQueue vkQueue, VkPipeline vkPipeline) const override final;
     uint32_t get_query_count(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo) const override final;
     uint32_t get_query_count(const GvkPipelineExplorerToolQueueInfoEx& toolInfo) const override final;
     VkResult validate_query_resources(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo) override final;
@@ -60,12 +64,26 @@ protected:
     VkResult generate_report() override final;
 
 private:
-    std::filesystem::path mWorkspace;
-    gvk::Auto<GvkPipelineExplorerPipelineStatisticsQueryRequestInfo> mRequest;
-    std::vector<std::map<VkQueryPipelineStatisticFlagBits, double>> mResults;
+    class RequestManager final
+    {
+    public:
+        bool operator==(const RequestManager& other) const;
+        bool operator!=(const RequestManager& other) const;
+        bool operator<(const RequestManager& other) const;
 
-    PipelineStatisticsQueryManager(const PipelineStatisticsQueryManager&) = delete;
-    PipelineStatisticsQueryManager& operator=(const PipelineStatisticsQueryManager&) = delete;
+        VkPerformanceCounterKHR counter{ };
+        VkPerformanceCounterDescriptionKHR description{ };
+        std::vector<VkPerformanceCounterResultKHR> results;
+    };
+
+    std::filesystem::path mWorkspace;
+    gvk::Auto<GvkPipelineExplorerPerformanceQueryRequestInfo> mRequest;
+    std::map<std::array<uint8_t, VK_UUID_SIZE>, RequestManager> mPendingRequests;
+    std::vector<RequestManager> mCurrentRequests;
+    gvk::ContiguousSet<RequestManager> mCompleteRequests;
+
+    PerformanceQueryManager(const PerformanceQueryManager&) = delete;
+    PerformanceQueryManager& operator=(const PerformanceQueryManager&) = delete;
 };
 
 } // namespace pipeline_explorer

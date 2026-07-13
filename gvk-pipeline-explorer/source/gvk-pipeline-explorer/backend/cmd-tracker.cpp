@@ -36,6 +36,7 @@ void CmdTracker::record_vkResetCommandBuffer(VkCommandBuffer commandBuffer, VkCo
 
 void CmdTracker::record_vkBeginCommandBuffer(VkCommandBuffer commandBuffer, const VkCommandBufferBeginInfo* pBeginInfo)
 {
+    assert(!pBeginInfo->pNext && "Encountered unserviced pNext; gvk maintenance required");
     reset();
     auto command = gvk::get_default<GvkCommandStructureBeginCommandBuffer>();
     command.commandBuffer = commandBuffer;

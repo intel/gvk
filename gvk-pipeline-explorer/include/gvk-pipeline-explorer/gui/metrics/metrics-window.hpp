@@ -40,8 +40,11 @@ class MetricsWindow final
 {
 public:
     MetricsWindow(Window::Manager& windowManager);
+    void reset() override final;
+    MetricsTab* get_active_metrics_tab();
 
 protected:
+    void on_update(GuiInfo& guiInfo) override final;
     void on_gui(GuiInfo& guiInfo) override final;
 
 private:
@@ -50,6 +53,8 @@ private:
     PipelineStatisticsMetricsTab mPipelineStatisticsMetricsTab;
     PerformanceQueryMetricsTab mPerformanceQueryMetricsTab;
     PluginMetricsTab mPluginMetricsTab;
+    MetricsTab* mpActiveMetricsTab{ };
+    bool mActive{ true };
 };
 
 } // namespace gui

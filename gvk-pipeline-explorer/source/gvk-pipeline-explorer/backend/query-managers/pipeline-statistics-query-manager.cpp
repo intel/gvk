@@ -24,15 +24,21 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "gvk-pipeline-explorer/backend/pipeline-statistics-query-manager.hpp"
+#include "gvk-pipeline-explorer/backend/query-managers/pipeline-statistics-query-manager.hpp"
 #include "gvk-pipeline-explorer/backend/handle-info.hpp"
 #include "gvk-system.hpp"
 
+#include <bitset>
 #include <filesystem>
 #include <unordered_map>
 
 namespace gvk {
 namespace pipeline_explorer {
+
+uint64_t PipelineStatisticsQueryManager::get_type_id() const
+{
+    return Tool::get_type_id<PipelineStatisticsQueryManager>();
+}
 
 void PipelineStatisticsQueryManager::reset()
 {
@@ -53,6 +59,7 @@ VkResult PipelineStatisticsQueryManager::submit_request(const std::filesystem::p
     if (mRequest->sType != gvk::get_stype<GvkPipelineExplorerPipelineStatisticsQueryRequestInfo>()) {
         mRequest = std::move(request);
         mResults.push_back({ });
+        mEnabled = true;
     }
     return VK_SUCCESS;
 }
@@ -64,6 +71,16 @@ bool PipelineStatisticsQueryManager::collect_metrics(VkDevice device, VkPipeline
         mRequest->sType == gvk::get_stype<GvkPipelineExplorerPipelineStatisticsQueryRequestInfo>() &&
         mRequest->device == device &&
         mRequest->pipeline == pipeline;
+}
+
+bool PipelineStatisticsQueryManager::tool_command(const GvkCommandBaseStructure* pCommand, VkDevice vkDevice, VkQueue vkQueue, VkPipeline vkPipeline) const
+{
+    (void)pCommand;
+    (void)vkQueue;
+    return
+        mRequest->sType == gvk::get_stype<GvkPipelineExplorerPipelineStatisticsQueryRequestInfo>() &&
+        mRequest->device == vkDevice &&
+        mRequest->pipeline == vkPipeline;
 }
 
 uint32_t PipelineStatisticsQueryManager::get_query_count(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo) const
@@ -85,7 +102,7 @@ VkResult PipelineStatisticsQueryManager::validate_query_resources(const GvkPipel
         for (uint32_t collectionRange_i = 0; collectionRange_i < toolInfo.collectionRangeCount; ++collectionRange_i) {
             const auto& collectionRange = toolInfo.pCollectionRanges[collectionRange_i];
             pipeline_explorer::PipelineInfo pipelineInfo({ collectionRange.device, collectionRange.pipeline });
-            gvk_result(pipelineInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+            gvk_result_assert(pipelineInfo);
             for (const auto& shaderModuleInfoItr : pipelineInfo->shaderModuleInfos) {
                 switch (shaderModuleInfoItr.first) {
                 case VK_SHADER_STAGE_VERTEX_BIT: {
@@ -167,12 +184,12 @@ VkResult PipelineStatisticsQueryManager::pre_process_cmd(const GvkPipelineExplor
             if (toolInfo.collectionRangeIndex < toolInfo.collectionRangeCount && toolInfo.pCollectionRanges &&
                 toolInfo.cmdIndex == toolInfo.pCollectionRanges[toolInfo.collectionRangeIndex].begin) {
                 gvk::Queue gvkQueue = toolInfo.queue;
-                gvk_result(gvkQueue ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-                gvk_result(mQueryPool ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-                gvk_result(toolInfo.cmdIndex < toolInfo.cmdCount ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-                gvk_result(toolInfo.ppCmds ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+                gvk_result_assert(gvkQueue);
+                gvk_result_assert(mQueryPool);
+                gvk_result_assert(toolInfo.cmdIndex < toolInfo.cmdCount);
+                gvk_result_assert(toolInfo.ppCmds);
                 auto commandBuffer = toolInfo.ppCmds[toolInfo.cmdIndex]->commandBuffer;
-                gvk_result(commandBuffer ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+                gvk_result_assert(commandBuffer);
                 gvkQueue.get<gvk::DispatchTable>().gvkCmdBeginQuery(commandBuffer, mQueryPool, mQueryIndex, 0);
             }
         }
@@ -187,12 +204,12 @@ VkResult PipelineStatisticsQueryManager::post_process_cmd(const GvkPipelineExplo
             if (toolInfo.collectionRangeIndex < toolInfo.collectionRangeCount && toolInfo.pCollectionRanges &&
                 toolInfo.cmdIndex == toolInfo.pCollectionRanges[toolInfo.collectionRangeIndex].end) {
                 gvk::Queue gvkQueue = toolInfo.queue;
-                gvk_result(gvkQueue ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-                gvk_result(mQueryPool ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-                gvk_result(toolInfo.cmdIndex < toolInfo.cmdCount ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-                gvk_result(toolInfo.ppCmds ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+                gvk_result_assert(gvkQueue);
+                gvk_result_assert(mQueryPool);
+                gvk_result_assert(toolInfo.cmdIndex < toolInfo.cmdCount);
+                gvk_result_assert(toolInfo.ppCmds);
                 auto commandBuffer = toolInfo.ppCmds[toolInfo.cmdIndex]->commandBuffer;
-                gvk_result(commandBuffer ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+                gvk_result_assert(commandBuffer);
                 gvkQueue.get<gvk::DispatchTable>().gvkCmdEndQuery(commandBuffer, mQueryPool, mQueryIndex++);
             }
         }
@@ -215,9 +232,9 @@ VkResult PipelineStatisticsQueryManager::post_process_queue_submission(const Gvk
     gvk_result_scope_begin(VK_SUCCESS) {
         if (get_query_count(toolInfo) && mQueryPool) {
             gvk::Device gvkDevice = toolInfo.device;
-            gvk_result(gvkDevice ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result_assert(gvkDevice);
             gvk::Queue gvkQueue = toolInfo.queue;
-            gvk_result(gvkQueue ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result_assert(gvkQueue);
 
             // In theory passing VK_QUERY_RESULT_WAIT_BIT to vkGetQueryPoolResults() should
             //  make it unnecessary to call vkQueueWaitIdle(), but omitting it yields some
@@ -294,7 +311,7 @@ VkResult PipelineStatisticsQueryManager::post_process_range()
 {
     gvk_result_scope_begin(VK_SUCCESS) {
         if (mRequest->sType == gvk::get_stype<GvkPipelineExplorerPipelineStatisticsQueryRequestInfo>()) {
-            gvk_result(mResults.size() <= mRequest->warmupRangeCount + mRequest->queryRangeCount ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+            gvk_result_assert(mResults.size() <= mRequest->warmupRangeCount + mRequest->queryRangeCount);
             if (mResults.size() == mRequest->warmupRangeCount + mRequest->queryRangeCount) {
                 gvk_result(generate_report());
                 reset();
@@ -312,7 +329,7 @@ VkResult PipelineStatisticsQueryManager::generate_report()
 
     gvk_result_scope_begin(VK_SUCCESS) {
         gvk::pipeline_explorer::PipelineInfo pipelineInfo({ mRequest->device, mRequest->pipeline });
-        gvk_result(pipelineInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result_assert(pipelineInfo);
 
         // Get date and time strings
         auto dateTime = gvk::system::DateTime::now();
@@ -374,7 +391,7 @@ VkResult PipelineStatisticsQueryManager::generate_report()
             pCounterResult->counter.unit = VK_PERFORMANCE_COUNTER_UNIT_GENERIC_KHR;
             pCounterResult->counter.scope = VK_PERFORMANCE_COUNTER_SCOPE_COMMAND_KHR;
             pCounterResult->counter.storage = VK_PERFORMANCE_COUNTER_STORAGE_FLOAT64_KHR;
-            gvk_result(sizeof(resultsItr.first) <= sizeof(pCounterResult->counter.uuid) ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result_assert(sizeof(resultsItr.first) <= sizeof(pCounterResult->counter.uuid));
             memcpy(pCounterResult->counter.uuid, &resultsItr.first, sizeof(resultsItr.first));
             pCounterResult->description = gvk::get_default<VkPerformanceCounterDescriptionKHR>();
 
@@ -387,7 +404,7 @@ VkResult PipelineStatisticsQueryManager::generate_report()
             pipelineStatisticFlagStr = gvk::string::remove(pipelineStatisticFlagStr, "\"");
             std::string pipelineStatisticNameStr;
             for (auto token : gvk::string::split_snake_case(pipelineStatisticFlagStr)) {
-                gvk_result(!token.empty() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+                gvk_result_assert(!token.empty());
                 token = gvk::string::to_lower(token);
                 token[0] = gvk::string::to_upper(token[0]);
                 if (!pipelineStatisticNameStr.empty()) {
@@ -407,7 +424,7 @@ VkResult PipelineStatisticsQueryManager::generate_report()
             pCounterResult->pValues = pValues;
 
             // Populate values array and add each value to total
-            gvk_result(resultsItr.second.size() == mRequest->warmupRangeCount + mRequest->queryRangeCount ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+            gvk_result_assert(resultsItr.second.size() == mRequest->warmupRangeCount + mRequest->queryRangeCount);
             for (uint32_t value_i = 0; value_i < pCounterResult->valueCount; ++value_i) {
                 pValues[value_i] = resultsItr.second[mRequest->warmupRangeCount + value_i];
                 pCounterResult->total += pValues[value_i];

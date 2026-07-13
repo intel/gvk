@@ -70,8 +70,8 @@ public:
     GvkMetadataExtractorSampleWindowManager* pWindowManager{ };
     std::vector<VkLayerProperties> layerProperties;
     bool validationLayerAvailable{ };
-    gvk::ChildProcess childProcess;
-    std::function<void()> onChildProcessShutdown;
+    gvk::ChildProcess workload;
+    std::function<void()> onWorkloadShutdown;
     gvk::IoPipe ipcReadPipe;
     gvk::IoPipe ipcWritePipe;
     GvkMetadataExtractorSampleIpcMessenger ipcMessenger;
@@ -190,7 +190,7 @@ protected:
     void on_gui(GuiInfo& guiInfo) override final
     {
         // When user clicks [Refresh Cmds] send request to layer
-        ImGui::BeginDisabled(!guiInfo.childProcess.running());
+        ImGui::BeginDisabled(!guiInfo.workload.running());
         if (ImGui::Button("Refresh Cmds")) {
 
             // Send request to refresh cmds to layer
@@ -589,7 +589,7 @@ public:
 protected:
     void on_gui(GuiInfo& guiInfo) override final
     {
-        ImGui::BeginDisabled(guiInfo.childProcess.running());
+        ImGui::BeginDisabled(guiInfo.workload.running());
         {
             // Clear launch options
             if (ImGui::Button("Clear")) {
@@ -667,17 +667,17 @@ protected:
 
         // Launch/stop
         ImGui::PushItemWidth(-FLT_MIN);
-        if (!guiInfo.childProcess.running()) {
+        if (!guiInfo.workload.running()) {
             if (ImGui::Button("Launch")) {
                 launch_workload(guiInfo);
             }
         } else {
             if (ImGui::Button("Stop")) {
-                guiInfo.childProcess.reset();
+                guiInfo.workload.reset();
             }
         }
 
-        ImGui::BeginDisabled(guiInfo.childProcess.running());
+        ImGui::BeginDisabled(guiInfo.workload.running());
         {
             // Exe
             ImGui::PushItemWidth(-FLT_MIN);
@@ -718,7 +718,8 @@ private:
     void launch_workload(GuiInfo& guiInfo)
     {
         if (mLaunchOptions.clearStdOut) {
-            std::cout << "\033[2J\033[1;1H";
+            // TODO : Double check that this actually clears the terminal, is cross-platform, and move to runtime...
+            std::cout << "\033[2J\033[1;1H" << std::flush;
         }
 
         // Prepare environment object and load current environment
@@ -786,10 +787,12 @@ private:
 
         // Warn if validation layer is unavailable or unique handles is disabled
         if (!guiInfo.validationLayerAvailable) {
-            std::cout << "Warning : Validation layer unavailable (required for unique handles); may result in instability" << std::endl;
+            std::cout << "[WARNING] : Validation layer unavailable (required for unique handles); may result in instability" << std::endl;
+            std::cout << "    Install the Vulkan SDK or set environment variable `VK_ADD_LAYER_PATH`" << std::endl;
+            std::cout << "    If GVK was built from source, the Vulkan SDK installer can be found in `gvk/build/_deps/VulkanSDK`" << std::endl;
         }
         if (!mLaunchOptions.uniqueHandles) {
-            std::cout << "Warning : Unique handles disabled; may result in instability" << std::endl;
+            std::cout << "[WARNING] : Unique handles disabled; may result in instability" << std::endl;
         }
 
         // Create enabled layer list and set environment variable
@@ -854,7 +857,7 @@ private:
         childProcessCreateInfo.pUserData = &guiInfo;
 
         // Create child process
-        if (gvk::ChildProcess::create(&childProcessCreateInfo, &guiInfo.childProcess)) {
+        if (gvk::ChildProcess::create(&childProcessCreateInfo, &guiInfo.workload)) {
             std::cout << "Launched '" << cmdLine << "'" << std::endl;
 
             // Check if the workload is already in the recently launched list, and if so erase
@@ -1065,7 +1068,7 @@ static void on_workload_shutdown(const gvk::ChildProcess& childProcess)
     auto pGuiInfo = (GuiInfo*)childProcess.get_user_data();
     assert(pGuiInfo);
     std::lock_guard<std::mutex> lock(pGuiInfo->mutex);
-    pGuiInfo->onChildProcessShutdown = [pGuiInfo]()
+    pGuiInfo->onWorkloadShutdown = [pGuiInfo]()
     {
         assert(pGuiInfo->pWindowManager);
         pGuiInfo->pWindowManager->reset();
@@ -1089,7 +1092,7 @@ int main(int argc, const char* ppArgv[])
     GuiInfo guiInfo;
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
 
-        // Createt gvk::Context
+        // Create gvk::Context
         auto applicationInfo = gvk::get_default<VkApplicationInfo>();
         applicationInfo.pApplicationName = "gvk-metadata-extractor-sample";
         auto instanceCreateInfo = gvk::get_default<VkInstanceCreateInfo>();
@@ -1233,16 +1236,16 @@ int main(int argc, const char* ppArgv[])
             // Lock and check if workload is running, if so process incoming messages, otherwise
             //  execute and clear the onChildProcessShutdown callback if necessary
             std::lock_guard<std::mutex> lock(guiInfo.mutex);
-            if (guiInfo.childProcess) {
+            if (guiInfo.workload) {
                 process_incoming_messages(guiInfo);
-            } else if (guiInfo.onChildProcessShutdown) {
-                guiInfo.onChildProcessShutdown();
-                guiInfo.onChildProcessShutdown = nullptr;
+            } else if (guiInfo.onWorkloadShutdown) {
+                guiInfo.onWorkloadShutdown();
+                guiInfo.onWorkloadShutdown = nullptr;
             }
         }
 
         // Shutdown child process
-        guiInfo.childProcess.reset();
+        guiInfo.workload.reset();
 
         // Destroy gvk::gui::Renderer
         // NOTE : Explicitly destroying guiRenderer so ImGuiSettingsHandler::WriteAllFn

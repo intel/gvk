@@ -55,7 +55,11 @@ std::vector<gvk::xml::Structure> get_command_structures(const gvk::xml::Manifest
 
     gvk::xml::Structure gvkCommandCollection;
     gvkCommandCollection.name = "GvkCommandCollection";
-    gvk::cppgen::add_array_members_to_structure("GvkCommandBaseStructure* const", "commandCount", "ppCommands", gvkCommandCollection);
+    auto commandCollectionArrayMembers = gvk::cppgen::get_array_parameters("commandCount", "ppCommands", "GvkCommandBaseStructure* const");
+    commandCollectionArrayMembers.first.type = "uint64_t";
+    commandCollectionArrayMembers.first.unqualifiedType = "uint64_t";
+    gvkCommandCollection.members.push_back(commandCollectionArrayMembers.first);
+    gvkCommandCollection.members.push_back(commandCollectionArrayMembers.second);
     structures.push_back(gvkCommandCollection);
 
     for (const auto& commandItr : manifest.commands) {
@@ -207,6 +211,7 @@ int main(int, const char*[])
             "GvkCommandStructureCmdSetSampleMaskEXT",
             "GvkCommandStructureCmdSetFragmentShadingRateEnumNV",
             "GvkCommandStructureCmdSetFragmentShadingRateKHR",
+            "GvkCommandStructureCmdUpdateBuffer",
             "GvkCommandStructureCreateXlibSurfaceKHR",
             "GvkCommandStructureGetAccelerationStructureBuildSizesKHR",
             "GvkCommandStructureGetPhysicalDeviceXlibPresentationSupportKHR",

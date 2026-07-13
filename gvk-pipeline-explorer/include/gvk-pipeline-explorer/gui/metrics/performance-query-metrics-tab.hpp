@@ -40,6 +40,7 @@ public:
     bool idle(GuiInfo& guiInfo) const override final;
     bool enabled(GuiInfo& guiInfo) const override final;
     void on_update(GuiInfo& guiInfo) override final;
+    void on_plot(GuiInfo& guiInfo) override final;
     void on_gui(GuiInfo& guiInfo) override final;
 };
 

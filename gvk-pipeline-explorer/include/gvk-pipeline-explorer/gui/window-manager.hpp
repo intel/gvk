@@ -37,11 +37,18 @@ namespace gvk {
 namespace pipeline_explorer {
 namespace gui {
 
+class WorkspaceWindow;
+
 class Window::Manager final
 {
 public:
     Manager();
+    void reset();
     void clear();
+    bool query_active() const;
+    void on_launch(GuiInfo& guiInfo);
+    void on_terminate(GuiInfo& guiInfo);
+    void on_update(GuiInfo& guiInfo);
     void on_gui(GuiInfo& guiInfo);
     void on_save(GuiInfo& guiInfo);
     void on_load(GuiInfo& guiInfo);
@@ -62,6 +69,11 @@ public:
     }
 
 private:
+    void draw_menu_bar(GuiInfo& guiInfo);
+    void draw_tool_bar(GuiInfo& guiInfo);
+    void draw_dockspace(GuiInfo& guiInfo);
+    void on_launch(GuiInfo& guiInfo, std::map<std::string, std::unique_ptr<Window>>& windows);
+    void on_update(GuiInfo& guiInfo, std::map<std::string, std::unique_ptr<Window>>& windows);
     void on_gui(GuiInfo& guiInfo, std::map<std::string, std::unique_ptr<Window>>& windows);
     void on_save(GuiInfo& guiInfo, std::map<std::string, std::unique_ptr<Window>>& windows);
     void on_load(GuiInfo& guiInfo, std::map<std::string, std::unique_ptr<Window>>& windows);
@@ -69,6 +81,17 @@ private:
     std::map<std::string, std::unique_ptr<Window>> mCoreWindows;
     std::map<std::string, std::unique_ptr<Window>> mWindows;
     std::map<std::string, std::unique_ptr<Window>> mNewWindows;
+    WorkspaceWindow* mpWorkspaceWindow{ };
+
+    float mMenuBarHeight{ };
+    float mToolBarHeight{ };
+    bool mImGuiDebugWindowsEnabled{ };
+    bool mImGuiMetricsWindowEnabled{ };
+    bool mImGuiDebugLogWindowEnabled{ };
+    bool mImGuiIDStackToolWindowEnabled{ };
+    bool mImGuiDemoWindowEnabled{ };
+    bool mImGuiAboutWindowEnabled{ };
+    bool mQueryActive{ };
 
     Manager(const Manager&) = delete;
     Manager& operator=(const Manager&) = delete;

@@ -102,19 +102,16 @@ VkResult on_destroy_object(const GvkCommandStructureResetDescriptorPool& command
         gvk_result_assert(descriptorPool);
 
         // Use VkDescriptorPool to look up associated VkDescriptorSet ID collection
-        std::unordered_set<uint64_t>* pDescriptorSetIds = nullptr;
-        {
-            std::lock_guard<std::mutex> lock(uniqueHandlesManager.mutex);
-            pDescriptorSetIds = &uniqueHandlesManager.descriptorPools[{ command.device, descriptorPool }];
-        }
+        std::lock_guard<std::mutex> lock(uniqueHandlesManager.mutex);
+        auto& descriptorSetIds = uniqueHandlesManager.descriptorPools[{ command.device, descriptorPool }];
 
         // Remove each VkDescriptorSet ID from UniqueHandlesManager
-        for (const auto& descriptorSetId : *pDescriptorSetIds) {
+        for (const auto& descriptorSetId : descriptorSetIds) {
             gvk_result(uniqueHandlesManager.on_destroy_object((VkDescriptorSet)descriptorSetId));
         }
 
         // Clear VkDescriptorSet ID collection
-        pDescriptorSetIds->clear();
+        descriptorSetIds.clear();
     } gvk_result_scope_end;
     return gvkResult;
 }
@@ -133,22 +130,16 @@ VkResult on_destroy_object(const GvkCommandStructureDestroyDescriptorPool& comma
         gvk_result_assert(descriptorPool);
 
         // Use VkDescriptorPool to look up associated VkDescriptorSet ID collection
-        std::unordered_set<uint64_t>* pDescriptorSetIds = nullptr;
-        {
-            std::lock_guard<std::mutex> lock(uniqueHandlesManager.mutex);
-            pDescriptorSetIds = &uniqueHandlesManager.descriptorPools[{ command.device, descriptorPool }];
-        }
+        std::lock_guard<std::mutex> lock(uniqueHandlesManager.mutex);
+        auto& descriptorSetIds = uniqueHandlesManager.descriptorPools[{ command.device, descriptorPool }];
 
         // Remove each VkDescriptorSet ID from UniqueHandlesManager
-        for (const auto& descriptorSetId : *pDescriptorSetIds) {
+        for (const auto& descriptorSetId : descriptorSetIds) {
             gvk_result(uniqueHandlesManager.on_destroy_object((VkDescriptorSet)descriptorSetId));
         }
 
         // Remove VkDescriptorSet ID collection from UniqueHandlesManager
-        {
-            std::lock_guard<std::mutex> lock(uniqueHandlesManager.mutex);
-            uniqueHandlesManager.descriptorPools.erase({ command.device, descriptorPool });
-        }
+        uniqueHandlesManager.descriptorPools.erase({ command.device, descriptorPool });
 
         // Remove VkDescriptorPool ID from UniqueHandlesManager
         gvk_result(uniqueHandlesManager.on_destroy_object(command.descriptorPool));
@@ -158,27 +149,27 @@ VkResult on_destroy_object(const GvkCommandStructureDestroyDescriptorPool& comma
 
 VkResult on_create_object(const GvkCommandStructureAllocateDescriptorSets& command)
 {
-    gvk_result_scope_begin(command.result) {
+    gvk_result_scope_begin(VK_SUCCESS) {
 
         // TODO : Need to actually set result in execute_command_structure()
-        gvk_result(command.result);
 
-        // Get UniqueHandlesManager
-        auto& uniqueHandlesManager = Registry::get().uniqueHandlesManager;
-        gvk_result_assert(uniqueHandlesManager.enabled);
+        // TODO : Every handle needs this treatment
+        if (command.result == VK_SUCCESS) {
 
-        // Use VkDescriptorPool to look up associated VkDescriptorSet ID collection
-        std::unordered_set<uint64_t>* pDescriptorSetIds = nullptr;
-        {
+            // Get UniqueHandlesManager
+            auto& uniqueHandlesManager = Registry::get().uniqueHandlesManager;
+            gvk_result_assert(uniqueHandlesManager.enabled);
+
+            // Use VkDescriptorPool to look up associated VkDescriptorSet ID collection
             std::lock_guard<std::mutex> lock(uniqueHandlesManager.mutex);
-            pDescriptorSetIds = &uniqueHandlesManager.descriptorPools[{ command.device, command.pAllocateInfo->descriptorPool }];
-        }
+            auto& descriptorSetIds = uniqueHandlesManager.descriptorPools[{ command.device, command.pAllocateInfo->descriptorPool }];
 
-        // Create VkDescriptorSet IDs and add them to UniqueHandlesManager and ID collection
-        for (uint32_t i = 0; i < command.pAllocateInfo->descriptorSetCount; ++i) {
-            uint64_t id = 0;
-            gvk_result(uniqueHandlesManager.on_create_object(command.pDescriptorSets + i, &id));
-            pDescriptorSetIds->insert(id);
+            // Create VkDescriptorSet IDs and add them to UniqueHandlesManager and ID collection
+            for (uint32_t i = 0; i < command.pAllocateInfo->descriptorSetCount; ++i) {
+                uint64_t id = 0;
+                gvk_result(uniqueHandlesManager.on_create_object(command.pDescriptorSets + i, &id));
+                descriptorSetIds.insert(id);
+            }
         }
     } gvk_result_scope_end;
     return gvkResult;
@@ -198,17 +189,14 @@ VkResult on_destroy_object(const GvkCommandStructureFreeDescriptorSets& command)
         gvk_result_assert(descriptorPool);
 
         // Use VkDescriptorPool to look up associated VkDescriptorSet ID collection
-        std::unordered_set<uint64_t>* pDescriptorSetIds = nullptr;
-        {
-            std::lock_guard<std::mutex> lock(uniqueHandlesManager.mutex);
-            pDescriptorSetIds = &uniqueHandlesManager.descriptorPools[{ command.device, descriptorPool }];
-        }
+        std::lock_guard<std::mutex> lock(uniqueHandlesManager.mutex);
+        auto& descriptorSetIds = uniqueHandlesManager.descriptorPools[{ command.device, descriptorPool }];
 
         // Remove each VkDescriptorSet ID from UniqueHandlesManager and ID collection
         for (uint32_t i = 0; i < command.descriptorSetCount; ++i) {
             auto descriptorSet = command.pDescriptorSets[i];
             gvk_result(uniqueHandlesManager.on_destroy_object(descriptorSet));
-            pDescriptorSetIds->erase((uint64_t)descriptorSet);
+            descriptorSetIds.erase((uint64_t)descriptorSet);
         }
     } gvk_result_scope_end;
     return gvkResult;
@@ -275,17 +263,14 @@ VkResult on_create_object(const GvkCommandStructureCreateSwapchainKHR& command)
         gvk_result(dispatchTableItr->second.gvkGetSwapchainImagesKHR(command.device, *command.pSwapchain, &imageCount, images.data()));
 
         // Use VkSwapchainKHR to look up associated VkImage ID collection
-        std::vector<uint64_t>* pImageIds = nullptr;
-        {
-            std::lock_guard<std::mutex> lock(uniqueHandlesManager.mutex);
-            pImageIds = &uniqueHandlesManager.swapchains[{ command.device, *command.pSwapchain }];
-        }
+        std::lock_guard<std::mutex> lock(uniqueHandlesManager.mutex);
+        auto& imageIds = uniqueHandlesManager.swapchains[{ command.device, *command.pSwapchain }];
 
         // Create VkImage IDs and add them to UniqueHandlesManager and ID collection
         for (const auto& image : images) {
             uint64_t id = 0;
             gvk_result(uniqueHandlesManager.on_create_object(&image, &id, false));
-            pImageIds->push_back(id);
+            imageIds.push_back(id);
         }
     } gvk_result_scope_end;
     return gvkResult;
@@ -306,16 +291,13 @@ VkResult on_handle_out(const GvkCommandStructureGetSwapchainImagesKHR& command)
             gvk_result_assert(uniqueHandlesManager.enabled);
 
             // Use VkSwapchainKHR to look up associated VkImage ID collection
-            std::vector<uint64_t>* pImageIds = nullptr;
-            {
-                std::lock_guard<std::mutex> lock(uniqueHandlesManager.mutex);
-                pImageIds = &uniqueHandlesManager.swapchains[{ command.device, command.swapchain }];
-            }
+            std::lock_guard<std::mutex> lock(uniqueHandlesManager.mutex);
+            auto& imageIds = uniqueHandlesManager.swapchains[{ command.device, command.swapchain }];
 
             // Mark each VkImage handle to be rewrapped with VkImage ID
-            auto swapchainImageCount = std::min(*command.pSwapchainImageCount, (uint32_t)pImageIds->size());
+            auto swapchainImageCount = std::min(*command.pSwapchainImageCount, (uint32_t)imageIds.size());
             for (uint32_t i = 0; i < swapchainImageCount; ++i) {
-                uniqueHandlesManager.mark_for_rewrap(command.pSwapchainImages + i, (*pImageIds)[i]);
+                uniqueHandlesManager.mark_for_rewrap(command.pSwapchainImages + i, imageIds[i]);
             }
         }
     } gvk_result_scope_end;
@@ -336,22 +318,16 @@ VkResult on_destroy_object(const GvkCommandStructureDestroySwapchainKHR& command
         gvk_result_assert(swapchain);
 
         // Use VkSwapchainKHR to look up associated VkImage ID collection
-        std::vector<uint64_t>* pImageIds = nullptr;
-        {
-            std::lock_guard<std::mutex> lock(uniqueHandlesManager.mutex);
-            pImageIds = &uniqueHandlesManager.swapchains[{ command.device, swapchain }];
-        }
+        std::lock_guard<std::mutex> lock(uniqueHandlesManager.mutex);
+        auto& imageIds = uniqueHandlesManager.swapchains[{ command.device, swapchain }];
 
         // Remove each VkImage ID from UniqueHandlesManager
-        for (const auto& imageId : *pImageIds) {
+        for (const auto& imageId : imageIds) {
             gvk_result(uniqueHandlesManager.on_destroy_object((VkImage)imageId));
         }
 
         // Remove VkImage ID collection from UniqueHandlesManager
-        {
-            std::lock_guard<std::mutex> lock(uniqueHandlesManager.mutex);
-            uniqueHandlesManager.swapchains.erase({ command.device, swapchain });
-        }
+        uniqueHandlesManager.swapchains.erase({ command.device, swapchain });
 
         // Remove VkSwapchainKHR ID from UniqueHandlesManager
         gvk_result(uniqueHandlesManager.on_destroy_object(command.swapchain));

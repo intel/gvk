@@ -52,6 +52,9 @@ StreamPlaybackWindow::~StreamPlaybackWindow()
 
 void StreamPlaybackWindow::on_gui(GuiInfo& guiInfo)
 {
+    (void)guiInfo;
+#if 0
+
     if (!guiInfo.workspaceInfo.launch.empty() && guiInfo.workspaceInfo.gitsStream) {
 
         // TODO : Documentation
@@ -187,6 +190,7 @@ void StreamPlaybackWindow::on_gui(GuiInfo& guiInfo)
         }
         ImGui::EndDisabled();
     }
+#endif
 }
 
 void StreamPlaybackWindow::stream_playback_thread_proc(GuiInfo* pGuiInfo)

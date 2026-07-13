@@ -26,6 +26,17 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-runtime.hpp"
 
+#ifdef GVK_PLATFORM_WINDOWS
+#include <Psapi.h>
+#include <ShlObj.h>
+#include <Shlwapi.h>
+#pragma comment(lib, "Psapi.lib")
+#pragma comment(lib, "Shlwapi.lib")
+#else
+#include <sys/syscall.h>
+#include <unistd.h>
+#endif
+
 #include <array>
 
 namespace gvk {
@@ -130,412 +141,21 @@ const std::vector<std::string>& get_validation_layer_settings()
     return scLayerSettings;
 }
 
+uint64_t get_thread_id()
+{
+#if defined(_WIN32)
+    return (uint64_t)GetCurrentThreadId();
+#else
+    return (uint64_t)gettid();
+#endif
+}
+
 #ifdef GVK_PLATFORM_WINDOWS
 
-IoPipe::IoPipe(IoPipe&& other) noexcept
+BOOL is_console(HANDLE handle)
 {
-    *this = std::move(other);
-}
-
-IoPipe& IoPipe::operator=(IoPipe&& other) noexcept
-{
-    if (this != &other) {
-        reset();
-        mReadHandle = std::exchange(other.mReadHandle, { });
-        mWriteHandle = std::exchange(other.mWriteHandle, { });
-    }
-    return *this;
-}
-
-IoPipe::~IoPipe()
-{
-    reset();
-}
-
-IoPipe::operator bool() const
-{
-    return mReadHandle || mWriteHandle;
-}
-
-BOOL IoPipe::create(const CreateInfo* pCreateInfo, IoPipe* pIoPipe)
-{
-    gvk_result_scope_begin(VK_SUCCESS) {
-        gvk_result_assert(pCreateInfo);
-        gvk_result_assert(pCreateInfo->inherit);
-        gvk_result_assert(pIoPipe);
-        pIoPipe->reset();
-
-        // Create anonymous pipe pair
-        SECURITY_ATTRIBUTES securityAtributes{ };
-        securityAtributes.nLength = sizeof(securityAtributes);
-        securityAtributes.bInheritHandle = FALSE;
-        if (!CreatePipe(&pIoPipe->mReadHandle, &pIoPipe->mWriteHandle, &securityAtributes, 0)) {
-            gvk_result_scope_break(VK_ERROR_INITIALIZATION_FAILED);
-        }
-        if (!pIoPipe->mReadHandle) {
-            gvk_result_scope_break(VK_ERROR_INITIALIZATION_FAILED);
-        }
-        if (!pIoPipe->mWriteHandle) {
-            gvk_result_scope_break(VK_ERROR_INITIALIZATION_FAILED);
-        }
-
-        // Set inheritance
-        if (!SetHandleInformation(pIoPipe->mReadHandle, HANDLE_FLAG_INHERIT, (pCreateInfo->inherit & Read) ? HANDLE_FLAG_INHERIT : 0)) {
-            gvk_result_scope_break(VK_ERROR_INITIALIZATION_FAILED);
-        }
-        if (!SetHandleInformation(pIoPipe->mWriteHandle, HANDLE_FLAG_INHERIT, (pCreateInfo->inherit & Write) ? HANDLE_FLAG_INHERIT : 0)) {
-            gvk_result_scope_break(VK_ERROR_INITIALIZATION_FAILED);
-        }
-    } gvk_result_scope_end;
-    if (gvkResult != VK_SUCCESS) {
-        pIoPipe->reset();
-    }
-    return gvkResult == VK_SUCCESS;
-}
-
-void IoPipe::reset()
-{
-    close(Read | Write);
-}
-
-HANDLE IoPipe::get_read_handle() const
-{
-    return mReadHandle;
-}
-
-HANDLE IoPipe::get_write_handle() const
-{
-    return mWriteHandle;
-}
-
-void IoPipe::close(Flags flags)
-{
-    if ((flags & Read) && mReadHandle) {
-        (void)CloseHandle(mReadHandle);
-        mReadHandle = NULL;
-    }
-    if ((flags & Write) && mWriteHandle) {
-        (void)CloseHandle(mWriteHandle);
-        mWriteHandle = NULL;
-    }
-}
-
-IoThread::IoThread(IoThread&& other) noexcept
-{
-    *this = std::move(other);
-}
-
-IoThread& IoThread::operator=(IoThread&& other) noexcept
-{
-    if (this != &other) {
-        reset();
-        mHandle = std::exchange(other.mHandle, { });
-        mId = std::exchange(other.mId, 0);
-    }
-    return *this;
-}
-
-IoThread::~IoThread()
-{
-    reset();
-}
-
-IoThread::operator bool() const
-{
-    assert(!mHandle == !mId);
-    return mHandle && mId;
-}
-
-BOOL IoThread::create(const CreateInfo* pCreateInfo, IoThread* pIoThread)
-{
-    gvk_result_scope_begin(VK_SUCCESS) {
-        gvk_result_assert(pCreateInfo);
-        gvk_result_assert(pCreateInfo->lpThreadProc);
-        gvk_result_assert(pCreateInfo->lpParameter);
-        gvk_result_assert(pIoThread);
-        pIoThread->reset();
-        pIoThread->mHandle = CreateThread(0, 0, pCreateInfo->lpThreadProc, pCreateInfo->lpParameter, 0, &pIoThread->mId);
-        if (!pIoThread->mHandle) {
-            gvk_result_scope_break(VK_ERROR_INITIALIZATION_FAILED);
-        }
-    } gvk_result_scope_end;
-    if (gvkResult != VK_SUCCESS) {
-        pIoThread->reset();
-    }
-    return gvkResult == VK_SUCCESS;
-}
-
-void IoThread::reset()
-{
-    if (mHandle) {
-        (void)CloseHandle(mHandle);
-    }
-    mHandle = NULL;
-    mId = 0;
-}
-
-HANDLE IoThread::get_handle() const
-{
-    return mHandle;
-}
-
-DWORD IoThread::get_id() const
-{
-    return mId;
-}
-
-ChildProcess::ChildProcess(ChildProcess&& other) noexcept
-{
-    *this = std::move(other);
-}
-
-ChildProcess& ChildProcess::operator=(ChildProcess&& other) noexcept
-{
-    if (this != &other) {
-        reset();
-        mCmdLine = std::exchange(other.mCmdLine, { });
-        mProcessInfo = std::exchange(other.mProcessInfo, { });
-        mShutdownEvent = std::exchange(other.mShutdownEvent, { });
-        mShutdownJob = std::exchange(other.mShutdownJob, { });
-        mStdIn = std::exchange(other.mStdIn, { });
-        mStdOut = std::exchange(other.mStdOut, { });
-        mStdErr = std::exchange(other.mStdErr, { });
-        mStdInThread = std::exchange(other.mStdInThread, { });
-        mStdOutThread = std::exchange(other.mStdOutThread, { });
-        mStdErrThread = std::exchange(other.mStdErrThread, { });
-        mpFnOnStdOut = std::exchange(other.mpFnOnStdOut, { });
-        mpFnOnStdErr = std::exchange(other.mpFnOnStdErr, { });
-        mpFnOnShutdown = std::exchange(other.mpFnOnShutdown, { });
-        mpUserData = std::exchange(other.mpUserData, { });
-    }
-    return *this;
-}
-
-ChildProcess::~ChildProcess()
-{
-    reset();
-}
-
-ChildProcess::operator bool() const
-{
-    return running();
-}
-
-BOOL ChildProcess::create(const CreateInfo* pCreateInfo, ChildProcess* pChildProcess)
-{
-    gvk_result_scope_begin(VK_SUCCESS) {
-        gvk_result_assert(pCreateInfo);
-        gvk_result_assert(pChildProcess);
-        pChildProcess->reset();
-
-        // Set cmd line
-        pChildProcess->mCmdLine = pCreateInfo->pCmdLine ? pCreateInfo->pCmdLine : std::string();
-
-        // Set IO callbacks
-        pChildProcess->mpFnOnStdOut = pCreateInfo->pFnOnStdOut;
-        pChildProcess->mpFnOnStdErr = pCreateInfo->pFnOnStdErr;
-
-        // Create IO Pipes
-        gvk::IoPipe::CreateInfo ioPipeCreateInfo{ };
-        ioPipeCreateInfo.inherit = gvk::IoPipe::Read;
-        if (!gvk::IoPipe::create(&ioPipeCreateInfo, &pChildProcess->mStdIn)) {
-            gvk_result_scope_break(VK_ERROR_INITIALIZATION_FAILED);
-        }
-        ioPipeCreateInfo.inherit = gvk::IoPipe::Write;
-        if (!gvk::IoPipe::create(&ioPipeCreateInfo, &pChildProcess->mStdOut)) {
-            gvk_result_scope_break(VK_ERROR_INITIALIZATION_FAILED);
-        }
-        if (!gvk::IoPipe::create(&ioPipeCreateInfo, &pChildProcess->mStdErr)) {
-            gvk_result_scope_break(VK_ERROR_INITIALIZATION_FAILED);
-        }
-
-        // Create IO threads
-        gvk::IoThread::CreateInfo ioThreadCreateInfo{ };
-        ioThreadCreateInfo.lpThreadProc = on_io;
-        ioThreadCreateInfo.lpParameter = pChildProcess;
-        if (!gvk::IoThread::create(&ioThreadCreateInfo, &pChildProcess->mStdInThread)) {
-            gvk_result_scope_break(VK_ERROR_INITIALIZATION_FAILED);
-        }
-        if (!gvk::IoThread::create(&ioThreadCreateInfo, &pChildProcess->mStdOutThread)) {
-            gvk_result_scope_break(VK_ERROR_INITIALIZATION_FAILED);
-        }
-        if (!gvk::IoThread::create(&ioThreadCreateInfo, &pChildProcess->mStdErrThread)) {
-            gvk_result_scope_break(VK_ERROR_INITIALIZATION_FAILED);
-        }
-
-        // Setup LPSECURITY_ATTRIBUTES
-        SECURITY_ATTRIBUTES securityAttributes{ };
-        securityAttributes.nLength = sizeof(securityAttributes);
-        securityAttributes.bInheritHandle = TRUE;
-
-        // Setup STARTUPINFO
-        STARTUPINFO startupInfo{ };
-        startupInfo.cb = sizeof(startupInfo);
-        startupInfo.hStdInput = pChildProcess->mStdIn.get_read_handle();
-        startupInfo.hStdOutput = pChildProcess->mStdOut.get_write_handle();
-        startupInfo.hStdError = pChildProcess->mStdErr.get_write_handle();
-        if (startupInfo.hStdInput || startupInfo.hStdOutput || startupInfo.hStdError) {
-            startupInfo.dwFlags = STARTF_USESTDHANDLES;
-        }
-
-        // Create process
-        if (!CreateProcess(
-            NULL,
-            pChildProcess->mCmdLine.data(),
-            &securityAttributes,
-            NULL,
-            TRUE,
-            0,
-            pCreateInfo->pEnvironment ? pCreateInfo->pEnvironment : NULL,
-            pCreateInfo->pDirectory ? pCreateInfo->pDirectory : NULL,
-            &startupInfo,
-            &pChildProcess->mProcessInfo
-        )) {
-            gvk_result_scope_break(VK_ERROR_INITIALIZATION_FAILED);
-        }
-
-        // Close parent handle to child process pipe ends
-        pChildProcess->mStdIn.close(gvk::IoPipe::Read);
-        pChildProcess->mStdOut.close(gvk::IoPipe::Write);
-        pChildProcess->mStdErr.close(gvk::IoPipe::Write);
-
-        // Register callback for shutdown
-        if (!RegisterWaitForSingleObject(
-            &pChildProcess->mShutdownEvent,
-            pChildProcess->mProcessInfo.hProcess,
-            on_shutdown,
-            pChildProcess,
-            INFINITE,
-            WT_EXECUTEONLYONCE
-        )) {
-            gvk_result_scope_break(VK_ERROR_INITIALIZATION_FAILED);
-        }
-
-        // Create shutdown job to shutdown child process along with parent process
-        pChildProcess->mShutdownJob = CreateJobObject(NULL, NULL);
-        gvk_result_assert(pChildProcess->mShutdownJob);
-        JOBOBJECT_EXTENDED_LIMIT_INFORMATION jobInfo{ };
-        jobInfo.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
-        if (!SetInformationJobObject(pChildProcess->mShutdownJob, JobObjectExtendedLimitInformation, &jobInfo, sizeof(jobInfo))) {
-            gvk_result_scope_break(VK_ERROR_INITIALIZATION_FAILED);
-        }
-        if (!AssignProcessToJobObject(pChildProcess->mShutdownJob, pChildProcess->mProcessInfo.hProcess)) {
-            gvk_result_scope_break(VK_ERROR_INITIALIZATION_FAILED);
-        }
-
-        // Set shutdown callback and user data
-        pChildProcess->mpFnOnShutdown = pCreateInfo->pFnOnShutdown;
-        pChildProcess->mpUserData = pCreateInfo->pUserData;
-    } gvk_result_scope_end;
-    if (gvkResult != VK_SUCCESS) {
-        pChildProcess->reset();
-    }
-    return gvkResult == VK_SUCCESS;
-}
-
-void ChildProcess::reset()
-{
-    // Unsubscribe from shutdown event
-    if (mShutdownEvent) {
-        (void)UnregisterWait(mShutdownEvent);
-        mShutdownEvent = NULL;
-    }
-
-    // Clear IO callbacks
-    mpFnOnStdOut = nullptr;
-    mpFnOnStdErr = nullptr;
-
-    // Fire shutdown callback
-    if (mpFnOnShutdown) {
-        mpFnOnShutdown(*this);
-        mpFnOnShutdown = nullptr;
-    }
-
-    // Terminate process and close handles
-    if (mShutdownJob) {
-        (void)CloseHandle(mShutdownJob);
-        mShutdownJob = NULL;
-    }
-    if (mProcessInfo.hProcess) {
-        #if 0
-        // NOTE : Closing the shutdown job handle terminates the process
-        (void)TerminateProcess(mProcessInfo.hProcess, 0);
-        #endif
-        (void)CloseHandle(mProcessInfo.hProcess);
-    }
-    if (mProcessInfo.hThread) {
-        (void)CloseHandle(mProcessInfo.hThread);
-    }
-    mProcessInfo = { };
-
-    // Close IO pipes
-    mStdIn.reset();
-    mStdOut.reset();
-    mStdErr.reset();
-
-    // Close IO threads
-    mStdInThread.reset();
-    mStdOutThread.reset();
-    mStdErrThread.reset();
-
-    // Clear cmd line and user data
-    mCmdLine.clear();
-    mpUserData = nullptr;
-}
-
-const std::string& ChildProcess::get_cmd_line() const
-{
-    return mCmdLine;
-}
-
-void* ChildProcess::get_user_data() const
-{
-    return mpUserData;
-}
-
-bool ChildProcess::running() const
-{
-    return mProcessInfo.hProcess != NULL;
-}
-
-BOOL ChildProcess::redirect_io(HANDLE read, HANDLE write, void(*pFnOnIo)(const ChildProcess& childProcess, size_t dataSize, const char* pData)) const
-{
-    DWORD count = 0;
-    std::array<char, 1024> buffer{ };
-    auto success = ReadFile(read, buffer.data(), (DWORD)buffer.size() - 1, &count, NULL);
-    if (success && count) {
-        if (pFnOnIo) {
-            pFnOnIo(*this, count, buffer.data());
-        } else {
-            success = WriteFile(write, buffer.data(), count, NULL, NULL);
-        }
-    }
-    return success;
-}
-
-DWORD CALLBACK ChildProcess::on_io(_In_ LPVOID lpParameter)
-{
-    assert(lpParameter);
-    const auto& childProcess = *(ChildProcess*)lpParameter;
-    auto currentThreadId = GetCurrentThreadId();
-    if (currentThreadId == childProcess.mStdInThread.get_id()) {
-        while (childProcess.redirect_io(GetStdHandle(STD_INPUT_HANDLE), childProcess.mStdIn.get_write_handle(), nullptr)) {
-        }
-    } else if (currentThreadId == childProcess.mStdOutThread.get_id()) {
-        while (childProcess.redirect_io(childProcess.mStdOut.get_read_handle(), GetStdHandle(STD_OUTPUT_HANDLE), childProcess.mpFnOnStdOut)) {
-        }
-    } else if (currentThreadId == childProcess.mStdErrThread.get_id()) {
-        while (childProcess.redirect_io(childProcess.mStdErr.get_read_handle(), GetStdHandle(STD_ERROR_HANDLE), childProcess.mpFnOnStdErr)) {
-        }
-    }
-    return 0;
-}
-
-VOID CALLBACK ChildProcess::on_shutdown(_In_ PVOID lpParameter, _In_ BOOLEAN TimerOrWaitFired)
-{
-    (void)TimerOrWaitFired;
-    assert(lpParameter);
-    ((ChildProcess*)lpParameter)->reset();
+    DWORD mode{ };
+    return GetFileType(handle) == FILE_TYPE_CHAR && GetConsoleMode(handle, &mode);
 }
 
 BOOL get_this_module_handle(HMODULE* phModule)
@@ -562,6 +182,133 @@ DWORD get_this_module_path(std::filesystem::path* pPath)
     return get_this_module_handle(&hModule) ? get_module_path(hModule, pPath) : 0;
 }
 
+DWORD get_process_path(HANDLE hProcess, std::filesystem::path* pPath)
+{
+    gvk_assert(pPath);
+    const size_t CharBufferSize = 16384;
+    std::vector<wchar_t> wcharBuffer(CharBufferSize);
+    auto result = GetProcessImageFileNameW(hProcess, wcharBuffer.data(), (DWORD)wcharBuffer.size());
+    if (result && wcharBuffer[0]) {
+        *pPath = wcharBuffer.data();
+    }
+    return result;
+}
+
+DWORD get_this_process_path(std::filesystem::path* pPath)
+{
+    return get_process_path(GetCurrentProcess(), pPath);
+}
+
+DWORD get_process_name(HANDLE hProcess, std::filesystem::path* pPath)
+{
+    gvk_assert(pPath);
+    auto result = get_process_path(hProcess, pPath);
+    if (result && pPath->has_filename()) {
+        *pPath = pPath->filename();
+    }
+    return result;
+}
+
+DWORD get_this_process_name(std::filesystem::path* pPath)
+{
+    return get_process_name(GetCurrentProcess(), pPath);
+}
+
+BOOL is_process_elevated(HANDLE hProcess)
+{
+    BOOL isElevated = FALSE;
+    HANDLE hToken = NULL;
+    if (OpenProcessToken(hProcess ? hProcess : GetCurrentProcess(), TOKEN_QUERY, &hToken)) {
+        TOKEN_ELEVATION elevation{ };
+        DWORD dwSize = 0;
+        if (GetTokenInformation(hToken, TokenElevation, &elevation, sizeof(elevation), &dwSize)) {
+            isElevated = elevation.TokenIsElevated;
+        }
+    }
+    if (hToken) {
+        CloseHandle(hToken);
+    }
+    return isElevated;
+}
+
+BOOL register_explicit_layer(const std::filesystem::path& layerJsonPath)
+{
+    // TODO : gvk_result_scope should be setup to work with arbitrary return codes so
+    //  it can be used to simplify error handling in general and report out detailed
+    //  information from Windows API calls (and any other API we interact with)
+    try {
+        auto normalizedPath = std::filesystem::weakly_canonical(layerJsonPath);
+
+        // Validate layer JSON path
+        auto status = normalizedPath.is_absolute() ? ERROR_SUCCESS : ERROR_PATH_NOT_FOUND;
+        if (status == ERROR_SUCCESS) {
+            status = std::filesystem::exists(normalizedPath) ? ERROR_SUCCESS : ERROR_FILE_NOT_FOUND;
+
+            if (status == ERROR_SUCCESS) {
+                // Open (or create) the Vulkan explicit layers registry key
+                HKEY hKey = NULL;
+                status = RegCreateKeyExW(
+                    HKEY_LOCAL_MACHINE,
+                    L"SOFTWARE\\Khronos\\Vulkan\\ExplicitLayers",
+                    0,
+                    NULL,
+                    REG_OPTION_NON_VOLATILE,
+                    KEY_SET_VALUE,
+                    NULL,
+                    &hKey,
+                    NULL
+                );
+
+                if (status == ERROR_SUCCESS) {
+                    // Set the layer manifest path as a registry value with data = 0
+                    DWORD data = 0;
+                    status = RegSetValueExW(hKey, normalizedPath.wstring().c_str(), 0, REG_DWORD, (const BYTE*)&data, sizeof(data));
+                    RegCloseKey(hKey);
+                }
+            }
+        }
+        return status == ERROR_SUCCESS;
+    } catch (...) {
+        return FALSE;
+    }
+}
+
+void unregister_explicit_layer(const std::filesystem::path& layerName)
+{
+    // Open the Vulkan explicit layers registry key
+    HKEY hKey = NULL;
+    auto status = RegOpenKeyExW(
+        HKEY_LOCAL_MACHINE,
+        L"SOFTWARE\\Khronos\\Vulkan\\ExplicitLayers",
+        0,
+        KEY_SET_VALUE | KEY_QUERY_VALUE,
+        &hKey
+    );
+    if (status == ERROR_SUCCESS) {
+
+        // Get the length of the longest value under the key, sans null terminator
+        DWORD maxValueNameLength = 0;
+        status = RegQueryInfoKeyW(hKey, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &maxValueNameLength, NULL, NULL, NULL);
+        ++maxValueNameLength; // Account for null terminator
+
+        // Enumerate registry values and remove any matching the given layer name
+        DWORD index = 0;
+        while (status == ERROR_SUCCESS) {
+            auto valueNameLength = maxValueNameLength;
+            std::wstring valueName(valueNameLength, L'\0');
+            status = RegEnumValueW(hKey, index, valueName.data(), &valueNameLength, NULL, NULL, NULL, NULL);
+            valueName.resize(valueNameLength); // Remove excess null terminators
+            if (status == ERROR_SUCCESS && std::filesystem::path(valueName).stem() == layerName.stem()) {
+                status = RegDeleteValueW(hKey, valueName.c_str());
+                // Don't increment index since the current item was removed
+                continue;
+            }
+            ++index;
+        }
+        RegCloseKey(hKey);
+    }
+}
+
 std::string get_win32_error_str(DWORD errorCode)
 {
     std::string errorStr = "Win32 [" + std::to_string(errorCode) + "]";
@@ -573,6 +320,7 @@ std::string get_win32_error_str(DWORD errorCode)
     LocalFree(pErrorStr);
     return errorStr;
 }
+
 #endif // GVK_PLATFORM_WINDOWS
 
 } // namespace gvk

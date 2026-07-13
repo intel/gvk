@@ -37,9 +37,22 @@ class PipelinesWindow final
 {
 public:
     PipelinesWindow(Window::Manager& windowManager);
+    static void set_selected_pipeline(GuiInfo& guiInfo, const gvk::HandleId<VkDevice, VkPipeline>& pipeline);
+    static void update_experiment(GuiInfo& guiInfo, const PipelineInfo& pipelineInfo);
 
 protected:
+    void on_launch(GuiInfo& guiInfo) override final;
+    void on_update(GuiInfo& guiInfo) override final;
     void on_gui(GuiInfo& guiInfo) override final;
+
+private:
+    enum Mode
+    {
+        Submit,
+        Present,
+    };
+    Mode mMode{ Mode::Submit };
+    bool mActive{ true };
 };
 
 } // namespace gui

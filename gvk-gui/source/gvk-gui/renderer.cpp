@@ -93,7 +93,7 @@ VkResult Renderer::create(const Device& device, VkQueue vkQueue, VkCommandBuffer
 #endif
         reference->mDevice = device;
         gvk_result(reference->mpImGuiContext ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-        ImGui::GetIO().BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
+        ImGui::GetIO().BackendFlags |= ImGuiBackendFlags_HasMouseCursors | ImGuiBackendFlags_RendererHasVtxOffset;
         gvk_result(pRenderer->create_pipeline(renderPass, pAllocator));
         gvk_result(pRenderer->create_image_view_and_sampler(vkQueue, vkCommandBuffer, pAllocator));
         gvk_result(pRenderer->allocate_and_update_descriptor_set(pAllocator));
@@ -259,7 +259,11 @@ void Renderer::begin_gui(const BeginInfo& beginInfo)
         imGuiIo.AddKeyEvent(ImGuiMod_Ctrl, beginInfo.pInput->keyboard.down(system::Key::LeftControl) || beginInfo.pInput->keyboard.down(system::Key::RightControl));
         imGuiIo.AddKeyEvent(ImGuiMod_Shift, beginInfo.pInput->keyboard.down(system::Key::LeftShift) || beginInfo.pInput->keyboard.down(system::Key::RightShift));
         imGuiIo.AddKeyEvent(ImGuiMod_Alt, beginInfo.pInput->keyboard.down(system::Key::LeftAlt) || beginInfo.pInput->keyboard.down(system::Key::RightAlt));
+#if 0
+        //BANDAID FIX FOR CTRL+X - ImGuiMod_Super is set whenever Ctrl+X shortcut is used, because Key_Super press is detected during Ctrl+X for some wild unknown reason.
+        //As we have no planned use for the super keymod (win key on windows), this is disabled. NOTE: This disables the super keymod, but Key_Super press/down/release still works.
         imGuiIo.AddKeyEvent(ImGuiMod_Super, beginInfo.pInput->keyboard.down(system::Key::LeftWindow) || beginInfo.pInput->keyboard.down(system::Key::RightWindow));
+#endif
         add_key_event(*beginInfo.pInput, ImGuiKey_None);
         add_key_event(*beginInfo.pInput, ImGuiKey_Tab);
         add_key_event(*beginInfo.pInput, ImGuiKey_LeftArrow);

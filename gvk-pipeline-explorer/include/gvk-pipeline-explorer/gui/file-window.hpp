@@ -46,7 +46,7 @@ class FileWindow final
     : public Window
 {
 public:
-    FileWindow(Window::Manager& windowManager, const std::string& name, const std::filesystem::path& filePath);
+    FileWindow(Window::Manager& windowManager, const std::string& name, const std::filesystem::path& filePath, const gvk::HandleId<VkDevice, VkPipeline>& pipeline);
     static std::string get_name(const std::filesystem::path& filePath);
 
 protected:
@@ -57,6 +57,8 @@ protected:
 private:
     std::filesystem::path mFilePath;
     TextEditor mTextEditor;
+    gvk::HandleId<VkDevice, VkPipeline> mPipeline;
+    std::string mPipelineLabel;
 };
 
 } // namespace gui

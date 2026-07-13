@@ -60,3 +60,31 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-command-structures.hpp"
 
 #endif
+
+namespace gvk {
+
+template <>
+inline const GvkPipelineExplorerTimelineQueryInterval& get_default<GvkPipelineExplorerTimelineQueryInterval>()
+{
+    static const GvkPipelineExplorerTimelineQueryInterval DefaultPipelineExplorerTimelineQueryInterval {
+        /* .mode       = */ GVK_PIPELINE_EXPLORER_QUERY_MODE_TOGGLE,
+        /* .delimiter  = */ GVK_COMMAND_STRUCTURE_TYPE_QUEUE_SUBMIT,
+        /* .count      = */ 60,
+        /* .durationMS = */ 1000.0,
+        /* .toggle     = */ VK_TRUE,
+    };
+    return DefaultPipelineExplorerTimelineQueryInterval;
+}
+
+template <>
+inline const GvkPipelineExplorerQueryRequestInfo& get_default<GvkPipelineExplorerQueryRequestInfo>()
+{
+    static const GvkPipelineExplorerQueryRequestInfo DefaultPipelineExplorerQueryRequestInfo {
+        /* .sType       = */ gvk::get_stype<GvkPipelineExplorerQueryRequestInfo>(),
+        /* .pReportPath = */ nullptr,
+        /* .interval    = */ gvk::get_default<GvkPipelineExplorerTimelineQueryInterval>(),
+    };
+    return DefaultPipelineExplorerQueryRequestInfo;
+}
+
+} // namespace gvk

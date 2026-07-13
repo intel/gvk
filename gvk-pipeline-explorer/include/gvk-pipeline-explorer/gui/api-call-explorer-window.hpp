@@ -40,6 +40,7 @@ public:
     ~ApiCallExplorerWindow() override final;
 
 protected:
+    void on_update(GuiInfo& guiInfo) override final;
     void on_gui(GuiInfo& guiInfo) override final;
 };
 

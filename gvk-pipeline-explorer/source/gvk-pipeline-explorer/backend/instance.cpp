@@ -41,71 +41,93 @@ VkResult PipelineExplorer::execute_vkCreateInstance(const VkInstanceCreateInfo* 
 {
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 
-    // Get path to this layer .dll
-    HMODULE hModule = NULL;
-    const size_t CharBufferSize = 16384;
-    std::array<wchar_t, CharBufferSize> wcharBuffer{ };
-    if (pipeline_explorer::get_this_module_handle(&hModule)) {
-        GetModuleFileNameW(hModule, wcharBuffer.data(), (DWORD)wcharBuffer.size());
-    }
-    auto layerPath = wcharBuffer[0] ? wcharBuffer.data() : std::filesystem::path();
+    // Get layer path
+    std::filesystem::path layerPath;
+    (void)gvk::get_this_module_path(&layerPath);
 
-    // Get application name
-    static std::array<char, CharBufferSize> charBuffer;
-    if (GetProcessImageFileName(GetCurrentProcess(), charBuffer.data(), (DWORD)charBuffer.size())) {
-        applicationName = PathFindFileName(charBuffer.data());
-        applicationName = std::filesystem::path(applicationName).replace_extension().string();
-        targetApplicationName = applicationName;
-    }
+    // Get process name
+    std::filesystem::path processName;
+    (void)gvk::get_this_process_name(&processName);
 
-    // Get default workspacePath unconditionally
-    PWSTR pDocumentsPath = NULL;
-    auto hResult = SHGetKnownFolderPath(FOLDERID_Documents, 0, nullptr, &pDocumentsPath);
-    auto target = targetApplicationName + "-pipeline-explorer";
-    workspacePath = (SUCCEEDED(hResult) && pDocumentsPath) ? std::filesystem::path(pDocumentsPath) / "GPA" / target : target;
-    CoTaskMemFree(pDocumentsPath);
+    // Get frontend configuration from environment
+    mHeadless = gvk::get_env_var_true("GVK_PIPELINE_EXPLORER_HEADLESS");
+    mReportPath = gvk::get_env_var("GVK_PIPELINE_EXPLORER_REPORT_PATH");
+    #if 0
+    // TODO : GVK_PIPELINE_EXPLORER_REPORT_NAME
+    std::filesystem::create_directories(mReportPath.root_directory());
+    #endif
 
-    // Use workspacePath provided via environment if available
-    if (!gvk::get_env_var("GVK_PIPELINE_EXPLORER_WORKSPACE").empty()) {
-        workspacePath = gvk::get_env_var("GVK_PIPELINE_EXPLORER_WORKSPACE");
-    }
+    if (!mHeadless) {
 
-    // Get target
-    if (!gvk::get_env_var("GVK_PIPELINE_EXPLORER_TARGET").empty()) {
-        targetApplicationName = gvk::get_env_var("GVK_PIPELINE_EXPLORER_TARGET");
-    }
+        // Set target application name
+        targetApplicationName = processName.stem().string();
 
-    // Get auto query
-    autoQuery = !gvk::get_env_var("GVK_PIPELINE_EXPLORER_AUTO_QUERY").empty();
-    if (autoQuery) {
-        (void)timestampQueryManager.initialize_auto_query();
-        toolCallbackInfo.pfnPreProcessRange = gvk::pipeline_explorer::Tool::pre_process_range;
-        toolCallbackInfo.pfnPreProcessCommandBuffers = gvk::pipeline_explorer::Tool::pre_process_command_buffers;
-        toolCallbackInfo.pfnPreProcessCmd = gvk::pipeline_explorer::Tool::pre_process_cmd;
-        toolCallbackInfo.pfnPostProcessCmd = gvk::pipeline_explorer::Tool::post_process_cmd;
-        toolCallbackInfo.pfnPostProcessCommandBuffers = gvk::pipeline_explorer::Tool::post_process_command_buffers;
-        toolCallbackInfo.pfnPreProcessQueueSubmission = gvk::pipeline_explorer::Tool::pre_process_queue_submission;
-        toolCallbackInfo.pfnPostProcessQueueSubmission = gvk::pipeline_explorer::Tool::post_process_queue_submission;
-        toolCallbackInfo.pfnPostProcessRange = gvk::pipeline_explorer::Tool::post_process_range;
-        toolCallbackInfo.pUserData = &timestampQueryManager;
-    }
+        // Get default workspacePath
+        PWSTR pDocumentsPath = NULL;
+        auto hResult = SHGetKnownFolderPath(FOLDERID_Documents, 0, nullptr, &pDocumentsPath);
+        auto target = targetApplicationName + "-pipeline-explorer";
+        workspacePath = (SUCCEEDED(hResult) && pDocumentsPath) ? std::filesystem::path(pDocumentsPath) / "GPA" / target : target;
+        CoTaskMemFree(pDocumentsPath);
 
-    // Wait for debugger
-    if (!gvk::get_env_var("GVK_PIPELINE_EXPLORER_WAIT_FOR_DEBUGGER").empty()) {
-        MessageBox(0, (layerPath.string() + "\n\n" + applicationName).c_str(), "Attach Debugger Now", MB_OK);
-    }
+        // Use workspacePath provided via environment if available
+        if (!gvk::get_env_var("GVK_PIPELINE_EXPLORER_WORKSPACE").empty()) {
+            workspacePath = gvk::get_env_var("GVK_PIPELINE_EXPLORER_WORKSPACE");
+        }
 
-    // The frontend sets GVK_PIPELINE_EXPLORER_GUI_PID before launching the tooled
-    //  app, so if it's not set it indicates that the layer was loaded without the
-    //  GUI so the GUI should be launched; this supports the VTune plugin use-case
-    // NOTE : It may be useful to load the layer with no GUI at all in some cases
-    //  (ie. automated test scenarios) so this logic will need to be revisited
-    if (gvk::get_env_var("GVK_PIPELINE_EXPLORER_GUI_PID").empty()) {
-        auto vkResult = launch_gui(layerPath);
-        if (vkResult != VK_SUCCESS) {
-            return vkResult;
+        // Get target
+        if (!gvk::get_env_var("GVK_PIPELINE_EXPLORER_TARGET").empty()) {
+            targetApplicationName = gvk::get_env_var("GVK_PIPELINE_EXPLORER_TARGET");
+        }
+
+#if 0
+        // Get auto query
+        autoQuery = !gvk::get_env_var("GVK_PIPELINE_EXPLORER_AUTO_QUERY").empty();
+        if (autoQuery) {
+            (void)mTimestampQueryManager.initialize_auto_query();
+#if 0
+            toolCallbackInfo.pfnPreProcessRange = gvk::pipeline_explorer::Tool::pre_process_range;
+            toolCallbackInfo.pfnPreProcessCommandBuffers = gvk::pipeline_explorer::Tool::pre_process_command_buffers;
+            toolCallbackInfo.pfnPreProcessCmd = gvk::pipeline_explorer::Tool::pre_process_cmd;
+            toolCallbackInfo.pfnPostProcessCmd = gvk::pipeline_explorer::Tool::post_process_cmd;
+            toolCallbackInfo.pfnPostProcessCommandBuffers = gvk::pipeline_explorer::Tool::post_process_command_buffers;
+            toolCallbackInfo.pfnPreProcessQueueSubmission = gvk::pipeline_explorer::Tool::pre_process_queue_submission;
+            toolCallbackInfo.pfnPostProcessQueueSubmission = gvk::pipeline_explorer::Tool::post_process_queue_submission;
+            toolCallbackInfo.pfnPostProcessRange = gvk::pipeline_explorer::Tool::post_process_range;
+            toolCallbackInfo.pUserData = &timestampQueryManager;
+#else
+            mTimestampQueryManager.submit_request("", { });
+#endif
+        }
+#endif
+
+        // The frontend sets GVK_PIPELINE_EXPLORER_GUI_PID before launching the tooled
+        //  app, so if it's not set it indicates that the layer was loaded without the
+        //  GUI so the GUI should be launched; this supports the VTune plugin use-case
+        // NOTE : It may be useful to load the layer with no GUI at all in some cases
+        //  (ie. automated test scenarios) so this logic will need to be revisited
+        if (gvk::get_env_var("GVK_PIPELINE_EXPLORER_GUI_PID").empty()) {
+            auto vkResult = launch_gui(layerPath);
+            if (vkResult != VK_SUCCESS) {
+                return vkResult;
+            }
         }
     }
+
+#ifdef GVK_PLATFORM_WINDOWS
+    // Connect to the named pipe server in the frontend.
+    // The pipe name is a plain string envvar so survives any intermediate script launchers.
+    auto ipcPipeName = gvk::get_env_var("GVK_PIPELINE_EXPLORER_IPC_PIPE_NAME");
+    if (!ipcPipeName.empty()) {
+        gvk::NamedPipe::ClientCreateInfo clientCreateInfo{ };
+        clientCreateInfo.pName = ipcPipeName.c_str();
+        if (gvk::NamedPipe::connect_client(&clientCreateInfo, &mIpcPipe)) {
+            auto h = mIpcPipe.get_handle();
+            mIpcMessenger.set_read_pipe(h);
+            mIpcMessenger.set_write_pipe(h);
+            start_ipc_thread();
+        }
+    }
+#endif // GVK_PLATFORM_WINDOWS
 
 #endif // VK_USE_PLATFORM_WIN32_KHR
 
@@ -113,15 +135,16 @@ VkResult PipelineExplorer::execute_vkCreateInstance(const VkInstanceCreateInfo* 
 
         // Prepare layer and extension collections with app values
         auto instanceCreateInfo = *pCreateInfo;
-        pipeline_explorer::LayerCollection layers;
-        pipeline_explorer::ExtensionCollection extensions;
+        gvk::StringArrayIndexMap layers;
+        gvk::StringArrayIndexMap extensions;
         layers.add(pCreateInfo->enabledLayerCount, pCreateInfo->ppEnabledLayerNames);
         extensions.add(pCreateInfo->enabledExtensionCount, pCreateInfo->ppEnabledExtensionNames);
 
         // TODO : Plumb version info to SPIRV logic to determine min/max SPIRV support
-        auto versionMajor = VK_VERSION_MAJOR(pCreateInfo->pApplicationInfo->apiVersion);
-        auto versionMinor = VK_VERSION_MINOR(pCreateInfo->pApplicationInfo->apiVersion);
-        auto versionPatch = VK_VERSION_PATCH(pCreateInfo->pApplicationInfo->apiVersion);
+        auto apiVersion = pCreateInfo->pApplicationInfo ? pCreateInfo->pApplicationInfo->apiVersion : VK_API_VERSION_1_0;
+        auto versionMajor = VK_VERSION_MAJOR(apiVersion);
+        auto versionMinor = VK_VERSION_MINOR(apiVersion);
+        auto versionPatch = VK_VERSION_PATCH(apiVersion);
         (void)versionMajor;
         (void)versionMinor;
         (void)versionPatch;
@@ -135,11 +158,25 @@ VkResult PipelineExplorer::execute_vkCreateInstance(const VkInstanceCreateInfo* 
         gvk::DispatchTable gvkDispatchTable{};
         gvk::DispatchTable::load_global_entry_points(&gvkDispatchTable);
         auto instanceLayerProperties = pipeline_explorer::get_instance_layer_properties(gvkDispatchTable.gvkEnumerateInstanceLayerProperties);
-        for (auto const& invalidLayer : layers.validate((uint32_t)instanceLayerProperties.size(), instanceLayerProperties.data())) {
+        for (auto const& invalidLayer : layers.validate(
+            (uint32_t)instanceLayerProperties.size(),
+            instanceLayerProperties.data(),
+            [](const VkLayerProperties& layerProperties)
+            {
+                return layerProperties.layerName;
+            }
+        )) {
             (void)invalidLayer;
         }
         auto instanceExtensionProperties = pipeline_explorer::get_instance_extension_properties(gvkDispatchTable.gvkEnumerateInstanceExtensionProperties);
-        for (auto const& invalidExtension : extensions.validate((uint32_t)instanceExtensionProperties.size(), instanceExtensionProperties.data())) {
+        for (auto const& invalidExtension : extensions.validate(
+            (uint32_t)instanceExtensionProperties.size(),
+            instanceExtensionProperties.data(),
+            [](const VkExtensionProperties& extensionProperties)
+            {
+                return extensionProperties.extensionName;
+            }
+        )) {
             (void)invalidExtension;
         }
 
@@ -180,13 +217,13 @@ VkResult PipelineExplorer::execute_vkCreateInstance(const VkInstanceCreateInfo* 
         if (!vkLayer) {
 
             // Create unmanaged instance
-            gvk_result(gvk::Instance::create_unmanaged(pCreateInfo, nullptr, &dispatchTable, *pInstance, &gvkInstance));
+            gvk_result(gvk::Instance::create_unmanaged(pCreateInfo, nullptr, &dispatchTable, *pInstance, &mGvkInstance));
 
             // Setup instance info
             instanceInfo = pipeline_explorer::InstanceInfo(gvk::newref, *pInstance);
             instanceInfo->vkHandle = *pInstance;
             instanceInfo->instanceCreateInfo = *pCreateInfo;
-            for (const auto& physicalDevice : gvkInstance.get<gvk::PhysicalDevices>()) {
+            for (const auto& physicalDevice : mGvkInstance.get<gvk::PhysicalDevices>()) {
                 pipeline_explorer::PhysicalDeviceInfo physicalDeviceInfo(gvk::newref, physicalDevice);
                 physicalDeviceInfo->instanceInfo = instanceInfo;
                 physicalDeviceInfo->vkHandle = physicalDevice;
@@ -222,6 +259,21 @@ VkResult PipelineExplorer::post_execute_vkCreateInstance(const VkInstanceCreateI
 {
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
 
+        // HACK :
+        // enable_timeline_query();
+#if 0
+        gvk::pipeline_explorer::Tool::on_reset = [&]() { toolCallbackInfo = { }; };
+#endif
+
+        // TODO : Documentation
+        mToolDispatchManager.push_back(&mCommandCollectionRequestManager);
+        mToolDispatchManager.push_back(&mTimelineQueryManager);
+        mToolDispatchManager.push_back(&mPipelineStatisticsQueryManager);
+        mToolDispatchManager.push_back(&mPerformanceQueryManager);
+
+        // TODO : Pull configuration from environment and setup tools based on that configuration
+        mTimelineQueryManager.enable("", &mIpcMessenger);
+
         // Initialize plugins
         // TODO : Plugin initialization needs to be significantly reworked
         GvkPipelineExplorerPluginInitializeInfo pluginInitializeInfo{ };
@@ -246,13 +298,13 @@ VkResult PipelineExplorer::post_execute_vkCreateInstance(const VkInstanceCreateI
         if (vkLayer) {
 
             // Create unmanaged instance
-            gvk_result(gvk::Instance::create_unmanaged(pCreateInfo, nullptr, &dispatchTable, *pInstance, &gvkInstance));
+            gvk_result(gvk::Instance::create_unmanaged(pCreateInfo, nullptr, &dispatchTable, *pInstance, &mGvkInstance));
 
             // Setup instance info
             instanceInfo = pipeline_explorer::InstanceInfo(gvk::newref, *pInstance);
             instanceInfo->vkHandle = *pInstance;
             instanceInfo->instanceCreateInfo = *pCreateInfo;
-            for (const auto& physicalDevice : gvkInstance.get<gvk::PhysicalDevices>()) {
+            for (const auto& physicalDevice : mGvkInstance.get<gvk::PhysicalDevices>()) {
                 pipeline_explorer::PhysicalDeviceInfo physicalDeviceInfo(gvk::newref, physicalDevice);
                 physicalDeviceInfo->instanceInfo = instanceInfo;
                 physicalDeviceInfo->vkHandle = physicalDevice;
@@ -280,18 +332,27 @@ VkResult PipelineExplorer::post_execute_vkCreateInstance(const VkInstanceCreateI
 
 void PipelineExplorer::execute_vkDestroyInstance(VkInstance instance, const VkAllocationCallbacks* pAllocator)
 {
+#if 0
+    // TODO : Documentation
+    // TODO : Need to ensure all final messages are processed
+    mToolDispatchManager.disable();
+#endif
+
 #ifdef VK_USE_PLATFORM_WIN32_KHR
     if (guiProcessInformation.hProcess) {
         TerminateProcess(guiProcessInformation.hProcess, 0);
         guiProcessInformation = { };
     }
 #endif // VK_USE_PLATFORM_WIN32_KHR
-    gvkInstance = gvk::nullref;
+    mGvkInstance = gvk::nullref;
     if (instanceInfo) {
         instanceInfo->physicalDevices.clear();
         instanceInfo = gvk::nullref;
     }
     BasicPipelineExplorer::execute_vkDestroyInstance(instance, pAllocator);
+
+    // TODO : Documentation
+    stop_ipc_thread();
 }
 
 } // namespace gvk

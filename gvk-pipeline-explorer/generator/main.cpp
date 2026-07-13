@@ -50,6 +50,37 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     std::vector<gvk::xml::Structure> structures;
     {
         gvk::xml::Structure structure;
+        structure.name = "GvkPipelineExplorerDelimiterQueryConfiguration";
+        add_stype_member_to_structure(structure);
+        structure.members.push_back(gvk::cppgen::create_parameter("GvkCommandStructureType", "delimiter"));
+        structure.members.push_back(gvk::cppgen::create_parameter("uint32_t", "warmupCount"));
+        structure.members.push_back(gvk::cppgen::create_parameter("uint32_t", "queryCount"));
+        structures.push_back(structure);
+    }
+    {
+        gvk::xml::Structure structure;
+        structure.name = "GvkPipelineExplorerDurationQueryConfiguration";
+        add_stype_member_to_structure(structure);
+        structure.members.push_back(gvk::cppgen::create_parameter("float", "warmupDuration"));
+        structure.members.push_back(gvk::cppgen::create_parameter("float", "queryDuration"));
+        structures.push_back(structure);
+    }
+    {
+        gvk::xml::Structure structure;
+        structure.name = "GvkPipelineExplorerToggleQueryConfiguration";
+        add_stype_member_to_structure(structure);
+        structures.push_back(structure);
+    }
+    {
+        gvk::xml::Structure structure;
+        structure.name = "GvkPipelineExplorerQueryConfiguration";
+        add_stype_member_to_structure(structure);
+        structure.members.push_back(gvk::cppgen::create_const_string_parameter("pReportPath"));
+        structure.members.push_back(gvk::cppgen::create_parameter("GvkPipelineExplorerQueryMode", "mode"));
+        structures.push_back(structure);
+    }
+    {
+        gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerMetricId";
         structure.members.push_back(gvk::cppgen::create_parameter("uint64_t", "x"));
         structure.members.push_back(gvk::cppgen::create_parameter("uint64_t", "y"));
@@ -62,7 +93,6 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
         structure.name = "GvkPipelineExplorerRequestInfo";
         add_stype_member_to_structure(structure);
         structure.members.push_back(gvk::cppgen::create_parameter("VkBool32", "refreshActivePipelines"));
-        structure.members.push_back(gvk::cppgen::create_parameter("VkBool32", "refreshAvailableMetrics"));
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pReportPath"));
         structure.members.push_back(gvk::cppgen::create_parameter("VkDevice", "device"));
         structure.members.push_back(gvk::cppgen::create_parameter("VkPipeline", "sampleMetricsPipeline"));
@@ -82,6 +112,24 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
         gvk::cppgen::add_array_members_to_structure("GvkPipelineExplorerMetricId", "sampleMetricIdCount", "pSampleMetricIds", structure);
         structure.members.push_back(gvk::cppgen::create_parameter("VkBool32", "getApiCalls"));
         structure.members.push_back(gvk::cppgen::create_parameter("VkBool32", "getGpuCalls"));
+        structures.push_back(structure);
+    }
+    {
+        gvk::xml::Structure structure;
+        structure.name = "GvkPipelineExplorerPipelineRequestInfo";
+        add_stype_member_to_structure(structure);
+        structure.members.push_back(gvk::cppgen::create_parameter("VkDevice", "device"));
+        structure.members.push_back(gvk::cppgen::create_const_string_parameter("pDecompilePipelinePath"));
+        structure.members.push_back(gvk::cppgen::create_parameter("VkPipeline", "decompilePipeline"));
+        structure.members.push_back(gvk::cppgen::create_const_string_parameter("pRecompilePipelinePath"));
+        structure.members.push_back(gvk::cppgen::create_parameter("VkPipeline", "recompilePipeline"));
+        structure.members.push_back(gvk::cppgen::create_parameter("VkBool32", "experimentEnabled"));
+        structure.members.push_back(gvk::cppgen::create_const_string_parameter("pExperimentPipelinePath"));
+        structure.members.push_back(gvk::cppgen::create_parameter("VkPipeline", "experimentPipeline"));
+        structure.members.push_back(gvk::cppgen::create_parameter("VkBool32", "highlightEnabled"));
+        gvk::cppgen::add_static_array_member_to_structure("float", "4", "highlightColor", structure);
+        structure.members.push_back(gvk::cppgen::create_const_string_parameter("pHighlightPipelinePath"));
+        structure.members.push_back(gvk::cppgen::create_parameter("VkPipeline", "highlightPipeline"));
         structures.push_back(structure);
     }
     {
@@ -228,6 +276,72 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     }
     {
         gvk::xml::Structure structure;
+        structure.name = "GvkPipelineExplorerTimelineCommandInfo";
+        add_stype_member_to_structure(structure);
+        structure.members.push_back(gvk::cppgen::create_parameter("uint64_t", "beginNs"));
+        structure.members.push_back(gvk::cppgen::create_parameter("uint64_t", "endNs"));
+        structure.members.push_back(gvk::cppgen::create_parameter("uint64_t", "threadId"));
+        structure.members.push_back(gvk::cppgen::create_parameter("VkQueue", "queue"));
+        structure.members.push_back(gvk::cppgen::create_parameter("VkPipeline", "pipeline"));
+        structures.push_back(structure);
+    }
+    {
+        gvk::xml::Structure structure;
+        structure.name = "GvkPipelineExplorerTimelineQueryInterval";
+        structure.members.push_back(gvk::cppgen::create_parameter("GvkPipelineExplorerQueryMode", "mode"));
+        structure.members.push_back(gvk::cppgen::create_parameter("GvkCommandStructureType", "delimiter"));
+        structure.members.push_back(gvk::cppgen::create_parameter("uint64_t", "count"));
+        structure.members.push_back(gvk::cppgen::create_parameter("double", "durationMS"));
+        structure.members.push_back(gvk::cppgen::create_parameter("VkBool32", "toggle"));
+        structures.push_back(structure);
+    }
+
+    {
+        gvk::xml::Structure structure;
+        structure.name = "GvkPipelineExplorerQueryRequestInfo";
+        add_stype_member_to_structure(structure);
+        structure.members.push_back(gvk::cppgen::create_const_string_parameter("pReportPath"));
+        structure.members.push_back(gvk::cppgen::create_parameter("GvkPipelineExplorerTimelineQueryInterval", "interval"));
+        structures.push_back(structure);
+    }
+
+    {
+        gvk::xml::Structure structure;
+        structure.name = "GvkPipelineExplorerTimelineQueryRequestInfo";
+        add_stype_member_to_structure(structure);
+        structure.members.push_back(gvk::cppgen::create_const_string_parameter("pReportPath"));
+        structure.members.push_back(gvk::cppgen::create_parameter("VkDevice", "device"));
+        gvk::cppgen::add_array_members_to_structure("VkPipeline", "pipelineCount", "pPipelines", structure);
+        structure.members.push_back(gvk::cppgen::create_parameter("GvkPipelineExplorerTimelineQueryInterval", "interval"));
+        structures.push_back(structure);
+    }
+    {
+        gvk::xml::Structure structure;
+        structure.name = "GvkPipelineExplorerTimelineQueryResultInfo";
+        add_stype_member_to_structure(structure);
+        structure.members.push_back(gvk::cppgen::create_const_string_parameter("pName"));
+        structure.members.push_back(gvk::cppgen::create_const_string_parameter("pDate"));
+        structure.members.push_back(gvk::cppgen::create_const_string_parameter("pTime"));
+        structure.members.push_back(gvk::cppgen::create_const_string_parameter("pNote"));
+        structure.members.push_back(gvk::cppgen::create_parameter("VkPhysicalDevice", "physicalDevice"));
+        structure.members.push_back(gvk::cppgen::create_parameter("VkDevice", "device"));
+        structure.members.push_back(gvk::cppgen::create_parameter("float", "timestampPeriod"));
+        structure.members.push_back(gvk::cppgen::create_parameter("uint64_t", "beginNs"));
+        structure.members.push_back(gvk::cppgen::create_parameter("uint64_t", "endNs"));
+
+        // Command info array members are added manually here since the type of the count
+        //  member differs from the typical pattern used in other structures
+        auto commandInfosArrayMembers = gvk::cppgen::get_array_parameters("commandInfoCount", "pCommandInfos", "GvkPipelineExplorerTimelineCommandInfo");
+        commandInfosArrayMembers.first.type = "uint64_t";
+        commandInfosArrayMembers.first.unqualifiedType = "uint64_t";
+        structure.members.push_back(commandInfosArrayMembers.first);
+        structure.members.push_back(commandInfosArrayMembers.second);
+
+        structure.members.push_back(gvk::cppgen::create_parameter("GvkCommandCollection", "commands"));
+        structures.push_back(structure);
+    }
+    {
+        gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerMetricResultInfo";
         add_stype_member_to_structure(structure);
         structure.members.push_back(gvk::cppgen::create_parameter("GvkPipelineExplorerMetricInfo", "metricInfo"));
@@ -367,6 +481,17 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
     }
     {
         gvk::xml::Structure structure;
+        structure.name = "GvkPipelineExplorerPresentInfo";
+        add_stype_member_to_structure(structure);
+        structure.members.push_back(gvk::cppgen::create_parameter("VkPhysicalDevice", "physicalDevice"));
+        structure.members.push_back(gvk::cppgen::create_parameter("VkDevice", "device"));
+        structure.members.push_back(gvk::cppgen::create_parameter("uint64_t", "threadId"));
+        structure.members.push_back(gvk::cppgen::create_parameter("double", "frameDurationNS"));
+        structure.members.push_back(gvk::cppgen::create_parameter("GvkCommandStructureQueuePresentKHR", "command"));
+        structures.push_back(structure);
+    }
+    {
+        gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerPluginInitializeInfo";
         add_stype_member_to_structure(structure);
         structure.members.push_back(gvk::cppgen::create_const_string_parameter("pWorkspace"));
@@ -394,6 +519,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
         structure.members.push_back(gvk::cppgen::create_parameter("PFN_gvkPipelineExplorerToolQueueCallbackEx", "pfnPreProcessQueueSubmission"));
         structure.members.push_back(gvk::cppgen::create_parameter("PFN_gvkPipelineExplorerToolQueueCallbackEx", "pfnPostProcessQueueSubmission"));
         structure.members.push_back(gvk::cppgen::create_parameter("PFN_gvkPipelineExplorerToolCallbackEx", "pfnPostProcessRange"));
+        structure.members.push_back(gvk::cppgen::create_parameter("PFN_gvkDestroyPipelineExplorerPlugin", "pfnDestroyPlugin"));
         structure.members.push_back(gvk::cppgen::create_parameter("void*", "pUserData"));
         structures.push_back(structure);
     }
@@ -424,6 +550,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
         gvk::cppgen::add_array_members_to_structure("VkPerformanceCounterKHR", "counterCount", "pCounters", structure);
         structures.push_back(structure);
     }
+#if 0
     {
         gvk::xml::Structure structure;
         structure.name = "GvkPipelineExplorerToolCallbackInfoEx";
@@ -438,6 +565,7 @@ std::vector<gvk::xml::Structure> get_pipeline_explorer_info_structures()
         structure.members.push_back(gvk::cppgen::create_parameter("void*", "pUserData"));
         structures.push_back(structure);
     }
+#endif
     return structures;
 }
 
@@ -513,6 +641,24 @@ std::vector<gvk::xml::Enumeration> get_pipeline_explorer_info_enumerations()
         enumeration.enumerators.insert(enumerator);
         enumerations.push_back(enumeration);
     }
+    {
+        gvk::xml::Enumeration enumeration;
+        enumeration.name = "GvkPipelineExplorerQueryMode";
+        gvk::xml::Enumerator enumerator;
+        enumerator.name = "GVK_PIPELINE_EXPLORER_QUERY_MODE_DELIMITER";
+        enumerator.value = "0";
+        enumeration.enumerators.insert(enumerator);
+        enumerator.name = "GVK_PIPELINE_EXPLORER_QUERY_MODE_DURATION";
+        enumerator.value = "1";
+        enumeration.enumerators.insert(enumerator);
+        enumerator.name = "GVK_PIPELINE_EXPLORER_QUERY_MODE_TOGGLE";
+        enumerator.value = "2";
+        enumeration.enumerators.insert(enumerator);
+        enumerator.name = "GVK_PIPELINE_EXPLORER_QUERY_MODE_COUNT";
+        enumerator.value = "3";
+        enumeration.enumerators.insert(enumerator);
+        enumerations.push_back(enumeration);
+    }
     return enumerations;
 }
 
@@ -541,6 +687,7 @@ int main(int, const char*[])
             "gvk-structures.hpp",
         };
         apiElements.definitions = {
+            "#define GVK_PIPELINE_EXPLORER_LAYER_NAME \"VK_LAYER_INTEL_gvk_pipeline_explorer\"",
             "#define GVK_PIPELINE_EXPLORER_UUID_SIZE 32",
             "#define GVK_PIPELINE_EXPLORER_METRIC_ID_EXECUTION_COUNT (UINT32_MAX - 0)",
             "#define GVK_PIPELINE_EXPLORER_METRIC_ID_TIMESTAMP_QUERY (UINT32_MAX - 1)",
@@ -559,6 +706,7 @@ int main(int, const char*[])
             "typedef VkResult(VKAPI_PTR* PFN_gvkPipelineExplorerToolCommandBufferCallbackEx)(const GvkPipelineExplorerToolCommandBufferInfoEx* pToolCommandBufferInfo, void* pUserData);",
             "typedef VkResult(VKAPI_PTR* PFN_gvkPipelineExplorerPluginCommandCallback)(const GvkCommandBaseStructure* pCommand, void* pUserData);",
             "typedef VkResult(VKAPI_PTR* PFN_gvkInitializePipelineExplorerPlugin)(const GvkPipelineExplorerPluginInitializeInfo* pInitializeInfo, GvkPipelineExplorerPluginInfo* pPluginInfo);",
+            "typedef void(VKAPI_PTR* PFN_gvkDestroyPipelineExplorerPlugin)(void* pUserData);",
             "typedef VkResult(VKAPI_PTR* PFN_gvkGetPipelineExplorerPluginCounterInfo)(GvkPipelineExplorerPluginCounterInfo* pCounterInfo, void* pUserData);",
             "typedef VkResult(VKAPI_PTR* PFN_gvkGetPipelineExplorerPluginStatus)(void* pUserData);",
             "typedef VkResult(VKAPI_PTR* PFN_gvkSubmitPipelineExplorerPluginRequest)(const GvkPipelineExplorerPerformanceQueryRequestInfo* pRequest, void* pUserData);",

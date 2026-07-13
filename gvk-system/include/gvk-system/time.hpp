@@ -121,7 +121,7 @@ struct DateTime final
 {
 public:
     /**
-    Enumerates calender months
+    Enumerates calendar months
     */
     enum class Month
     {
@@ -140,7 +140,7 @@ public:
     };
 
     /**
-    Enumerates calender days
+    Enumerates calendar days
     */
     enum class Day
     {
@@ -204,9 +204,9 @@ public:
     }
 
     int year { };          //!< This DateTime object's year
-    Month month { };       //!< This DateTime object's calender month
+    Month month { };       //!< This DateTime object's calendar month
     int dayOfTheMonth { }; //!< This DateTime object's numeric day of the month
-    Day dayOfTheWeek { };  //!< This DateTime object's calender day of the week
+    Day dayOfTheWeek { };  //!< This DateTime object's calendar day of the week
     int hour { };          //!< This DateTime object's hour
     int minute { };        //!< This DateTime object's minute
     int second { };        //!< This DateTime object's second

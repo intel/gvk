@@ -33,7 +33,7 @@ int main(int, const char*[])
     //  value.  Whenever gvk_result() is called it will update 'gvkResult' with the
     //  provided value.  When a VkResult besides VK_SUCCESS is encountered, control
     //  will break from the gvk_result_scope...all normal stack unwinding rules (ie.
-    //  destructors and desctructor order) apply...in debug configurations, it will
+    //  destructors and destructor order) apply...in debug configurations, it will
     //  simply assert()...
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
 
@@ -132,7 +132,7 @@ int main(int, const char*[])
             // NOTE : VK_SUBOPTIMAL_KHR isn't an error, so we're not using gvk_result()
             //  because we don't want to bail when the SurfaceKHR and SwapchainKHR are
             //  no longer a perfect match.  We can still render to the SwapchainKHR in
-            //  this case.  After presentation, the SwapchainKHR and assoicated resources
+            //  this case.  After presentation, the SwapchainKHR and associated resources
             //  will be recreated.
             gvk::wsi::AcquiredImageInfo acquiredImageInfo{ };
             gvk::RenderTarget acquiredImageRenderTarget{ };
@@ -187,7 +187,7 @@ int main(int, const char*[])
 
         // gvk::Device calls vkDeviceWaitIdle() in its dtor, but we need to make sure
         //  that we don't fall out of this scope and start running dtors for other
-        //  objects until they're done being used so we call vkDeviceWwaitidle() before
+        //  objects until they're done being used so we call vkDeviceWaitIdle() before
         //  everything is torn down...
         gvk_result(vkDeviceWaitIdle(context.get<gvk::Devices>()[0]));
     } gvk_result_scope_end;

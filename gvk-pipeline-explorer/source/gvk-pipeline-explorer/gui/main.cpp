@@ -34,6 +34,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-gui.hpp"
 #include "gvk-handles.hpp"
 #include "gvk-pipeline-explorer.hpp"
+#include "gvk-runtime.hpp"
 #include "gvk-structures.hpp"
 #include "gvk-system.hpp"
 
@@ -65,17 +66,10 @@ namespace gui {
 
 inline void process_outgoing_messages(GuiInfo& guiInfo)
 {
-    // Automatically send request to refresh available metrics on startup
-    static bool sOnce;
-    if (!sOnce) {
-        sOnce = true;
-        guiInfo.requestInfo.refreshAvailableMetrics = true;
-    }
-
     // Set report path
     std::string reportPath;
     if (guiInfo.reportEnabled) {
-        reportPath = (std::filesystem::path(guiInfo.workspaceInfo.workspace) / "reports").string();
+        reportPath = (std::filesystem::path(guiInfo.workspace) / "reports").string();
         guiInfo.requestInfo.pReportPath = reportPath.c_str();
     }
 
@@ -100,7 +94,6 @@ inline void process_outgoing_messages(GuiInfo& guiInfo)
 
     // Submit request
     if (guiInfo.requestInfo.refreshActivePipelines ||
-        guiInfo.requestInfo.refreshAvailableMetrics ||
         guiInfo.requestInfo.getApiCalls ||
         guiInfo.requestInfo.getGpuCalls ||
         (guiInfo.requestInfo.decompilePipeline && guiInfo.requestInfo.pDecompilePipelinePath) ||
@@ -108,7 +101,7 @@ inline void process_outgoing_messages(GuiInfo& guiInfo)
         (guiInfo.requestInfo.experimentPipeline && guiInfo.requestInfo.pExperimentPipelinePath) ||
         (guiInfo.requestInfo.highlightPipeline && guiInfo.requestInfo.pHighlightPipelinePath) ||
         (guiInfo.requestInfo.sampleMetricIdCount && guiInfo.requestInfo.pSampleMetricIds)) {
-        auto vkResult = gvk::write_serialized_structure(std::filesystem::path(guiInfo.workspaceInfo.workspace) / ".data", guiInfo.requestInfo);
+        auto vkResult = gvk::write_serialized_structure(std::filesystem::path(guiInfo.workspace) / ".data", guiInfo.requestInfo);
         if (vkResult == VK_SUCCESS) {
             guiInfo.resultPending = true;
         }
@@ -119,7 +112,6 @@ inline void process_outgoing_messages(GuiInfo& guiInfo)
     guiInfo.requestInfo.pReportPath = nullptr;
     guiInfo.requestInfo.device = VK_NULL_HANDLE;
     guiInfo.requestInfo.refreshActivePipelines = false;
-    guiInfo.requestInfo.refreshAvailableMetrics = false;
     guiInfo.requestInfo.getApiCalls = false;
     guiInfo.requestInfo.getGpuCalls = false;
     guiInfo.requestInfo.sampleMetricsPipeline = VK_NULL_HANDLE;
@@ -139,7 +131,7 @@ inline void process_incoming_messages(GuiInfo& guiInfo)
 {
     // TODO : Rework all query request/result logic
     gvk::Auto<GvkPipelineExplorerResultInfo> resultInfo;
-    switch (gvk::read_serialized_structure(std::filesystem::path(guiInfo.workspaceInfo.workspace) / ".data", resultInfo)) {
+    switch (gvk::read_serialized_structure(std::filesystem::path(guiInfo.workspace) / ".data", resultInfo)) {
     case VK_SUCCESS: {
         guiInfo.resultPending = false;
         for (uint32_t message_i = 0; message_i < resultInfo->messageCount; ++message_i) {
@@ -205,7 +197,7 @@ inline void process_incoming_messages(GuiInfo& guiInfo)
 
     // TODO : Rework all query request/result logic
     gvk::Auto<GvkPipelineExplorerAvailableMetricsInfo> pipelineExplorerAvailableMetricsInfo;
-    switch (gvk::read_serialized_structure(std::filesystem::path(guiInfo.workspaceInfo.workspace) / ".data", pipelineExplorerAvailableMetricsInfo)) {
+    switch (gvk::read_serialized_structure(std::filesystem::path(guiInfo.workspace) / ".data", pipelineExplorerAvailableMetricsInfo)) {
     case VK_SUCCESS: {
         guiInfo.resultPending = false;
         guiInfo.availableMetrics.clear();
@@ -242,7 +234,7 @@ inline void process_incoming_messages(GuiInfo& guiInfo)
 
     // TODO : Rework all query request/result logic
     gvk::Auto<GvkPipelineExplorerPerformanceCounterCollection> pipelineExplorerPerformanceCounterCollection;
-    switch (gvk::read_serialized_structure(std::filesystem::path(guiInfo.workspaceInfo.workspace) / ".data", pipelineExplorerPerformanceCounterCollection)) {
+    switch (gvk::read_serialized_structure(std::filesystem::path(guiInfo.workspace) / ".data", pipelineExplorerPerformanceCounterCollection)) {
     case VK_SUCCESS: {
         guiInfo.resultPending = false;
         guiInfo.performanceCountersInfo.available = pipelineExplorerPerformanceCounterCollection;
@@ -278,12 +270,12 @@ inline void process_incoming_messages(GuiInfo& guiInfo)
 #ifdef WIN32
     // TODO : Rework all query request/result logic
     gvk::Auto<GvkCommandCollection> commandCollection;
-    switch (gvk::read_serialized_structure(std::filesystem::path(guiInfo.workspaceInfo.workspace) / ".data", "GvkApiCommandCollection", commandCollection)) {
+    switch (gvk::read_serialized_structure(std::filesystem::path(guiInfo.workspace) / ".data", "GvkApiCommandCollection", commandCollection)) {
     case VK_SUCCESS: {
         guiInfo.resultPending = false;
-        guiInfo.workspaceInfo.streamInfo.commandCollection = std::move(commandCollection);
-        std::ofstream commandCollectionFile(std::filesystem::path(guiInfo.workspaceInfo.workspace) / "GvkApiCommandCollection.json");
-        commandCollectionFile << gvk::to_string(guiInfo.workspaceInfo.streamInfo.commandCollection, pipeline_explorer::PrinterFlags) << std::endl;
+        guiInfo.commandCollection = std::move(commandCollection);
+        std::ofstream commandCollectionFile(std::filesystem::path(guiInfo.workspace) / "GvkApiCommandCollection.json");
+        commandCollectionFile << gvk::to_string(guiInfo.commandCollection, pipeline_explorer::PrinterFlags) << std::endl;
     } break;
     case VK_INCOMPLETE: {
         // assert(false && "TODO : Error handling");
@@ -296,12 +288,12 @@ inline void process_incoming_messages(GuiInfo& guiInfo)
 
     // TODO : Rework all query request/result logic
     commandCollection.reset();
-    switch (gvk::read_serialized_structure(std::filesystem::path(guiInfo.workspaceInfo.workspace) / ".data", "GvkGpuCommandCollection", commandCollection)) {
+    switch (gvk::read_serialized_structure(std::filesystem::path(guiInfo.workspace) / ".data", "GvkGpuCommandCollection", commandCollection)) {
     case VK_SUCCESS: {
         guiInfo.resultPending = false;
-        guiInfo.workspaceInfo.streamInfo.commandCollection = std::move(commandCollection);
-        std::ofstream commandCollectionFile(std::filesystem::path(guiInfo.workspaceInfo.workspace) / "GvkGpuCommandCollection.json");
-        commandCollectionFile << gvk::to_string(guiInfo.workspaceInfo.streamInfo.commandCollection, pipeline_explorer::PrinterFlags) << std::endl;
+        guiInfo.commandCollection = std::move(commandCollection);
+        std::ofstream commandCollectionFile(std::filesystem::path(guiInfo.workspace) / "GvkGpuCommandCollection.json");
+        commandCollectionFile << gvk::to_string(guiInfo.commandCollection, pipeline_explorer::PrinterFlags) << std::endl;
     } break;
     case VK_INCOMPLETE: {
         // assert(false && "TODO : Error handling");
@@ -318,7 +310,7 @@ inline void process_incoming_messages(GuiInfo& guiInfo)
 
     // TODO : Rework all query request/result logic
     gvk::Auto<GvkPipelineExplorerAutoQueryResultInfo> autoQueryResultInfo;
-    switch (gvk::read_serialized_structure(std::filesystem::path(guiInfo.workspaceInfo.workspace) / ".data", autoQueryResultInfo)) {
+    switch (gvk::read_serialized_structure(std::filesystem::path(guiInfo.workspace) / ".data", autoQueryResultInfo)) {
     case VK_SUCCESS: {
         guiInfo.resultPending = false;
 
@@ -382,71 +374,49 @@ inline void process_incoming_messages(GuiInfo& guiInfo)
     }
 }
 
-inline void load_workspace(GuiInfo& guiInfo)
+inline void process_incoming_messages_ipc(GuiInfo& guiInfo)
 {
     (void)guiInfo;
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-    std::filesystem::path path;
-    if (get_this_module_path(&path)) {
+#ifdef GVK_PLATFORM_WINDOWS
 
-        // TODO : Rework all query request/result logic
-        gvk::Auto<GvkPipelineExplorerGuiInfo> pipelineExplorerGuiInfo;
-        switch (gvk::read_serialized_structure(path.parent_path(), "GvkPipelineExplorerGuiInfo", pipelineExplorerGuiInfo, false)) {
-        case VK_SUCCESS: {
-            guiInfo.windowExtent = pipelineExplorerGuiInfo->extent;
-            guiInfo.windowPosition = pipelineExplorerGuiInfo->position;
-            guiInfo.fontScale = pipelineExplorerGuiInfo->fontScale ? pipelineExplorerGuiInfo->fontScale : 1.0f;
-            if (!guiInfo.cliProvidedWorkspace) {
-                guiInfo.workspaceInfo = pipelineExplorerGuiInfo->workspace;
-                guiInfo.recentWorkspaceInfos.clear();
-                guiInfo.recentWorkspaceInfos.reserve(pipelineExplorerGuiInfo->recentWorkspaceCount);
-                for (uint32_t i = 0; i < pipelineExplorerGuiInfo->recentWorkspaceCount; ++i) {
-                    if (pipelineExplorerGuiInfo->pRecentWorkspaces[i].pLaunch) {
-                        guiInfo.recentWorkspaceInfos.push_back(pipelineExplorerGuiInfo->pRecentWorkspaces[i]);
-                    }
+    // Handle named pipe connect / disconnect
+    if (guiInfo.ipcPipe) {
+        if (guiInfo.ipcPipe.is_accepted()) {
+            // New layer instance connected — configure the messenger
+            auto h = guiInfo.ipcPipe.get_handle();
+            guiInfo.ipcMessenger.set_read_pipe(h);
+            guiInfo.ipcMessenger.set_write_pipe(h);
+            for (const auto& message : guiInfo.startupIpcMessages) {
+                guiInfo.ipcMessenger.write(message.text.c_str(), (uint32_t)message.data.size(), message.data.data());
+            }
+        } else if (guiInfo.ipcMessenger.get_read_pipe()) {
+            // Check if the current client has disconnected
+            DWORD bytes = 0;
+            if (!PeekNamedPipe(guiInfo.ipcMessenger.get_read_pipe(), nullptr, 0, nullptr, &bytes, nullptr)) {
+                auto error = GetLastError();
+                if (error == ERROR_BROKEN_PIPE || error == ERROR_PIPE_NOT_CONNECTED) {
+                    guiInfo.ipcMessenger.reset();
+                    guiInfo.ipcPipe.disconnect();
+                    guiInfo.ipcPipe.begin_accept();
                 }
             }
-        } break;
-        case VK_INCOMPLETE: {
-            // assert(false && "TODO : Error handling");
-        } break;
-        case VK_NOT_READY:
-        default: {
-            // NOOP : No file to process
-        } break;
         }
     }
-#endif // VK_USE_PLATFORM_WIN32_KHR
-}
 
-inline void save_workspace(GuiInfo& guiInfo)
-{
-    (void)guiInfo;
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-    guiInfo.saveRequired = false;
-    std::filesystem::path path;
-    if (get_this_module_path(&path)) {
-        auto pipelineExplorerGuiInfo = gvk::get_default<GvkPipelineExplorerGuiInfo>();
-        pipelineExplorerGuiInfo.extent = guiInfo.windowExtent;
-        pipelineExplorerGuiInfo.position = guiInfo.windowPosition;
-        pipelineExplorerGuiInfo.fontScale = guiInfo.fontScale;
-        pipelineExplorerGuiInfo.workspace = guiInfo.workspaceInfo;
-        std::vector<GvkPipelineExplorerWorkspaceInfo> pipelineExplorerWorkspaceInfos(guiInfo.recentWorkspaceInfos.size());
-        for (uint32_t i = 0; i < guiInfo.recentWorkspaceInfos.size(); ++i) {
-            if (!guiInfo.recentWorkspaceInfos[i].launch.empty()) {
-                pipelineExplorerWorkspaceInfos.push_back(guiInfo.recentWorkspaceInfos[i]);
+    for (auto&& message : guiInfo.ipcMessenger.read()) {
+        if (message.text == "gvk::pipeline_explorer::IpcMessenger started") {
+            // NOTE : This is to handle applications that create/destroy multiple instances
+            //  on startup.  This ensures that each instance receives the startup messages.
+            for (const auto& startupMessage : guiInfo.startupIpcMessages) {
+                guiInfo.ipcMessenger.write(startupMessage.text.c_str(), (uint32_t)startupMessage.data.size(), startupMessage.data.data());
             }
+        } else if (gvk::string::starts_with(message.text, "message")) {
+            guiInfo.messages += std::string((char*)message.data.data(), message.data.size()) + "\n";
+        } else {
+            guiInfo.incomingIpcMessages[message.text].push_back(std::move(message));
         }
-        pipelineExplorerGuiInfo.recentWorkspaceCount = (uint32_t)pipelineExplorerWorkspaceInfos.size();
-        pipelineExplorerGuiInfo.pRecentWorkspaces = pipelineExplorerWorkspaceInfos.data();
-        if (guiInfo.cliProvidedWorkspace) {
-            pipelineExplorerGuiInfo.workspace = gvk::get_default<GvkPipelineExplorerWorkspaceInfo>();
-            pipelineExplorerGuiInfo.recentWorkspaceCount = 0;
-            pipelineExplorerGuiInfo.pRecentWorkspaces = nullptr;
-        }
-        gvk::write_serialized_structure(path.parent_path(), "GvkPipelineExplorerGuiInfo", pipelineExplorerGuiInfo, true);
     }
-#endif // VK_USE_PLATFORM_WIN32_KHR
+#endif // GVK_PLATFORM_WINDOWS
 }
 
 } // namespace gui
@@ -479,10 +449,10 @@ int main(int argc, const char* ppArgv[])
         // Configure guiInfo from cmd line args
         gvk::pipeline_explorer::gui::GuiInfo guiInfo{ };
         guiInfo.windowTitle = cmdLine["-t"];
-        guiInfo.workspaceInfo.workspace = cmdLine["-w"];
-        guiInfo.workspaceInfo.launch = cmdLine["-a"];
-        if (!guiInfo.workspaceInfo.workspace.empty()) {
-            std::filesystem::create_directories(std::filesystem::path(guiInfo.workspaceInfo.workspace) / ".data");
+        guiInfo.workspace = cmdLine["-w"];
+        // guiInfo.launch = cmdLine["-a"];
+        if (!guiInfo.workspace.empty()) {
+            std::filesystem::create_directories(std::filesystem::path(guiInfo.workspace) / ".data");
             guiInfo.cliProvidedWorkspace = true;
         }
 
@@ -506,18 +476,17 @@ int main(int argc, const char* ppArgv[])
         gvk_result(context.get<gvk::Instance>().get<gvk::DispatchTable>().gvkEnumerateInstanceLayerProperties(&layerPropertyCount, nullptr));
         guiInfo.layerProperties.resize(layerPropertyCount, gvk::get_default<VkLayerProperties>());
         gvk_result(context.get<gvk::Instance>().get<gvk::DispatchTable>().gvkEnumerateInstanceLayerProperties(&layerPropertyCount, guiInfo.layerProperties.data()));
+        for (const auto& layerProperties : guiInfo.layerProperties) {
+            if (!strcmp(layerProperties.layerName, "VK_LAYER_KHRONOS_validation")) {
+                guiInfo.validationLayerAvailable = true;
+            }
+        }
 
         // Get gvk::Context objects
         const auto& instance = context.get<gvk::Instance>();
         const auto& device = context.get<gvk::Devices>()[0];
         const auto& queue = gvk::get_queue_family(context.get<gvk::Devices>()[0], 0).queues[0];
         const auto& commandBuffer = context.get<gvk::CommandBuffers>()[0];
-
-        // Load workspace
-        gvk::pipeline_explorer::gui::load_workspace(guiInfo);
-
-        // Declare window manager
-        gvk::pipeline_explorer::gui::Window::Manager windowManager;
 
         // Create gvk::system::Surface
         auto systemSurfaceCreateInfo = gvk::get_default<gvk::system::Surface::CreateInfo>();
@@ -554,6 +523,24 @@ int main(int argc, const char* ppArgv[])
         gvk::wsi::Context wsiContext = VK_NULL_HANDLE;
         gvk_result(gvk::wsi::Context::create(device, surface, &wsiContextCreateInfo, nullptr, &wsiContext));
 
+#if 0
+        // Load Font Awesome for icons
+        // FROM : https://github.com/juliettef/IconFontCppHeaders
+        // TODO : Manage fonts via gvk::gui::Renderer and support dynamic font sizes
+        ImGui::GetIO().Fonts->AddFontDefault();
+        float baseFontSize = 13.0f; // 13.0f is the size of the default font. TODO : Make font size dynamic
+        float iconFontSize = baseFontSize * 2.0f / 3.0f; // Font Awesome fonts need to have their sizes reduced by 2.0f/3.0f in order to align correctly
+        // Merge in icons from Font Awesome
+        static const int ICON_MIN_FA = 0xe005;
+        static const int ICON_MAX_16_FA = 0xf8ff;
+        static const ImWchar icons_ranges[] = { ICON_MIN_FA, ICON_MAX_16_FA, 0 };
+        ImFontConfig icons_config;
+        icons_config.MergeMode = true;
+        icons_config.PixelSnapH = true;
+        icons_config.GlyphMinAdvanceX = iconFontSize;
+        ImGui::GetIO().Fonts->AddFontFromFileTTF("fa-solid-900.ttf", iconFontSize, &icons_config, icons_ranges);
+#endif
+
         // Create gvk::gui::Renderer
         gvk::gui::Renderer guiRenderer = VK_NULL_HANDLE;
         gvk_result(gvk::gui::Renderer::create(device, queue, commandBuffer, wsiContext.get<gvk::RenderPass>(), nullptr, &guiRenderer));
@@ -561,6 +548,10 @@ int main(int argc, const char* ppArgv[])
 
         // TODO : Automatically handle ImGui add-ons
         ImPlot::CreateContext();
+
+        // Create WindowManager
+        // NOTE : Must be created after gvk::gui::Renderer because ImGui must be initialized
+        gvk::pipeline_explorer::gui::Window::Manager windowManager;
 
         // Main loop
         gvk::system::Clock clock;
@@ -575,6 +566,20 @@ int main(int argc, const char* ppArgv[])
             systemSurface.get_window_extent(&width, &height);
             guiInfo.windowExtent = { (uint32_t)width, (uint32_t)height };
             systemSurface.get_window_position(&guiInfo.windowPosition.x, &guiInfo.windowPosition.y);
+
+            // TODO : Documentation
+            // TODO : Queue?  Should the messenger itself handle this?
+#ifdef GVK_PLATFORM_WINDOWS
+            guiInfo.incomingIpcMessages.clear();
+            if (guiInfo.workload) {
+                gvk::pipeline_explorer::gui::process_outgoing_messages(guiInfo);
+                gvk::pipeline_explorer::gui::process_incoming_messages_ipc(guiInfo);
+                gvk::pipeline_explorer::gui::process_incoming_messages(guiInfo);
+            }
+#endif
+
+            // TODO : Documentation
+            windowManager.on_update(guiInfo);
 
             // Acquire next image
             gvk::wsi::AcquiredImageInfo acquiredImageInfo{};
@@ -609,10 +614,7 @@ int main(int argc, const char* ppArgv[])
                     ImGui::GetIO().AddFocusEvent(false);
                 }
 
-                // Process incoming messages from backend
-                gvk::pipeline_explorer::gui::process_incoming_messages(guiInfo);
-
-                // Prepare a gvk::gui::Renderer::BeginInfo
+                // Render GUI
                 const auto& textStream = systemSurface.get<gvk::system::Surface::TextStream>();
                 const auto& droppedPaths = systemSurface.get<gvk::system::Surface::DroppedPaths>();
                 auto guiRendererBeginInfo = gvk::get_default<gvk::gui::Renderer::BeginInfo>();
@@ -625,36 +627,6 @@ int main(int argc, const char* ppArgv[])
                 guiRenderer.begin_gui(guiRendererBeginInfo);
                 windowManager.on_gui(guiInfo);
                 gvk_result(guiRenderer.end_gui(acquiredImageInfo.index));
-
-                // Process outgoing messages to backend
-                process_outgoing_messages(guiInfo);
-
-                // Reset on workload close
-                if (guiInfo.applicationInfo.closed) {
-                    ///////////////////////////////////////////////////////////////////////////////
-                    // TODO : Unify application shutdown and stream shutdown
-                    guiInfo.requestInfo = gvk::get_default<GvkPipelineExplorerRequestInfo>();
-                    guiInfo.requestInfo.warmupRangeCount = 4;
-                    guiInfo.requestInfo.queryRangeCount = 16;
-                    guiInfo.activePipelines.clear();
-                    guiInfo.sortedPipelines.clear();
-                    guiInfo.pipelineInfos.clear();
-                    guiInfo.availableMetrics.clear();
-                    guiInfo.filteredMetrics.clear();
-                    guiInfo.metricsFilters.clear();
-                    guiInfo.metricsAnyOfFilter.clear();
-                    guiInfo.metricsAllOfFilter.clear();
-                    guiInfo.performanceCountersInfo.reset();
-                    guiInfo.pipelineStatisticsQueryInfo.reset();
-                    guiInfo.pluginPerformanceCounterInfo.reset();
-                    guiInfo.selectedPipeline = { };
-                    guiInfo.enabledMetricsGroup = 0;
-                    guiInfo.applicationInfo = { };
-                    guiInfo.apiCallInfo.reset();
-                    guiInfo.resultPending = false;
-                    windowManager.clear();
-                    ///////////////////////////////////////////////////////////////////////////////
-                }
 
                 // Render GUI
                 auto renderPassBeginInfo = acquiredImageRenderTarget.get<VkRenderPassBeginInfo>();
@@ -678,24 +650,35 @@ int main(int argc, const char* ppArgv[])
                 wsiStatus = wsiContext.queue_present(queue, &acquiredImageInfo);
                 gvk_result((wsiStatus == VK_SUBOPTIMAL_KHR || wsiStatus == VK_ERROR_OUT_OF_DATE_KHR) ? VK_SUCCESS : wsiStatus);
             }
-            if (guiInfo.saveRequired) {
-                save_workspace(guiInfo);
+
+#ifdef GVK_PLATFORM_WINDOWS
+            // Reset on workload close
+            std::lock_guard<std::mutex> lock(guiInfo.workloadMutex);
+            if (!guiInfo.workload && guiInfo.onWorkloadShutdown) {
+                // TODO : Hook up to on_save()
+                ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
+                windowManager.on_terminate(guiInfo);
+                guiInfo.onWorkloadShutdown();
+                guiInfo.onWorkloadShutdown = nullptr;
             }
+#endif // GVK_PLATFORM_WINDOWS
         }
 
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-        // TODO : This should probably be managed by the WorkspaceWindow
-        if (guiInfo.applicationInfo.processInformation.hProcess) {
-            TerminateProcess(guiInfo.applicationInfo.processInformation.hProcess, 0);
-        }
+#ifdef GVK_PLATFORM_WINDOWS
+        // Shutdown workload
+        guiInfo.workload.reset();
 #endif
-
-        save_workspace(guiInfo);
-        gvk_result(device.DeviceWaitIdle());
 
         // TODO : Automatically handle ImGui add-ons
         ImPlot::DestroyContext();
 
+        // Destroy gvk::gui::Renderer
+        // NOTE : Explicitly destroying guiRenderer so ImGuiSettingsHandler::WriteAllFn
+        //  will be called for the last time before any dtors are called
+        guiRenderer = gvk::nullref;
+
+        // Make sure Vulkan resources are done being used before tearing everything down
+        gvk_result(device.DeviceWaitIdle());
     } gvk_result_scope_end;
     return gvkResult;
 }

@@ -24,7 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "gvk-pipeline-explorer/backend/timestamp-query-manager.hpp"
+#include "gvk-pipeline-explorer/backend/query-managers/timestamp-query-manager.hpp"
 #include "gvk-pipeline-explorer/backend/handle-info.hpp"
 #include "gvk-system.hpp"
 
@@ -32,6 +32,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace gvk {
 namespace pipeline_explorer {
+
+uint64_t TimestampQueryManager::get_type_id() const
+{
+    return Tool::get_type_id<TimestampQueryManager>();
+}
 
 const GvkPipelineExplorerPerformanceQueryRequestInfo& TimestampQueryManager::get_request() const
 {
@@ -48,6 +53,7 @@ VkResult TimestampQueryManager::submit_request(const std::filesystem::path& work
 {
     mWorkspace = workspace;
     if (mRequest->sType != gvk::get_stype<GvkPipelineExplorerPerformanceQueryRequestInfo>()) {
+        mEnabled = true;
         mRequest = std::move(request);
         mQueryIndex = 0;
         resultIndex = 0;
@@ -69,6 +75,11 @@ void TimestampQueryManager::extract_results(std::unordered_map<gvk::HandleId<VkD
 {
     extractResults = std::move(results);
     results.clear();
+}
+
+bool TimestampQueryManager::tool_command(const GvkCommandBaseStructure* pCommand, VkDevice vkDevice, VkQueue vkQueue, VkPipeline vkPipeline) const
+{
+    return Tool::tool_command(pCommand, vkDevice, vkQueue, vkPipeline);
 }
 
 uint32_t TimestampQueryManager::get_query_count(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo) const
@@ -146,12 +157,12 @@ VkResult TimestampQueryManager::post_process_queue_submission(const GvkPipelineE
     gvk_result_scope_begin(VK_SUCCESS) {
         if ((mRequest->sType == gvk::get_stype<GvkPipelineExplorerPerformanceQueryRequestInfo>() || mAutoQuery) && toolInfo.collectionRangeCount) {
             gvk::pipeline_explorer::PhysicalDeviceInfo physicalDeviceInfo = toolInfo.physicalDevice;
-            gvk_result(physicalDeviceInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result_assert(physicalDeviceInfo);
             gvk::Device gvkDevice = toolInfo.device;
-            gvk_result(gvkDevice ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result_assert(gvkDevice);
             gvk::Queue gvkQueue = toolInfo.queue;
-            gvk_result(gvkQueue ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-            gvk_result(mQueryPool ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result_assert(gvkQueue);
+            gvk_result_assert(mQueryPool);
 
             // Wait for submission to complete before extracting results
             // NOTE : VK_QUERY_RESULT_WAIT_BIT should make a call to vkQueueWaitIdle()
@@ -172,21 +183,21 @@ VkResult TimestampQueryManager::post_process_queue_submission(const GvkPipelineE
 
             // Process results
             uint32_t resultsData_i = 0;
-            gvk_result(toolInfo.pCollectionRanges ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result_assert(toolInfo.pCollectionRanges);
             for (uint32_t collectionRange_i = 0; collectionRange_i < toolInfo.collectionRangeCount; ++collectionRange_i) {
                 const auto& collectionRange = toolInfo.pCollectionRanges[collectionRange_i];
                 CmdSequence cmdSequence{ };
-                gvk_result(resultsData_i < resultData.size() ? VK_SUCCESS : VK_INCOMPLETE);
+                gvk_result_assert(resultsData_i < resultData.size());
                 cmdSequence.beginTimestamp = resultData[resultsData_i++];
-                gvk_result(resultsData_i < resultData.size() ? VK_SUCCESS : VK_INCOMPLETE);
+                gvk_result_assert(resultsData_i < resultData.size());
                 cmdSequence.endTimestamp = resultData[resultsData_i++];
                 cmdSequence.firstCmdIndex = collectionRange.begin;
                 cmdSequence.cmdTypes.resize(collectionRange.end - collectionRange.begin + 1);
-                gvk_result(toolInfo.ppCmds ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+                gvk_result_assert(toolInfo.ppCmds);
 
                 // Process cmd types
                 for (uint32_t cmd_i = 0; cmd_i < cmdSequence.cmdTypes.size(); ++cmd_i) {
-                    gvk_result(cmdSequence.firstCmdIndex + cmd_i < toolInfo.cmdCount ? VK_SUCCESS : VK_INCOMPLETE);
+                    gvk_result_assert(cmdSequence.firstCmdIndex + cmd_i < toolInfo.cmdCount);
                     cmdSequence.cmdTypes[cmd_i] = toolInfo.ppCmds[cmdSequence.firstCmdIndex + cmd_i]->sType;
                 }
 
@@ -201,6 +212,16 @@ VkResult TimestampQueryManager::post_process_queue_submission(const GvkPipelineE
         }
     } gvk_result_scope_end;
     return gvkResult;
+}
+
+VkResult TimestampQueryManager::pre_process_queue_present(const GvkPipelineExplorerToolQueueInfoEx& toolInfo)
+{
+    return QueryManager::pre_process_queue_present(toolInfo);
+}
+
+VkResult TimestampQueryManager::post_process_queue_present(const GvkPipelineExplorerToolQueueInfoEx& toolInfo)
+{
+    return QueryManager::post_process_queue_present(toolInfo);
 }
 
 VkResult TimestampQueryManager::post_process_range()
@@ -231,14 +252,14 @@ VkResult TimestampQueryManager::post_process_range()
 VkResult TimestampQueryManager::write_timestamp(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo, VkPipelineStageFlagBits pipelineStage)
 {
     gvk_result_scope_begin(VK_SUCCESS) {
-        gvk_result((mRequest->sType == gvk::get_stype<GvkPipelineExplorerPerformanceQueryRequestInfo>() || mAutoQuery) ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result_assert(mRequest->sType == gvk::get_stype<GvkPipelineExplorerPerformanceQueryRequestInfo>() || mAutoQuery);
         gvk::Queue gvkQueue = toolInfo.queue;
-        gvk_result(gvkQueue ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-        gvk_result(mQueryPool ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-        gvk_result(toolInfo.cmdIndex < toolInfo.cmdCount ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-        gvk_result(toolInfo.ppCmds ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result_assert(gvkQueue);
+        gvk_result_assert(mQueryPool);
+        gvk_result_assert(toolInfo.cmdIndex < toolInfo.cmdCount);
+        gvk_result_assert(toolInfo.ppCmds);
         auto commandBuffer = toolInfo.ppCmds[toolInfo.cmdIndex]->commandBuffer;
-        gvk_result(commandBuffer ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result_assert(commandBuffer);
         gvkQueue.get<gvk::DispatchTable>().gvkCmdWriteTimestamp(commandBuffer, pipelineStage, mQueryPool, mQueryIndex++);
     } gvk_result_scope_end;
     return gvkResult;
@@ -247,9 +268,10 @@ VkResult TimestampQueryManager::write_timestamp(const GvkPipelineExplorerToolCom
 VkResult TimestampQueryManager::publish_result() const
 {
     gvk_result_scope_begin(VK_SUCCESS) {
-        gvk_result(mRequest->sType == gvk::get_stype<GvkPipelineExplorerPerformanceQueryRequestInfo>() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result_assert(mRequest->sType == gvk::get_stype<GvkPipelineExplorerPerformanceQueryRequestInfo>());
+        gvk_result_assert(!results.empty());
         gvk::pipeline_explorer::DeviceInfo deviceInfo = results.begin()->first.get_dispatchable_handle(); // mRequest->device;
-        gvk_result(deviceInfo ? VK_SUCCESS : VK_INCOMPLETE);
+        gvk_result_assert(deviceInfo);
 
         // Get date and time strings
         auto dateTime = gvk::system::DateTime::now();

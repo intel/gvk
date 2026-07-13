@@ -44,14 +44,7 @@ protected:
     virtual uint32_t get_query_count(const GvkPipelineExplorerToolQueueInfoEx& toolInfo) const;
     virtual VkResult validate_query_resources(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo) = 0;
     virtual VkResult reset_query_resources(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo);
-    virtual VkResult pre_process_range() override;
     virtual VkResult pre_process_command_buffers(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo) override;
-    virtual VkResult pre_process_cmd(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo) override;
-    virtual VkResult post_process_cmd(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo) override;
-    virtual VkResult post_process_command_buffers(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo) override;
-    virtual VkResult pre_process_queue_submission(const GvkPipelineExplorerToolQueueInfoEx& toolInfo) override;
-    virtual VkResult post_process_queue_submission(const GvkPipelineExplorerToolQueueInfoEx& toolInfo) override;
-    virtual VkResult post_process_range() override;
     virtual VkResult generate_report();
 
     gvk::QueryPool mQueryPool;

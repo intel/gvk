@@ -68,4 +68,16 @@ inline auto make_tuple(const GvkCommandStructureCmdPushConstants& obj)
     );
 }
 
+inline auto make_tuple(const GvkCommandStructureCmdUpdateBuffer& obj)
+{
+    return std::make_tuple(
+        obj.sType,
+        obj.commandBuffer,
+        obj.dstBuffer,
+        obj.dstOffset,
+        obj.dataSize,
+        detail::ArrayTupleElementWrapper<uint8_t> { (size_t)obj.dataSize, (const uint8_t*)obj.pData }
+    );
+}
+
 } // namespace gvk

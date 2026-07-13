@@ -35,6 +35,16 @@ Tool::~Tool()
 
 void Tool::reset()
 {
+    mEnabled = false;
+}
+
+bool Tool::tool_command(const GvkCommandBaseStructure* pCommand, VkDevice vkDevice, VkQueue vkQueue, VkPipeline vkPipeline) const
+{
+    (void)pCommand;
+    (void)vkDevice;
+    (void)vkQueue;
+    (void)vkPipeline;
+    return mEnabled;
 }
 
 VkResult Tool::pre_process_range()
@@ -78,87 +88,21 @@ VkResult Tool::post_process_queue_submission(const GvkPipelineExplorerToolQueueI
     return VK_SUCCESS;
 }
 
-VkResult Tool::post_process_range()
+VkResult Tool::pre_process_queue_present(const GvkPipelineExplorerToolQueueInfoEx& toolInfo)
 {
+    (void)toolInfo;
     return VK_SUCCESS;
 }
 
-VkResult Tool::pre_process_range(void* pUserData)
+VkResult Tool::post_process_queue_present(const GvkPipelineExplorerToolQueueInfoEx& toolInfo)
 {
-    gvk_result_scope_begin(VK_ERROR_UNKNOWN) {
-        gvk_result(pUserData ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-        gvk_result(((gvk::pipeline_explorer::Tool*)pUserData)->pre_process_range());
-    } gvk_result_scope_end;
-    return gvkResult;
+    (void)toolInfo;
+    return VK_SUCCESS;
 }
 
-VkResult Tool::pre_process_command_buffers(const GvkPipelineExplorerToolCommandBufferInfoEx* pToolInfo, void* pUserData)
+VkResult Tool::post_process_range()
 {
-    gvk_result_scope_begin(VK_ERROR_UNKNOWN) {
-        gvk_result(pToolInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-        gvk_result(pUserData ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-        gvk_result(((gvk::pipeline_explorer::Tool*)pUserData)->pre_process_command_buffers(*pToolInfo));
-    } gvk_result_scope_end;
-    return gvkResult;
-}
-
-VkResult Tool::pre_process_cmd(const GvkPipelineExplorerToolCommandBufferInfoEx* pToolInfo, void* pUserData)
-{
-    gvk_result_scope_begin(VK_ERROR_UNKNOWN) {
-        gvk_result(pToolInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-        gvk_result(pUserData ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-        gvk_result(((gvk::pipeline_explorer::Tool*)pUserData)->pre_process_cmd(*pToolInfo));
-    } gvk_result_scope_end;
-    return gvkResult;
-}
-
-VkResult Tool::post_process_cmd(const GvkPipelineExplorerToolCommandBufferInfoEx* pToolInfo, void* pUserData)
-{
-    gvk_result_scope_begin(VK_ERROR_UNKNOWN) {
-        gvk_result(pToolInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-        gvk_result(pUserData ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-        gvk_result(((gvk::pipeline_explorer::Tool*)pUserData)->post_process_cmd(*pToolInfo));
-    } gvk_result_scope_end;
-    return gvkResult;
-}
-
-VkResult Tool::post_process_command_buffers(const GvkPipelineExplorerToolCommandBufferInfoEx* pToolInfo, void* pUserData)
-{
-    gvk_result_scope_begin(VK_ERROR_UNKNOWN) {
-        gvk_result(pToolInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-        gvk_result(pUserData ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-        gvk_result(((gvk::pipeline_explorer::Tool*)pUserData)->post_process_command_buffers(*pToolInfo));
-    } gvk_result_scope_end;
-    return gvkResult;
-}
-
-VkResult Tool::pre_process_queue_submission(const GvkPipelineExplorerToolQueueInfoEx* pToolInfo, void* pUserData)
-{
-    gvk_result_scope_begin(VK_ERROR_UNKNOWN) {
-        gvk_result(pToolInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-        gvk_result(pUserData ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-        gvk_result(((gvk::pipeline_explorer::Tool*)pUserData)->pre_process_queue_submission(*pToolInfo));
-    } gvk_result_scope_end;
-    return gvkResult;
-}
-
-VkResult Tool::post_process_queue_submission(const GvkPipelineExplorerToolQueueInfoEx* pToolInfo, void* pUserData)
-{
-    gvk_result_scope_begin(VK_ERROR_UNKNOWN) {
-        gvk_result(pToolInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-        gvk_result(pUserData ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-        gvk_result(((gvk::pipeline_explorer::Tool*)pUserData)->post_process_queue_submission(*pToolInfo));
-    } gvk_result_scope_end;
-    return gvkResult;
-}
-
-VkResult Tool::post_process_range(void* pUserData)
-{
-    gvk_result_scope_begin(VK_ERROR_UNKNOWN) {
-        gvk_result(pUserData ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-        gvk_result(((gvk::pipeline_explorer::Tool*)pUserData)->post_process_range());
-    } gvk_result_scope_end;
-    return gvkResult;
+    return VK_SUCCESS;
 }
 
 } // namespace pipeline_explorer

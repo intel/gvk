@@ -50,6 +50,15 @@ bool PipelineStatisticsMetricsTab::enabled(GuiInfo& guiInfo) const
 void PipelineStatisticsMetricsTab::on_update(GuiInfo& guiInfo)
 {
     (void)guiInfo;
+#ifdef GVK_PLATFORM_WINDOWS
+    // Process available counters reported from backend
+    const auto& messageItr = guiInfo.incomingIpcMessages.find("PipelineStatisticsCounterCollection");
+    if (messageItr != guiInfo.incomingIpcMessages.end() && !messageItr->second.empty()) {
+        const auto& message = messageItr->second.back();
+        std::istringstream istrm(std::string((char*)message.data.data(), message.data.size()));
+        gvk::deserialize(istrm, nullptr, guiInfo.pipelineStatisticsQueryInfo.available);
+    }
+#endif // GVK_PLATFORM_WINDOWS
 }
 
 void PipelineStatisticsMetricsTab::on_gui(GuiInfo& guiInfo)
@@ -59,7 +68,7 @@ void PipelineStatisticsMetricsTab::on_gui(GuiInfo& guiInfo)
         {
             // Check request/result
             if (guiInfo.pipelineStatisticsQueryInfo.requestResult.pending()) {
-                guiInfo.pipelineStatisticsQueryInfo.requestResult.check_result(guiInfo.workspaceInfo.workspace);
+                guiInfo.pipelineStatisticsQueryInfo.requestResult.check_result(guiInfo.workspace);
             }
 
             // Process request/result
@@ -80,17 +89,22 @@ void PipelineStatisticsMetricsTab::on_gui(GuiInfo& guiInfo)
             }
 
             // Draw query button
-            ImGui::BeginDisabled(guiInfo.pipelineStatisticsQueryInfo.requestResult.pending());
+            #ifdef GVK_PLATFORM_WINDOWS
+            bool workloadDisabled = !guiInfo.workload;
+            #else
+            bool workloadDisabled = true;
+            #endif
+            ImGui::BeginDisabled(workloadDisabled || guiInfo.pipelineStatisticsQueryInfo.requestResult.pending());
             {
                 if (ImGui::Button("Query Pipeline Statistics")) {
                     auto request = gvk::get_default<GvkPipelineExplorerPipelineStatisticsQueryRequestInfo>();
-                    std::string reportPath = guiInfo.reportEnabled ? (std::filesystem::path(guiInfo.workspaceInfo.workspace) / "reports").string() : std::string();
+                    std::string reportPath = guiInfo.reportEnabled ? (std::filesystem::path(guiInfo.workspace) / "reports").string() : std::string();
                     request.pReportPath = !reportPath.empty() ? reportPath.c_str() : nullptr;
                     request.device = guiInfo.selectedPipeline.get_dispatchable_handle();
                     request.pipeline = guiInfo.selectedPipeline.get_handle();
                     request.warmupRangeCount = guiInfo.requestInfo.warmupRangeCount;
                     request.queryRangeCount = guiInfo.requestInfo.queryRangeCount;
-                    guiInfo.pipelineStatisticsQueryInfo.requestResult.submit_request(guiInfo.workspaceInfo.workspace, request);
+                    guiInfo.pipelineStatisticsQueryInfo.requestResult.submit_request(guiInfo.workspace, request);
                 }
             }
             ImGui::EndDisabled();

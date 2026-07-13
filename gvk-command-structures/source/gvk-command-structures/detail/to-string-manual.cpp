@@ -214,6 +214,22 @@ void print<GvkCommandStructureCmdSetFragmentShadingRateKHR>(Printer& printer, co
 }
 
 template <>
+void print<GvkCommandStructureCmdUpdateBuffer>(Printer& printer, const GvkCommandStructureCmdUpdateBuffer& obj)
+{
+    printer.print_object(
+        [&]()
+        {
+            printer.print_field("sType", obj.sType);
+            printer.print_field("commandBuffer", obj.commandBuffer);
+            printer.print_field("dstBuffer", obj.dstBuffer);
+            printer.print_field("dstOffset", obj.dstOffset);
+            printer.print_field("dataSize", obj.dataSize);
+            printer.print_array("pData", (size_t)obj.dataSize, (const uint8_t*)obj.pData);
+        }
+    );
+}
+
+template <>
 void print<GvkCommandStructureGetAccelerationStructureBuildSizesKHR>(Printer& printer, const GvkCommandStructureGetAccelerationStructureBuildSizesKHR& obj)
 {
     printer.print_object(

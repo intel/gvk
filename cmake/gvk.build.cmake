@@ -78,7 +78,7 @@ function(gvk_setup_target)
     #   a good time to remove this...presumably it will be deprecated at some point
     #   anyway.
     if (MSVC_VERSION GREATER_EQUAL 1930)
-        target_compile_options(${ARGS_TARGET} PRIVATE -D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
+        target_compile_definitions(${ARGS_TARGET} PRIVATE _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
     endif()
 endfunction()
 

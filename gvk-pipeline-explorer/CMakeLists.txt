@@ -104,6 +104,9 @@ if(gvk-pipeline-explorer_INSTALL_ARTIFACTS)
     gvk_install_artifacts(TARGET gvk-pipeline-explorer-info)
     gvk_install_artifacts(TARGET gvk-pipeline-explorer-plugin-factory)
     gvk_install_layer(TARGET VK_LAYER_INTEL_gvk_pipeline_explorer)
+    # NOTE : Duplicated from imgui.cmake
+    # TODO : Automate font installation
+    # install(FILES "${CMAKE_BINARY_DIR}/fonts/fa-solid-900.ttf" DESTINATION bin/$<CONFIG>/)
 endif()
 if(gvk-pipeline-explorer_INSTALL_HEADERS)
     gvk_install_headers(TARGET gvk-pipeline-explorer-backend)

@@ -26,35 +26,31 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-pipeline-explorer/backend/query-manager.hpp"
+#include "gvk-pipeline-explorer/backend/query-managers/query-manager.hpp"
+#include "gvk-pipeline-explorer/backend/ipc-messenger.hpp"
+#include "gvk-command-structures.hpp"
 
+#include <array>
 #include <filesystem>
-#include <unordered_map>
+#include <memory>
+#include <string>
 
 namespace gvk {
 namespace pipeline_explorer {
 
-class CmdSequence final
-{
-public:
-    uint64_t beginTimestamp{ };
-    uint64_t endTimestamp{ };
-    uint64_t firstCmdIndex{ };
-    std::vector<GvkCommandStructureType> cmdTypes;
-};
-
-class TimestampQueryManager final
+class TimelineQueryManager final
     : public gvk::pipeline_explorer::QueryManager
 {
 public:
-    TimestampQueryManager() = default;
-    const GvkPipelineExplorerPerformanceQueryRequestInfo& get_request() const;
-    VkResult initialize_auto_query();
-    VkResult submit_request(const std::filesystem::path& workspace, gvk::Auto<GvkPipelineExplorerPerformanceQueryRequestInfo>&& request);
+    TimelineQueryManager() = default;
+    ~TimelineQueryManager() override final;
+    uint64_t get_type_id() const override final;
+    VkResult enable(const std::filesystem::path& reportPath, gvk::pipeline_explorer::IpcMessenger* pIpcMessenger);
+    VkResult disable();
     bool collect_metrics(VkDevice device, VkPipeline pipeline) const;
-    void extract_results(std::unordered_map<gvk::HandleId<VkDevice, VkPipeline>, std::vector<std::vector<CmdSequence>>>& extractResults);
 
 protected:
+    bool tool_command(const GvkCommandBaseStructure* pCommand, VkDevice vkDevice, VkQueue vkQueue, VkPipeline vkPipeline) const override final;
     uint32_t get_query_count(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo) const override final;
     VkResult validate_query_resources(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo) override final;
     VkResult pre_process_range() override final;
@@ -64,22 +60,18 @@ protected:
     VkResult post_process_command_buffers(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo) override final;
     VkResult pre_process_queue_submission(const GvkPipelineExplorerToolQueueInfoEx& toolInfo) override final;
     VkResult post_process_queue_submission(const GvkPipelineExplorerToolQueueInfoEx& toolInfo) override final;
+    VkResult pre_process_queue_present(const GvkPipelineExplorerToolQueueInfoEx& toolInfo) override final;
+    VkResult post_process_queue_present(const GvkPipelineExplorerToolQueueInfoEx& toolInfo) override final;
     VkResult post_process_range() override final;
 
 private:
     VkResult write_timestamp(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo, VkPipelineStageFlagBits pipelineStage);
-    VkResult publish_result() const;
 
-    bool mAutoQuery{ };
-    std::filesystem::path mWorkspace;
-    gvk::Auto<GvkPipelineExplorerPerformanceQueryRequestInfo> mRequest;
-    uint32_t resultIndex{ };
-    uint32_t warmupRangeCount{ };
-    uint32_t queryRangeCount{ };
-    std::unordered_map<gvk::HandleId<VkDevice, VkPipeline>, std::vector<std::vector<CmdSequence>>> results;
-
-    TimestampQueryManager(const TimestampQueryManager&) = delete;
-    TimestampQueryManager& operator=(const TimestampQueryManager&) = delete;
+    IpcMessenger* mpIpcMessenger{ };
+    std::array<uint64_t, 2> mCalibrationTimestamps{ };
+    GvkCommandStructureQueueSubmit mQueueSubmit{ };
+    GvkPipelineExplorerTimelineCommandInfo mQueueSubmitInfo{ };
+    uint64_t mCalibrationUnixEpochNs{ };
 };
 
 } // namespace pipeline_explorer

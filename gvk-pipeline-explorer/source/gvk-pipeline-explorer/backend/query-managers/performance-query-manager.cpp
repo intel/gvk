@@ -24,7 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "gvk-pipeline-explorer/backend/performance-query-manager.hpp"
+#include "gvk-pipeline-explorer/backend/query-managers/performance-query-manager.hpp"
 #include "gvk-pipeline-explorer/backend/handle-info.hpp"
 #include "gvk-system.hpp"
 
@@ -40,6 +40,11 @@ static std::array<uint8_t, VK_UUID_SIZE> get_uuid(const VkPerformanceCounterKHR&
     assert(sizeof(uuid) == sizeof(counter.uuid));
     memcpy(uuid.data(), counter.uuid, sizeof(uuid));
     return uuid;
+}
+
+uint64_t PerformanceQueryManager::get_type_id() const
+{
+    return Tool::get_type_id<PerformanceQueryManager>();
 }
 
 void PerformanceQueryManager::reset()
@@ -65,7 +70,7 @@ VkResult PerformanceQueryManager::submit_request(const std::filesystem::path& wo
         if (mRequest->sType != gvk::get_stype<GvkPipelineExplorerPerformanceQueryRequestInfo>()) {
             mRequest = std::move(request);
             gvk::pipeline_explorer::DeviceInfo deviceInfo = mRequest->device;
-            gvk_result(deviceInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result_assert(deviceInfo);
 
             // Loop over requested counters and add each to the mPendingRequests collection.
             //  Each iteration of the range-of-interest, some subset of the counters that
@@ -102,6 +107,16 @@ bool PerformanceQueryManager::collect_metrics(VkDevice device, VkPipeline pipeli
         mRequest->pipeline == pipeline;
 }
 
+bool PerformanceQueryManager::tool_command(const GvkCommandBaseStructure* pCommand, VkDevice vkDevice, VkQueue vkQueue, VkPipeline vkPipeline) const
+{
+    (void)pCommand;
+    (void)vkQueue;
+    return
+        mRequest->sType == gvk::get_stype<GvkPipelineExplorerPipelineStatisticsQueryRequestInfo>() &&
+        mRequest->device == vkDevice &&
+        mRequest->pipeline == vkPipeline;
+}
+
 uint32_t PerformanceQueryManager::get_query_count(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo) const
 {
     return QueryManager::get_query_count(toolInfo);
@@ -116,13 +131,13 @@ VkResult PerformanceQueryManager::validate_query_resources(const GvkPipelineExpl
 {
     gvk_result_scope_begin(VK_SUCCESS) {
         gvk::PhysicalDevice gvkPhysicalDevice = toolInfo.physicalDevice;
-        gvk_result(gvkPhysicalDevice ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result_assert(gvkPhysicalDevice);
         gvk::Device gvkDevice = toolInfo.device;
-        gvk_result(gvkDevice ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result_assert(gvkDevice);
         gvk::pipeline_explorer::DeviceInfo deviceInfo = toolInfo.device;
-        gvk_result(deviceInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-        const auto& queueFamilyInfoItr = deviceInfo->queueFamiyInfos.find(toolInfo.queueFamilyIndex);
-        gvk_result(queueFamilyInfoItr != deviceInfo->queueFamiyInfos.end() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result_assert(deviceInfo);
+        const auto& queueFamilyInfoItr = deviceInfo->queueFamilyInfos.find(toolInfo.queueFamilyIndex);
+        gvk_result_assert(queueFamilyInfoItr != deviceInfo->queueFamilyInfos.end());
         const auto& queueFamilyInfo = queueFamilyInfoItr->second;
 
         // Run through pending requests and find the indices for each requested counter
@@ -133,7 +148,7 @@ VkResult PerformanceQueryManager::validate_query_resources(const GvkPipelineExpl
         counterIndices.reserve(mRequest->counterCount);
         for (const auto& pendingRequestItr : mPendingRequests) {
             const auto& counterIndexItr = queueFamilyInfo.performanceCounterIndices.find(pendingRequestItr.first);
-            gvk_result(counterIndexItr != queueFamilyInfo.performanceCounterIndices.end() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result_assert(counterIndexItr != queueFamilyInfo.performanceCounterIndices.end());
             auto itr = std::lower_bound(counterIndices.begin(), counterIndices.end(), counterIndexItr->second);
             counterIndices.insert(itr, counterIndexItr->second);
         }
@@ -163,17 +178,17 @@ VkResult PerformanceQueryManager::validate_query_resources(const GvkPipelineExpl
         }
 
         // Sanity check the results of the last operation
-        gvk_result(passCount == 1 ? VK_SUCCESS : VK_ERROR_INCOMPATIBLE_DRIVER);
-        gvk_result(performanceQueryCreateInfo.counterIndexCount ? VK_SUCCESS : VK_ERROR_INCOMPATIBLE_DRIVER);
+        gvk_result_assert(passCount == 1);
+        gvk_result_assert(performanceQueryCreateInfo.counterIndexCount);
 
         // Extract the requests for the prepared VkQueryPoolPerformanceCreateInfoKHR
         //  from the mPendingRequests collection and add them to the mCurrentRequests
         //  collection.
         for (uint32_t counter_i = 0; counter_i < performanceQueryCreateInfo.counterIndexCount; ++counter_i) {
-            gvk_result(counter_i < queueFamilyInfo.performanceCounters.size() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result_assert(counter_i < queueFamilyInfo.performanceCounters.size());
             const auto& counter = queueFamilyInfo.performanceCounters[performanceQueryCreateInfo.pCounterIndices[counter_i]];
             auto node = mPendingRequests.extract(get_uuid(counter));
-            gvk_result(node ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result_assert(node);
             mCurrentRequests.push_back(std::move(node.mapped()));
         }
 
@@ -219,7 +234,7 @@ VkResult PerformanceQueryManager::pre_process_cmd(const GvkPipelineExplorerToolC
             toolInfo.cmdIndex == toolInfo.pCollectionRanges[toolInfo.collectionRangeIndex].begin
         ) {
             gvk::Queue gvkQueue = toolInfo.queue;
-            gvk_result(gvkQueue ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result_assert(gvkQueue);
             auto commandBuffer = toolInfo.ppCmds[toolInfo.cmdIndex]->commandBuffer;
             gvkQueue.get<gvk::DispatchTable>().gvkCmdBeginQuery(commandBuffer, mQueryPool, mQueryIndex, 0);
         }
@@ -235,7 +250,7 @@ VkResult PerformanceQueryManager::post_process_cmd(const GvkPipelineExplorerTool
             toolInfo.cmdIndex == toolInfo.pCollectionRanges[toolInfo.collectionRangeIndex].end
         ) {
             gvk::Queue gvkQueue = toolInfo.queue;
-            gvk_result(gvkQueue ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result_assert(gvkQueue);
             auto commandBuffer = toolInfo.ppCmds[toolInfo.cmdIndex]->commandBuffer;
             // TODO : May be a good idea to track resources and insert barriers here
             gvkQueue.get<gvk::DispatchTable>().gvkCmdEndQuery(commandBuffer, mQueryPool, mQueryIndex++);
@@ -259,15 +274,15 @@ VkResult PerformanceQueryManager::post_process_queue_submission(const GvkPipelin
     gvk_result_scope_begin(VK_SUCCESS) {
         if (get_query_count(toolInfo)) {
             gvk::Device gvkDevice = toolInfo.device;
-            gvk_result(gvkDevice ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result_assert(gvkDevice);
             gvk::pipeline_explorer::DeviceInfo deviceInfo = toolInfo.device;
-            gvk_result(deviceInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result_assert(deviceInfo);
             gvk::Queue gvkQueue = toolInfo.queue;
-            gvk_result(gvkQueue ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-            const auto& queueFamilyInfoItr = deviceInfo->queueFamiyInfos.find(toolInfo.queueFamilyIndex);
-            gvk_result(queueFamilyInfoItr != deviceInfo->queueFamiyInfos.end() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result_assert(gvkQueue);
+            const auto& queueFamilyInfoItr = deviceInfo->queueFamilyInfos.find(toolInfo.queueFamilyIndex);
+            gvk_result_assert(queueFamilyInfoItr != deviceInfo->queueFamilyInfos.end());
             const auto& queueFamilyInfo = queueFamilyInfoItr->second;
-            gvk_result(mQueryPool ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result_assert(mQueryPool);
 
             // In theory passing VK_QUERY_RESULT_WAIT_BIT to vkGetQueryPoolResults() should
             //  make it unnecessary to call vkQueueWaitIdle(), but omitting it yields some
@@ -290,9 +305,9 @@ VkResult PerformanceQueryManager::post_process_queue_submission(const GvkPipelin
             // Sanity check that mCurrentRequests matches the QueryPool as expected.
             const auto& queryPoolCreatetInfo = mQueryPool.get<VkQueryPoolCreateInfo>();
             const auto& pQueryPoolPerformanceCreateInfo = (const VkQueryPoolPerformanceCreateInfoKHR*)queryPoolCreatetInfo.pNext;
-            gvk_result(pQueryPoolPerformanceCreateInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-            gvk_result(pQueryPoolPerformanceCreateInfo->sType == gvk::get_stype<VkQueryPoolPerformanceCreateInfoKHR>() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-            gvk_result(pQueryPoolPerformanceCreateInfo->counterIndexCount == mCurrentRequests.size() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result_assert(pQueryPoolPerformanceCreateInfo);
+            gvk_result_assert(pQueryPoolPerformanceCreateInfo->sType == gvk::get_stype<VkQueryPoolPerformanceCreateInfoKHR>());
+            gvk_result_assert(pQueryPoolPerformanceCreateInfo->counterIndexCount == mCurrentRequests.size());
 
             // Loop over query results and add them to the appropriate counter results.
             uint32_t resultsData_i = 0;
@@ -302,9 +317,9 @@ VkResult PerformanceQueryManager::post_process_queue_submission(const GvkPipelin
                     const auto& counter = queueFamilyInfo.performanceCounters[pQueryPoolPerformanceCreateInfo->pCounterIndices[counter_i]];
 
                     // Sanity check
-                    gvk_result(currentRequest.counter == counter ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-                    gvk_result(resultsData_i < resultsData.size() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-                    gvk_result(!currentRequest.results.empty() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+                    gvk_result_assert(currentRequest.counter == counter);
+                    gvk_result_assert(resultsData_i < resultsData.size());
+                    gvk_result_assert(!currentRequest.results.empty());
 
                     // Update currentRequest.results.  The back() of the results collection is the
                     //  current value.  Each time the range-of-interest completes a new empty entry
@@ -339,11 +354,11 @@ VkResult PerformanceQueryManager::post_process_range()
             for (auto& currentRequest : mCurrentRequests) {
                 if (currentRequest.results.size() == mRequest->warmupRangeCount + mRequest->queryRangeCount) {
                     auto inserted = mCompleteRequests.insert(std::move(currentRequest)).second;
-                    gvk_result(inserted ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+                    gvk_result_assert(inserted);
                 } else {
                     currentRequest.results.push_back({ });
                     auto inserted = mPendingRequests.insert({ get_uuid(currentRequest.counter), std::move(currentRequest) }).second;
-                    gvk_result(inserted ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+                    gvk_result_assert(inserted);
                 }
             }
             mCurrentRequests.clear();
@@ -353,7 +368,7 @@ VkResult PerformanceQueryManager::post_process_range()
             // Once there are no more pending requests, ReleaseProfilingLockKHR(),
             //  generate_report(), and reset().
             if (mPendingRequests.empty()) {
-                gvk_result(mCompleteRequests.size() == mRequest->counterCount ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+                gvk_result_assert(mCompleteRequests.size() == mRequest->counterCount);
                 gvk::Device(mRequest->device).ReleaseProfilingLockKHR();
                 gvk_result(generate_report());
                 reset();
@@ -369,7 +384,7 @@ VkResult PerformanceQueryManager::generate_report()
 
     gvk_result_scope_begin(VK_SUCCESS) {
         gvk::pipeline_explorer::PipelineInfo pipelineInfo({ mRequest->device, mRequest->pipeline });
-        gvk_result(pipelineInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result_assert(pipelineInfo);
 
         // Get date and time strings
         auto dateTime = gvk::system::DateTime::now();
@@ -401,7 +416,7 @@ VkResult PerformanceQueryManager::generate_report()
 
         // Process group results
         for (uint32_t group_i = 0; group_i < performanceQueryResultInfo.groupResultCount; ++group_i) {
-            gvk_result((uint32_t)mCompleteRequests.size() == mRequest->counterCount ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result_assert((uint32_t)mCompleteRequests.size() == mRequest->counterCount);
 
             // Setup GvkPipelineExplorerPerformanceQueryGroupResultInfo
             auto& performanceQueryGroupResultInfo = pPerformanceQueryGroupResultInfos[group_i];

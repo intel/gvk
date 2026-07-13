@@ -26,6 +26,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-pipeline-explorer/gui/metrics/performance-query-metrics-tab.hpp"
 
+#include <algorithm>
+
 namespace gvk {
 namespace pipeline_explorer {
 namespace gui {
@@ -138,6 +140,47 @@ static void filter_performance_counters(GuiInfo& guiInfo)
 void PerformanceQueryMetricsTab::on_update(GuiInfo& guiInfo)
 {
     (void)guiInfo;
+#ifdef GVK_PLATFORM_WINDOWS
+    // Process available counters reported from backend
+    const auto& messageItr = guiInfo.incomingIpcMessages.find("PerformanceCounterCollection");
+    if (messageItr != guiInfo.incomingIpcMessages.end() && !messageItr->second.empty()) {
+        const auto& message = messageItr->second.back();
+        std::istringstream istrm(std::string((char*)message.data.data(), message.data.size()));
+        gvk::deserialize(istrm, nullptr, guiInfo.performanceCountersInfo.available);
+        guiInfo.performanceCountersInfo.filters.clear();
+        guiInfo.performanceCountersInfo.scopes.clear();
+        guiInfo.performanceCountersInfo.categories.clear();
+        guiInfo.performanceCountersInfo.active.clear();
+        guiInfo.performanceCountersInfo.enabled.clear();
+        for (uint32_t i = 0; i < guiInfo.performanceCountersInfo.available->count; ++i) {
+            std::stringstream tokens;
+            std::set<std::string> uniqueTokens;
+            for (const auto& token : gvk::string::split(guiInfo.performanceCountersInfo.available->pDescriptions[i].name, " ")) {
+                if (uniqueTokens.insert(token).second) {
+                    tokens << token << ";";
+                }
+            }
+            guiInfo.performanceCountersInfo.filters.push_back({ tokens.str(), i });
+            guiInfo.performanceCountersInfo.scopes[guiInfo.performanceCountersInfo.available->pCounters[i].scope] = true;
+            guiInfo.performanceCountersInfo.categories[guiInfo.performanceCountersInfo.available->pDescriptions[i].category] = true;
+            guiInfo.performanceCountersInfo.active.push_back(i);
+            guiInfo.performanceCountersInfo.enabled.push_back(false);
+        }
+    }
+#endif // GVK_PLATFORM_WINDOWS
+}
+
+void PerformanceQueryMetricsTab::on_plot(GuiInfo& guiInfo)
+{
+    for (uint32_t active_i = 0; active_i < guiInfo.performanceCountersInfo.active.size(); ++active_i) {
+        auto counter_i = guiInfo.performanceCountersInfo.active[active_i];
+        assert(counter_i < guiInfo.performanceCountersInfo.enabled.size());
+        if (guiInfo.performanceCountersInfo.enabled[counter_i]) {
+            assert(counter_i < guiInfo.performanceCountersInfo.available->count);
+            const auto& description = guiInfo.performanceCountersInfo.available->pDescriptions[counter_i];
+            draw_plot(guiInfo, description.name);
+        }
+    }
 }
 
 void PerformanceQueryMetricsTab::on_gui(GuiInfo& guiInfo)
@@ -239,12 +282,15 @@ void PerformanceQueryMetricsTab::on_gui(GuiInfo& guiInfo)
 
     // Check request/result
     if (guiInfo.performanceCountersInfo.requestResult.pending()) {
-        guiInfo.performanceCountersInfo.requestResult.check_result(guiInfo.workspaceInfo.workspace);
+        guiInfo.performanceCountersInfo.requestResult.check_result(guiInfo.workspace);
     }
 
     // Process request/result
+    bool autoQuery = false;
     if (guiInfo.performanceCountersInfo.requestResult.ready()) {
         auto result = guiInfo.performanceCountersInfo.requestResult.get_result();
+        assert(result->pTime);
+        auto timestamp = gvk::string::to_number<double>(gvk::string::remove(result->pDate, "/") + gvk::string::remove(result->pTime, ":"));
         auto& pipelineInfo = guiInfo.pipelineInfos[{ result->pipelineInfo.device, result->pipelineInfo.pipeline }];
         if (pipelineInfo.pipeline) {
             for (uint32_t goupResult_i = 0; goupResult_i < result->groupResultCount; ++goupResult_i) {
@@ -256,20 +302,39 @@ void PerformanceQueryMetricsTab::on_gui(GuiInfo& guiInfo)
                     memcpy(uuid.data(), counterResult.counter.uuid, sizeof(uuid));
                     pipelineInfo.performanceCounterResults[uuid].total = counterResult.total;
                     pipelineInfo.performanceCounterResults[uuid].average = counterResult.average;
+
+                    // Setup plot results
+                    assert(!std::string(counterResult.description.name).empty());
+                    auto& plotResults = mPlotResults[pipelineInfo.pipeline][counterResult.description.name];
+                    mMinTimestamp = std::min(plotResults.minTimestamp, timestamp);
+                    mMaxTimestamp = std::max(plotResults.maxTimestamp, timestamp);
+                    plotResults.minTimestamp = std::min(plotResults.minTimestamp, timestamp);
+                    plotResults.maxTimestamp = std::max(plotResults.maxTimestamp, timestamp);
+                    plotResults.minValue = std::min(plotResults.minValue, counterResult.average);
+                    plotResults.maxValue = std::max(plotResults.maxValue, counterResult.average);
+                    plotResults.timestamps.push_back(timestamp);
+                    plotResults.values.push_back(counterResult.average);
                 }
             }
         }
         guiInfo.performanceCountersInfo.requestResult.reset();
+        autoQuery = mAutoQuery;
     }
 
     // Draw query button
+    #ifdef GVK_PLATFORM_WINDOWS
+    bool workloadDisabled = !guiInfo.workload;
+    #else
+    bool workloadDisabled = true;
+    #endif
     ImGui::BeginDisabled(
+        workloadDisabled ||
         !guiInfo.selectedPipeline.get_handle() ||
         !guiInfo.performanceCountersInfo.activeEnabledCount ||
         guiInfo.performanceCountersInfo.requestResult.pending()
     );
     {
-        if (ImGui::Button("Query Metrics")) {
+        if (ImGui::Button("Query Metrics") || autoQuery) {
             std::vector<VkPerformanceCounterKHR> performanceCounters;
             performanceCounters.reserve(guiInfo.performanceCountersInfo.activeEnabledCount);
             for (const auto& counter_i : guiInfo.performanceCountersInfo.active) {
@@ -278,7 +343,7 @@ void PerformanceQueryMetricsTab::on_gui(GuiInfo& guiInfo)
                 }
             }
             auto performanceQueryRequestInfo = gvk::get_default<GvkPipelineExplorerPerformanceQueryRequestInfo>();
-            std::string reportPath = guiInfo.reportEnabled ? (std::filesystem::path(guiInfo.workspaceInfo.workspace) / "reports").string() : std::string();
+            std::string reportPath = guiInfo.reportEnabled ? (std::filesystem::path(guiInfo.workspace) / "reports").string() : std::string();
             performanceQueryRequestInfo.pReportPath = !reportPath.empty() ? reportPath.c_str() : nullptr;
             performanceQueryRequestInfo.device = guiInfo.selectedPipeline.get_dispatchable_handle();
             performanceQueryRequestInfo.pipeline = guiInfo.selectedPipeline.get_handle();
@@ -286,7 +351,7 @@ void PerformanceQueryMetricsTab::on_gui(GuiInfo& guiInfo)
             performanceQueryRequestInfo.queryRangeCount = guiInfo.requestInfo.queryRangeCount;
             performanceQueryRequestInfo.counterCount = (uint32_t)performanceCounters.size();
             performanceQueryRequestInfo.pCounters = !performanceCounters.empty() ? performanceCounters.data() : nullptr;
-            (void)guiInfo.performanceCountersInfo.requestResult.submit_request(guiInfo.workspaceInfo.workspace, performanceQueryRequestInfo);
+            (void)guiInfo.performanceCountersInfo.requestResult.submit_request(guiInfo.workspace, performanceQueryRequestInfo);
         }
     }
     ImGui::EndDisabled();
@@ -296,15 +361,29 @@ void PerformanceQueryMetricsTab::on_gui(GuiInfo& guiInfo)
         guiInfo.performanceCountersInfo.requestResult.reset();
     }
     ImGui::EndDisabled();
+    ImGui::SameLine();
+    if (mAutoQuery && guiInfo.performanceCountersInfo.requestResult.pending()) {
+        if (ImGui::Button("Stop Query")) {
+            guiInfo.performanceCountersInfo.requestResult.reset();
+        }
+    } else {
+        if (ImGui::Checkbox("Auto Query", &mAutoQuery)) {
+        }
+    }
+    if (mAutoQuery) {
+        guiInfo.reportEnabled = false;
+    }
 
+#if 0
     // Draw deselect all button
-    ImGui::BeginDisabled(!guiInfo.performanceCountersInfo.activeEnabledCount);
+    ImGui::BeginDisabled(!guiInfo.performanceCountersInfo.activeEnabledCount || autoQuery);
     if (ImGui::Button("Deselect All")) {
         for (uint32_t i = 0; i < guiInfo.performanceCountersInfo.available->count; ++i) {
             guiInfo.performanceCountersInfo.enabled[i] = false;
         }
     }
     ImGui::EndDisabled();
+#endif
 
     // Draw table
     auto tableFlags =
@@ -346,10 +425,12 @@ void PerformanceQueryMetricsTab::on_gui(GuiInfo& guiInfo)
             }
         }
 
+        // Get selected pipeline
+        auto selectedPipelineInfo = guiInfo.pipelineInfos[guiInfo.selectedPipeline];
+
         // Draw counters
         ImGuiListClipper clipper;
         clipper.Begin((int)guiInfo.performanceCountersInfo.active.size());
-        auto selectedPipelineInfo = guiInfo.pipelineInfos[guiInfo.selectedPipeline];
         while (clipper.Step()) {
             for (int row_n = clipper.DisplayStart; row_n < clipper.DisplayEnd; ++row_n) {
                 auto counter_i = guiInfo.performanceCountersInfo.active[row_n];
