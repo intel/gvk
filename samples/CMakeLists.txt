@@ -113,3 +113,6 @@ if(gvk-state-tracker_ENABLED AND MSVC)
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE_DIR:VK_LAYER_INTEL_gvk_state_tracker>/VK_LAYER_INTEL_gvk_state_tracker.json" "$<TARGET_FILE_DIR:gvk-metadata-extractor-sample>"
     )
 endif()
+
+# N-Body SPH Simulation sample
+# add_subdirectory(gvk-n-body-sph) # WIP
