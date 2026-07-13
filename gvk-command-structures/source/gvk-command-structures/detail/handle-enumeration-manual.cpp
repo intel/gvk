@@ -114,6 +114,13 @@ void enumerate_structure_handles<GvkCommandStructureCmdSetSampleMaskEXT>(const G
 }
 
 template <>
+void enumerate_structure_handles<GvkCommandStructureCmdUpdateBuffer>(const GvkCommandStructureCmdUpdateBuffer& obj, EnumerateHandlesCallback callback)
+{
+    enumerate_handle(obj.commandBuffer, callback);
+    enumerate_handle(obj.dstBuffer, callback);
+}
+
+template <>
 void enumerate_structure_handles<GvkCommandStructureGetAccelerationStructureBuildSizesKHR>(const GvkCommandStructureGetAccelerationStructureBuildSizesKHR& obj, EnumerateHandlesCallback callback)
 {
     enumerate_handle(obj.device, callback);

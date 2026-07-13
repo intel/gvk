@@ -72,17 +72,17 @@ Gets a value indicating whether or not a given string ends with a given find str
 bool ends_with(const std::string& str, const std::string& find);
 
 /**
-Gets a copy of a string with all occurences of a given substring replaced with another
+Gets a copy of a string with all occurrences of a given substring replaced with another
 @param [in] str The source string
 @param [in] find The string to find and replace in the source string
-@param [in] replacement The string to replace occurences of the find string with
-@param [in] recursive (optional = false) Whether or not to recursively replace occurences of the find string
+@param [in] replacement The string to replace occurrences of the find string with
+@param [in] recursive (optional = false) Whether or not to recursively replace occurrences of the find string
 @return The resulting std::string
 */
 std::string replace(const std::string& str, const std::string& find, const std::string& replacement, bool recursive = false);
 
 /**
-Gets a copy of a string with a all occurences of a given collection of substrings replaced with a paired replacement
+Gets a copy of a string with all occurrences of a given collection of substrings replaced with a paired replacement
 @param [in] str The source string
 @param [in] replacements The collection of find and replace pairs
 @return The resulting std::string
@@ -90,16 +90,16 @@ Gets a copy of a string with a all occurences of a given collection of substring
 std::string replace(const std::string& str, const std::vector<Replacement>& replacements);
 
 /**
-Gets a copy of a string with all occurences of a given substring removed
+Gets a copy of a string with all occurrences of a given substring removed
 @param [in] str The source string
 @param [in] find The string to find and remove from the source string
-@param [in] recursive (optional = false) Whether or not to recursively remove occurences of the find string
+@param [in] recursive (optional = false) Whether or not to recursively remove occurrences of the find string
 @return The resulting std::string
 */
-std::string remove(const std::string& str, const std::string& find, bool recurisve = false);
+std::string remove(const std::string& str, const std::string& find, bool recursive = false);
 
 /**
-Gets a copy of a string with a all occurences of a given collection of substrings removed
+Gets a copy of a string with all occurrences of a given collection of substrings removed
 @param [in] str The source string
 @param [in] finds The collection of strings to remove
 @return The resulting std::string
@@ -107,7 +107,7 @@ Gets a copy of a string with a all occurences of a given collection of substring
 std::string remove(const std::string& str, const std::vector<std::string>& finds);
 
 /**
-Gets a copy of a string with all repetitive occurences of a given substring reduced to single occurences
+Gets a copy of a string with all repetitive occurrences of a given substring reduced to single occurrences
 @param [in] str The source string
 @param [in] find The string to find sequences of and reduce
 @return The resulting std::string
@@ -193,9 +193,9 @@ Gets a value indicating whether or not a given string is all upper case characte
 bool is_upper(const std::string& str);
 
 /**
-Gets the upper case equivalent of a specififed character
+Gets the upper case equivalent of a specified character
 @param [in] c The character to get the upper case equivalent of
-@retuern The upper case equivalent of the specified character
+@return The upper case equivalent of the specified character
 */
 char to_upper(char c);
 
@@ -221,9 +221,9 @@ Gets a value indicating whether or not a given string is all lower case characte
 bool is_lower(const std::string& str);
 
 /**
-Gets the lower case equivalent of a specififed character
+Gets the lower case equivalent of a specified character
 @param [in] c The character to get the lower case equivalent of
-@retuern The lower case equivalent of the specified character
+@return The lower case equivalent of the specified character
 */
 char to_lower(char c);
 
@@ -257,7 +257,7 @@ Gets a std::vector<std::string> populated with substrings of a given string spli
 std::vector<std::string> split_camel_case(const std::string& str);
 
 /**
-Gets a copy of a string with all occurences of "vk", "Vk", and "VK_" removed
+Gets a copy of a string with all occurrences of "vk", "Vk", and "VK_" removed
 @param [in] str The source string
 @return The resulting std::string
 */

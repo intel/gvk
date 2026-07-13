@@ -125,4 +125,20 @@ inline std::string flags_to_string(FlagsType flags, std::initializer_list<std::p
     return str;
 }
 
+/**
+Gets the std::wstring representation of a given std::string
+@param [in] str The std::string to convert to std::wstring
+@return The resulting std::wstring
+*/
+std::wstring to_wstring(const std::string& str);
+
+/**
+Converts a UTF-8 encoded character string to a wide character string
+@param [in] strLength The length of the input string
+@param [in] pStr Pointer to the input UTF-8 encoded string
+@param [in,out] pWstrLength Pointer to the length of the output wide string; returns required length if pWstr is nullptr
+@param [out] pWstr (optional) Pointer to the output wide character string buffer
+*/
+void to_wstring(uint32_t strLength, const char* pStr, uint32_t* pWstrLength, wchar_t* pWstr);
+
 } // namespace gvk

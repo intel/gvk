@@ -52,6 +52,8 @@ private:
         file << "#include \"gvk-command-structures/generated/basic-command-recorder.hpp\"" << std::endl;
         file << "#include \"gvk-defines.hpp\"" << std::endl;
         file << "#include \"gvk-layer.hpp\"" << std::endl;
+        file << "#include <fstream>" << std::endl;
+        file << "#include <mutex>" << std::endl;
         file << std::endl;
         NamespaceGenerator namespaceGenerator(file, "gvk::pipeline_explorer");
         file << std::endl;
@@ -71,6 +73,10 @@ private:
         file << "    BasicCommandRecorder mCommandRecorder;" << std::endl;
         file << "    bool TODO_shouldBeControlledByRequestInfo_getApiCalls { };" << std::endl;
         file << "private:" << std::endl;
+        file << "#if 0" << std::endl;
+        file << "    std::ofstream mOutputFile{ \"basic-pipeline-explorer-calls.txt\" };" << std::endl;
+        file << "    std::mutex mOutputFileMutex;" << std::endl;
+        file << "#endif" << std::endl;
         file << "    BasicPipelineExplorer(const BasicPipelineExplorer&) = delete;" << std::endl;
         file << "    BasicPipelineExplorer& operator=(const BasicPipelineExplorer&) = delete;" << std::endl;
         file << "};" << std::endl;
@@ -89,6 +95,14 @@ private:
             if (!gvk::string::contains(command.name, "INTEL")) {
                 file << command.returnType << " BasicPipelineExplorer::execute_" << command.name << "(" << get_parameter_list(command.parameters) << ")" << std::endl;
                 file << "{" << std::endl;
+
+                file << "    #if 0" << std::endl;
+                file << "    {" << std::endl;
+                file << "        std::lock_guard<std::mutex> lock(mOutputFileMutex);" << std::endl;
+                file << "        mOutputFile << std::endl << \"Thread , Frame : \" << std::endl << \"" << command.name << "\" << std::endl;" << std::endl;
+                file << "    }" << std::endl;
+                file << "    #endif" << std::endl;
+
                 if (command.type == xml::Command::Type::Cmd) {
                     file << "    CommandBufferInfo commandBufferInfo(commandBuffer);" << std::endl;
                     file << "    if (commandBufferInfo) {" << std::endl;

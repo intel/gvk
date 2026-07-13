@@ -1,4 +1,3 @@
-
 /*******************************************************************************
 
 MIT License
@@ -38,10 +37,29 @@ class ApiCallTimelineWindow final
 public:
     ApiCallTimelineWindow(Window::Manager& windowManager);
     ~ApiCallTimelineWindow() override final;
+    void reset() override final;
 
 protected:
+    void on_update(GuiInfo& guiInfo) override final;
     void on_gui(GuiInfo& guiInfo) override final;
-    BarChart mBarChart;
+
+private:
+#if 0
+    struct CommandPlotInfo
+    {
+        std::string name;
+        double centerX{ };
+        double centerY{ };
+        double width{ };
+        double height{ };
+        ImU32 color{ };
+    };
+
+    std::vector<CommandPlotInfo> mCommandPlotInfos;
+#endif
+    int mPrevCmdCount{ 0 };
+    bool mFitRequested{ true };
+    float mBarWidthScale{ 1.0f };
 };
 
 } // namespace gui

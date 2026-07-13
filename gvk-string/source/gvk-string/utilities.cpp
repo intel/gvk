@@ -76,9 +76,9 @@ std::string replace(const std::string& str, const std::vector<Replacement>& repl
     return result;
 }
 
-std::string remove(const std::string& str, const std::string& find, bool recurisve)
+std::string remove(const std::string& str, const std::string& find, bool recursive)
 {
-    return replace(str, find, std::string(), recurisve);
+    return replace(str, find, std::string(), recursive);
 }
 
 std::string remove(const std::string& str, const std::vector<std::string>& finds)

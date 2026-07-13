@@ -39,26 +39,37 @@ ApiCallExplorerWindow::~ApiCallExplorerWindow()
 {
 }
 
+void ApiCallExplorerWindow::on_update(GuiInfo& guiInfo)
+{
+    (void)guiInfo;
+}
+
 void ApiCallExplorerWindow::on_gui(GuiInfo& guiInfo)
 {
+    (void)guiInfo;
+
+#if 0
+
     // Check request/result
     if (guiInfo.apiCallInfo.requestResult.pending()) {
-        if (guiInfo.apiCallInfo.requestResult.check_result(guiInfo.workspaceInfo.workspace) == VK_SUCCESS) {
+        if (guiInfo.apiCallInfo.requestResult.check_result(guiInfo.workspace) == VK_SUCCESS) {
             guiInfo.apiCallInfo.commandCollection = guiInfo.apiCallInfo.requestResult.get_result()->commands;
         }
     }
 
+#ifdef GVK_PLATFORM_WINDOWS
     // Process request/result
-    ImGui::BeginDisabled(!guiInfo.applicationInfo.running && !guiInfo.cliProvidedWorkspace);
+    ImGui::BeginDisabled(!guiInfo.workload && !guiInfo.cliProvidedWorkspace);
     ImGui::BeginDisabled(guiInfo.apiCallInfo.requestResult.pending());
     if (ImGui::Button("Refresh API Calls")) {
         auto request = gvk::get_default<GvkPipelineExplorerCommandCollectionRequestInfo>();
-        std::string reportPath = guiInfo.reportEnabled ? (std::filesystem::path(guiInfo.workspaceInfo.workspace) / "reports").string() : std::string();
+        std::string reportPath = guiInfo.reportEnabled ? (std::filesystem::path(guiInfo.workspace) / "reports").string() : std::string();
         request.pReportPath = !reportPath.empty() ? reportPath.c_str() : nullptr;
-        guiInfo.apiCallInfo.requestResult.submit_request(guiInfo.workspaceInfo.workspace, request);
+        guiInfo.apiCallInfo.requestResult.submit_request(guiInfo.workspace, request);
     }
     ImGui::EndDisabled();
     ImGui::EndDisabled();
+#endif
 
     // Draw table
     auto tableFlags =
@@ -144,6 +155,9 @@ void ApiCallExplorerWindow::on_gui(GuiInfo& guiInfo)
 
         ImGui::EndTable();
     }
+
+#endif
+
 }
 
 } // namespace gui

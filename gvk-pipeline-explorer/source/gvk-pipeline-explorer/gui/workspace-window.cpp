@@ -29,9 +29,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-pipeline-explorer/gui/image-window.hpp"
 #include "gvk-pipeline-explorer/gui/window-manager.hpp"
 #include "gvk-environment.hpp"
+#include "gvk-runtime.hpp"
 #include "gvk-system.hpp"
 
-#ifdef VK_USE_PLATFORM_WIN32_KHR
+#ifdef GVK_PLATFORM_WINDOWS
 #include <codecvt>
 #include <filesystem>
 #include <locale>
@@ -45,30 +46,79 @@ namespace gvk {
 namespace pipeline_explorer {
 namespace gui {
 
+#ifdef GVK_PLATFORM_WINDOWS
+static std::string get_target(const LaunchOptions& launchOptions)
+{
+    if (!launchOptions.exe.empty()) {
+        auto applicationName = std::filesystem::path(launchOptions.exe).stem().string();
+        return !launchOptions.target.empty() ? launchOptions.target : applicationName;
+    }
+    return { };
+}
+
+static std::filesystem::path get_default_workspace_path(const LaunchOptions& launchOptions)
+{
+    std::filesystem::path workspacePath;
+    if (!launchOptions.exe.empty()) {
+        PWSTR pDocumentsPath = NULL;
+        auto hResult = SHGetKnownFolderPath(FOLDERID_Documents, 0, nullptr, &pDocumentsPath);
+        auto target = get_target(launchOptions) + "-pipeline-explorer";
+        workspacePath = (SUCCEEDED(hResult) && pDocumentsPath) ? std::filesystem::path(pDocumentsPath) / "GPA" / target : target;
+        CoTaskMemFree(pDocumentsPath);
+    }
+    return workspacePath;
+}
+
+static std::filesystem::path get_default_working_directory(const LaunchOptions& launchOptions)
+{
+    std::filesystem::path workingDirectory;
+    if (!launchOptions.exe.empty()) {
+        workingDirectory = std::filesystem::path(launchOptions.exe).parent_path();
+    }
+    return workingDirectory;
+}
+#endif // GVK_PLATFORM_WINDOWS
+
 WorkspaceWindow::WorkspaceWindow(Window::Manager& windowManager)
     : Window(windowManager, "Workspace")
 {
+    ImGuiSettingsHandler settingsHandler{ };
+    settingsHandler.TypeName = "LaunchOptions";
+    settingsHandler.TypeHash = ImHashStr(settingsHandler.TypeName);
+    settingsHandler.ClearAllFn = im_gui_settings_clear_all;
+    settingsHandler.ReadInitFn = im_gui_settings_read_init;
+    settingsHandler.ReadOpenFn = im_gui_settings_read_open;
+    settingsHandler.ReadLineFn = im_gui_settings_read_line;
+    settingsHandler.ApplyAllFn = im_gui_settings_apply_all;
+    settingsHandler.WriteAllFn = im_gui_settings_write_all;
+    settingsHandler.UserData = this;
+    ImGui::AddSettingsHandler(&settingsHandler);
+}
+
+const LaunchOptions& WorkspaceWindow::get_launch_options() const
+{
+    return mLaunchOptions;
 }
 
 void WorkspaceWindow::on_gui(GuiInfo& guiInfo)
 {
     (void)guiInfo;
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-    bool appRunningState = guiInfo.applicationInfo.processInformation.hProcess || guiInfo.cliProvidedWorkspace || guiInfo.workspaceInfo.streamInfo.running; //True means app is running
-    ImGui::BeginDisabled(appRunningState);
+#ifdef GVK_PLATFORM_WINDOWS
+    bool workloadRunning = guiInfo.workload || guiInfo.cliProvidedWorkspace;
+    ImGui::BeginDisabled(workloadRunning);
     {
         // Workspace options
         ImGui::Text("Workspace");
         ImGui::SameLine();
-        if (ImGui::Checkbox("Auto##workspace", &guiInfo.workspaceInfo.autoWorkspace) && guiInfo.workspaceInfo.autoWorkspace) {
-            guiInfo.workspaceInfo.workspace = get_default_workspace_path(guiInfo.workspaceInfo).string();
+        if (ImGui::Checkbox("Auto##workspace", &mLaunchOptions.autoWorkspace) && mLaunchOptions.autoWorkspace) {
+            mLaunchOptions.workspace = get_default_workspace_path(mLaunchOptions).string();
         }
         ImGui::SameLine();
-        ImGui::BeginDisabled(guiInfo.workspaceInfo.autoWorkspace);
+        ImGui::BeginDisabled(mLaunchOptions.autoWorkspace);
         {
-            auto workspacePathStr = gvk::string::scrub_path(guiInfo.workspaceInfo.workspace);
+            auto workspacePathStr = gvk::string::scrub_path(mLaunchOptions.workspace);
             if (GvkGui::InputPath("##workspace", &workspacePathStr)) {
-                guiInfo.workspaceInfo.workspace = workspacePathStr;
+                mLaunchOptions.workspace = workspacePathStr;
             }
         }
         ImGui::EndDisabled();
@@ -78,7 +128,7 @@ void WorkspaceWindow::on_gui(GuiInfo& guiInfo)
     if (ImGui::BeginTabBar("Tab Bar"))
     {
         if (ImGui::BeginTabItem("Application")) {
-            draw_application_tab(guiInfo, appRunningState);
+            draw_application_tab(guiInfo, workloadRunning);
             ImGui::EndTabItem();
         }
         ImGui::BeginDisabled();
@@ -89,10 +139,7 @@ void WorkspaceWindow::on_gui(GuiInfo& guiInfo)
         ImGui::EndDisabled();
         ImGui::EndTabBar();
     }
-    
-
-
-#endif // VK_USE_PLATFORM_WIN32_KHR
+#endif // GVK_PLATFORM_WINDOWS
 }
 
 void WorkspaceWindow::on_save(GuiInfo& guiInfo)
@@ -105,37 +152,159 @@ void WorkspaceWindow::on_load(GuiInfo& guiInfo)
     (void)guiInfo;
 }
 
-void WorkspaceWindow::draw_application_tab(GuiInfo& guiInfo, bool appRunningState)
+void WorkspaceWindow::im_gui_settings_clear_all(ImGuiContext* ctx, ImGuiSettingsHandler* handler)
 {
-    ImGui::BeginDisabled(appRunningState);
+    (void)ctx;
+    assert(handler);
+    auto& workspaceWindow = *(WorkspaceWindow*)handler->UserData;
+    workspaceWindow.mLaunchOptions = { };
+    workspaceWindow.mRecentLaunchOptions = { };
+}
+
+void WorkspaceWindow::im_gui_settings_read_init(ImGuiContext* ctx, ImGuiSettingsHandler* handler)
+{
+    (void)ctx;
+    assert(handler);
+    auto& workspaceWindow = *(WorkspaceWindow*)handler->UserData;
+    workspaceWindow.mLaunchOptions = { };
+    workspaceWindow.mRecentLaunchOptions = { };
+}
+
+void* WorkspaceWindow::im_gui_settings_read_open(ImGuiContext* ctx, ImGuiSettingsHandler* handler, const char* name)
+{
+    (void)ctx;
+    assert(handler);
+    assert(handler->UserData);
+    assert(name);
+    auto& workspaceWindow = *(WorkspaceWindow*)handler->UserData;
+    if (!strcmp(name, "WorkspaceWindow::mLaunchOptions")) {
+        return &workspaceWindow.mLaunchOptions;
+    } else if (gvk::string::contains(name, "WorkspaceWindow::mRecentLaunchOptions")) {
+        auto index =
+            gvk::string::to_number<uint32_t>(
+                gvk::string::remove(gvk::string::remove(gvk::string::remove(
+                    name, "WorkspaceWindow::mRecentLaunchOptions"), "["), "]"
+                )
+            );
+        if (workspaceWindow.mRecentLaunchOptions.size() <= index) {
+            workspaceWindow.mRecentLaunchOptions.resize(index + 1);
+        }
+        return &workspaceWindow.mRecentLaunchOptions[index];
+    }
+    return nullptr;
+}
+
+void WorkspaceWindow::im_gui_settings_read_line(ImGuiContext* ctx, ImGuiSettingsHandler* handler, void* entry, const char* line)
+{
+    (void)ctx;
+    (void)handler;
+    assert(entry);
+    assert(line);
+    auto& launchOptions = *(LaunchOptions*)entry;
+
+    // Get key value pair
+    std::string key;
+    std::string value;
+    std::string str = line;
+    auto split = str.find('=');
+    if (split != std::string::npos) {
+        key = str.substr(0, split);
+        if (split + 1 < str.size()) {
+            value = str.substr(split + 1);
+        }
+    }
+
+    // Set launch options
+    if (!key.empty()) {
+        if (value == "nullptr") {
+            value.clear();
+        }
+        if (key == "exe") {
+            launchOptions.exe = value;
+        } else if (key == "target") {
+            launchOptions.target = value;
+        } else if (key == "args") {
+            launchOptions.args = value;
+        } else if (key == "directory") {
+            launchOptions.directory = value;
+        } else if (key == "workspace") {
+            launchOptions.workspace = value;
+        } else if (key == "logPath") {
+            launchOptions.logPath = value;
+        } else if (key == "waitForDebugger") {
+            launchOptions.waitForDebugger = gvk::string::to_number<uint32_t>(value);
+        } else if (key == "autoDirectory") {
+            launchOptions.autoDirectory = gvk::string::to_number<uint32_t>(value);
+        } else if (key == "autoWorkspace") {
+            launchOptions.autoWorkspace = gvk::string::to_number<uint32_t>(value);
+        } else if (key == "autoLogPath") {
+            launchOptions.autoLogPath = gvk::string::to_number<uint32_t>(value);
+        } else if (key == "logToStdOut") {
+            launchOptions.logToStdOut = gvk::string::to_number<uint32_t>(value);
+        } else if (key == "logToFile") {
+            launchOptions.logToFile = gvk::string::to_number<uint32_t>(value);
+        } else if (key == "loaderDebug") {
+            launchOptions.loaderDebug = gvk::string::to_number<uint32_t>(value);
+        } else if (key == "clearStdOut") {
+            launchOptions.clearStdOut = gvk::string::to_number<uint32_t>(value);
+        } else if (key == "uniqueHandles") {
+            launchOptions.uniqueHandles = gvk::string::to_number<uint32_t>(value);
+        }
+    }
+}
+
+void WorkspaceWindow::im_gui_settings_apply_all(ImGuiContext* ctx, ImGuiSettingsHandler* handler)
+{
+    (void)ctx;
+    (void)handler;
+    // NOOP :
+}
+
+void WorkspaceWindow::im_gui_settings_write_all(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* out_buf)
+{
+    assert(handler);
+    assert(handler->TypeName);
+    assert(handler->UserData);
+    const auto& workspaceWindow = *(const WorkspaceWindow*)handler->UserData;
+    out_buf->appendf("[%s][WorkspaceWindow::mLaunchOptions]\n", handler->TypeName);
+    LaunchOptions::im_gui_settings_write(workspaceWindow.mLaunchOptions, ctx, handler, out_buf);
+    for (size_t i = 0; i < workspaceWindow.mRecentLaunchOptions.size(); ++i) {
+        out_buf->appendf("[%s][WorkspaceWindow::mRecentLaunchOptions[%zu]]\n", handler->TypeName, i);
+        LaunchOptions::im_gui_settings_write(workspaceWindow.mRecentLaunchOptions[i], ctx, handler, out_buf);
+    }
+}
+
+void WorkspaceWindow::draw_application_tab(GuiInfo& guiInfo, bool workloadRunning)
+{
+    ImGui::BeginDisabled(workloadRunning);
     {
         // Clear workspace
         if (ImGui::Button("Clear")) {
-            guiInfo.workspaceInfo = { };
+            mLaunchOptions = { };
         }
 
         // Recent workspaces
         ImGui::SameLine();
-        ImGui::BeginDisabled(guiInfo.recentWorkspaceInfos.empty());
+        ImGui::BeginDisabled(mRecentLaunchOptions.empty());
         {
             if (ImGui::Button("Recent")) {
                 ImGui::OpenPopup("Recent-Workspace-Popup");
             }
             if (ImGui::BeginPopup("Recent-Workspace-Popup")) {
-                auto remove = guiInfo.recentWorkspaceInfos.end();
-                for (auto itr = guiInfo.recentWorkspaceInfos.begin(); itr != guiInfo.recentWorkspaceInfos.end(); ++itr) {
+                auto remove = mRecentLaunchOptions.end();
+                for (auto itr = mRecentLaunchOptions.begin(); itr != mRecentLaunchOptions.end(); ++itr) {
                     ImGui::PushID(&*itr);
                     if (ImGui::SmallButton("Remove")) {
                         remove = itr;
                     }
                     ImGui::SameLine();
-                    if (ImGui::Selectable((itr->launch + " " + itr->args).c_str())) {
-                        guiInfo.workspaceInfo = *itr;
+                    if (ImGui::Selectable((itr->exe + " " + itr->args).c_str())) {
+                        mLaunchOptions = *itr;
                     }
                     ImGui::PopID();
                 }
-                if (remove != guiInfo.recentWorkspaceInfos.end()) {
-                    guiInfo.recentWorkspaceInfos.erase(remove);
+                if (remove != mRecentLaunchOptions.end()) {
+                    mRecentLaunchOptions.erase(remove);
                 }
                 ImGui::EndPopup();
             }
@@ -145,12 +314,14 @@ void WorkspaceWindow::draw_application_tab(GuiInfo& guiInfo, bool appRunningStat
     ImGui::EndDisabled();
 
     ImGui::SameLine();
-#ifdef VK_USE_PLATFORM_WIN32_KHR
+
+#if 0
+#ifdef GVK_PLATFORM_WINDOWS
     std::filesystem::path screenshotDir = std::filesystem::path(guiInfo.workspaceInfo.workspace) / "screens";
     ImGui::BeginDisabled(!appRunningState);
     {
         if (ImGui::Button("Take Screenshot")) {
-            auto hwnd = find_window_by_pid(guiInfo.applicationInfo.processInformation.dwProcessId); //Do we need to pass guiInfo.applicationInfo.processInformation.hProcess too?
+            auto hwnd = find_window_by_pid(guiInfo.workload.get_pid()); //Do we need to pass guiInfo.applicationInfo.processInformation.hProcess too?
             //Get timestamp
             auto dateTime = gvk::system::DateTime::now();
             auto dateStr = dateTime.get_date_str();
@@ -224,19 +395,23 @@ void WorkspaceWindow::draw_application_tab(GuiInfo& guiInfo, bool appRunningStat
         }
     }
     ImGui::EndDisabled();
-#endif // VK_USE_PLATFORM_WIN32_KHR
+#endif // GVK_PLATFORM_WINDOWS
+#endif
 
-    ImGui::BeginDisabled(appRunningState);
+    ImGui::BeginDisabled(workloadRunning);
     {
         // Launch options
+#if 0
         ImGui::Checkbox("Auto Query", &mAutoQuery);
         ImGui::SameLine();
-        ImGui::Checkbox("Wait For Debugger", &guiInfo.workspaceInfo.waitForDebugger);
+#endif
+        ImGui::Checkbox("Wait For Debugger", &mLaunchOptions.waitForDebugger);
 #if 0
         ImGui::SameLine();
         ImGui::Checkbox("Open Terminal", &guiInfo.workspaceInfo.openTerminal);
 #endif
 
+#if 0
         // GITS launch options
         ImGui::SameLine();
 #if GVK_GITS_ENABLED
@@ -246,10 +421,19 @@ void WorkspaceWindow::draw_application_tab(GuiInfo& guiInfo, bool appRunningStat
 #endif // GVK_GITS_ENABLED
         ImGui::Checkbox("Record Stream", &guiInfo.workspaceInfo.record);
         ImGui::EndDisabled();
+#endif
+
+        // Vulkan loader debug
+        ImGui::SameLine();
+        ImGui::Checkbox("Vulkan Loader Debug", &mLaunchOptions.loaderDebug);
 
         // Clear stdout on launch option
         ImGui::SameLine();
-        ImGui::Checkbox("Clear StdOut", &mClearStdOut);
+        ImGui::Checkbox("Clear StdOut", &mLaunchOptions.clearStdOut);
+
+        // Enable validation layer unique handles
+        ImGui::SameLine();
+        ImGui::Checkbox("Unique Handles", &mLaunchOptions.uniqueHandles);
 
         // Layer configuration
         ImGui::SameLine();
@@ -257,10 +441,10 @@ void WorkspaceWindow::draw_application_tab(GuiInfo& guiInfo, bool appRunningStat
             ImGui::OpenPopup("Layers");
         }
         if (ImGui::BeginPopup("Layers")) {
-            mActiveLayers.resize(guiInfo.layerProperties.size());
+            mEnabledLayers.resize(guiInfo.layerProperties.size());
             for (size_t i = 0; i < guiInfo.layerProperties.size(); ++i) {
                 ImGui::PushID((int)i);
-                bool active = mActiveLayers[i];
+                bool active = mEnabledLayers[i];
 #if 0
                 // TODO : Setup layer ordering
                 if (ImGui::SmallButton("<")) {
@@ -271,34 +455,34 @@ void WorkspaceWindow::draw_application_tab(GuiInfo& guiInfo, bool appRunningStat
                 ImGui::SameLine();
 #endif
                 ImGui::Checkbox(guiInfo.layerProperties[i].layerName, &active);
-                mActiveLayers[i] = (int)active;
+                mEnabledLayers[i] = (int)active;
                 ImGui::PopID();
             }
             ImGui::EndPopup();
         }
+    }
+    ImGui::EndDisabled();
 
-        // Launch
-        ImGui::BeginDisabled(guiInfo.workspaceInfo.launch.empty());
-        {
-            if (ImGui::Button("Launch")) {
-                if (guiInfo.workspaceInfo.gitsStream) {
-#if 0
-                    launch_gits_stream(guiInfo);
-#endif
-                }
-                else {
-                    launch_application(guiInfo);
-                }
-            }
+    ImGui::PushItemWidth(-FLT_MIN);
+
+#ifdef GVK_PLATFORM_WINDOWS
+    // Launch/stop
+    if (!guiInfo.workload.running() && !guiInfo.onWorkloadShutdown) {
+        if (ImGui::Button("Launch")) { // TODO : Disable if field is empty?
+            launch_workload(guiInfo);
         }
-        ImGui::EndDisabled();
+    } else if (guiInfo.workload.running()) {
+        if (ImGui::Button("Stop")) {
+            guiInfo.workload.reset();
+        }
+    }
+#endif // GVK_PLATFORM_WINDOWS
 
+    ImGui::BeginDisabled(workloadRunning);
+    {
         // Launch path
-        ImGui::PushItemWidth(-FLT_MIN);
         ImGui::SameLine();
-        static bool sOnceDEBUG;
-        if (GvkGui::InputPath("##launch", &guiInfo.workspaceInfo.launch) || !sOnceDEBUG) {
-            sOnceDEBUG = true;
+        if (GvkGui::InputPath("##launch", &mLaunchOptions.exe)) {
 
 #if 0
             guiInfo.workspaceInfo.gitsStream = false;
@@ -340,23 +524,23 @@ void WorkspaceWindow::draw_application_tab(GuiInfo& guiInfo, bool appRunningStat
             ///////////////////////////////////////////////////////////////////////////////
             // TODO : Sort out workspace logic
             ///////////////////////////////////////////////////////////////////////////////
-            if (guiInfo.workspaceInfo.autoWorkingDirectory && !guiInfo.cliProvidedWorkspace) {
+            if (mLaunchOptions.autoDirectory && !guiInfo.cliProvidedWorkspace) {
 #ifdef WIN32
-                guiInfo.workspaceInfo.workingDirectory = get_default_working_directory(guiInfo.workspaceInfo).string();
+                mLaunchOptions.directory = get_default_working_directory(mLaunchOptions).string();
 #else
                 // TODO :
 #endif
             }
-            if (guiInfo.workspaceInfo.autoWorkspace && !guiInfo.cliProvidedWorkspace) {
+            if (mLaunchOptions.autoWorkspace && !guiInfo.cliProvidedWorkspace) {
 #ifdef WIN32
-                guiInfo.workspaceInfo.workspace = get_default_workspace_path(guiInfo.workspaceInfo).string();
+                mLaunchOptions.workspace = get_default_workspace_path(mLaunchOptions).string();
 #else
                 // TODO :
 #endif
             }
-            if (guiInfo.workspaceInfo.autoLogPath && !guiInfo.cliProvidedWorkspace) {
+            if (mLaunchOptions.autoLogPath && !guiInfo.cliProvidedWorkspace) {
 #ifdef WIN32
-                guiInfo.workspaceInfo.logPath = get_default_workspace_path(guiInfo.workspaceInfo).string() + "/logs";
+                mLaunchOptions.logPath = get_default_workspace_path(mLaunchOptions).string() + "/logs";
 #else
                 // TODO :
 #endif
@@ -377,23 +561,27 @@ void WorkspaceWindow::draw_application_tab(GuiInfo& guiInfo, bool appRunningStat
         // Workload args
         ImGui::Text("Args");
         ImGui::SameLine();
+#if 0
         GvkGui::InputPath("##args", &guiInfo.workspaceInfo.args);
+#else
+        GvkGui::InputPath("##args", &mLaunchOptions.args);
+#endif
 
         ////////////////////////////////////////////////////////////////////////////////
         ImGui::Text("Working Directory");
         ImGui::SameLine();
-        if (ImGui::Checkbox("Auto##workingDirectory", &guiInfo.workspaceInfo.autoWorkingDirectory) && guiInfo.workspaceInfo.autoWorkingDirectory) {
+        if (ImGui::Checkbox("Auto##workingDirectory", &mLaunchOptions.autoDirectory) && mLaunchOptions.autoDirectory) {
 #ifdef WIN32
-            guiInfo.workspaceInfo.workingDirectory = get_default_working_directory(guiInfo.workspaceInfo).string();
+            mLaunchOptions.directory = get_default_working_directory(mLaunchOptions).string();
 #else
             // TODO :
 #endif
         }
         ImGui::SameLine();
-        ImGui::BeginDisabled(guiInfo.workspaceInfo.autoWorkingDirectory);
+        ImGui::BeginDisabled(mLaunchOptions.autoDirectory);
         {
-            guiInfo.workspaceInfo.workingDirectory = gvk::string::scrub_path(guiInfo.workspaceInfo.workingDirectory);
-            if (GvkGui::InputPath("##workingDirectory", &guiInfo.workspaceInfo.workingDirectory)) {
+            mLaunchOptions.directory = gvk::string::scrub_path(mLaunchOptions.directory);
+            if (GvkGui::InputPath("##workingDirectory", &mLaunchOptions.directory)) {
             }
         }
         ImGui::EndDisabled();
@@ -416,34 +604,34 @@ void WorkspaceWindow::draw_application_tab(GuiInfo& guiInfo, bool appRunningStat
         ////////////////////////////////////////////////////////////////////////////////
         ImGui::Text("Log");
         ImGui::SameLine();
-        ImGui::Checkbox("StdOut", &guiInfo.workspaceInfo.logToStdOut);
-        ImGui::BeginDisabled(guiInfo.workspaceInfo.logPath.empty());
+        ImGui::Checkbox("StdOut", &mLaunchOptions.logToStdOut);
+        ImGui::BeginDisabled(mLaunchOptions.logPath.empty());
         ImGui::SameLine();
-        if (guiInfo.workspaceInfo.logPath.empty()) {
-            guiInfo.workspaceInfo.logToFile = false;
+        if (mLaunchOptions.logPath.empty()) {
+            mLaunchOptions.logToFile = false;
         }
-        ImGui::Checkbox("File", &guiInfo.workspaceInfo.logToFile);
+        ImGui::Checkbox("File", &mLaunchOptions.logToFile);
         ImGui::EndDisabled();
         ImGui::SameLine();
-        if (ImGui::Checkbox("Auto##log", &guiInfo.workspaceInfo.autoLogPath) && guiInfo.workspaceInfo.autoLogPath) {
+        if (ImGui::Checkbox("Auto##log", &mLaunchOptions.autoLogPath) && mLaunchOptions.autoLogPath) {
 #ifdef WIN32
-            guiInfo.workspaceInfo.logPath = get_default_workspace_path(guiInfo.workspaceInfo).string() + "/logs";
+            mLaunchOptions.logPath = get_default_workspace_path(mLaunchOptions).string() + "/logs";
 #else
             // TODO :
 #endif
         }
         ImGui::SameLine();
-        ImGui::BeginDisabled(guiInfo.workspaceInfo.autoLogPath);
+        ImGui::BeginDisabled(mLaunchOptions.autoLogPath);
         {
-            guiInfo.workspaceInfo.logPath = gvk::string::scrub_path(guiInfo.workspaceInfo.logPath);
-            if (GvkGui::InputPath("##log", &guiInfo.workspaceInfo.logPath)) {
+            mLaunchOptions.logPath = gvk::string::scrub_path(mLaunchOptions.logPath);
+            if (GvkGui::InputPath("##log", &mLaunchOptions.logPath)) {
             }
         }
         ImGui::EndDisabled();
 
         ////////////////////////////////////////////////////////////////////////////////
-        ImGui::PopItemWidth();
     }
+    ImGui::PopItemWidth();
     ImGui::EndDisabled();
 }
 
@@ -452,202 +640,278 @@ void WorkspaceWindow::draw_stream_tab(GuiInfo& guiInfo)
     (void)guiInfo;
 }
 
-void WorkspaceWindow::launch_application(GuiInfo& guiInfo)
+#ifdef GVK_PLATFORM_WINDOWS
+void WorkspaceWindow::on_workload_io(const gvk::ChildProcess& childProcess, size_t dataSize, const char* pData)
+{
+    auto pGuiInfo = (GuiInfo*)childProcess.get_user_data();
+    assert(pGuiInfo);
+    pGuiInfo->logFile.write(pData, dataSize);
+    pGuiInfo->logFile.flush();
+    std::cout.write(pData, dataSize);
+    std::cout.flush();
+}
+
+void WorkspaceWindow::on_workload_shutdown(const gvk::ChildProcess& childProcess)
+{
+    auto pGuiInfo = (GuiInfo*)childProcess.get_user_data();
+    assert(pGuiInfo);
+    std::lock_guard<std::mutex> lock(pGuiInfo->workloadMutex);
+    pGuiInfo->onWorkloadShutdown = [pGuiInfo]()
+    {
+        if (gvk::is_process_elevated()) {
+            gvk::unregister_explicit_layer(GVK_PIPELINE_EXPLORER_LAYER_NAME);
+        }
+
+        // assert(pGuiInfo->pWindowManager);
+        // pGuiInfo->pWindowManager->reset();
+#if 0
+        // TODO : Keeping workspace up on shutdown, make this optional
+        pGuiInfo->workspace.clear();
+#endif
+#ifdef GVK_PLATFORM_WINDOWS
+        pGuiInfo->ipcPipe.reset();
+        pGuiInfo->ipcMessenger.reset();
+        pGuiInfo->logFile.close();
+#endif
+    };
+    pGuiInfo->messages += "[INFO] : Terminated '" + childProcess.get_cmd_line() + "'\n";
+    std::cout << std::endl << std::endl << "[INFO] : Terminated '" + childProcess.get_cmd_line() << std::endl << std::endl;
+}
+#endif // GVK_PLATFORM_WINDOWS
+
+void WorkspaceWindow::launch_workload(GuiInfo& guiInfo)
 {
     (void)guiInfo;
-#ifdef VK_USE_PLATFORM_WIN32_KHR
+#ifdef GVK_PLATFORM_WINDOWS
 
+    // TODO : Need to break this out to a utility class so that other tools (ie. UC/VTune)
+    //  can launch workloads with the same configuration and IPC mechanism
+
+#if 0
     // Clear messages
     guiInfo.messages.clear();
+#else
+    guiInfo.reset();
+    guiInfo.rangeInfo = { };
+    get_window_manager().reset();
+    guiInfo.onWorkloadShutdown = nullptr;
+#endif
 
-    // Get the path to this gui .exe, the layer .dll should be next to it
-    // TODO : DRY with gvk::runtime
-    HMODULE hModule = NULL;
-    const size_t CharBufferSize = 16384;
-    static std::array<wchar_t, CharBufferSize> wcharBuffer;
-    wcharBuffer = { };
-    if (get_this_module_handle(&hModule)) {
-        GetModuleFileNameW(hModule, wcharBuffer.data(), (DWORD)wcharBuffer.size());
+    // Clear stdout
+    if (mLaunchOptions.clearStdOut) {
+        std::cout << "\033[2J\033[1;1H" << std::flush;
     }
-    std::filesystem::path guiPath = wcharBuffer[0] ? wcharBuffer.data() : std::filesystem::path();
-    std::filesystem::path layerPath = std::filesystem::path(guiPath).remove_filename();
 
-    // Set active layers
-    std::string activeLayers;
-    bool validationEnabled = false;
-    for (size_t layer_i = 0; layer_i < guiInfo.layerProperties.size() && layer_i < mActiveLayers.size(); ++layer_i) {
-        if (mActiveLayers[layer_i]) {
-            std::string layerName = guiInfo.layerProperties[layer_i].layerName;
-            if (layerName == "VK_LAYER_KHRONOS_validation") {
-                validationEnabled = true;
+    // Set workspace
+    guiInfo.workspace = mLaunchOptions.workspace;
+
+    // Check if the workload is already in the recently launched list, and if so erase
+    //  it, then add the launched workload to the front of the list
+    for (auto itr = mRecentLaunchOptions.begin(); itr != mRecentLaunchOptions.end(); ++itr) {
+        if (itr->exe == mLaunchOptions.exe && itr->args == mLaunchOptions.args) {
+            mRecentLaunchOptions.erase(itr);
+            break;
+        }
+    }
+    mRecentLaunchOptions.insert(mRecentLaunchOptions.begin(), mLaunchOptions);
+
+    // Create workpsace directory if it doesn't exist
+    auto workspaceDataDirectory = std::filesystem::path(guiInfo.workspace) / ".data";
+    if (!std::filesystem::exists(workspaceDataDirectory)) {
+        std::error_code errorCode{ };
+        std::filesystem::create_directories(workspaceDataDirectory, errorCode);
+        if (errorCode || !std::filesystem::exists(workspaceDataDirectory)) {
+
+            // TODO : Errors should halt launch and be more visible to the user, this is
+            //  just a placeholder for now
+            guiInfo.messages += "[ERROR] : Failed to create workspace data directory '" + guiInfo.workspace + "' : " + errorCode.message() + "\n";
+        }
+    }
+
+    // TODO : Documentation
+    get_window_manager().on_launch(guiInfo);
+
+    // Prepare environment object and load current environment
+    // NOTE : If running with elevated privileges, layers must be added to the Windows
+    //  Vulkan layer registry to satisfy Vulkan loader security requirements
+    //  HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\Vulkan\ExplicitLayers
+    gvk::Environment environment{ };
+    environment.load_env();
+
+    // Clear layer variables from environment
+    environment.unset_env_var("VK_INSTANCE_LAYERS");
+    environment.unset_env_var("VK_LOADER_LAYERS_ENABLE");
+    for (const auto& validationLayerSetting : gvk::get_validation_layer_settings()) {
+        environment.unset_env_var(validationLayerSetting);
+    }
+
+    // Get layer path (layer binary and JSON should be next to this executable binary)
+    //  and set VK_ADD_LAYER_PATH
+    std::filesystem::path layerPath;
+    (void)gvk::get_this_module_path(&layerPath);
+    layerPath.remove_filename();
+    if (is_process_elevated()) {
+
+        // Enable pipeline explorer as explicit layer
+        // TODO : Capture .hiv and restore on exit to avoid leaving layer registered if
+        //  process is shutdown ungracefully
+        auto pipelineExplorerJsonPath = layerPath / GVK_PIPELINE_EXPLORER_LAYER_NAME ".json";
+        if (std::filesystem::exists(pipelineExplorerJsonPath)) {
+            gvk::unregister_explicit_layer(GVK_PIPELINE_EXPLORER_LAYER_NAME);
+            if (gvk::register_explicit_layer(pipelineExplorerJsonPath)) {
+                guiInfo.messages += "[INFO] : Running with elevated privileges; " GVK_PIPELINE_EXPLORER_LAYER_NAME " added to Windows Vulkan layer registry\n";
             } else {
-                activeLayers += layerName + ",";
+
+                // TODO : Errors should halt launch and be more visible to the user
+                guiInfo.messages += "[ERROR] : Failed to add " GVK_PIPELINE_EXPLORER_LAYER_NAME " to Windows Vulkan layer registry\n";
             }
         }
-    }
-
-    // Prepare Environment
-    gvk::Environment env;
-    env.load_env(); // TODO : Validate and route existing env to GUI
-    env.set_env_var("GVK_PIPELINE_EXPLORER_GUI_PID", std::to_string(GetCurrentProcessId()));
-
-    // Configure Environment for layers
-    // TODO : Handle environment that PE is launched from
-    env.set_env_var("VK_ADD_LAYER_PATH", layerPath.string());
-    if (activeLayers.empty()) {
-        env.set_env_var("VK_LOADER_LAYERS_ENABLE", "VK_LAYER_INTEL_gvk_pipeline_explorer,VK_LAYER_KHRONOS_validation");
     } else {
-        env.set_env_var("VK_LOADER_LAYERS_ENABLE", "VK_LAYER_INTEL_gvk_pipeline_explorer," + activeLayers + "VK_LAYER_KHRONOS_validation");
-    }
-    if (validationEnabled) {
-        env.set_env_var("VK_LOADER_DEBUG", "all");
+        environment.append_value_to_env_var("VK_ADD_LAYER_PATH", layerPath.string());
     }
 
-    #if 0
-    // TODO : Configure this to detect elevated privileges and check registry
-    // TODO : Give user option to configure registry
-    env.set_env_var("ENABLE_VK_LAYER_INTEL_gvk_pipeline_explorer", "1");
-    env.set_env_var("VK_LOADER_DEBUG", "all");
-    env.set_env_var("VK_LOADER_LAYERS_ENABLE", "*validation");
-    #endif
+    // Prepare collection of layers to enable when launching the workload
+    std::vector<std::string> layers{ GVK_PIPELINE_EXPLORER_LAYER_NAME };
 
-    #if 0
-    if (guiInfo.workspaceInfo.record && !guiInfo.workspaceInfo.gits.empty()) {
-        std::filesystem::path gitsLayerPath = guiInfo.workspaceInfo.gits;
-        gitsLayerPath /= "Recorder/VulkanLayer";
-        env.append_value_to_env_var("VK_ADD_LAYER_PATH", gitsLayerPath.string());
-        // env.set_env_var("VK_LOADER_LAYERS_ENABLE", "VK_LAYER_INTEL_gvk_pipeline_explorer,VK_LAYER_INTEL_vulkan_GITS_recorder,*validation");
-        // env.set_env_var("VK_LOADER_LAYERS_ENABLE", "VK_LAYER_INTEL_vulkan_GITS_recorder,VK_LAYER_INTEL_gvk_pipeline_explorer,*validation");
-        // TODO : WHY is layer order not being honored?
-        env.set_env_var("VK_LOADER_LAYERS_ENABLE", "VK_LAYER_INTEL_vulkan_GITS_recorder,VK_LAYER_INTEL_gvk_pipeline_explorer");
-    }
-    #endif
-
-    // Configure Environment for validation
-    // TODO : GVK unique handles
-    if (!validationEnabled) {
-        for (const auto& validationFeatureName : get_validation_layer_setting_names()) {
-            if (validationFeatureName != "VK_KHRONOS_VALIDATION_UNIQUE_HANDLES") {
-                env.set_env_var(validationFeatureName, "false");
+    // Add user enabled layers
+    bool apiDumpEnabled = false;
+    bool validationEnabled = false;
+    for (size_t layer_i = 0; layer_i < mEnabledLayers.size(); ++layer_i) {
+        assert(layer_i < guiInfo.layerProperties.size());
+        if (mEnabledLayers[layer_i]) {
+            std::string layerName = guiInfo.layerProperties[layer_i].layerName;
+            if (layerName == "VK_LAYER_LUNARG_api_dump") {
+                apiDumpEnabled = true;
+            } else if (layerName == "VK_LAYER_KHRONOS_validation") {
+                validationEnabled = guiInfo.validationLayerAvailable;
+            } else {
+                layers.push_back(layerName);
             }
         }
     }
-    env.set_env_var("VK_KHRONOS_VALIDATION_UNIQUE_HANDLES", "true");
 
-    // Configure Environment for PE settings
-    env.set_env_var("GVK_PIPELINE_EXPLORER_WORKSPACE", guiInfo.workspaceInfo.workspace);
-    env.set_env_var("GVK_PIPELINE_EXPLORER_TARGET", get_target(guiInfo.workspaceInfo));
-    if (mAutoQuery) {
-        env.set_env_var("GVK_PIPELINE_EXPLORER_AUTO_QUERY", "1");
+    // Add api dump and validation to the end of the list if enabled
+    if (apiDumpEnabled) {
+        layers.push_back("VK_LAYER_LUNARG_api_dump");
     }
-    if (guiInfo.workspaceInfo.waitForDebugger) {
-        env.set_env_var("GVK_PIPELINE_EXPLORER_WAIT_FOR_DEBUGGER", "1");
+    if (apiDumpEnabled || validationEnabled || mLaunchOptions.uniqueHandles) {
+        layers.push_back("VK_LAYER_KHRONOS_validation");
+        if (!validationEnabled) {
+            // NOTE : When api dump or unique handles are enabled, the validation layer is loaded
+            //  with all features disabled.  When VK_LAYER_INTEL_gvk_pipeline_explorer is loaded,
+            //  it will check if VK_LAYER_KHRONOS_validation is loaded and enable the validation
+            //  layer's unique handles feature.
+            // NOTE : The logic here turns on the validation layer when api dump is enabled
+            //  so that all layers above it have the same handles as the api dump output.
+            for (const auto& validationLayerSetting : gvk::get_validation_layer_settings()) {
+                environment.set_env_var(validationLayerSetting, "false");
+            }
+        }
     }
+
+    // Warn if validation layer is unavailable or unique handles is disabled
+    if (!guiInfo.validationLayerAvailable) {
+        guiInfo.messages += "[WARNING] : Validation layer unavailable (required for unique handles); may result in instability\n";
+        guiInfo.messages += "    Install the Vulkan SDK or set environment variable `VK_ADD_LAYER_PATH`\n";
+        guiInfo.messages += "    If GVK was built from source, the Vulkan SDK installer can be found in `gvk/build/_deps/VulkanSDK`\n";
+    }
+    if (!mLaunchOptions.uniqueHandles) {
+        guiInfo.messages += "[WARNING] : Unique handles disabled; may result in instability\n";
+    }
+
+    // Create enabled layer list and set environment variable
+    std::string layersStr;
+    for (const auto& layer : layers) {
+        layersStr += !layersStr.empty() ? ("," + layer) : layer;
+    }
+    if (is_process_elevated()) {
+        layersStr = gvk::string::replace(layersStr, ",", ";");
+        environment.set_env_var("VK_INSTANCE_LAYERS", layersStr);
+    } else {
+        environment.set_env_var("VK_LOADER_LAYERS_ENABLE", layersStr);
+    }
+
+    // Set VK_LOADER_DEBUG
+    if (mLaunchOptions.loaderDebug) {
+        environment.set_env_var("VK_LOADER_DEBUG", "all");
+    }
+
+    // Create named IPC pipe — name is a string so it survives intermediate script launchers
+    auto ipcPipeName = std::string("\\\\.\\pipe\\gvk-pe-") + std::to_string(GetCurrentProcessId());
+    gvk::NamedPipe::ServerCreateInfo ipcPipeCreateInfo{ };
+    ipcPipeCreateInfo.pName = ipcPipeName.c_str();
+    auto ipcPipeSuccess = gvk::NamedPipe::create_server(&ipcPipeCreateInfo, &guiInfo.ipcPipe);
+
+    // Set Pipeline Explorer environment variables
+    environment.set_env_var("GVK_PIPELINE_EXPLORER_TARGET", get_target(mLaunchOptions));
+    environment.set_env_var("GVK_PIPELINE_EXPLORER_WORKSPACE", mLaunchOptions.workspace);
+    environment.set_env_var("GVK_PIPELINE_EXPLORER_GUI_PID", std::to_string(GetCurrentProcessId()));
+    environment.set_env_var("GVK_PIPELINE_EXPLORER_IPC_PIPE_NAME", ipcPipeName);
+    environment.set_env_var("GVK_PIPELINE_EXPLORER_WAIT_FOR_DEBUGGER", std::to_string(mLaunchOptions.waitForDebugger));
+
+    // Turn on VVL unique handles unconditionally, if the validation layer is loaded
+    //  then it needs to be on, if it's not loaded setting it doesn't impact anything
+    environment.set_env_var("VK_KHRONOS_VALIDATION_UNIQUE_HANDLES", "true");
 
     // Get Environment data
     uint32_t envCharCount = 0;
-    env.get_env(&envCharCount, nullptr);
+    environment.get_env(&envCharCount, nullptr);
     std::vector<char> envData(envCharCount);
-    env.get_env(&envCharCount, envData.data());
+    environment.get_env(&envCharCount, envData.data());
 
-    // Setup pipes for std in/out/err
-    if (!ApplicationInfo::PipePair::create(ApplicationInfo::PipePair::INHERIT_READ, &guiInfo.applicationInfo.stdIn)) {
-        assert(false && "Failed to create stdIn pipes : TODO : Error handling");
-    }
-    if (!ApplicationInfo::PipePair::create(ApplicationInfo::PipePair::INHERIT_WRITE, &guiInfo.applicationInfo.stdOut)) {
-        assert(false && "Failed to create stdOut pipes : TODO : Error handling");
-    }
-    if (!ApplicationInfo::PipePair::create(ApplicationInfo::PipePair::INHERIT_WRITE, &guiInfo.applicationInfo.stdErr)) {
-        assert(false && "Failed to create stdErr pipes : TODO : Error handling");
-    }
-    SetHandleInformation(guiInfo.applicationInfo.stdIn.write, HANDLE_FLAG_INHERIT, 0);
-    SetHandleInformation(guiInfo.applicationInfo.stdOut.read, HANDLE_FLAG_INHERIT, 0);
-    SetHandleInformation(guiInfo.applicationInfo.stdErr.read, HANDLE_FLAG_INHERIT, 0);
-
-    // Setup STARTUPINFO
-    STARTUPINFO startupInfo{ };
-    startupInfo.cb = sizeof(startupInfo);
-    startupInfo.hStdInput = guiInfo.applicationInfo.stdIn.read;
-    startupInfo.hStdOutput = guiInfo.applicationInfo.stdOut.write;
-    startupInfo.hStdError = guiInfo.applicationInfo.stdErr.write;
-    if (startupInfo.hStdInput || startupInfo.hStdOutput || startupInfo.hStdError) {
-        startupInfo.dwFlags = STARTF_USESTDHANDLES;
-    }
-    std::string cmdLine = guiInfo.workspaceInfo.launch + " " + guiInfo.workspaceInfo.args;
-
-    // Launch workload
-    if (CreateProcess(
-        gvk::string::remove(guiInfo.workspaceInfo.launch, "\"").c_str(),
-        cmdLine.data(),
-        NULL,
-        NULL,
-        TRUE,
-        CREATE_NEW_CONSOLE, // (guiInfo.workspaceInfo.openTerminal ? CREATE_NEW_CONSOLE : CREATE_NO_WINDOW),
-        !envData.empty() ? envData.data() : NULL,
-        !guiInfo.workspaceInfo.workingDirectory.empty() ? guiInfo.workspaceInfo.workingDirectory.c_str() : NULL,
-        &startupInfo,
-        &guiInfo.applicationInfo.processInformation
-    )) {
-        guiInfo.messages = "INFO : Launched " + guiInfo.workspaceInfo.launch + "\n";
-        for (auto itr = guiInfo.recentWorkspaceInfos.begin(); itr != guiInfo.recentWorkspaceInfos.end(); ++itr) {
-            if (guiInfo.workspaceInfo == *itr) {
-                guiInfo.recentWorkspaceInfos.erase(itr);
-                break;
-            }
+    // Setup gvk::ChildProcess::CreateInfo
+    gvk::ChildProcess::CreateInfo childProcessCreateInfo{ };
+    auto cmdLine = mLaunchOptions.exe + (!mLaunchOptions.args.empty() ? " " + mLaunchOptions.args : std::string());
+    childProcessCreateInfo.pCmdLine = cmdLine.data();
+    childProcessCreateInfo.pDirectory = !mLaunchOptions.directory.empty() ? mLaunchOptions.directory.c_str() : nullptr;
+    childProcessCreateInfo.pEnvironment = !envData.empty() ? envData.data() : nullptr;
+    if (mLaunchOptions.logToFile && !mLaunchOptions.logPath.empty()) {
+        std::filesystem::path logPath = mLaunchOptions.logPath;
+        if (!std::filesystem::path(logPath).has_extension()) {
+            auto exeName = std::filesystem::path(mLaunchOptions.exe).stem();
+            auto dateTime = gvk::system::DateTime::now();
+            auto dateTimeStr = dateTime.get_date_str('-') + "_" + dateTime.get_time_str('-');
+            // TODO : Log should land in workspace...name needs less info
+            logPath /= exeName.string() + "_gvk-pipeline-explorer_" + dateTimeStr + ".log";
         }
-        guiInfo.recentWorkspaceInfos.insert(guiInfo.recentWorkspaceInfos.begin(), guiInfo.workspaceInfo);
+        std::filesystem::create_directories(std::filesystem::path(logPath).parent_path());
+        guiInfo.logFile.open(logPath, std::ios::out | std::ios::binary);
+        if (guiInfo.logFile.is_open()) {
+            guiInfo.messages += "[INFO] : Opened log \"" + logPath.string() + "\"\n";
 
-        // Close unnecessary std in/out/err pipes
-        if (guiInfo.applicationInfo.stdIn.read) {
-            CloseHandle(guiInfo.applicationInfo.stdIn.read);
-            guiInfo.applicationInfo.stdIn.read = NULL;
-        }
-        if (guiInfo.applicationInfo.stdOut.write) {
-            CloseHandle(guiInfo.applicationInfo.stdOut.write);
-            guiInfo.applicationInfo.stdOut.write = NULL;
-        }
-        if (guiInfo.applicationInfo.stdErr.write) {
-            CloseHandle(guiInfo.applicationInfo.stdErr.write);
-            guiInfo.applicationInfo.stdErr.write = NULL;
-        }
-
-        // Register callback on workload shutdown
-        if (RegisterWaitForSingleObject(
-            &guiInfo.applicationInfo.waitHandle,
-            guiInfo.applicationInfo.processInformation.hProcess,
-            process_wait_callback,
-            &guiInfo,
-            INFINITE,
-            WT_EXECUTEONLYONCE
-        )) {
-            guiInfo.applicationInfo.running = true;
-            if (guiInfo.workspaceInfo.logToFile && !guiInfo.workspaceInfo.logPath.empty()) {
-                auto logPath = guiInfo.workspaceInfo.logPath;
-                if (!std::filesystem::path(logPath).has_extension()) {
-                    auto dateTime = gvk::system::DateTime::now();
-                    auto dateStr = dateTime.get_date_str();
-                    auto timeStr = dateTime.get_time_str();
-                    auto dateTimeStr = gvk::string::replace(dateStr, "/", "-") + "_" + gvk::string::replace(timeStr, ":", "-");
-                    logPath += "/" + dateTimeStr + ".log";
-                }
-                std::filesystem::create_directories(std::filesystem::path(logPath).parent_path());
-                guiInfo.logFile.open(logPath, std::ios::out | std::ios::binary);
-            }
-            if (mClearStdOut) {
-                std::cout << "\033[2J\033[1;1H";
-            }
-            guiInfo.applicationInfo.stdInThread.first = CreateThread(0, 0, process_io_callback, &guiInfo, 0, &guiInfo.applicationInfo.stdInThread.second);
-            guiInfo.applicationInfo.stdOutThread.first = CreateThread(0, 0, process_io_callback, &guiInfo, 0, &guiInfo.applicationInfo.stdOutThread.second);
-            guiInfo.applicationInfo.stdErrThread.first = CreateThread(0, 0, process_io_callback, &guiInfo, 0, &guiInfo.applicationInfo.stdErrThread.second);
+            // TODO : Make any combination of stdout/log work as expected
+            childProcessCreateInfo.pFnOnStdOut = on_workload_io;
+            childProcessCreateInfo.pFnOnStdErr = on_workload_io;
         } else {
-            guiInfo.messages = "WARNING : Failed to register workload for callback on shutdown\n";
-            guiInfo.messages += "    " + get_win32_error_str(GetLastError()) + "\n";
+            guiInfo.messages += "[WARNING] : Failed to open log \"" + logPath.string() + "\"\n";
         }
-    } else {
-        guiInfo.messages = "ERROR : Failed to launch " + guiInfo.workspaceInfo.launch + "\n";
-        guiInfo.messages += "    " + get_win32_error_str(GetLastError()) + "\n";
     }
-#endif // VK_USE_PLATFORM_WIN32_KHR
+    childProcessCreateInfo.pFnOnShutdown = on_workload_shutdown;
+    childProcessCreateInfo.pUserData = &guiInfo;
+
+    // Create child process
+    if (ipcPipeSuccess && gvk::ChildProcess::create(&childProcessCreateInfo, &guiInfo.workload)) {
+        guiInfo.messages += "[INFO] : Launched '" + cmdLine + "'\n";
+        std::cout << std::endl << std::endl << "[INFO] : Launched '" + cmdLine << std::endl << std::endl;
+
+        // Save settings
+        ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
+
+        // Start waiting for the layer to connect as a named pipe client
+        guiInfo.ipcPipe.begin_accept();
+
+        // TODO : Documentation
+        get_window_manager().on_launch(guiInfo);
+    } else {
+        if (!ipcPipeSuccess) {
+            guiInfo.messages += "[ERROR] : Failed to create IPC named pipe\n";
+        }
+        guiInfo.messages += "[ERROR] : Failed to launch '" + cmdLine + "'\n";
+        guiInfo.messages += "    " + gvk::get_win32_error_str(GetLastError()) + "\n";
+        guiInfo.ipcPipe.reset();
+    }
+
+#endif // GVK_PLATFORM_WINDOWS
 }
 
 } // namespace gui

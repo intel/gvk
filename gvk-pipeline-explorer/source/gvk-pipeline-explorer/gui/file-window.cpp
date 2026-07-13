@@ -25,6 +25,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *******************************************************************************/
 
 #include "gvk-pipeline-explorer/gui/file-window.hpp"
+#include "gvk-pipeline-explorer/gui/pipelines-window.hpp"
 
 #include <fstream>
 
@@ -32,9 +33,11 @@ namespace gvk {
 namespace pipeline_explorer {
 namespace gui {
 
-FileWindow::FileWindow(Window::Manager& windowManager, const std::string& name, const std::filesystem::path& filePath)
+FileWindow::FileWindow(Window::Manager& windowManager, const std::string& name, const std::filesystem::path& filePath, const gvk::HandleId<VkDevice, VkPipeline>& pipeline)
     : Window(windowManager, name)
     , mFilePath{ filePath }
+    , mPipeline{ pipeline }
+    , mPipelineLabel{ gvk::to_string(mPipeline.get_handle(), gvk::Printer::Default & ~gvk::Printer::EnumValue) }
 {
     std::ifstream file(mFilePath);
     if (file.is_open()) {
@@ -86,6 +89,13 @@ void FileWindow::on_gui(GuiInfo& guiInfo)
     position.x -= size.x * 0.5f;
     position.y -= size.y * 0.5f;
     ImGui::SetWindowPos(position, ImGuiCond_Once);
+
+    ImGui::Text("VkPipeline %s", mPipelineLabel.c_str());
+    ImGui::SameLine();
+    if (ImGui::Button("Select")) {
+        PipelinesWindow::set_selected_pipeline(guiInfo, mPipeline);
+    }
+    ImGui::SameLine();
 
     // Set font scale
     // NOTE : As of 16 Jan 2025, ocornut has stated that there will be changes to

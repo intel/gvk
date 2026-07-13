@@ -40,6 +40,10 @@ Window::~Window()
 {
 }
 
+void Window::reset()
+{
+}
+
 const std::string& Window::get_name() const
 {
     return mName;
@@ -48,6 +52,21 @@ const std::string& Window::get_name() const
 Window::Manager& Window::get_window_manager()
 {
     return mWindowManager;
+}
+
+void Window::on_launch(GuiInfo& guiInfo)
+{
+    (void)guiInfo;
+}
+
+void Window::on_update(GuiInfo& guiInfo)
+{
+    (void)guiInfo;
+}
+
+void Window::on_gui(GuiInfo& guiInfo)
+{
+    (void)guiInfo;
 }
 
 void Window::on_save(GuiInfo& guiInfo)

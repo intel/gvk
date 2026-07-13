@@ -197,6 +197,7 @@ void destroy_instance(VkInstance instance, const VkAllocationCallbacks* pAllocat
     // Make post_execute_vkDestroyInstance() call against ApiCallHandler
     if (apiCallHandler) {
         apiCallHandler->post_execute_vkDestroyInstance(instance, pAllocator);
+        apiCallHandler.reset();
     }
 
     for (auto layerItr = layers.rbegin(); layerItr != layers.rend(); ++layerItr) {

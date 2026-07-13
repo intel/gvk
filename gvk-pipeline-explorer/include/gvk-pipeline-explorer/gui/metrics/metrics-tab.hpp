@@ -28,6 +28,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "gvk-pipeline-explorer/gui/window.hpp"
 
+#include <limits>
 #include <map>
 
 namespace gvk {
@@ -39,22 +40,41 @@ class MetricsWindow;
 class MetricsTab
 {
 public:
+    class PlotResults final
+    {
+    public:
+        double minTimestamp{ std::numeric_limits<double>::max() };
+        double maxTimestamp{ std::numeric_limits<double>::min() };
+        double minValue{ std::numeric_limits<double>::max() };
+        double maxValue{ std::numeric_limits<double>::min() };
+        std::vector<double> timestamps;
+        std::vector<double> values;
+    };
+
     MetricsTab(MetricsWindow& metricsWindow);
     virtual ~MetricsTab() = 0;
+    virtual void reset();
     MetricsWindow& get_metrics_window();
     virtual const std::string& get_name() const;
     virtual bool idle(GuiInfo& guiInfo) const;
     virtual bool enabled(GuiInfo& guiInfo) const;
     virtual void submit_metrics_query_request(GuiInfo& guiInfo);
+    virtual void reset_query_requests(GuiInfo& guiInfo);
     virtual void on_update(GuiInfo& guiInfo);
+    virtual void on_plot(GuiInfo& guiInfo);
     virtual void on_gui(GuiInfo& guiInfo);
 
 protected:
     virtual void filter_counters(GuiInfo& guiInfo);
     virtual void sort_counters(GuiInfo& guiInfo);
+    virtual void draw_plot(GuiInfo& guiInfo, const char* pLabel);
 
     std::string mName;
+    bool mAutoQuery{ true };
     std::map<std::string, bool> mCategories;
+    double mMinTimestamp{ std::numeric_limits<double>::max() };
+    double mMaxTimestamp{ std::numeric_limits<double>::min() };
+    std::unordered_map<gvk::HandleId<VkDevice, VkPipeline>, std::map<std::string, PlotResults>> mPlotResults;
 
 private:
     MetricsWindow& mMetricsWindow;

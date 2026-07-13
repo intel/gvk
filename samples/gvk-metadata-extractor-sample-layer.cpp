@@ -224,7 +224,7 @@ public:
         stateTrackedObjectEnumerateInfo.pfnCallback = enumerate_command_buffer_cmds_callback;
         stateTrackedObjectEnumerateInfo.pUserData = this;
 
-        // Enumerate recoreded command buffer cmds
+        // Enumerate recorded command buffer cmds
         gvkEnumerateStateTrackedCommandBufferCmds(&stateTrackedCommandBuffer, &stateTrackedObjectEnumerateInfo);
     }
 
@@ -233,10 +233,10 @@ public:
         (void)pStateTrackedObject;
         assert(pInfo);
         assert(pUserData);
-        auto pMetadataExtractoreSampleLayer = (GvkMetadataExtractorSampleLayer*)pUserData;
+        auto pMetadataExtractorSampleLayer = (GvkMetadataExtractorSampleLayer*)pUserData;
 
         // Add recorded cmd to metadata extractor timeline
-        pMetadataExtractoreSampleLayer->metadataExtractor.add_command(*(GvkCommandBaseStructure*)pInfo);
+        pMetadataExtractorSampleLayer->metadataExtractor.add_command(*(GvkCommandBaseStructure*)pInfo);
     }
 
     VkResult pre_execute_vkQueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPresentInfo) override final

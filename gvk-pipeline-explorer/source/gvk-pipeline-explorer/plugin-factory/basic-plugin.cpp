@@ -69,6 +69,7 @@ VkResult BasicPlugin::initialize(const GvkPipelineExplorerPluginInitializeInfo* 
         pPluginInfo->pfnPreProcessQueueSubmission = pre_process_queue_submission;
         pPluginInfo->pfnPostProcessQueueSubmission = post_process_queue_submission;
         pPluginInfo->pfnPostProcessRange = post_process_range;
+        pPluginInfo->pfnDestroyPlugin = destroy;
         pPluginInfo->pUserData = this;
     } gvk_result_scope_end;
     return gvkResult;
@@ -178,6 +179,10 @@ VkResult BasicPlugin::post_process_queue_submission(const GvkPipelineExplorerToo
 VkResult BasicPlugin::post_process_range()
 {
     return VK_SUCCESS;
+}
+
+void BasicPlugin::destroy()
+{
 }
 
 VkResult BasicPlugin::get_plugin_counter_info(GvkPipelineExplorerPluginCounterInfo* pCounterInfo, void* pPlugin)
@@ -341,6 +346,14 @@ VkResult BasicPlugin::post_process_range(void* pPlugin)
         gvk_result(((BasicPlugin*)pPlugin)->post_process_range());
     } gvk_result_scope_end;
     return gvkResult;
+}
+
+void BasicPlugin::destroy(void* pPlugin)
+{
+    gvk_result_scope_begin(VK_SUCCESS) {
+        gvk_result(pPlugin ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        ((BasicPlugin*)pPlugin)->destroy();
+    } gvk_result_scope_end;
 }
 
 } // namespace pipeline_explorer

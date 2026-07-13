@@ -53,19 +53,22 @@ namespace pipeline_explorer {
 class Tool
 {
 public:
+    class DispatchManager;
+
     Tool() = default;
     virtual ~Tool() = 0;
     virtual void reset();
-    static VkResult pre_process_range(void* pUserData);
-    static VkResult pre_process_command_buffers(const GvkPipelineExplorerToolCommandBufferInfoEx* pToolInfo, void* pUserData);
-    static VkResult pre_process_cmd(const GvkPipelineExplorerToolCommandBufferInfoEx* pToolInfo, void* pUserData);
-    static VkResult post_process_cmd(const GvkPipelineExplorerToolCommandBufferInfoEx* pToolInfo, void* pUserData);
-    static VkResult post_process_command_buffers(const GvkPipelineExplorerToolCommandBufferInfoEx* pToolInfo, void* pUserData);
-    static VkResult pre_process_queue_submission(const GvkPipelineExplorerToolQueueInfoEx* pToolInfo, void* pUserData);
-    static VkResult post_process_queue_submission(const GvkPipelineExplorerToolQueueInfoEx* pToolInfo, void* pUserData);
-    static VkResult post_process_range(void* pUserData);
+    virtual uint64_t get_type_id() const = 0;
+
+    template <typename Type>
+    static uint64_t get_type_id()
+    {
+        static uint8_t sId;
+        return (uint64_t)&sId;
+    }
 
 protected:
+    virtual bool tool_command(const GvkCommandBaseStructure* pCommand, VkDevice vkDevice, VkQueue vkQueue, VkPipeline vkPipeline) const;
     virtual VkResult pre_process_range();
     virtual VkResult pre_process_command_buffers(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo);
     virtual VkResult pre_process_cmd(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo);
@@ -73,7 +76,10 @@ protected:
     virtual VkResult post_process_command_buffers(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo);
     virtual VkResult pre_process_queue_submission(const GvkPipelineExplorerToolQueueInfoEx& toolInfo);
     virtual VkResult post_process_queue_submission(const GvkPipelineExplorerToolQueueInfoEx& toolInfo);
+    virtual VkResult pre_process_queue_present(const GvkPipelineExplorerToolQueueInfoEx& toolInfo);
+    virtual VkResult post_process_queue_present(const GvkPipelineExplorerToolQueueInfoEx& toolInfo);
     virtual VkResult post_process_range();
+    bool mEnabled{ false };
 
 private:
     Tool(const Tool&) = delete;

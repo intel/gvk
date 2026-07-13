@@ -58,8 +58,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <windows.h>
 #endif //VK_USE_PLATFORM_WIN32_KHR
 
-
-
 namespace spirv_cross {
 
 struct SPIRType;
@@ -75,7 +73,8 @@ using UUID = boost::multiprecision::uint256_t;
 UUID get_256_bit_hash(const std::string& str);
 std::string uuid_to_string(const UUID& uuid, uint32_t count = 0);
 std::string uuid_to_string(const uint8_t bytes[GVK_PIPELINE_EXPLORER_UUID_SIZE], uint32_t count = 0);
-
+std::filesystem::path get_pipeline_path(const std::filesystem::path& workspace, const std::string& uuidStr);
+std::filesystem::path get_pipeline_path(const std::filesystem::path& workspace, const UUID& uuid);
 std::string get_shader_stage_file_extension(VkShaderStageFlagBits shaderStage);
 std::string get_spirv_base_type_str(const spirv_cross::SPIRType& type);
 std::string get_spirv_type_str(const spirv_cross::SPIRType& type);
@@ -97,14 +96,9 @@ public:
 VkResult read_shader_binding_table(const gvk::Device& gvkDevice, const gvk::Buffer& gvkBuffer, VkDeviceSize stride, VkDeviceSize count, ShaderBindingTable* pShaderBindingTable);
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-BOOL get_this_module_handle(HMODULE* phModule);
-DWORD get_module_path(HMODULE hModule, std::filesystem::path* pPath);
-DWORD get_this_module_path(std::filesystem::path* pPath);
-std::string get_win32_error_str(DWORD errorCode);
-
 
 // Structure to hold process information
-class ProcessWindow 
+class ProcessWindow
 {
 public:
     DWORD processId{};
@@ -113,7 +107,7 @@ public:
 };
 
 // Structure to hold pixel data (in BRGA format) and dimensions
-class ImageData 
+class ImageData
 {
 public:
     std::vector<unsigned char> pixels;

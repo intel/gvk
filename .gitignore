@@ -6,6 +6,7 @@
 documentation/html/
 documentation/latex/
 /build-options.cmake
+/.vs
 *.hiv
 *.ini
 *.reg

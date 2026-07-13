@@ -1,6 +1,6 @@
 
 {
-    "file_format_version" : "1.1.1",
+    "file_format_version" : "1.2.0",
     "layer" : {
         "name": "@ARGS_TARGET@",
         "type": "GLOBAL",

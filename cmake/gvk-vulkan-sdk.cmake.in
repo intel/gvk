@@ -151,7 +151,7 @@ To download and extract the Vulkan SDK to a given directory
 
 To download the Vulkan SDK using a cache file to override the Vulkan SDK URL
 
-    cmake -C <cache/file.cmake> gvk-vulkan-sdk.cmake -P WORKING_DIRECTORY <working/directory>
+    cmake -C <cache/file.cmake> -P gvk-vulkan-sdk.cmake WORKING_DIRECTORY <working/directory>
 "
         )
 endfunction()

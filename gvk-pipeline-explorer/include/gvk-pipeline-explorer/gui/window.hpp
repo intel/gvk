@@ -39,12 +39,15 @@ class Window
 public:
     class Manager;
     virtual ~Window() = 0;
+    virtual void reset();
     const std::string& get_name() const;
     Manager& get_window_manager();
 
 protected:
     Window(Manager& manager, const std::string& name);
-    virtual void on_gui(GuiInfo& guiInfo) = 0;
+    virtual void on_launch(GuiInfo& guiInfo);
+    virtual void on_update(GuiInfo& guiInfo);
+    virtual void on_gui(GuiInfo& guiInfo);
     virtual void on_save(GuiInfo& guiInfo);
     virtual void on_load(GuiInfo& guiInfo);
 

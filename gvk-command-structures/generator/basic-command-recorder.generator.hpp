@@ -137,8 +137,8 @@ private:
         file << "            assert(false && \"Unsupported GvkCommandStructureType\");" << std::endl;
         file << "        } break;" << std::endl;
         file << "        }" << std::endl;
-        file << "        mCommands.clear();" << std::endl;
         file << "    }" << std::endl;
+        file << "    mCommands.clear();" << std::endl;
         file << "}" << std::endl;
         file << std::endl;
         file << "const std::vector<const GvkCommandBaseStructure*>& BasicCommandRecorder::get_commands() const" << std::endl;

@@ -37,7 +37,7 @@ VkResult PipelineExplorer::execute_vkCreateCommandPool(VkDevice device, const Vk
         commandPoolInfo->vkHandle = *pCommandPool;
         commandPoolInfo->commandPoolCreateInfo = *pCreateInfo;
         auto inserted = commandPoolInfos.insert({ { device, *pCommandPool }, commandPoolInfo }).second;
-        gvk_result(inserted ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result_assert(inserted);
     } gvk_result_scope_end;
     return gvkResult;
 }
@@ -53,6 +53,7 @@ void PipelineExplorer::execute_vkDestroyCommandPool(VkDevice device, VkCommandPo
         for (const auto& commandBufferInfo : commandPoolInfo->commandBufferInfos) {
             commandBufferInfos.erase(commandBufferInfo->vkHandle);
         }
+        commandPoolInfo->commandBufferInfos.clear();
     } else {
         // TODO : Error message to GUI
     }
@@ -64,7 +65,7 @@ VkResult PipelineExplorer::execute_vkResetCommandPool(VkDevice device, VkCommand
     gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
         gvk_result(BasicPipelineExplorer::execute_vkResetCommandPool(device, commandPool, flags));
         pipeline_explorer::CommandPoolInfo commandPoolInfo({ device, commandPool });
-        gvk_result(commandPoolInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result_assert(commandPoolInfo);
         for (auto commandBufferInfo : commandPoolInfo->commandBufferInfos) {
             gvk_result(commandBufferInfo->reset((VkCommandBufferResetFlags)flags));
         }
@@ -92,7 +93,7 @@ VkResult PipelineExplorer::execute_vkAllocateCommandBuffers(VkDevice device, con
 
         // Get CommandPoolInfo
         pipeline_explorer::CommandPoolInfo commandPoolInfo({ device, pAllocateInfo->commandPool });
-        gvk_result(commandPoolInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result_assert(commandPoolInfo);
 
         // Setup CommandBufferInfo
         for (uint32_t commandBuffer_i = 0; commandBuffer_i < pAllocateInfo->commandBufferCount; ++commandBuffer_i) {
@@ -104,9 +105,9 @@ VkResult PipelineExplorer::execute_vkAllocateCommandBuffers(VkDevice device, con
             commandBufferInfo->experimentCommandBuffer = tlCommandBuffers[commandBuffer_i + commandBufferCount];
             commandBufferInfo->experimentEnabled = VK_TRUE;
             auto inserted = commandBufferInfos.insert({ tlCommandBuffers[commandBuffer_i], commandBufferInfo }).second;
-            gvk_result(inserted ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result_assert(inserted);
             inserted = commandPoolInfo->commandBufferInfos.insert(commandBufferInfo).second;
-            gvk_result(inserted ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result_assert(inserted);
             if (vkLayer) {
                 *(void**)commandBufferInfo->experimentCommandBuffer = *(void**)device;
             }
@@ -179,11 +180,11 @@ VkResult PipelineExplorer::execute_vkEndCommandBuffer(VkCommandBuffer commandBuf
 static VkResult end_collection_range(std::vector<GvkPipelineExplorerCollectionRange>& collectionRanges)
 {
     gvk_result_scope_begin(VK_SUCCESS) {
-        gvk_result(!collectionRanges.empty() ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+        gvk_result_assert(!collectionRanges.empty());
         if (collectionRanges.back().device || collectionRanges.back().begin || collectionRanges.back().end) {
-            gvk_result(collectionRanges.back().device ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-            gvk_result(collectionRanges.back().begin && collectionRanges.back().end ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-            gvk_result(collectionRanges.back().begin <= collectionRanges.back().end ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+            gvk_result_assert(collectionRanges.back().device);
+            gvk_result_assert(collectionRanges.back().begin && collectionRanges.back().end);
+            gvk_result_assert(collectionRanges.back().begin <= collectionRanges.back().end);
             collectionRanges.push_back(gvk::get_default<GvkPipelineExplorerCollectionRange>());
         }
     } gvk_result_scope_end;
@@ -192,21 +193,26 @@ static VkResult end_collection_range(std::vector<GvkPipelineExplorerCollectionRa
 
 static VkResult add_cmd_to_collection_range(VkDevice device, VkPipeline pipeline, VkPipelineBindPoint bindPoint, uint32_t cmdIndex, std::vector<GvkPipelineExplorerCollectionRange>& collectionRanges, bool autoQuery)
 {
+    (void)autoQuery;
     gvk_result_scope_begin(VK_SUCCESS) {
-        gvk_result(!collectionRanges.empty() ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+        gvk_result_assert(!collectionRanges.empty());
+#if 0
         if (collectionRanges.back().pipeline != pipeline || autoQuery) {
+#endif
             gvk_result(end_collection_range(collectionRanges));
             collectionRanges.back().device = device;
             collectionRanges.back().pipeline = pipeline;
             collectionRanges.back().bindPoint = bindPoint;
             collectionRanges.back().begin = cmdIndex;
             collectionRanges.back().end = cmdIndex;
+#if 0
         }
-        gvk_result(collectionRanges.back().device == device ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-        gvk_result(collectionRanges.back().pipeline == pipeline ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-        gvk_result(collectionRanges.back().bindPoint == bindPoint ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-        gvk_result(collectionRanges.back().begin && collectionRanges.back().end ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-        gvk_result(collectionRanges.back().begin <= collectionRanges.back().end ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+#endif
+        gvk_result_assert(collectionRanges.back().device == device);
+        gvk_result_assert(collectionRanges.back().pipeline == pipeline);
+        gvk_result_assert(collectionRanges.back().bindPoint == bindPoint);
+        gvk_result_assert(collectionRanges.back().begin && collectionRanges.back().end);
+        gvk_result_assert(collectionRanges.back().begin <= collectionRanges.back().end);
         collectionRanges.back().end = cmdIndex;
     } gvk_result_scope_end;
     return gvkResult;
@@ -217,6 +223,7 @@ static bool sample_pipeline_metrics(VkDevice device, VkPipeline pipeline, const 
     return (requestInfo.device == device && requestInfo.sampleMetricsPipeline == pipeline) || requestInfo.refreshActivePipelines;
 }
 
+#if 0
 static bool performance_query(VkDevice device, VkPipeline pipeline, const gvk::pipeline_explorer::PerformanceQueryManager& queryManager)
 {
     return
@@ -232,6 +239,7 @@ static bool pipeline_statistics_query(VkDevice device, VkPipeline pipeline, cons
         queryManager.get_request().device == device &&
         queryManager.get_request().pipeline == pipeline;
 }
+#endif
 
 VkResult PipelineExplorer::inspect_command_buffer(pipeline_explorer::QueueInfo queueInfo, pipeline_explorer::CommandBufferInfo commandBufferInfo, std::vector<const GvkCommandBaseStructure*>& cmds, std::vector<GvkPipelineExplorerCollectionRange>& collectionRanges)
 {
@@ -244,11 +252,11 @@ VkResult PipelineExplorer::inspect_command_buffer(pipeline_explorer::QueueInfo q
         //  to secondary command buffers...I think everything Just Works (TM) as long
         //  as the tooled app is behaving correctly, but at some point should really go
         //  through the spec in detail here to see if any specific logic is necessary
-        gvk_result(commandBufferInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+        gvk_result_assert(commandBufferInfo);
         const auto& cmdTrackerCmds = commandBufferInfo->cmdTracker.get_commands();
-        gvk_result(1 < cmdTrackerCmds.size() ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-        gvk_result(cmdTrackerCmds.front() ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-        gvk_result(cmdTrackerCmds.front()->sType == gvk::get_stype<GvkCommandStructureBeginCommandBuffer>() ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+        gvk_result_assert(1 < cmdTrackerCmds.size());
+        gvk_result_assert(cmdTrackerCmds.front());
+        gvk_result_assert(cmdTrackerCmds.front()->sType == gvk::get_stype<GvkCommandStructureBeginCommandBuffer>());
         if (commandBufferInfo->commandBufferAllocateInfo->level == VK_COMMAND_BUFFER_LEVEL_PRIMARY) {
             cmds.push_back(cmdTrackerCmds.front());
         }
@@ -283,7 +291,7 @@ VkResult PipelineExplorer::inspect_command_buffer(pipeline_explorer::QueueInfo q
                     rayTracingPipeline = pCmdBindPipeline->pipeline;
                     pRayTracingPipelineExecutionCount = &pipelineExecutionCounts[{ device, rayTracingPipeline }];
                     pipeline_explorer::PipelineInfo raytracingPipelineInfo({ device, rayTracingPipeline });
-                    gvk_result(raytracingPipelineInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+                    gvk_result_assert(raytracingPipelineInfo);
                 } break;
                 default: {
                 } break;
@@ -299,15 +307,21 @@ VkResult PipelineExplorer::inspect_command_buffer(pipeline_explorer::QueueInfo q
             case gvk::get_stype<GvkCommandStructureCmdDispatchGraphIndirectAMDX>():
             case gvk::get_stype<GvkCommandStructureCmdDispatchGraphIndirectCountAMDX>():
             case gvk::get_stype<GvkCommandStructureCmdDispatchIndirect>(): {
-                gvk_result(pComputePipelineExecutionCount ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+                gvk_result_assert(pComputePipelineExecutionCount);
                 *pComputePipelineExecutionCount += 1;
                 if (pluginManager.tool_cmd(device, computePipeline) ||
                     sample_pipeline_metrics(device, computePipeline, requestInfo) ||
+#if 0
                     performance_query(device, computePipeline, performanceQueryManager) ||
                     pipeline_statistics_query(device, computePipeline, pipelineStatisticsQueryManager) ||
+                    timelineQueryManager.collect_metrics(device, computePipeline) ||
                     timestampQueryManager.get_request().sType == gvk::get_stype<GvkPipelineExplorerPerformanceQueryRequestInfo>() ||
-                    timestampQueryManager.collect_metrics(device, computePipeline)) {
-                    gvk_result(add_cmd_to_collection_range(device, computePipeline, VK_PIPELINE_BIND_POINT_COMPUTE, (uint32_t)cmds.size(), collectionRanges, autoQuery));
+                    timestampQueryManager.collect_metrics(device, computePipeline)
+#else
+                    mToolDispatchManager.tool_command(cmdTrackerCmds[command_i], device, queueInfo->vkHandle, computePipeline)
+#endif
+                ) {
+                    gvk_result(add_cmd_to_collection_range(device, computePipeline, VK_PIPELINE_BIND_POINT_COMPUTE, (uint32_t)cmds.size(), collectionRanges, /* autoQuery */ false));
                 }
             } break;
             ////////////////////////////////////////////////////////////////////////////////
@@ -334,15 +348,21 @@ VkResult PipelineExplorer::inspect_command_buffer(pipeline_explorer::QueueInfo q
             case gvk::get_stype<GvkCommandStructureCmdDrawMeshTasksNV>():
             case gvk::get_stype<GvkCommandStructureCmdDrawMultiEXT>():
             case gvk::get_stype<GvkCommandStructureCmdDrawMultiIndexedEXT>(): {
-                gvk_result(pGraphicsPipelineExecutionCount ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+                gvk_result_assert(pGraphicsPipelineExecutionCount);
                 *pGraphicsPipelineExecutionCount += 1;
                 if (pluginManager.tool_cmd(device, graphicsPipeline) ||
                     sample_pipeline_metrics(device, graphicsPipeline, requestInfo) ||
+#if 0
                     performance_query(device, graphicsPipeline, performanceQueryManager) ||
                     pipeline_statistics_query(device, graphicsPipeline, pipelineStatisticsQueryManager) ||
+                    timelineQueryManager.collect_metrics(device, graphicsPipeline) ||
                     timestampQueryManager.get_request().sType == gvk::get_stype<GvkPipelineExplorerPerformanceQueryRequestInfo>() ||
-                    timestampQueryManager.collect_metrics(device, graphicsPipeline)) {
-                    gvk_result(add_cmd_to_collection_range(device, graphicsPipeline, VK_PIPELINE_BIND_POINT_GRAPHICS, (uint32_t)cmds.size(), collectionRanges, autoQuery));
+                    timestampQueryManager.collect_metrics(device, graphicsPipeline)
+#else
+                    mToolDispatchManager.tool_command(cmdTrackerCmds[command_i], device, queueInfo->vkHandle, graphicsPipeline)
+#endif
+                ) {
+                    gvk_result(add_cmd_to_collection_range(device, graphicsPipeline, VK_PIPELINE_BIND_POINT_GRAPHICS, (uint32_t)cmds.size(), collectionRanges, /* autoQuery */ false));
                 }
             } break;
             ////////////////////////////////////////////////////////////////////////////////
@@ -356,16 +376,22 @@ VkResult PipelineExplorer::inspect_command_buffer(pipeline_explorer::QueueInfo q
                 *pRayTracingPipelineExecutionCount += 1;
                 if (pluginManager.tool_cmd(device, rayTracingPipeline) ||
                     sample_pipeline_metrics(device, rayTracingPipeline, requestInfo) ||
+#if 0
                     performance_query(device, rayTracingPipeline, performanceQueryManager) ||
                     pipeline_statistics_query(device, rayTracingPipeline, pipelineStatisticsQueryManager) ||
+                    timelineQueryManager.collect_metrics(device, rayTracingPipeline) ||
                     timestampQueryManager.get_request().sType == gvk::get_stype<GvkPipelineExplorerPerformanceQueryRequestInfo>() ||
-                    timestampQueryManager.collect_metrics(device, rayTracingPipeline)) {
-                    gvk_result(add_cmd_to_collection_range(device, rayTracingPipeline, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, (uint32_t)cmds.size(), collectionRanges, autoQuery));
+                    timestampQueryManager.collect_metrics(device, rayTracingPipeline)
+#else
+                    mToolDispatchManager.tool_command(cmdTrackerCmds[command_i], device, queueInfo->vkHandle, graphicsPipeline)
+#endif
+                ) {
+                    gvk_result(add_cmd_to_collection_range(device, rayTracingPipeline, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, (uint32_t)cmds.size(), collectionRanges, /* autoQuery */ false));
                 }
             } break;
             default: {
-                if (autoQuery) {
-                    gvk_result(add_cmd_to_collection_range(device, VK_NULL_HANDLE, VK_PIPELINE_BIND_POINT_GRAPHICS, (uint32_t)cmds.size(), collectionRanges, autoQuery));
+                if (/* autoQuery */ false) {
+                    gvk_result(add_cmd_to_collection_range(device, VK_NULL_HANDLE, VK_PIPELINE_BIND_POINT_GRAPHICS, (uint32_t)cmds.size(), collectionRanges, /* autoQuery */ false));
                 } else {
                     gvk_result(end_collection_range(collectionRanges));
                 }
@@ -380,7 +406,7 @@ VkResult PipelineExplorer::inspect_command_buffer(pipeline_explorer::QueueInfo q
                 auto pCmdExecuteCommands = (GvkCommandStructureCmdExecuteCommands*)cmdTrackerCmds[command_i];
                 for (uint32_t commandBuffer_i = 0; commandBuffer_i < pCmdExecuteCommands->commandBufferCount; ++commandBuffer_i) {
                     pipeline_explorer::CommandBufferInfo secondaryCommandBufferInfo(pCmdExecuteCommands->pCommandBuffers[commandBuffer_i]);
-                    gvk_result(secondaryCommandBufferInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+                    gvk_result_assert(secondaryCommandBufferInfo);
                     gvk_result(inspect_command_buffer(queueInfo, secondaryCommandBufferInfo, cmds, collectionRanges));
                 }
             } else {
@@ -395,8 +421,8 @@ VkResult PipelineExplorer::inspect_command_buffer(pipeline_explorer::QueueInfo q
         // The last entry in each command buffer's recorded commands is expected to be
         //  vkEndCommandBuffer(), for primary command buffers end the cmd list with
         //  this call
-        gvk_result(cmdTrackerCmds.back() ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-        gvk_result(cmdTrackerCmds.back()->sType == gvk::get_stype<GvkCommandStructureEndCommandBuffer>() ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+        gvk_result_assert(cmdTrackerCmds.back());
+        gvk_result_assert(cmdTrackerCmds.back()->sType == gvk::get_stype<GvkCommandStructureEndCommandBuffer>());
         if (commandBufferInfo->commandBufferAllocateInfo->level == VK_COMMAND_BUFFER_LEVEL_PRIMARY) {
             cmds.push_back(cmdTrackerCmds.back());
         }
@@ -406,21 +432,23 @@ VkResult PipelineExplorer::inspect_command_buffer(pipeline_explorer::QueueInfo q
 
 VkResult PipelineExplorer::tool_command_buffers(GvkPipelineExplorerToolCommandBufferInfoEx toolInfo)
 {
-        gvk_result_scope_begin(VK_SUCCESS) {
+    gvk_result_scope_begin(VK_SUCCESS) {
 
+#if 0
         // TODO : Wrangle QueryManager
         bool timestampQueryPoolReset = false;
+#endif
 
         // Get device
         gvk::Device gvkDevice = toolInfo.device;
-        gvk_result(gvkDevice ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+        gvk_result_assert(gvkDevice);
 
         // Get QueueInfo
         pipeline_explorer::QueueInfo queueInfo = toolInfo.queue;
-        gvk_result(queueInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+        gvk_result_assert(queueInfo);
 
         // Fire callback
-        gvk_result(handle_pre_process_command_buffers_callback_ex(toolInfo));
+        gvk_result(pre_process_command_buffers(toolInfo));
 
         // Data that needs to be cached to restore after modifying/inserting cmds
         VkPushConstantsInfo pushConstantsInfo{ };
@@ -434,9 +462,14 @@ VkResult PipelineExplorer::tool_command_buffers(GvkPipelineExplorerToolCommandBu
         // TODO : Include plugin queries here...
         auto queryActive =
             requestInfo->sType == gvk::get_stype<GvkPipelineExplorerRequestInfo>() ||
+#if 0
+            timelineQueryManager.collect_metrics(VK_NULL_HANDLE, VK_NULL_HANDLE) ||
             timestampQueryManager.get_request().sType == gvk::get_stype<GvkPipelineExplorerPerformanceQueryRequestInfo>() ||
             pipelineStatisticsQueryManager.get_request().sType == gvk::get_stype<GvkPipelineExplorerPerformanceQueryRequestInfo>() ||
             performanceQueryManager.get_request().sType == gvk::get_stype<GvkPipelineExplorerPerformanceQueryRequestInfo>();
+#else
+            mToolDispatchManager.enabled();
+#endif
 
         // Process cmds
         toolInfo.collectionRangeIndex = 0;
@@ -446,7 +479,7 @@ VkResult PipelineExplorer::tool_command_buffers(GvkPipelineExplorerToolCommandBu
             if (pCmd->sType == gvk::get_stype<GvkCommandStructureBeginCommandBuffer>()) {
                 commandBufferInfo = pCmd->commandBuffer;
             }
-            gvk_result(commandBufferInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+            gvk_result_assert(commandBufferInfo);
 
             // NOTE : Currently, both commandBufferInfo->experimentCommandBuffer 
             //  and commandBufferInfo->experimentEnabled should always be true
@@ -471,7 +504,7 @@ VkResult PipelineExplorer::tool_command_buffers(GvkPipelineExplorerToolCommandBu
                     // Get the PipelineInfo
                     auto pCmdBindPipeline = (GvkCommandStructureCmdBindPipeline*)pCmd;
                     pipeline_explorer::PipelineInfo pipelineInfo({ toolInfo.device, pCmdBindPipeline->pipeline });
-                    gvk_result(pipelineInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+                    gvk_result_assert(pipelineInfo);
                     pipeline = pCmdBindPipeline->pipeline;
 
                     // Cache the pipeline being bound
@@ -500,13 +533,13 @@ VkResult PipelineExplorer::tool_command_buffers(GvkPipelineExplorerToolCommandBu
                         pCmdBindPipeline->pipeline = pipelineInfo->highlightPipeline;
                         if (pipelineInfo->bindPoint == VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR) {
                             pReplacementShaderGroupHandleMap = &pipelineInfo->highlightShaderGroupHandleMap;
-                            gvk_result(*pReplacementShaderGroupHandleMap ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+                            gvk_result_assert(*pReplacementShaderGroupHandleMap);
                         }
                     } else if (pipelineInfo->experimentEnabled && pipelineInfo->experimentPipeline) {
                         pCmdBindPipeline->pipeline = pipelineInfo->experimentPipeline;
                         if (pipelineInfo->bindPoint == VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR) {
                             pReplacementShaderGroupHandleMap = &pipelineInfo->experimentShaderGroupHandleMap;
-                            gvk_result(*pReplacementShaderGroupHandleMap ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+                            gvk_result_assert(*pReplacementShaderGroupHandleMap);
                         }
                     }
                 } break;
@@ -533,8 +566,8 @@ VkResult PipelineExplorer::tool_command_buffers(GvkPipelineExplorerToolCommandBu
                     // NOTE : See comment above
                     // TODO : Route this to a scratchpad allocator
                     auto pCmdPushConstants2 = (const GvkCommandStructureCmdPushConstants2*)pCmd;
-                    gvk_result(pCmdPushConstants2->pPushConstantsInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-                    gvk_result(pCmdPushConstants2->pPushConstantsInfo->pNext ? VK_SUCCESS : VK_ERROR_FEATURE_NOT_PRESENT);
+                    gvk_result_assert(pCmdPushConstants2->pPushConstantsInfo);
+                    gvk_result_assert(pCmdPushConstants2->pPushConstantsInfo->pNext);
                     pushConstantsInfo.sType = gvk::get_stype<VkPushConstantsInfo>();
                     pushConstantsInfo.layout = pCmdPushConstants2->pPushConstantsInfo->layout;
                     pushConstantsInfo.stageFlags = pCmdPushConstants2->pPushConstantsInfo->stageFlags;
@@ -546,9 +579,9 @@ VkResult PipelineExplorer::tool_command_buffers(GvkPipelineExplorerToolCommandBu
                     pushConstantsInfo.pValues = !pushConstantsData.empty() ? pushConstantsData.data() : nullptr;
                 } break;
                 case gvk::get_stype<GvkCommandStructureCmdTraceRaysKHR>(): {
-                    gvk_result(raytracingPipelineInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+                    gvk_result_assert(raytracingPipelineInfo);
                     if (pReplacementShaderGroupHandleMap) {
-                        gvk_result(*pReplacementShaderGroupHandleMap ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+                        gvk_result_assert(*pReplacementShaderGroupHandleMap);
 
                         // Replace shader binding tables for VKRT experiments
                         cmdTraceRays = *(GvkCommandStructureCmdTraceRaysKHR*)pCmd;
@@ -583,6 +616,7 @@ VkResult PipelineExplorer::tool_command_buffers(GvkPipelineExplorerToolCommandBu
                 ////////////////////////////////////////////////////////////////////////////////
                 // TODO : Wrangle QueryManager
                 //------------------------------------------------------------------------------
+#if 0
                 if (toolInfo.collectionRangeIndex < toolInfo.collectionRangeCount && toolInfo.cmdIndex == 1 &&
                     requestInfo->sType == gvk::get_stype<GvkPipelineExplorerRequestInfo>() && requestInfo->refreshActivePipelines && !timestampQueryPoolReset) {
                     gvk_result(reset_timestamp_query_pool(queueInfo, pCmd->commandBuffer, toolInfo.collectionRangeCount * 2));
@@ -594,10 +628,11 @@ VkResult PipelineExplorer::tool_command_buffers(GvkPipelineExplorerToolCommandBu
                         write_timestamp(queueInfo, pCmd->commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
                     }
                 }
+#endif
                 ////////////////////////////////////////////////////////////////////////////////
 
                 // Fire callback
-                gvk_result(handle_pre_process_cmd_callback_ex(toolInfo));
+                gvk_result(pre_process_cmd(toolInfo));
 
                 // If vkCmdTraceRaysKHR(), use custom cmd with replaced shader binding tables,
                 //  otherwise execute the cmd
@@ -608,17 +643,20 @@ VkResult PipelineExplorer::tool_command_buffers(GvkPipelineExplorerToolCommandBu
                 }
 
                 // Fire callback
-                gvk_result(handle_post_process_cmd_callback_ex(toolInfo));
+                gvk_result(post_process_cmd(toolInfo));
 
                 ////////////////////////////////////////////////////////////////////////////////
                 // TODO : Wrangle QueryManager
+#if 0
                 if (toolInfo.collectionRangeIndex < toolInfo.collectionRangeCount &&
                     toolInfo.cmdIndex == toolInfo.pCollectionRanges[toolInfo.collectionRangeIndex].end) {
                     if (requestInfo->sType == gvk::get_stype<GvkPipelineExplorerRequestInfo>() && requestInfo->refreshActivePipelines) {
                         write_timestamp(queueInfo, pCmd->commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
                     }
                 }
+#endif
                 //------------------------------------------------------------------------------
+                // Increment collection range index if we've reached the end of the current collection range
                 if (toolInfo.collectionRangeIndex < toolInfo.collectionRangeCount &&
                     toolInfo.cmdIndex == toolInfo.pCollectionRanges[toolInfo.collectionRangeIndex].end) {
                     ++toolInfo.collectionRangeIndex;
@@ -642,7 +680,7 @@ VkResult PipelineExplorer::tool_command_buffers(GvkPipelineExplorerToolCommandBu
         }
 
         // Fire callback
-        gvk_result(handle_post_process_command_buffers_callback_ex(toolInfo));
+        gvk_result(post_process_command_buffers(toolInfo));
 
     } gvk_result_scope_end;
     return gvkResult;

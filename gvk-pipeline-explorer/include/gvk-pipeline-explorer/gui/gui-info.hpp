@@ -26,12 +26,18 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-pipeline-explorer/backend/utilities.hpp"
-#include "gvk-reference/handle-id.hpp"
-#include "gvk-command-structures.hpp"
 #include "gvk-defines.hpp"
-#include "gvk-gui.hpp"
 #include "gvk-pipeline-explorer.hpp"
+#include "gvk-command-structures.hpp"
+#include "gvk-pipeline-explorer/backend/ipc-messenger.hpp"
+#include "gvk-pipeline-explorer/backend/utilities.hpp"
+#include "gvk-pipeline-explorer/gui/pipeline-info.hpp"
+#include "gvk-pipeline-explorer/gui/range-info.hpp"
+#include "gvk-reference/handle-id.hpp"
+#include "gvk-runtime/child-process.hpp"
+#include "gvk-runtime/io-pipe.hpp"
+#include "gvk-gui.hpp"
+#include "gvk-runtime.hpp"
 #include "gvk-structures.hpp"
 
 #include "boost/multiprecision/integer.hpp"
@@ -53,11 +59,24 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 #include <filesystem>
+#include <limits>
 #include <map>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+// FROM : https://github.com/juliettef/IconFontCppHeaders/blob/main/IconsFontAwesome6.h
+#define ICON_FA_CHART_AREA             "\xef\x87\xbe" // U+f1fe
+#define ICON_FA_CHART_BAR              "\xef\x82\x80" // U+f080
+#define ICON_FA_CHART_COLUMN           "\xee\x83\xa3" // U+e0e3
+#define ICON_FA_CHART_DIAGRAM          "\xee\x9a\x95" // U+e695
+#define ICON_FA_CHART_GANTT            "\xee\x83\xa4" // U+e0e4
+#define ICON_FA_CHART_LINE             "\xef\x88\x81" // U+f201
+#define ICON_FA_CHART_PIE              "\xef\x88\x80" // U+f200
+#define ICON_FA_CHART_SIMPLE           "\xee\x91\xb3" // U+e473
+#define ICON_FA_MAGNIFYING_GLASS_CHART "\xee\x94\xa2" // U+e522
 
 namespace gvk {
 namespace pipeline_explorer {
@@ -134,67 +153,6 @@ private:
     RequestResult& operator=(const RequestResult&) = delete;
 };
 
-class ApplicationInfo final
-{
-public:
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-    struct PipePair
-    {
-        static constexpr int INHERIT_READ = 1 << 0;
-        static constexpr int INHERIT_WRITE = 1 << 1;
-        static BOOL create(DWORD inheritFlags, ApplicationInfo::PipePair* pPipePair)
-        {
-            (void)inheritFlags;
-            if (pPipePair) {
-                ApplicationInfo::PipePair::close(pPipePair);
-                SECURITY_ATTRIBUTES securityAtributes{ };
-                securityAtributes.nLength = sizeof(securityAtributes);
-                securityAtributes.bInheritHandle = TRUE;
-                auto success = CreatePipe(&pPipePair->read, &pPipePair->write, &securityAtributes, 0);
-                // if (success && pPipePair->read && !(inheritFlags & INHERIT_READ)) {
-                //     success &= SetHandleInformation(pPipePair->read, HANDLE_FLAG_INHERIT, 0);
-                // }
-                // if (success && pPipePair->write && !(inheritFlags & INHERIT_WRITE)) {
-                //     success &= SetHandleInformation(pPipePair->write, HANDLE_FLAG_INHERIT, 0);
-                // }
-                if (!success) {
-                    ApplicationInfo::PipePair::close(pPipePair);
-                }
-            }
-            return pPipePair && pPipePair->read && pPipePair->write;
-        }
-
-        static void close(ApplicationInfo::PipePair* pPipePair)
-        {
-            if (pPipePair) {
-                if (pPipePair->read) {
-                    CloseHandle(pPipePair->read);
-                }
-                if (pPipePair->write) {
-                    CloseHandle(pPipePair->write);
-                }
-                *pPipePair = { };
-            }
-        }
-
-        HANDLE read{ };
-        HANDLE write{ };
-    };
-
-    PROCESS_INFORMATION processInformation{ };
-    HANDLE waitHandle{ };
-    PipePair stdIn{ };
-    PipePair stdOut{ };
-    PipePair stdErr{ };
-    std::pair<HANDLE, DWORD> stdInThread{ };
-    std::pair<HANDLE, DWORD> stdOutThread{ };
-    std::pair<HANDLE, DWORD> stdErrThread{ };
-    HANDLE ioThread{ };
-#endif
-    bool running{ };
-    bool closed{ };
-};
-
 class StreamInfo final
 {
 public:
@@ -235,120 +193,13 @@ public:
     std::vector<double> commandDurations;
     RequestResult<GvkPipelineExplorerCommandCollectionRequestInfo, GvkPipelineExplorerCommandCollectionResultInfo> requestResult;
 #if 0
-    std::vector<double> commandCollectionTimings; 
+    std::vector<double> commandCollectionTimings;
 #endif
     std::vector<std::pair<std::string, double>> gpuCallInfos; //contains call stype + timings
     bool populateGpuCallPairs{}; //TODO AUSTIN: REMOVE ME this will be removed when commandCollectionTimings contains the actual gpu call timings
 
     std::unordered_map<gvk::HandleId<VkDevice, VkPipeline>, std::unordered_set<uint64_t>> mPipelineToCallIndex;
     std::unordered_map<uint64_t, gvk::HandleId<VkDevice, VkPipeline>> mCallIndexToPipeline;
-};
-
-class WorkspaceInfo final
-{
-public:
-    WorkspaceInfo() = default;
-
-    WorkspaceInfo(const GvkPipelineExplorerWorkspaceInfo& pipelineExplorerWorkspaceInfo)
-        : waitForDebugger{ (bool)pipelineExplorerWorkspaceInfo.waitForDebugger }
-        , openTerminal{ (bool)pipelineExplorerWorkspaceInfo.openTerminal }
-        , autoWorkingDirectory{ (bool)pipelineExplorerWorkspaceInfo.autoWorkingDirectory }
-        , autoWorkspace{ (bool)pipelineExplorerWorkspaceInfo.autoWorkspace }
-        , autoLogPath{ (bool)pipelineExplorerWorkspaceInfo.autoLogPath }
-        , logToStdOut{ (bool)pipelineExplorerWorkspaceInfo.logToStdOut }
-        , logToFile{ (bool)pipelineExplorerWorkspaceInfo.logToFile }
-        , record{ (bool)pipelineExplorerWorkspaceInfo.record }
-        , launch{ pipelineExplorerWorkspaceInfo.pLaunch ? pipelineExplorerWorkspaceInfo.pLaunch : std::string() }
-        , target{ pipelineExplorerWorkspaceInfo.pTarget ? pipelineExplorerWorkspaceInfo.pTarget : std::string() }
-        , args{ pipelineExplorerWorkspaceInfo.pArgs ? pipelineExplorerWorkspaceInfo.pArgs : std::string() }
-        , workingDirectory{ pipelineExplorerWorkspaceInfo.pWorkingDirectory ? pipelineExplorerWorkspaceInfo.pWorkingDirectory : std::string() }
-        , workspace{ pipelineExplorerWorkspaceInfo.pWorkspace ? pipelineExplorerWorkspaceInfo.pWorkspace : std::string() }
-        , logPath{ pipelineExplorerWorkspaceInfo.pLogPath ? pipelineExplorerWorkspaceInfo.pLogPath : std::string() }
-        , gits{ pipelineExplorerWorkspaceInfo.pGits ? pipelineExplorerWorkspaceInfo.pGits : std::string() }
-    {
-    }
-
-    WorkspaceInfo& operator=(const WorkspaceInfo& other) = default;
-
-    operator GvkPipelineExplorerWorkspaceInfo() const
-    {
-        auto pipelineExplorerWorkspaceInfo = gvk::get_default<GvkPipelineExplorerWorkspaceInfo>();
-        pipelineExplorerWorkspaceInfo.waitForDebugger = waitForDebugger;
-        pipelineExplorerWorkspaceInfo.openTerminal = openTerminal;
-        pipelineExplorerWorkspaceInfo.autoWorkingDirectory = autoWorkingDirectory;
-        pipelineExplorerWorkspaceInfo.autoWorkspace = autoWorkspace;
-        pipelineExplorerWorkspaceInfo.autoLogPath = autoLogPath;
-        pipelineExplorerWorkspaceInfo.logToStdOut = logToStdOut;
-        pipelineExplorerWorkspaceInfo.logToFile = logToFile;
-        pipelineExplorerWorkspaceInfo.pLaunch = !launch.empty() ? launch.c_str() : nullptr;
-        pipelineExplorerWorkspaceInfo.pTarget = !target.empty() ? target.c_str() : nullptr;
-        pipelineExplorerWorkspaceInfo.pArgs = !args.empty() ? args.c_str() : nullptr;
-        pipelineExplorerWorkspaceInfo.pWorkingDirectory = !workingDirectory.empty() ? workingDirectory.c_str() : nullptr;
-        pipelineExplorerWorkspaceInfo.pWorkspace = !workspace.empty() ? workspace.c_str() : nullptr;
-        pipelineExplorerWorkspaceInfo.pLogPath = !logPath.empty() ? logPath.c_str() : nullptr;
-        pipelineExplorerWorkspaceInfo.pGits = !gits.empty() ? gits.c_str() : nullptr;
-        return pipelineExplorerWorkspaceInfo;
-    }
-
-    bool operator==(const WorkspaceInfo& other) const
-    {
-        return (GvkPipelineExplorerWorkspaceInfo)*this == (GvkPipelineExplorerWorkspaceInfo)other;
-    }
-
-    bool operator!=(const WorkspaceInfo& other) const
-    {
-        return !(*this == other);
-    }
-
-    bool waitForDebugger{ };
-    bool openTerminal{ };
-    bool autoWorkingDirectory{ true };
-    bool autoWorkspace{ true };
-    bool autoLogPath{ true };
-    bool logToStdOut{ true };
-    bool logToFile{ false };
-    bool record{ false };
-    std::string launch;
-    std::string target;
-    std::string args;
-    std::string workingDirectory;
-    std::string workspace;
-    std::string logPath;
-    std::string gits;
-
-    ////////
-
-    bool gitsStream{ };
-    StreamInfo streamInfo{ };
-};
-
-struct PerformanceCounterResult
-{
-    double total{ };
-    double average{ };
-};
-
-class PipelineInfo final
-{
-public:
-    boost::multiprecision::uint256_t uuid;
-    boost::multiprecision::uint256_t driverUUID;
-    gvk::HandleId<VkDevice, VkPipeline> pipeline;
-    VkPipelineBindPoint bindPoint{ };
-    std::string bindPointStr;
-    std::string uuidStr;
-    std::string driverUUIDStr;
-    std::string handleStr;
-    std::string name;
-    std::unordered_set<std::string> labels;
-    bool experimentEnabled{ };
-    bool highlightEnabled{ };
-    bool sampleMetrics{ };
-    ImVec4 highlightColor{ 1, 0, 1, 1 };
-    bool infoWriteEnabled{ true };
-    std::map<GvkPipelineExplorerMetricId, gvk::Auto<GvkPipelineExplorerMetricResultInfo>> metrics;
-    std::map<std::array<uint8_t, VK_UUID_SIZE>, PerformanceCounterResult> performanceCounterResults;
-    std::map<VkQueryPipelineStatisticFlagBits, PerformanceCounterResult> pipelineStatisticsQueryResults;
 };
 
 class PerformanceCountersInfo final
@@ -423,6 +274,61 @@ public:
 class GuiInfo final
 {
 public:
+    void reset()
+    {
+        workspace.clear();
+
+        ///////////////////////////////////////////////////////////////////////////////
+        // TODO : Unify application shutdown and stream shutdown
+
+#ifdef GVK_PLATFORM_WINDOWS
+        startupIpcMessages.clear();
+        incomingIpcMessages.clear();
+#endif // GVK_PLATFORM_WINDOWS
+
+        messages.clear();
+        requestInfo = gvk::get_default<GvkPipelineExplorerRequestInfo>();
+        requestInfo.warmupRangeCount = 4;
+        requestInfo.queryRangeCount = 16;
+        activePipelines.clear();
+        sortedPipelines.clear();
+        pipelineInfos.clear();
+        availableMetrics.clear();
+        filteredMetrics.clear();
+        metricsFilters.clear();
+        metricsAnyOfFilter.clear();
+        metricsAllOfFilter.clear();
+        performanceCountersInfo.reset();
+        pipelineStatisticsQueryInfo.reset();
+        pluginPerformanceCounterInfo.reset();
+        selectedPipeline = { };
+        enabledMetricsGroup = 0;
+        apiCallInfo.reset();
+        resultPending = false;
+
+        frameDurations = { };
+        frameIndex = 0;
+        frameCount = 0;
+        frameDurationAccumulator = 0;
+        frameRate = 0;
+        ///////////////////////////////////////////////////////////////////////////////
+    }
+
+    std::string workspace;
+#ifdef GVK_PLATFORM_WINDOWS
+    gvk::ChildProcess workload;
+    std::function<void()> onWorkloadShutdown;
+    gvk::NamedPipe ipcPipe;
+    gvk::pipeline_explorer::IpcMessenger ipcMessenger;
+    std::vector<gvk::IpcMessenger::Message> startupIpcMessages;
+    std::unordered_map<std::string, std::vector<gvk::IpcMessenger::Message>> incomingIpcMessages;
+#endif // GVK_PLATFORM_WINDOWS
+    std::ofstream logFile;
+    std::mutex workloadMutex;
+
+    // TODO : Documentation
+    RangeInfo rangeInfo{ };
+
     std::string windowTitle;
     GvkPipelineExplorerRequestInfo requestInfo{ gvk::get_default<GvkPipelineExplorerRequestInfo>() };
     std::unordered_set<gvk::HandleId<VkDevice, VkPipeline>> activePipelines;
@@ -446,40 +352,52 @@ public:
     VkExtent2D windowExtent{ };
     VkOffset2D windowPosition{ };
     float fontScale{ 1.0f };
-    ApplicationInfo applicationInfo{ };
-    WorkspaceInfo workspaceInfo{ };
+
+    // TODO : Documentation
+    std::array<double, 60> frameDurations{ };
+    uint32_t frameIndex{ };
+    uint32_t frameCount{ };
+    double frameDurationAccumulator{ };
+    double frameRate{ };
+    
+    // TODO : Documentation
+    GvkPipelineExplorerTimelineQueryInterval queryInterval { gvk::get_default<GvkPipelineExplorerTimelineQueryInterval>() };
+
+    // TODO : Documentation
+    std::vector<VkLayerProperties> layerProperties;
+    bool validationLayerAvailable{ };
+
     ApiCallInfo apiCallInfo{ };
     TimestampInfo timestampInfo{ };
     PipelineStatisticsQueryInfo pipelineStatisticsQueryInfo{ };
-    std::vector<WorkspaceInfo> recentWorkspaceInfos;
     std::set<std::string> screenshots;
-    std::vector<VkLayerProperties> layerProperties;
+    gvk::Auto<GvkCommandCollection> commandCollection;
     bool resultPending{ };
-    std::ofstream logFile;
     bool autoQuery{ };
 };
 
-inline std::string ConvertToStringAndRound(double input, int decimalPercision)
+inline std::string ConvertToStringAndRound(double input, int decimalPrecision)
 {
     std::string inputStr = std::to_string(input);
-    return inputStr.substr(0, inputStr.find(".") + decimalPercision);
+    return inputStr.substr(0, inputStr.find(".") + decimalPrecision);
 }
 
 inline ImU32 LightenColor(ImU32 color, float inAmount)
 {
     ImVec4 colorVec = ImGui::ColorConvertU32ToFloat4(color);
-    ;    ImVec4 lightenedColor = ImVec4(
-        std::min((float)1, colorVec.x + 1 * inAmount),
-        std::min((float)1, colorVec.y + 1 * inAmount),
-        std::min((float)1, colorVec.z + 1 * inAmount),
-        colorVec.w);
+    ImVec4 lightenedColor = ImVec4(
+        std::min(1.0f, colorVec.x + 1.0f * inAmount),
+        std::min(1.0f, colorVec.y + 1.0f * inAmount),
+        std::min(1.0f, colorVec.z + 1.0f * inAmount),
+        colorVec.w
+    );
     return ImGui::ColorConvertFloat4ToU32(lightenedColor);
 }
 
 //TODO: This should be under GvkGui, but had namespace errors when I tried to use it from there
 inline void SetToolTip(const char* pToolTip)
 {
-    //Making a long delay using the IsItemHovered flags disables tooltips when disabled textbox is used. 
+    //Making a long delay using the IsItemHovered flags disables tooltips when disabled textbox is used.
     //So we are using the ImGuiHoveredFlags_AllowWhenDisabled flag (github.com/ocornut/imgui/issues/1940)
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_NoSharedDelay | ImGuiHoveredFlags_AllowWhenDisabled)) {
         ImGui::SetTooltip(pToolTip, ImGui::GetStyle().HoverDelayNormal);
@@ -867,98 +785,6 @@ public:
     uint32_t flagValue = 0;
 };
 
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-inline BOOL redirect_io(GuiInfo& guiInfo, HANDLE read, HANDLE write)
-{
-    DWORD count = 0;
-    std::array<char, 1024> buffer{ };
-    auto success = ReadFile(read, buffer.data(), (DWORD)buffer.size() - 1, &count, NULL);
-    if (success && count) {
-        if (guiInfo.workspaceInfo.logToStdOut) {
-            success = WriteFile(write, buffer.data(), count, NULL, NULL);
-        }
-        if (guiInfo.workspaceInfo.logToFile && guiInfo.logFile.is_open()) {
-            guiInfo.logFile.write(buffer.data(), count);
-            guiInfo.logFile.flush();
-        }
-    }
-    return success;
-}
-
-inline DWORD CALLBACK process_io_callback(_In_ LPVOID lpParameter)
-{
-    if (lpParameter) {
-        auto& guiInfo = *(GuiInfo*)lpParameter;
-        auto currentThreadId = GetCurrentThreadId();
-        if (currentThreadId == guiInfo.applicationInfo.stdInThread.second) {
-            while (redirect_io(guiInfo, GetStdHandle(STD_INPUT_HANDLE), guiInfo.applicationInfo.stdIn.write)) {
-            }
-        } else if (currentThreadId == guiInfo.applicationInfo.stdOutThread.second) {
-            while (redirect_io(guiInfo, guiInfo.applicationInfo.stdOut.read, GetStdHandle(STD_OUTPUT_HANDLE))) {
-            }
-        } else if (currentThreadId == guiInfo.applicationInfo.stdErrThread.second) {
-            while (redirect_io(guiInfo, guiInfo.applicationInfo.stdErr.read, GetStdHandle(STD_ERROR_HANDLE))) {
-            }
-        }
-    }
-    return 0;
-}
-
-inline VOID CALLBACK process_wait_callback(_In_ PVOID lpParameter, _In_ BOOLEAN TimerOrWaitFired)
-{
-    (void)TimerOrWaitFired;
-    if (lpParameter) {
-        auto& guiInfo = *(GuiInfo*)lpParameter;
-        guiInfo.messages += "INFO : " + guiInfo.workspaceInfo.launch + " closed\n";
-        guiInfo.applicationInfo.closed = true;
-        // TODO : Double check that all handles/resources associated with child process
-        //  are correctly closed/cleaned up
-        guiInfo.applicationInfo.running = false;
-        ApplicationInfo::PipePair::close(&guiInfo.applicationInfo.stdIn);
-        ApplicationInfo::PipePair::close(&guiInfo.applicationInfo.stdOut);
-        ApplicationInfo::PipePair::close(&guiInfo.applicationInfo.stdErr);
-        if (guiInfo.applicationInfo.ioThread) {
-            WaitForSingleObject(guiInfo.applicationInfo.ioThread, INFINITE);
-            CloseHandle(guiInfo.applicationInfo.ioThread);
-            guiInfo.applicationInfo.ioThread = NULL;
-        }
-        guiInfo.logFile.close();
-    }
-}
-
-inline std::string get_target(const WorkspaceInfo& workspaceInfo)
-{
-    std::string target;
-    if (!workspaceInfo.launch.empty()) {
-        auto applicationName = std::filesystem::path(workspaceInfo.launch).filename().replace_extension().string();
-        target = !workspaceInfo.target.empty() ? workspaceInfo.target : applicationName;
-    }
-    return target;
-}
-
-inline std::filesystem::path get_default_workspace_path(const WorkspaceInfo& workspaceInfo)
-{
-    std::filesystem::path workspacePath;
-    if (!workspaceInfo.launch.empty()) {
-        PWSTR pDocumentsPath = NULL;
-        auto hResult = SHGetKnownFolderPath(FOLDERID_Documents, 0, nullptr, &pDocumentsPath);
-        auto target = get_target(workspaceInfo) + "-pipeline-explorer";
-        workspacePath = (SUCCEEDED(hResult) && pDocumentsPath) ? std::filesystem::path(pDocumentsPath) / "GPA" / target : target;
-        CoTaskMemFree(pDocumentsPath);
-    }
-    return workspacePath;
-}
-
-inline std::filesystem::path get_default_working_directory(const WorkspaceInfo& workspaceInfo)
-{
-    std::filesystem::path workingDirectory;
-    if (!workspaceInfo.launch.empty()) {
-        workingDirectory = std::filesystem::path(workspaceInfo.launch).parent_path();
-    }
-    return workingDirectory;
-}
-#endif // VK_USE_PLATFORM_WIN32_KHR
-
 inline const std::string& get_bind_point_label(VkPipelineBindPoint bindPoint)
 {
     static std::unordered_map<VkPipelineBindPoint, std::string> sBindPointLabels;
@@ -971,50 +797,11 @@ inline const std::string& get_bind_point_label(VkPipelineBindPoint bindPoint)
     return itr->second;
 }
 
-inline const std::vector<std::string>& get_validation_layer_setting_names()
+template <typename T>
+inline bool compare_pipeline_value(ImGuiSortDirection sortDirection, const T& lhs, const T& rhs)
 {
-    static const std::vector<std::string> sValidationLayerSettingNames{
-        /* BOOL      : true                                            */ "VK_LAYER_FINE_GRAINED_LOCKING",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_VALIDATE_CORE",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_CHECK_IMAGE_LAYOUT",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_CHECK_COMMAND_BUFFER",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_CHECK_OBJECT_IN_USE",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_CHECK_QUERY",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_CHECK_SHADERS",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_CHECK_SHADERS_CACHING",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_UNIQUE_HANDLES",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_OBJECT_LIFETIME",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_STATELESS_PARAM",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_THREAD_SAFETY",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_VALIDATE_SYNC",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_SYNC_QUEUE_SUBMIT",
-        /* ENUM      : GPU_BASED_NONE                                  */  // "VK_KHRONOS_VALIDATION_VALIDATE_GPU_BASED",
-        /* BOOL      : true                                            */  // "VK_KHRONOS_VALIDATION_PRINTF_TO_STDOUT",
-        /* BOOL      : false                                           */  // "VK_KHRONOS_VALIDATION_PRINTF_VERBOSE",
-        /* INT       : 1024                                            */  // "VK_KHRONOS_VALIDATION_PRINTF_BUFFER_SIZE",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_RESERVE_BINDING_SLOT",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_VMA_LINEAR_OUTPUT",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_GPUAV_DESCRIPTOR_CHECKS",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_WARN_ON_ROBUST_OOB",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_VALIDATE_INDIRECT_BUFFER",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_USE_INSTRUMENTED_SHADER_CACHE",
-        /* BOOL      : false                                           */  // "VK_KHRONOS_VALIDATION_SELECT_INSTRUMENTED_SHADERS",
-        /* INT       : 10000                                           */  // "VK_KHRONOS_VALIDATION_GPUAV_MAX_BUFFER_DEVICE_ADDRESSES",
-        /* BOOL      : false                                           */  // "VK_KHRONOS_VALIDATION_VALIDATE_BEST_PRACTICES",
-        /* BOOL      : false                                           */  // "VK_KHRONOS_VALIDATION_VALIDATE_BEST_PRACTICES_ARM",
-        /* BOOL      : false                                           */  // "VK_KHRONOS_VALIDATION_VALIDATE_BEST_PRACTICES_AMD",
-        /* BOOL      : false                                           */  // "VK_KHRONOS_VALIDATION_VALIDATE_BEST_PRACTICES_IMG",
-        /* BOOL      : false                                           */  // "VK_KHRONOS_VALIDATION_VALIDATE_BEST_PRACTICES_NVIDIA",
-        /* FLAGS     : VK_DBG_LAYER_ACTION_LOG_MSG                     */  // "VK_KHRONOS_VALIDATION_DEBUG_ACTION",
-        /* SAVE_FILE : stdout                                          */  // "VK_KHRONOS_VALIDATION_LOG_FILENAME",
-        /* FLAGS     : error                                           */  // "VK_KHRONOS_VALIDATION_REPORT_FLAGS",
-        /* BOOL      : true                                            */  // "VK_KHRONOS_VALIDATION_ENABLE_MESSAGE_LIMIT",
-        /* INT       : 10                                              */  // "VK_LAYER_DUPLICATE_MESSAGE_LIMIT",
-        /* LIST      :                                                 */  // "VK_LAYER_MESSAGE_ID_FILTER",
-        /* FLAGS     : VK_VALIDATION_FEATURE_DISABLE_THREAD_SAFETY_EXT */  // "VK_LAYER_DISABLES",
-        /* FLAGS     :                                                 */  // "VK_LAYER_ENABLES",
-    };
-    return sValidationLayerSettingNames;
+    auto ascending = sortDirection == ImGuiSortDirection_Ascending;
+    return ascending ? lhs < rhs : lhs > rhs;
 }
 
 inline void sort_pipelines(GuiInfo& guiInfo)
@@ -1026,34 +813,104 @@ inline void sort_pipelines(GuiInfo& guiInfo)
         {
             const auto& lhsPipelineInfo = guiInfo.pipelineInfos[lhs];
             const auto& rhsPipelineInfo = guiInfo.pipelineInfos[rhs];
+            const auto& lhsPipelineExecutionInfoItr = guiInfo.rangeInfo.pipelineExecutionInfos.find(lhs);
+            const auto& rhsPipelineExecutionInfoItr = guiInfo.rangeInfo.pipelineExecutionInfos.find(rhs);
+            const auto& lhsPipelineExecutionInfo = (lhsPipelineExecutionInfoItr != guiInfo.rangeInfo.pipelineExecutionInfos.end()) ? lhsPipelineExecutionInfoItr->second : PipelineExecutionInfo { };
+            const auto& rhsPipelineExecutionInfo = (rhsPipelineExecutionInfoItr != guiInfo.rangeInfo.pipelineExecutionInfos.end()) ? rhsPipelineExecutionInfoItr->second : PipelineExecutionInfo { };
             for (const auto& pipelineSortSpec : guiInfo.pipelineSortSpecs) {
-                auto ascending = pipelineSortSpec.SortDirection == ImGuiSortDirection_Ascending;
                 switch (pipelineSortSpec.ColumnUserID) {
-                case 0: { return ascending ? lhsPipelineInfo.uuid        < rhsPipelineInfo.uuid        : lhsPipelineInfo.uuid        > rhsPipelineInfo.uuid; } break;
-                case 1: { return ascending ? lhsPipelineInfo.driverUUID  < rhsPipelineInfo.driverUUID  : lhsPipelineInfo.driverUUID  > rhsPipelineInfo.driverUUID; } break;
-                case 2: { return ascending ? lhsPipelineInfo.pipeline    < rhsPipelineInfo.pipeline    : lhsPipelineInfo.pipeline    > rhsPipelineInfo.pipeline; } break;
-                case 3: { return ascending ? lhsPipelineInfo.name        < rhsPipelineInfo.name        : lhsPipelineInfo.name        > rhsPipelineInfo.name; } break;
-                case 4: { return ascending ? lhsPipelineInfo.bindPoint   < rhsPipelineInfo.bindPoint   : lhsPipelineInfo.bindPoint   > rhsPipelineInfo.bindPoint; } break;
+                case 0: {
+                    if (lhsPipelineInfo.uuid != rhsPipelineInfo.uuid) {
+                         return compare_pipeline_value(pipelineSortSpec.SortDirection, lhsPipelineInfo.uuid, rhsPipelineInfo.uuid);
+                    }
+                } break;
+                case 1: {
+                    if (lhsPipelineInfo.driverUUID != rhsPipelineInfo.driverUUID) {
+                        return compare_pipeline_value(pipelineSortSpec.SortDirection, lhsPipelineInfo.driverUUID, rhsPipelineInfo.driverUUID);
+                    }
+                } break;
+                case 2: {
+                    if (lhsPipelineInfo.pipeline != rhsPipelineInfo.pipeline) {
+                        return compare_pipeline_value(pipelineSortSpec.SortDirection, lhsPipelineInfo.pipeline, rhsPipelineInfo.pipeline);
+                    }
+                } break;
+                case 3: {
+                    if (lhsPipelineInfo.name != rhsPipelineInfo.name) {
+                        return compare_pipeline_value(pipelineSortSpec.SortDirection, lhsPipelineInfo.name, rhsPipelineInfo.name);
+                    }
+                } break;
+                case 4: {
+                    if (lhsPipelineInfo.bindPoint != rhsPipelineInfo.bindPoint) {
+                        return compare_pipeline_value(pipelineSortSpec.SortDirection, lhsPipelineInfo.bindPoint, rhsPipelineInfo.bindPoint);
+                    }
+                } break;
                 case 5: {
                     // TODO : Automate metrics columns/sorting
+#if 0
                     double lhsExecutionCount = 0;
                     for (const auto& metrics : lhsPipelineInfo.metrics) {
                         if (metrics.first.x == GVK_PIPELINE_EXPLORER_METRIC_ID_EXECUTION_COUNT) {
+                            #if 0
                             lhsExecutionCount = metrics.second->average;
+                            #else
+                            lhsExecutionCount = metrics.second->total;
+                            #endif
                             break;
                         }
                     }
                     double rhsExecutionCount = 0;
                     for (const auto& metrics : rhsPipelineInfo.metrics) {
                         if (metrics.first.x == GVK_PIPELINE_EXPLORER_METRIC_ID_EXECUTION_COUNT) {
+                            #if 0
                             rhsExecutionCount = metrics.second->average;
+                            #else
+                            rhsExecutionCount = metrics.second->total;
+                            #endif
                             break;
                         }
                     }
-                    return ascending ? lhsExecutionCount < rhsExecutionCount : lhsExecutionCount > rhsExecutionCount;
+                    if (lhsExecutionCount != rhsExecutionCount) {
+                         return compare_pipeline_value(pipelineSortSpec.SortDirection, lhsExecutionCount, rhsExecutionCount);
+                    }
+#else
+                    auto lhsExecutionCount = lhsPipelineExecutionInfo.executionCount;
+                    auto rhsExecutionCount = rhsPipelineExecutionInfo.executionCount;
+                    if (lhsExecutionCount != rhsExecutionCount) {
+                        return compare_pipeline_value(pipelineSortSpec.SortDirection, lhsExecutionCount, rhsExecutionCount);
+                    }
+#endif
                 } break;
                 case 6: {
                     // TODO : Automate metrics columns/sorting
+#if 0
+                    double lhsTime = 0;
+                    for (const auto& metrics : lhsPipelineInfo.metrics) {
+                        if (metrics.first.x == GVK_PIPELINE_EXPLORER_METRIC_ID_TIMESTAMP_QUERY) {
+                            lhsTime = metrics.second->total;
+                            break;
+                        }
+                    }
+                    double rhsTime = 0;
+                    for (const auto& metrics : rhsPipelineInfo.metrics) {
+                        if (metrics.first.x == GVK_PIPELINE_EXPLORER_METRIC_ID_TIMESTAMP_QUERY) {
+                            rhsTime = metrics.second->total;
+                            break;
+                        }
+                    }
+                    if (lhsTime != rhsTime) {
+                        return compare_pipeline_value(pipelineSortSpec.SortDirection, lhsTime, rhsTime);
+                    }
+#else
+                    auto lhsTotalDuration = lhsPipelineExecutionInfo.totalDurationNs;
+                    auto rhsTotalDuration = rhsPipelineExecutionInfo.totalDurationNs;
+                    if (lhsTotalDuration != rhsTotalDuration) {
+                        return compare_pipeline_value(pipelineSortSpec.SortDirection, lhsTotalDuration, rhsTotalDuration);
+                    }
+#endif
+                } break;
+                case 7: {
+                    // TODO : Automate metrics columns/sorting
+#if 0
                     double lhsTime = 0;
                     for (const auto& metrics : lhsPipelineInfo.metrics) {
                         if (metrics.first.x == GVK_PIPELINE_EXPLORER_METRIC_ID_TIMESTAMP_QUERY) {
@@ -1068,20 +925,30 @@ inline void sort_pipelines(GuiInfo& guiInfo)
                             break;
                         }
                     }
-                    return ascending ? lhsTime < rhsTime : lhsTime > rhsTime;
+                    if (lhsTime != rhsTime) {
+                        return compare_pipeline_value(pipelineSortSpec.SortDirection, lhsTime, rhsTime);
+                    }
+#else
+                    auto lhsAvgDuration = lhsPipelineExecutionInfo.executionCount ? (double)lhsPipelineExecutionInfo.totalDurationNs / (double)lhsPipelineExecutionInfo.executionCount : 0;
+                    auto rhsAvgDuration = rhsPipelineExecutionInfo.executionCount ? (double)rhsPipelineExecutionInfo.totalDurationNs / (double)rhsPipelineExecutionInfo.executionCount : 0;
+                    if (lhsAvgDuration != rhsAvgDuration) {
+                        return compare_pipeline_value(pipelineSortSpec.SortDirection, lhsAvgDuration, rhsAvgDuration);
+                    }
+#endif
                 } break;
-                case 7: {
+                case 8: {
+                    if (lhsPipelineInfo.experimentEnabled != rhsPipelineInfo.experimentEnabled) {
+                        return compare_pipeline_value(pipelineSortSpec.SortDirection, lhsPipelineInfo.experimentEnabled, rhsPipelineInfo.experimentEnabled);
+                    }
+                } break;
+                case 9: {
                     std::array<float, 4> lhsColor{ };
                     memcpy(lhsColor.data(), &lhsPipelineInfo.highlightColor, sizeof(lhsColor));
                     std::array<float, 4> rhsColor{ };
                     memcpy(rhsColor.data(), &rhsPipelineInfo.highlightColor, sizeof(rhsColor));
-                    return ascending ? lhsColor < rhsColor : lhsColor > rhsColor;
-                } break;
-                case 8: {
-                    return ascending ? lhsPipelineInfo.experimentEnabled < rhsPipelineInfo.experimentEnabled : lhsPipelineInfo.experimentEnabled > rhsPipelineInfo.experimentEnabled;
-                } break;
-                case 9: {
-                    return ascending ? lhsPipelineInfo.sampleMetrics < rhsPipelineInfo.sampleMetrics : lhsPipelineInfo.sampleMetrics > rhsPipelineInfo.sampleMetrics;
+                    if (lhsColor != rhsColor) {
+                        return compare_pipeline_value(pipelineSortSpec.SortDirection, lhsColor, rhsColor);
+                    }
                 } break;
                 default: {
                 } break;
@@ -1092,12 +959,13 @@ inline void sort_pipelines(GuiInfo& guiInfo)
     );
 }
 
+// TODO : Unify with backend
 inline std::string get_pipeline_path(GuiInfo& guiInfo, VkDevice device, VkPipeline pipeline)
 {
     std::string pipelinePath;
     auto itr = guiInfo.pipelineInfos.find({ device, pipeline });
     if (itr != guiInfo.pipelineInfos.end()) {
-        pipelinePath = (std::filesystem::path(guiInfo.workspaceInfo.workspace) / ("VkPipeline-UUID-" + itr->second.uuidStr)).string();
+        pipelinePath = (std::filesystem::path(guiInfo.workspace) / ("VkPipeline-UUID-" + itr->second.uuidStr)).string();
     }
     return pipelinePath;
 }

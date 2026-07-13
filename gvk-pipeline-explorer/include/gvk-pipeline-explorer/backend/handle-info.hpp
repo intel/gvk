@@ -47,6 +47,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-pipeline-explorer.hpp"
 #include "gvk-spirv/gpu-memcpy.hpp"
 #include "gvk-spirv/shader-group-handle-map.hpp"
+#include "gvk-containers/string-array-index-map.hpp"
 #include "gvk-defines.hpp"
 #include "gvk-environment.hpp"
 #include "gvk-handles.hpp"
@@ -100,6 +101,7 @@ class BasicControlBlock
 public:
     UUID uuid{ };
     VkHandleType vkHandle{ };
+    std::string name;
     BasicControlBlock() = default;
     virtual ~BasicControlBlock() = 0;
     BasicControlBlock(BasicControlBlock const&) = delete;
@@ -173,7 +175,7 @@ public:
             gvk_result(pDescription ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
             *pCounter = { };
             *pDescription = { };
-            for (const auto& queueFamiyInfoItr : queueFamiyInfos) {
+            for (const auto& queueFamiyInfoItr : queueFamilyInfos) {
                 const auto& queueFamilyInfo = queueFamiyInfoItr.second;
                 const auto& counterIndexItr = queueFamilyInfo.performanceCounterIndices.find(counterUUID);
                 if (counterIndexItr != queueFamilyInfo.performanceCounterIndices.end()) {
@@ -191,10 +193,11 @@ public:
 
     PhysicalDeviceInfo physicalDeviceInfo;
     gvk::Auto<VkDeviceCreateInfo> deviceCreateInfo;
-    std::map<uint32_t, QueueFamilyInfo> queueFamiyInfos;
+    std::map<uint32_t, QueueFamilyInfo> queueFamilyInfos;
     VkBool32 pipelineStatisticsQuery_enabled{ };
     VkBool32 VK_EXT_pipeline_creation_cache_control_enabled{ };
     VkBool32 VK_EXT_shader_module_identifier_enabled{ };
+    VkBool32 VK_KHR_calibrated_timestamps_enabled{ };
     VkBool32 VK_KHR_performance_query_enabled{ };
     VkBool32 VK_KHR_pipeline_binary_enabled{ };
     VkBool32 VK_KHR_pipeline_executable_properties_enabled{ };
@@ -240,8 +243,10 @@ public:
     gvk::Auto<VkDeviceQueueCreateInfo> deviceQueueCreateInfo;
     gvk::CommandPool commandPool;
     VkCommandBuffer commandBuffer{ };
+#if 0
     gvk::QueryPool timestampQueryPool;
     uint32_t timestampQueryIndex{ };
+#endif
 
     class ShaderBindingTableReplacementResources final
     {
@@ -586,111 +591,6 @@ inline UUID get_uuid(VkDevice device, const gvk::Auto<CreateInfoType>& createInf
     return uuid;
 }
 
-class NamedEntryCollection final
-{
-public:
-    inline std::set<std::string> validate(uint32_t layerPropertyCount, VkLayerProperties const* pLayerProperties)
-    {
-        std::set<std::string> availableEntries;
-        for (uint32_t i = 0; i < layerPropertyCount; ++i) {
-            availableEntries.insert(pLayerProperties[i].layerName);
-        }
-        return validate(availableEntries);
-    }
-
-    inline std::set<std::string> validate(uint32_t extensionPropertyCount, VkExtensionProperties const* pExtensionProperties)
-    {
-        std::set<std::string> availableEntries;
-        for (uint32_t i = 0; i < extensionPropertyCount; ++i) {
-            availableEntries.insert(pExtensionProperties[i].extensionName);
-        }
-        return validate(availableEntries);
-    }
-
-    inline void add(const char* pEntry, bool force = false)
-    {
-        assert(pEntry);
-        if (force) {
-            erase(pEntry);
-        }
-        if (mEntryIndices.insert({pEntry, (uint32_t)mEntries.size()}).second) {
-            mEntries.push_back(pEntry);
-        }
-    }
-
-    inline void add(uint32_t entryCount, const char* const* pEntries, bool force = false)
-    {
-        if (pEntries) {
-            for (uint32_t i = 0; i < entryCount; ++i) {
-                add(pEntries[i], force);
-            }
-        }
-    }
-
-    inline void erase(const char* pEntry)
-    {
-        if (pEntry) {
-            auto itr = mEntryIndices.find(pEntry);
-            if (itr != mEntryIndices.end()) {
-                auto index = itr->second;
-                assert(index < mEntries.size());
-                assert(mEntries[index]);
-                assert(!strcmp(mEntries[index], pEntry));
-                mEntryIndices.erase(itr);
-                mEntries.erase(mEntries.begin() + index);
-                for (; index < mEntries.size(); ++index) {
-                    itr = mEntryIndices.find(mEntries[index]);
-                    assert(itr != mEntryIndices.end());
-                    itr->second = index;
-                }
-            }
-        }
-    }
-
-    inline bool contains(const char* pEntry) const
-    {
-        return pEntry ? mEntryIndices.count(pEntry) : 0;
-    }
-
-    inline void clear()
-    {
-        mEntryIndices.clear();
-        mEntries.clear();
-    }
-
-    inline uint32_t count() const
-    {
-        return (uint32_t)mEntries.size();
-    }
-
-    inline const char* const* data() const
-    {
-        return !mEntries.empty() ? mEntries.data() : nullptr;
-    }
-
-private:
-    inline std::set<std::string> validate(std::set<std::string> const& availableEntries)
-    {
-        std::set<std::string> invalidEntries;
-        for (uint32_t i = 0; i < mEntries.size();) {
-            assert(mEntries[i]);
-            if (!availableEntries.count(mEntries[i])) {
-                invalidEntries.insert(mEntries[i]);
-                erase(mEntries[i]);
-            } else {
-                ++i;
-            }
-        }
-        return invalidEntries;
-    }
-
-    std::map<std::string, uint32_t> mEntryIndices;
-    std::vector<char const*> mEntries;
-};
-
-using LayerCollection = NamedEntryCollection;
-using ExtensionCollection = NamedEntryCollection;
-
 inline std::vector<VkLayerProperties> get_instance_layer_properties(PFN_vkEnumerateInstanceLayerProperties pfnEnumerateInstanceLayerProperties)
 {
     assert(pfnEnumerateInstanceLayerProperties);
@@ -764,52 +664,6 @@ inline std::set<std::string> remove_api_dump_and_validation_layers_from_environm
     auto loaderLayers = remove_layer_env_var_values("VK_LOADER_LAYERS_ENABLE", layerValuesToRemove);
     instanceLayers.insert(loaderLayers.begin(), loaderLayers.end());
     return instanceLayers;
-}
-
-inline const std::vector<std::string>& get_validation_layer_setting_names()
-{
-    static const std::vector<std::string> sValidationLayerSettingNames{
-        /* BOOL      : true                                            */ "VK_LAYER_FINE_GRAINED_LOCKING",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_VALIDATE_CORE",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_CHECK_IMAGE_LAYOUT",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_CHECK_COMMAND_BUFFER",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_CHECK_OBJECT_IN_USE",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_CHECK_QUERY",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_CHECK_SHADERS",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_CHECK_SHADERS_CACHING",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_UNIQUE_HANDLES",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_OBJECT_LIFETIME",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_STATELESS_PARAM",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_THREAD_SAFETY",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_VALIDATE_SYNC",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_SYNC_QUEUE_SUBMIT",
-        /* ENUM      : GPU_BASED_NONE                                  */  // "VK_KHRONOS_VALIDATION_VALIDATE_GPU_BASED",
-        /* BOOL      : true                                            */  // "VK_KHRONOS_VALIDATION_PRINTF_TO_STDOUT",
-        /* BOOL      : false                                           */  // "VK_KHRONOS_VALIDATION_PRINTF_VERBOSE",
-        /* INT       : 1024                                            */  // "VK_KHRONOS_VALIDATION_PRINTF_BUFFER_SIZE",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_RESERVE_BINDING_SLOT",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_VMA_LINEAR_OUTPUT",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_GPUAV_DESCRIPTOR_CHECKS",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_WARN_ON_ROBUST_OOB",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_VALIDATE_INDIRECT_BUFFER",
-        /* BOOL      : true                                            */ "VK_KHRONOS_VALIDATION_USE_INSTRUMENTED_SHADER_CACHE",
-        /* BOOL      : false                                           */  // "VK_KHRONOS_VALIDATION_SELECT_INSTRUMENTED_SHADERS",
-        /* INT       : 10000                                           */  // "VK_KHRONOS_VALIDATION_GPUAV_MAX_BUFFER_DEVICE_ADDRESSES",
-        /* BOOL      : false                                           */  // "VK_KHRONOS_VALIDATION_VALIDATE_BEST_PRACTICES",
-        /* BOOL      : false                                           */  // "VK_KHRONOS_VALIDATION_VALIDATE_BEST_PRACTICES_ARM",
-        /* BOOL      : false                                           */  // "VK_KHRONOS_VALIDATION_VALIDATE_BEST_PRACTICES_AMD",
-        /* BOOL      : false                                           */  // "VK_KHRONOS_VALIDATION_VALIDATE_BEST_PRACTICES_IMG",
-        /* BOOL      : false                                           */  // "VK_KHRONOS_VALIDATION_VALIDATE_BEST_PRACTICES_NVIDIA",
-        /* FLAGS     : VK_DBG_LAYER_ACTION_LOG_MSG                     */  // "VK_KHRONOS_VALIDATION_DEBUG_ACTION",
-        /* SAVE_FILE : stdout                                          */  // "VK_KHRONOS_VALIDATION_LOG_FILENAME",
-        /* FLAGS     : error                                           */  // "VK_KHRONOS_VALIDATION_REPORT_FLAGS",
-        /* BOOL      : true                                            */  // "VK_KHRONOS_VALIDATION_ENABLE_MESSAGE_LIMIT",
-        /* INT       : 10                                              */  // "VK_LAYER_DUPLICATE_MESSAGE_LIMIT",
-        /* LIST      :                                                 */  // "VK_LAYER_MESSAGE_ID_FILTER",
-        /* FLAGS     : VK_VALIDATION_FEATURE_DISABLE_THREAD_SAFETY_EXT */  // "VK_LAYER_DISABLES",
-        /* FLAGS     :                                                 */  // "VK_LAYER_ENABLES",
-    };
-    return sValidationLayerSettingNames;
 }
 
 inline void create_pnext_chain(std::vector<VkBaseOutStructure*> structPtrs)

@@ -24,7 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
-#include "gvk-pipeline-explorer/backend/query-manager.hpp"
+#include "gvk-pipeline-explorer/backend/query-managers/query-manager.hpp"
 #include "gvk-pipeline-explorer/backend/handle-info.hpp"
 
 namespace gvk {
@@ -56,14 +56,14 @@ VkResult QueryManager::reset_query_resources(const GvkPipelineExplorerToolComman
 {
     gvk_result_scope_begin(VK_SUCCESS) {
         gvk::Device gvkDevice = toolInfo.device;
-        gvk_result(gvkDevice ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result_assert(gvkDevice);
         gvk::Queue gvkQueue = toolInfo.queue;
-        gvk_result(gvkQueue ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result_assert(gvkQueue);
         gvk::pipeline_explorer::QueueInfo queueInfo = toolInfo.queue;
-        gvk_result(queueInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result_assert(queueInfo);
         VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
         gvk_result(queueInfo->get_command_buffer(&commandBuffer));
-        gvk_result(commandBuffer ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        gvk_result_assert(commandBuffer);
 
         // Record command buffer to reset query pool
         const auto& dispatchTable = gvkDevice.get<gvk::DispatchTable>();
@@ -85,50 +85,16 @@ VkResult QueryManager::reset_query_resources(const GvkPipelineExplorerToolComman
     return gvkResult;
 }
 
-VkResult QueryManager::pre_process_range()
-{
-    return Tool::pre_process_range();
-}
-
 VkResult QueryManager::pre_process_command_buffers(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo)
 {
     gvk_result_scope_begin(VK_SUCCESS) {
+        gvk_result(Tool::pre_process_command_buffers(toolInfo));
         if (get_query_count(toolInfo)) {
             gvk_result(validate_query_resources(toolInfo));
             gvk_result(reset_query_resources(toolInfo));
         }
     } gvk_result_scope_end;
     return gvkResult;
-}
-
-VkResult QueryManager::pre_process_cmd(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo)
-{
-    return Tool::pre_process_cmd(toolInfo);
-}
-
-VkResult QueryManager::post_process_cmd(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo)
-{
-    return Tool::post_process_cmd(toolInfo);
-}
-
-VkResult QueryManager::post_process_command_buffers(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo)
-{
-    return Tool::post_process_command_buffers(toolInfo);
-}
-
-VkResult QueryManager::pre_process_queue_submission(const GvkPipelineExplorerToolQueueInfoEx& toolInfo)
-{
-    return Tool::pre_process_queue_submission(toolInfo);
-}
-
-VkResult QueryManager::post_process_queue_submission(const GvkPipelineExplorerToolQueueInfoEx& toolInfo)
-{
-    return Tool::post_process_queue_submission(toolInfo);
-}
-
-VkResult QueryManager::post_process_range()
-{
-    return Tool::post_process_range();
 }
 
 VkResult QueryManager::generate_report()

@@ -35,13 +35,19 @@ VkResult PipelineExplorer::execute_vkQueueSubmit(VkQueue queue, uint32_t submitC
     std::lock_guard<std::mutex> lock(queueSubmissionMutex);
     #endif
 
+    #if 0
+    if (queue) {
+        return BasicPipelineExplorer::execute_vkQueueSubmit(queue, submitCount, pSubmits, fence);
+    }
+    #endif
+
     gvk_result_scope_begin(VK_ERROR_UNKNOWN) {
 
         // Get queue info and device
         pipeline_explorer::QueueInfo queueInfo = queue;
-        gvk_result(queueInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+        gvk_result_assert(queueInfo);
         gvk::Device gvkDevice = queueInfo->deviceInfo->vkHandle;
-        gvk_result(gvkDevice ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+        gvk_result_assert(gvkDevice);
 
         // Reset shader binding table replacement resources
         queueInfo->shaderBindingTableReplacementResources.reset_available_resources();
@@ -64,8 +70,8 @@ VkResult PipelineExplorer::execute_vkQueueSubmit(VkQueue queue, uint32_t submitC
             tlMetricRequestIds.push_back({ requestInfo->pSampleMetricIds[0].x, 0, 0, 0 });
             tlPerformanceCounters.push_back(gvk::get_default<VkPerformanceCounterKHR>());
             memcpy(tlPerformanceCounters.back().uuid, &requestInfo->pSampleMetricIds[0].x, sizeof(requestInfo->pSampleMetricIds[0].x));
-        } else if (performanceQueryManager.get_request().sType == gvk::get_stype<GvkPipelineExplorerPerformanceQueryRequestInfo>()) {
-            const auto& request = performanceQueryManager.get_request();
+        } else if (mPerformanceQueryManager.get_request().sType == gvk::get_stype<GvkPipelineExplorerPerformanceQueryRequestInfo>()) {
+            const auto& request = mPerformanceQueryManager.get_request();
             tlPerformanceCounters.insert(tlPerformanceCounters.end(), request.pCounters, request.pCounters + request.counterCount);
         }
 
@@ -100,7 +106,7 @@ VkResult PipelineExplorer::execute_vkQueueSubmit(VkQueue queue, uint32_t submitC
             tlCommandBuffers[submit_i].resize(tlSubmits[submit_i].commandBufferCount);
             for (uint32_t commandBuffer_i = 0; commandBuffer_i < tlSubmits[submit_i].commandBufferCount; ++commandBuffer_i) {
                 pipeline_explorer::CommandBufferInfo commandBufferInfo(tlSubmits[submit_i].pCommandBuffers[commandBuffer_i]);
-                gvk_result(commandBufferInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+                gvk_result_assert(commandBufferInfo);
                 if (commandBufferInfo->experimentCommandBuffer && commandBufferInfo->experimentEnabled) {
                     tlCommandBuffers[submit_i][commandBuffer_i] = commandBufferInfo->experimentCommandBuffer;
                 } else {
@@ -115,10 +121,10 @@ VkResult PipelineExplorer::execute_vkQueueSubmit(VkQueue queue, uint32_t submitC
         // NOTE : Checking for !begin()/!end() assumes that the command collection has
         //  vkBeginCommandBuffer() and vkEndCommandBuffer() as its first/last commands.
         if (!tlCollectionRanges.back().begin || !tlCollectionRanges.back().end) {
-            gvk_result(!tlCollectionRanges.back().device ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-            gvk_result(!tlCollectionRanges.back().pipeline ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-            gvk_result(!tlCollectionRanges.back().begin ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-            gvk_result(!tlCollectionRanges.back().end ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+            gvk_result_assert(!tlCollectionRanges.back().device);
+            gvk_result_assert(!tlCollectionRanges.back().pipeline);
+            gvk_result_assert(!tlCollectionRanges.back().begin);
+            gvk_result_assert(!tlCollectionRanges.back().end);
             tlCollectionRanges.pop_back();
         }
 
@@ -157,29 +163,60 @@ VkResult PipelineExplorer::execute_vkQueueSubmit(VkQueue queue, uint32_t submitC
         toolQueueInfo.pCounters = !tlPerformanceCounters.empty() ? tlPerformanceCounters.data() : nullptr;
 
         // Fire callback
-        gvk_result(handle_pre_process_queue_submission_callback_ex(toolQueueInfo));
+        gvk_result(pre_process_queue_submission(toolQueueInfo));
 
         // Execute vkQueueSubmit() with modified command buffers
         gvk_result(BasicPipelineExplorer::execute_vkQueueSubmit(queue, (uint32_t)tlSubmits.size(), !tlSubmits.empty() ? tlSubmits.data() : nullptr, fence));
 
         // Fire callback
-        gvk_result(handle_post_process_queue_submission_callback_ex(toolQueueInfo));
+        gvk_result(post_process_queue_submission(toolQueueInfo));
 
         // TODO : Request managers should execute vkQueueWaitIdle() only if necessary
-        gvk_result(BasicPipelineExplorer::execute_vkQueueWaitIdle(queue));
+        // NOTE : BasicPipelineExplorer::execute_vkQueueWaitIdle() is not used here because
+        //  the member dispatchTable is populated via vkGetInstanceProcAddr, which may return
+        //  null for device-level entry points, causing the wait to silently no-op.
+        {
+            const auto& deviceDispatchTableItr = layer::Registry::get().VkDeviceDispatchTables.find(layer::get_dispatch_key(queueInfo->deviceInfo->vkHandle));
+            gvk_result_assert(deviceDispatchTableItr != layer::Registry::get().VkDeviceDispatchTables.end());
+            gvk_result_assert(deviceDispatchTableItr->second.gvkQueueWaitIdle);
+            gvk_result(deviceDispatchTableItr->second.gvkQueueWaitIdle(queue));
+        }
 
         #if 0
         // DEBUGGING :
         queueInfo->shaderBindingTableReplacementResources.inspect_in_use_resources();
         #endif
 
+#if 0
         ////////////////////////////////////////////////////////////////////////////////
         // TODO : Wrangle QueryManager
         if (requestInfo->sType == gvk::get_stype<GvkPipelineExplorerRequestInfo>() && requestInfo->refreshActivePipelines && !tlCollectionRanges.empty()) {
-            gvk_result(BasicPipelineExplorer::execute_vkQueueWaitIdle(queue));
+            // NOTE : See above — same reason for using VkDeviceDispatchTables directly.
+            {
+                const auto& deviceDispatchTableItr = layer::Registry::get().VkDeviceDispatchTables.find(layer::get_dispatch_key(queueInfo->deviceInfo->vkHandle));
+                gvk_result_assert(deviceDispatchTableItr != layer::Registry::get().VkDeviceDispatchTables.end());
+                gvk_result_assert(deviceDispatchTableItr->second.gvkQueueWaitIdle);
+                gvk_result(deviceDispatchTableItr->second.gvkQueueWaitIdle(queue));
+            }
             thread_local std::vector<uint64_t> tlTimestampQueryResults;
+
+#if 0
+            std::ostringstream oss;
+            static uint64_t sCount = 0;
+            oss << "About to call get_timestamp_results() " << sCount++ << " : " << queueInfo->timestampQueryIndex << " timestamps\n";
+            oss << "    Queue : " << queue << "\n";
+            OutputDebugStringA(oss.str().c_str());
+            for (size_t i = 0; i < tlSubmits.size(); ++i) {
+                oss.str("");
+                oss << "        Submit " << i << " : " << tlSubmits[i].commandBufferCount << " command buffers\n";
+                OutputDebugStringA(oss.str().c_str());
+            }
             gvk_result(get_timestamp_results(queueInfo, tlTimestampQueryResults));
-            gvk_result(tlTimestampQueryResults.size() == tlCollectionRanges.size() * 2 ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+#endif
+
+            OutputDebugStringA("Returned from get_timestamp_results()\n\n");
+
+            gvk_result_assert(tlTimestampQueryResults.size() == tlCollectionRanges.size() * 2);
             uint32_t timestampQueryResultIndex = 0;
             for (uint32_t collectionRange_i = 0; collectionRange_i < tlCollectionRanges.size(); ++collectionRange_i) {
                 const auto& collectionRange = tlCollectionRanges[collectionRange_i];
@@ -190,7 +227,9 @@ VkResult PipelineExplorer::execute_vkQueueSubmit(VkQueue queue, uint32_t submitC
             }
         }
         ////////////////////////////////////////////////////////////////////////////////
+#endif
 
+#if 0
         ////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////
         // HACK : Need to wrangle auto query vs request query
@@ -198,20 +237,20 @@ VkResult PipelineExplorer::execute_vkQueueSubmit(VkQueue queue, uint32_t submitC
         if (autoQuery) {
 
             std::unordered_map<gvk::HandleId<VkDevice, VkPipeline>, std::vector<std::vector<gvk::pipeline_explorer::CmdSequence>>> timestampResults;
-            timestampQueryManager.extract_results(timestampResults);
+            mTimestampQueryManager.extract_results(timestampResults);
 
             gvk::pipeline_explorer::DeviceInfo deviceInfo = toolQueueInfo.device;
-            gvk_result(deviceInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            gvk_result_assert(deviceInfo);
             auto timestampPeriod = (double)deviceInfo->physicalDeviceInfo->physicalDeviceProperties->limits.timestampPeriod;
 
             std::unordered_map<gvk::HandleId<VkDevice, VkPipeline>, GvkPipelineExplorerMetricResultInfo> pipelineResults;
             auto pCmdDurations = gvk::detail::create_dynamic_array<double>(toolQueueInfo.cmdCount, nullptr);
             memset(pCmdDurations, 0, sizeof(double) * toolQueueInfo.cmdCount);
             for (const auto& timestampResultItr : timestampResults) {
-                gvk_result(timestampResultItr.second.size() == 1 ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+                gvk_result_assert(timestampResultItr.second.size() == 1);
                 for (const auto& cmdSequence : timestampResultItr.second[0]) {
-                    gvk_result(cmdSequence.cmdTypes.size() == 1 ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-                    gvk_result(cmdSequence.firstCmdIndex < toolQueueInfo.cmdCount ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+                    gvk_result_assert(cmdSequence.cmdTypes.size() == 1);
+                    gvk_result_assert(cmdSequence.firstCmdIndex < toolQueueInfo.cmdCount);
                     auto tickCount = cmdSequence.endTimestamp - cmdSequence.beginTimestamp;
                     pCmdDurations[cmdSequence.firstCmdIndex] = (double)tickCount * timestampPeriod;
                     if (timestampResultItr.first.get_handle()) {
@@ -233,8 +272,8 @@ VkResult PipelineExplorer::execute_vkQueueSubmit(VkQueue queue, uint32_t submitC
                     write_pipeline_info(pipelineResultItr.first.get_dispatchable_handle(), pipelineResultItr.first.get_handle(), pipelineInfo->path);
                 }
 
-                gvk_result(pipelineInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-                gvk_result(pipelineResult_i < pipelineResults.size() ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+                gvk_result_assert(pipelineInfo);
+                gvk_result_assert(pipelineResult_i < pipelineResults.size());
                 auto& pipelineResult = pPipelineResults[pipelineResult_i++];
                 pipelineResult.pipelineInfo = gvk::get_default<GvkPipelineExplorerPipelineInfo>();
                 boost::multiprecision::export_bits(pipelineInfo->uuid, pipelineResult.pipelineInfo.uuid, 8);
@@ -281,6 +320,7 @@ VkResult PipelineExplorer::execute_vkQueueSubmit(VkQueue queue, uint32_t submitC
 
         ////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////
+#endif
     } gvk_result_scope_end;
     return gvkResult;
 }
@@ -305,34 +345,60 @@ VkResult PipelineExplorer::execute_vkQueueSubmit2KHR(VkQueue queue, uint32_t sub
 
 VkResult PipelineExplorer::execute_vkQueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPresentInfo)
 {
+    // Fire callback
+    (void)pre_process_queue_present({ });
+
+    // Execute vkQueuePresentKHR()
     auto vkResult = BasicPipelineExplorer::execute_vkQueuePresentKHR(queue, pPresentInfo);
+
+    // Fire callback
+    (void)post_process_queue_present({ });
+
+    // TODO : Documentation
+    pipeline_explorer::QueueInfo queueInfo = queue;
+    pipeline_explorer::DeviceInfo deviceInfo = queueInfo ? queueInfo->deviceInfo : nullptr;
+    pipeline_explorer::PhysicalDeviceInfo physiccalDeviceInfo = deviceInfo ? deviceInfo->physicalDeviceInfo : nullptr;
+
+    // TODO : Documentation
+    auto pipelineExplorerPresentInfo = gvk::get_default<GvkPipelineExplorerPresentInfo>();
+    pipelineExplorerPresentInfo.physicalDevice = physiccalDeviceInfo ? physiccalDeviceInfo->vkHandle : VK_NULL_HANDLE;
+    pipelineExplorerPresentInfo.device = deviceInfo ? deviceInfo->vkHandle : VK_NULL_HANDLE;
+    pipelineExplorerPresentInfo.threadId = gvk::get_thread_id();
+    pipelineExplorerPresentInfo.frameDurationNS = mFrameTimer.total<gvk::system::Nanoseconds<>>();
+    mFrameTimer.reset();
+    pipelineExplorerPresentInfo.command = gvk::get_default<GvkCommandStructureQueuePresentKHR>();
+    pipelineExplorerPresentInfo.command.queue = queue;
+    pipelineExplorerPresentInfo.command.pPresentInfo = pPresentInfo;
+    pipelineExplorerPresentInfo.command.result = vkResult;
+    mIpcMessenger.write("GvkPipelineExplorerPresentInfo", pipelineExplorerPresentInfo);
+
+    // TODO : Documentation
     if (TODO_shouldBeControlledByRequestInfo_getGpuCalls) {
-        auto command = gvk::get_default<GvkCommandStructureQueuePresentKHR>();
-        command.queue = queue;
-        command.pPresentInfo = pPresentInfo;
-        command.result = vkResult;
-        auto pCommandBaseStructure = (const GvkCommandBaseStructure*)&command;
+        auto pCommandBaseStructure = (const GvkCommandBaseStructure*)&pipelineExplorerPresentInfo.command;
         mGpuCalls.add_command(*pCommandBaseStructure);
     }
-    handle_post_process_range_callback_ex();
+
+    // TODO : Documentation
+    post_process_range();
 
     // HACK :
     auto pluginStatus = pluginManager.get_plugin_status();
-    if (pipelineStatisticsQueryManager.get_request().sType != gvk::get_stype<GvkPipelineExplorerPipelineStatisticsQueryRequestInfo>() &&
-        performanceQueryManager.get_request().sType != gvk::get_stype<GvkPipelineExplorerPerformanceQueryRequestInfo>() &&
-        timestampQueryManager.get_request().sType != gvk::get_stype<GvkPipelineExplorerPerformanceQueryRequestInfo>() &&
-        commandCollectionRequestManager.get_request().sType != gvk::get_stype<GvkPipelineExplorerCommandCollectionRequestInfo>() &&
-        pluginStatus == VK_SUCCESS &&
-        !autoQuery) {
-        toolCallbackInfo = { };
+    if (mPipelineStatisticsQueryManager.get_request().sType != gvk::get_stype<GvkPipelineExplorerPipelineStatisticsQueryRequestInfo>() &&
+        mPerformanceQueryManager.get_request().sType != gvk::get_stype<GvkPipelineExplorerPerformanceQueryRequestInfo>() &&
+        mTimestampQueryManager.get_request().sType != gvk::get_stype<GvkPipelineExplorerPerformanceQueryRequestInfo>() &&
+        mCommandCollectionRequestManager.get_request().sType != gvk::get_stype<GvkPipelineExplorerCommandCollectionRequestInfo>() &&
+        pluginStatus == VK_SUCCESS /* && !autoQuery */) {
+        // toolCallbackInfo = { };
+        // TODO : This is to disable timeline query
     }
 
     process_end_of_frame_and_outgoing_messages();
     process_beginning_of_frame_and_incoming_messages();
-    handle_pre_process_range_callback_ex();
+    pre_process_range();
     return vkResult;
 }
 
+#if 0
 VkResult PipelineExplorer::reset_timestamp_query_pool(pipeline_explorer::QueueInfo& queueInfo, VkCommandBuffer commandBuffer, uint32_t queryCount)
 {
     gvk_result_scope_begin(VK_SUCCESS) {
@@ -342,7 +408,13 @@ VkResult PipelineExplorer::reset_timestamp_query_pool(pipeline_explorer::QueueIn
             queryPoolCreateInfo.queryCount = queryCount;
             gvk_result(gvk::QueryPool::create(queueInfo->deviceInfo->vkHandle, &queryPoolCreateInfo, nullptr, &queueInfo->timestampQueryPool));
         }
-        dispatchTable.gvkCmdResetQueryPool(commandBuffer, queueInfo->timestampQueryPool, 0, queryCount);
+        // NOTE : layer::Registry::get().VkDeviceDispatchTables is used here instead of
+        //  the member dispatchTable because the member dispatchTable is populated via
+        //  vkGetInstanceProcAddr, which may return null for device-level entry points.
+        const auto& deviceDispatchTableItr = layer::Registry::get().VkDeviceDispatchTables.find(layer::get_dispatch_key(queueInfo->deviceInfo->vkHandle));
+        gvk_result(deviceDispatchTableItr != layer::Registry::get().VkDeviceDispatchTables.end() ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+        gvk_result(deviceDispatchTableItr->second.gvkCmdResetQueryPool ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+        deviceDispatchTableItr->second.gvkCmdResetQueryPool(commandBuffer, queueInfo->timestampQueryPool, 0, queryCount);
         queueInfo->timestampQueryIndex = 0;
     } gvk_result_scope_end;
     return gvkResult;
@@ -350,26 +422,55 @@ VkResult PipelineExplorer::reset_timestamp_query_pool(pipeline_explorer::QueueIn
 
 void PipelineExplorer::write_timestamp(pipeline_explorer::QueueInfo& queueInfo, VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage)
 {
-    dispatchTable.gvkCmdWriteTimestamp(commandBuffer, pipelineStage, queueInfo->timestampQueryPool, queueInfo->timestampQueryIndex++);
+    // NOTE : layer::Registry::get().VkDeviceDispatchTables is used here instead of
+    //  the member dispatchTable because the member dispatchTable is populated via
+    //  vkGetInstanceProcAddr, which may return null for device-level entry points.
+    const auto& deviceDispatchTableItr = layer::Registry::get().VkDeviceDispatchTables.find(layer::get_dispatch_key(queueInfo->deviceInfo->vkHandle));
+    if (deviceDispatchTableItr != layer::Registry::get().VkDeviceDispatchTables.end() && deviceDispatchTableItr->second.gvkCmdWriteTimestamp) {
+        deviceDispatchTableItr->second.gvkCmdWriteTimestamp(commandBuffer, pipelineStage, queueInfo->timestampQueryPool, queueInfo->timestampQueryIndex++);
+    }
 }
 
 VkResult PipelineExplorer::get_timestamp_results(const pipeline_explorer::QueueInfo& queueInfo, std::vector<uint64_t>& results)
 {
     gvk_result_scope_begin(VK_ERROR_UNKNOWN) {
         results.clear();
+        if (!queueInfo->timestampQueryIndex) {
+            return VK_SUCCESS;
+        }
         results.resize(queueInfo->timestampQueryIndex);
-        gvk_result(dispatchTable.gvkGetQueryPoolResults(
-            queueInfo->deviceInfo->vkHandle,
-            queueInfo->timestampQueryPool,
-            0,
-            queueInfo->timestampQueryIndex,
-            sizeof(uint64_t) * results.size(),
-            results.data(),
-            sizeof(uint64_t),
-            VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT
-        ));
+
+        // NOTE : layer::Registry::get().VkDeviceDispatchTables is used here instead of
+        //  the member dispatchTable because the member dispatchTable is populated via
+        //  vkGetInstanceProcAddr, which may return null for device-level entry points.
+        //  VkDeviceDispatchTables is populated via vkGetDeviceProcAddr and is always
+        //  correct for device-level commands.
+        // TODO : Sort out device-level entry points so that the member dispatchTable can
+        //  be used consistently for all commands without relying on layer::Registry directly.
+        const auto& deviceDispatchTableItr = layer::Registry::get().VkDeviceDispatchTables.find(layer::get_dispatch_key(queueInfo->deviceInfo->vkHandle));
+        gvk_result(deviceDispatchTableItr != layer::Registry::get().VkDeviceDispatchTables.end() ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+        gvk_result(deviceDispatchTableItr->second.gvkGetQueryPoolResults ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+        VkQueryPool queryPool = queueInfo->timestampQueryPool;
+
+
+        gvkResult = VK_NOT_READY;
+        while (gvkResult == VK_NOT_READY) {
+            gvkResult = deviceDispatchTableItr->second.gvkGetQueryPoolResults(
+                queueInfo->deviceInfo->vkHandle,
+                queryPool,
+                0,
+                queueInfo->timestampQueryIndex,
+                sizeof(uint64_t) * results.size(),
+                results.data(),
+                sizeof(uint64_t),
+                VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT
+            );
+            gvk_result(gvkResult);
+        }
+        gvk_result(gvkResult);
     } gvk_result_scope_end;
     return gvkResult;
 }
+#endif
 
 } // namespace gvk

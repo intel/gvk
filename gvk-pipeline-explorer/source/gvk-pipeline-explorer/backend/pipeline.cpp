@@ -33,10 +33,140 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 namespace gvk {
 
-// TODO : Unify with frontend
-static std::filesystem::path get_pipeline_path(const std::filesystem::path& workspace, const pipeline_explorer::PipelineInfo& pipelineInfo)
+static VkResult set_pipeline_driver_uuid(pipeline_explorer::PipelineInfo pipelineInfo)
 {
-    return std::filesystem::path(workspace) / ("VkPipeline-UUID-" + gvk::uuid_to_string(pipelineInfo->uuid, 18));
+    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+        gvk_result(pipelineInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+        if (pipelineInfo->deviceInfo->VK_KHR_pipeline_properties_enabled) {
+            gvk::Device device = pipelineInfo->deviceInfo->vkHandle;
+            gvk_result(device ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
+            auto pipelineInfoKHR = gvk::get_default<VkPipelineInfoKHR>();
+            pipelineInfoKHR.pipeline = pipelineInfo->vkHandle;
+            auto pipelinePropertiesIdentifier = gvk::get_default<VkPipelinePropertiesIdentifierEXT>();
+            gvk_result(device.GetPipelinePropertiesEXT(&pipelineInfoKHR, (VkBaseOutStructure*)&pipelinePropertiesIdentifier));
+            pipelineInfo->pipelinePropertiesIdentifier = pipelinePropertiesIdentifier;
+            boost::multiprecision::import_bits(pipelineInfo->driverUUID, pipelinePropertiesIdentifier.pipelineIdentifier, pipelinePropertiesIdentifier.pipelineIdentifier + VK_UUID_SIZE);
+        }
+    } gvk_result_scope_end;
+    return gvkResult;
+}
+
+template <typename CreateInfoType>
+static VkResult create_pipeline_info(VkDevice device, VkPipeline pipeline, const CreateInfoType& createInfo, const std::filesystem::path& workspacePath, pipeline_explorer::PipelineInfo* pPipelineInfo)
+{
+    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
+        gvk::Device gvkDevice = device;
+        gvk_result_assert(gvkDevice);
+        gvk_result_assert(pipeline);
+        gvk_result_assert(createInfo.sType == gvk::get_stype<CreateInfoType>());
+        gvk_result_assert(pPipelineInfo);
+
+        // Pepare PipelineInfo
+        pipeline_explorer::PipelineInfo pipelineInfo(gvk::newref, { device, pipeline });
+        pipelineInfo->deviceInfo = device;
+        pipelineInfo->vkHandle = pipeline;
+        pipelineInfo->name = "VkPipeline " + gvk::string::remove(gvk::to_string(pipelineInfo->vkHandle), "\"");
+
+        // Process compute pipeline specific info
+        if constexpr (std::is_same_v<CreateInfoType, VkComputePipelineCreateInfo>) {
+            pipelineInfo->bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
+            pipelineInfo->computePipelineCreateInfo = createInfo;
+            pipelineInfo->uuid = pipeline_explorer::get_uuid(device, pipelineInfo->computePipelineCreateInfo);
+            pipeline_explorer::ShaderModuleInfo shaderModuleInfo({ device, createInfo.stage.module });
+            gvk_result_assert(shaderModuleInfo);
+            pipelineInfo->shaderModuleInfos.push_back({ createInfo.stage.stage, shaderModuleInfo });
+
+        // Process graphics pipeline specific info
+        } else if constexpr (std::is_same_v<CreateInfoType, VkGraphicsPipelineCreateInfo>) {
+            pipelineInfo->bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+            pipelineInfo->graphicsPipelineCreateInfo = createInfo;
+            pipelineInfo->uuid = pipeline_explorer::get_uuid(device, pipelineInfo->graphicsPipelineCreateInfo);
+            pipelineInfo->renderPassInfo = pipeline_explorer::RenderPassInfo({ device, createInfo.renderPass });
+
+            // Get ShaderModuleInfos
+            for (uint32_t stage_i = 0; stage_i < createInfo.stageCount; ++stage_i) {
+                pipeline_explorer::ShaderModuleInfo shaderModuleInfo({ device, createInfo.pStages[stage_i].module });
+                gvk_result_assert(shaderModuleInfo);
+                pipelineInfo->shaderModuleInfos.push_back({ createInfo.pStages[stage_i].stage, shaderModuleInfo });
+            }
+
+        // Process ray tracing pipeline specific info
+        } else if  constexpr (std::is_same_v<CreateInfoType, VkRayTracingPipelineCreateInfoKHR>) {
+            pipelineInfo->bindPoint = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
+            pipelineInfo->rayTracingPipelineCreateInfo = createInfo;
+            pipelineInfo->uuid = pipeline_explorer::get_uuid(device, pipelineInfo->rayTracingPipelineCreateInfo);
+
+            // Get ShaderModuleInfos
+            for (uint32_t stage_i = 0; stage_i < createInfo.stageCount; ++stage_i) {
+                pipeline_explorer::ShaderModuleInfo shaderModuleInfo({ device, createInfo.pStages[stage_i].module });
+                gvk_result_assert(shaderModuleInfo);
+                pipelineInfo->shaderModuleInfos.push_back({ createInfo.pStages[stage_i].stage, shaderModuleInfo });
+            }
+
+            // Get shader group handles
+            // NOTE : Explicit conversion to VkPhysicalDevice shouldn't be necessary here
+            //  since gvk::PhysicalDevice provides a VkPhysicalDevice conversion operator
+            //  but GCC and Clang aren't identifying the conversion
+            // TODO : Double check on latest versions of GCC and Clang
+            pipeline_explorer::PhysicalDeviceInfo physicalDeviceInfo = (VkPhysicalDevice)gvkDevice.get<gvk::PhysicalDevice>();
+            gvk_result_assert(physicalDeviceInfo);
+            auto shaderGroupHandleSize = physicalDeviceInfo->physicalDeviceRayTracingPipelineProperties->shaderGroupHandleSize;
+            gvk_result_assert(shaderGroupHandleSize);
+            pipelineInfo->shaderGroupHandles.resize(createInfo.groupCount);
+            for (uint32_t group_i = 0; group_i < createInfo.groupCount; ++group_i) {
+                pipelineInfo->shaderGroupHandles[group_i].resize(shaderGroupHandleSize);
+                gvk_result(gvkDevice.GetRayTracingShaderGroupHandlesKHR(pipeline, group_i, 1, shaderGroupHandleSize, pipelineInfo->shaderGroupHandles[group_i].data()));
+            }
+
+        // Unsupported pipeline type
+        } else {
+            gvk_result(VK_ERROR_FEATURE_NOT_PRESENT);
+        }
+
+        // Get PipelineLayoutInfo
+        pipelineInfo->pipelineLayoutInfo = pipeline_explorer::PipelineLayoutInfo({ device, createInfo.layout });
+
+        // Get pipeline UUID
+        gvk_result(set_pipeline_driver_uuid(pipelineInfo));
+
+        // Get pipeline path
+        pipelineInfo->path = gvk::pipeline_explorer::get_pipeline_path(workspacePath, pipelineInfo->uuid);
+
+        // Set PipelineInfo
+        *pPipelineInfo = pipelineInfo;
+    } gvk_result_scope_end;
+    return gvkResult;
+}
+
+void PipelineExplorer::report_pipeline_creation(const pipeline_explorer::PipelineInfo& pipelineInfo)
+{
+    auto pipelineExplorerPipelineInfo = gvk::get_default<GvkPipelineExplorerPipelineInfo>();
+    boost::multiprecision::export_bits(pipelineInfo->uuid, pipelineExplorerPipelineInfo.uuid, 8);
+    boost::multiprecision::export_bits(pipelineInfo->driverUUID, pipelineExplorerPipelineInfo.driverUUID, 8);
+    pipelineExplorerPipelineInfo.pName = pipelineInfo->name.c_str();
+    pipelineExplorerPipelineInfo.device = pipelineInfo->deviceInfo->vkHandle;
+    pipelineExplorerPipelineInfo.pipeline = pipelineInfo->vkHandle;
+    pipelineExplorerPipelineInfo.bindPoint = pipelineInfo->bindPoint;
+    pipelineExplorerPipelineInfo.labelCount = 0; // TODO : Get labels from pipelineInfo
+    pipelineExplorerPipelineInfo.pLabels = nullptr; // TODO : Get labels from pipelineInfo
+    pipelineExplorerPipelineInfo.experimentEnabled = pipelineInfo->experimentEnabled;
+    // TODO : pipelineResult.pipelineInfo.experimentUUID;
+    pipelineExplorerPipelineInfo.highlightEnabled = pipelineInfo->highlightEnabled;
+    memcpy(pipelineExplorerPipelineInfo.highlightColor, pipelineInfo->highlightColor, sizeof(pipelineInfo->highlightColor));
+#ifdef GVK_PLATFORM_WINDOWS
+    mIpcMessenger.write("GvkPipelineExplorerPipelineInfo", pipelineExplorerPipelineInfo);
+#endif
+
+    // TODO : Make this optional and asynchronous to avoid stalling pipeline creation on decompilation
+    decompile_pipeline(pipelineInfo->deviceInfo->vkHandle, pipelineInfo->vkHandle);
+    write_pipeline_info(pipelineInfo->deviceInfo->vkHandle, pipelineInfo->vkHandle, pipelineInfo->path);
+}
+
+void PipelineExplorer::report_pipeline_destruction(const pipeline_explorer::PipelineInfo& pipelineInfo)
+{
+    // NOTE : Here for completeness but currently not used
+    // TODO : Notify frontend of pipeline destruction so that it can be used for sorting/display
+    (void)pipelineInfo;
 }
 
 VkResult PipelineExplorer::get_pipeline_executable_properties(pipeline_explorer::PipelineInfo pipelineInfo)
@@ -201,43 +331,22 @@ VkResult PipelineExplorer::get_pipeline_executable_properties(pipeline_explorer:
     return gvkResult;
 }
 
-static VkResult set_pipeline_driver_uuid(pipeline_explorer::PipelineInfo pipelineInfo)
-{
-    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
-        gvk_result(pipelineInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-        if (pipelineInfo->deviceInfo->VK_KHR_pipeline_properties_enabled) {
-            gvk::Device device = pipelineInfo->deviceInfo->vkHandle;
-            gvk_result(device ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-            auto pipelineInfoKHR = gvk::get_default<VkPipelineInfoKHR>();
-            pipelineInfoKHR.pipeline = pipelineInfo->vkHandle;
-            auto pipelinePropertiesIdentifier = gvk::get_default<VkPipelinePropertiesIdentifierEXT>();
-            gvk_result(device.GetPipelinePropertiesEXT(&pipelineInfoKHR, (VkBaseOutStructure*)&pipelinePropertiesIdentifier));
-            pipelineInfo->pipelinePropertiesIdentifier = pipelinePropertiesIdentifier;
-            boost::multiprecision::import_bits(pipelineInfo->driverUUID, pipelinePropertiesIdentifier.pipelineIdentifier, pipelinePropertiesIdentifier.pipelineIdentifier + VK_UUID_SIZE);
-        }    
-    } gvk_result_scope_end;
-    return gvkResult;
-}
-
 VkResult PipelineExplorer::execute_vkCreateComputePipelines(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkComputePipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines)
 {
-    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
-        gvk_result(BasicPipelineExplorer::execute_vkCreateComputePipelines(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines));
-        for (uint32_t pipeline_i = 0; pipeline_i < createInfoCount; ++pipeline_i) {
-            pipeline_explorer::PipelineInfo pipelineInfo(gvk::newref, { device, pPipelines[pipeline_i] });
-            pipelineInfo->deviceInfo = device;
-            pipelineInfo->vkHandle = pPipelines[pipeline_i];
-            pipelineInfo->bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
-            pipelineInfo->computePipelineCreateInfo = pCreateInfos[pipeline_i];
-            pipelineInfo->pipelineLayoutInfo = pipeline_explorer::PipelineLayoutInfo({ device, pCreateInfos[pipeline_i].layout });
-            pipeline_explorer::ShaderModuleInfo shaderModuleInfo({ device, pCreateInfos[pipeline_i].stage.module });
-            gvk_result(shaderModuleInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-            pipelineInfo->shaderModuleInfos.push_back({ pCreateInfos[pipeline_i].stage.stage, shaderModuleInfo });
-            auto inserted = pipelineInfos.insert({ { device, pPipelines[pipeline_i] }, pipelineInfo }).second;
-            gvk_result(inserted ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-            pipelineInfo->uuid = pipeline_explorer::get_uuid(device, pipelineInfo->computePipelineCreateInfo);
-            gvk_result(set_pipeline_driver_uuid(pipelineInfo));
-            pipelineInfo->path = get_pipeline_path(workspacePath, pipelineInfo);
+    gvk_result_scope_begin(BasicPipelineExplorer::execute_vkCreateComputePipelines(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines)) {
+        switch (gvkResult) {
+        case VK_SUCCESS:
+        case VK_OPERATION_DEFERRED_KHR:
+        case VK_OPERATION_NOT_DEFERRED_KHR: {
+            for (uint32_t pipeline_i = 0; pipeline_i < createInfoCount; ++pipeline_i) {
+                pipeline_explorer::PipelineInfo pipelineInfo;
+                gvk_result(create_pipeline_info(device, pPipelines[pipeline_i], pCreateInfos[pipeline_i], workspacePath, &pipelineInfo));
+                gvk_result_assert(pipelineInfos.insert({ { device, pPipelines[pipeline_i] }, pipelineInfo }).second);
+                report_pipeline_creation(pipelineInfo);
+            }
+        } break;
+        default: {
+        } break;
         }
     } gvk_result_scope_end;
     return gvkResult;
@@ -245,26 +354,20 @@ VkResult PipelineExplorer::execute_vkCreateComputePipelines(VkDevice device, VkP
 
 VkResult PipelineExplorer::execute_vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines)
 {
-    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
-        gvk_result(BasicPipelineExplorer::execute_vkCreateGraphicsPipelines(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines));
-        for (uint32_t pipeline_i = 0; pipeline_i < createInfoCount; ++pipeline_i) {
-            pipeline_explorer::PipelineInfo pipelineInfo(gvk::newref, { device, pPipelines[pipeline_i] });
-            pipelineInfo->deviceInfo = device;
-            pipelineInfo->vkHandle = pPipelines[pipeline_i];
-            pipelineInfo->bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-            pipelineInfo->graphicsPipelineCreateInfo = pCreateInfos[pipeline_i];
-            pipelineInfo->pipelineLayoutInfo = pipeline_explorer::PipelineLayoutInfo({ device, pCreateInfos[pipeline_i].layout });
-            pipelineInfo->renderPassInfo = pipeline_explorer::RenderPassInfo({ device, pCreateInfos[pipeline_i].renderPass });
-            for (uint32_t stage_i = 0; stage_i < pCreateInfos[pipeline_i].stageCount; ++stage_i) {
-                pipeline_explorer::ShaderModuleInfo shaderModuleInfo({ device, pCreateInfos[pipeline_i].pStages[stage_i].module });
-                gvk_result(shaderModuleInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-                pipelineInfo->shaderModuleInfos.push_back({ pCreateInfos[pipeline_i].pStages[stage_i].stage, shaderModuleInfo });
+    gvk_result_scope_begin(BasicPipelineExplorer::execute_vkCreateGraphicsPipelines(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines)) {
+        switch (gvkResult) {
+        case VK_SUCCESS:
+        case VK_OPERATION_DEFERRED_KHR:
+        case VK_OPERATION_NOT_DEFERRED_KHR: {
+            for (uint32_t pipeline_i = 0; pipeline_i < createInfoCount; ++pipeline_i) {
+                pipeline_explorer::PipelineInfo pipelineInfo;
+                gvk_result(create_pipeline_info(device, pPipelines[pipeline_i], pCreateInfos[pipeline_i], workspacePath, &pipelineInfo));
+                gvk_result_assert(pipelineInfos.insert({ { device, pPipelines[pipeline_i] }, pipelineInfo }).second);
+                report_pipeline_creation(pipelineInfo);
             }
-            auto inserted = pipelineInfos.insert({ {device, pPipelines[pipeline_i]}, pipelineInfo }).second;
-            gvk_result(inserted ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-            pipelineInfo->uuid = pipeline_explorer::get_uuid(device, pipelineInfo->graphicsPipelineCreateInfo);
-            gvk_result(set_pipeline_driver_uuid(pipelineInfo));
-            pipelineInfo->path = get_pipeline_path(workspacePath, pipelineInfo);
+        } break;
+        default: {
+        } break;
         }
     } gvk_result_scope_end;
     return gvkResult;
@@ -272,62 +375,16 @@ VkResult PipelineExplorer::execute_vkCreateGraphicsPipelines(VkDevice device, Vk
 
 VkResult PipelineExplorer::execute_vkCreateRayTracingPipelinesKHR(VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkRayTracingPipelineCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines)
 {
-    gvk_result_scope_begin(VK_ERROR_INITIALIZATION_FAILED) {
-        gvk::Device gvkDevice = device;
-        gvk_result(gvkDevice ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-        gvkResult = BasicPipelineExplorer::execute_vkCreateRayTracingPipelinesKHR(device, deferredOperation, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
+    gvk_result_scope_begin(BasicPipelineExplorer::execute_vkCreateRayTracingPipelinesKHR(device, deferredOperation, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines)) {
         switch (gvkResult) {
         case VK_SUCCESS:
         case VK_OPERATION_DEFERRED_KHR:
         case VK_OPERATION_NOT_DEFERRED_KHR: {
             for (uint32_t pipeline_i = 0; pipeline_i < createInfoCount; ++pipeline_i) {
-
-                // Setup PipelineInfo
-                pipeline_explorer::PipelineInfo pipelineInfo(gvk::newref, { device, pPipelines[pipeline_i] });
-                pipelineInfo->deviceInfo = device;
-                pipelineInfo->vkHandle = pPipelines[pipeline_i];
-                pipelineInfo->bindPoint = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
-                pipelineInfo->rayTracingPipelineCreateInfo = pCreateInfos[pipeline_i];
-                pipelineInfo->pipelineLayoutInfo = pipeline_explorer::PipelineLayoutInfo({ device, pCreateInfos[pipeline_i].layout });
-
-                // Get ShaderModuleInfos
-                for (uint32_t stage_i = 0; stage_i < pCreateInfos[pipeline_i].stageCount; ++stage_i) {
-                    pipeline_explorer::ShaderModuleInfo shaderModuleInfo({ device, pCreateInfos[pipeline_i].pStages[stage_i].module });
-                    if (!shaderModuleInfo) {
-                        gvk_result(VK_ERROR_INITIALIZATION_FAILED);
-                    }
-                    pipelineInfo->shaderModuleInfos.push_back({ pCreateInfos[pipeline_i].pStages[stage_i].stage, shaderModuleInfo });
-                }
-
-                // Get shader group handles
-                // NOTE : Explicit conversion to VkPhysicalDevice shouldn't be necessary here
-                //  since gvk::PhysicalDevice provides a VkPhysicalDevice conversion operator
-                //  butt GCC and Clang aren't identifying the conversion
-                // TODO : Double check on latest versions of GCC and Clang
-                pipeline_explorer::PhysicalDeviceInfo physicalDeviceInfo = (VkPhysicalDevice)gvkDevice.get<gvk::PhysicalDevice>();
-                gvk_result(physicalDeviceInfo ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-                auto shaderGroupHandleSize = physicalDeviceInfo->physicalDeviceRayTracingPipelineProperties->shaderGroupHandleSize;
-                gvk_result(shaderGroupHandleSize ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED);
-                pipelineInfo->shaderGroupHandles.resize(pCreateInfos[pipeline_i].groupCount);
-                for (uint32_t group_i = 0; group_i < pCreateInfos[pipeline_i].groupCount; ++group_i) {
-                    pipelineInfo->shaderGroupHandles[group_i].resize(shaderGroupHandleSize);
-                    gvk_result(gvkDevice.GetRayTracingShaderGroupHandlesKHR(pPipelines[pipeline_i], group_i, 1, shaderGroupHandleSize, pipelineInfo->shaderGroupHandles[group_i].data()));
-                }
-
-                // Cache PipelineInfo
-                auto inserted = pipelineInfos.insert({ { device, pPipelines[pipeline_i] }, pipelineInfo }).second;
-                if (!inserted) {
-                    gvk_result(VK_ERROR_INITIALIZATION_FAILED);
-                }
-
-                // Get pipeline driver UUID
-                pipelineInfo->uuid = pipeline_explorer::get_uuid(device, pipelineInfo->rayTracingPipelineCreateInfo);
-                if (set_pipeline_driver_uuid(pipelineInfo) != VK_SUCCESS) {
-                    gvk_result(VK_ERROR_INITIALIZATION_FAILED);
-                }
-
-                // Get pipeline path
-                pipelineInfo->path = get_pipeline_path(workspacePath, pipelineInfo);
+                pipeline_explorer::PipelineInfo pipelineInfo;
+                gvk_result(create_pipeline_info(device, pPipelines[pipeline_i], pCreateInfos[pipeline_i], workspacePath, &pipelineInfo));
+                gvk_result_assert(pipelineInfos.insert({ { device, pPipelines[pipeline_i] }, pipelineInfo }).second);
+                report_pipeline_creation(pipelineInfo);
             }
         } break;
         default: {
@@ -339,6 +396,7 @@ VkResult PipelineExplorer::execute_vkCreateRayTracingPipelinesKHR(VkDevice devic
 
 void PipelineExplorer::execute_vkDestroyPipeline(VkDevice device, VkPipeline pipeline, const VkAllocationCallbacks* pAllocator)
 {
+    report_pipeline_destruction(pipeline_explorer::PipelineInfo({ device, pipeline }));
     pipelineInfos.erase({ device, pipeline });
     BasicPipelineExplorer::execute_vkDestroyPipeline(device, pipeline, pAllocator);
 }
@@ -378,7 +436,7 @@ void PipelineExplorer::decompile_pipeline(VkDevice device, VkPipeline pipeline)
                 // Get GLSL
                 if (shaderModuleInfo->glsl.empty()) {
                     shaderInfo.language = gvk::spirv::ShadingLanguage::Glsl;
-                    if (spirvContext.decompile(&shaderInfo) == VK_SUCCESS) {
+                    if (mSpirvContext.decompile(&shaderInfo) == VK_SUCCESS) {
                         shaderModuleInfo->glsl = shaderInfo.source;
                     } else {
                         // TODO : Fixup these error messages...shouldn't spam this loop for each message
@@ -393,7 +451,7 @@ void PipelineExplorer::decompile_pipeline(VkDevice device, VkPipeline pipeline)
                 // Get SPIR-V
                 if (shaderModuleInfo->spirv.empty()) {
                     shaderInfo.language = gvk::spirv::ShadingLanguage::SpirV;
-                    if (spirvContext.decompile(&shaderInfo) == VK_SUCCESS) {
+                    if (mSpirvContext.decompile(&shaderInfo) == VK_SUCCESS) {
                         shaderModuleInfo->spirv = shaderInfo.source;
                     } else {
                         // TODO : Fixup these error messages...shouldn't spam this loop for each message
@@ -653,7 +711,7 @@ VkResult PipelineExplorer::create_replacement_pipeline(VkDevice device, VkPipeli
             const auto& shaderSourceItr = shaderSource.find(shaderModuleInfo->uuid);
             shaderInfo.source = shaderSourceItr != shaderSource.end() ? shaderSourceItr->second : std::string();
             if (!shaderInfo.source.empty() && !gvk::string::is_whitespace(shaderInfo.source)) {
-                gvkResult = spirvContext.compile(&shaderInfo);
+                gvkResult = mSpirvContext.compile(&shaderInfo);
                 if (gvkResult == VK_SUCCESS && !shaderInfo.bytecode.empty() && shaderInfo.errors.empty()) {
                     auto shaderModuleCreateInfo = *shaderModuleInfo->shaderModuleCreateInfo;
                     shaderModuleCreateInfo.codeSize = shaderInfo.bytecode.size() * sizeof(uint32_t);
@@ -750,6 +808,8 @@ VkResult PipelineExplorer::create_replacement_pipeline(VkDevice device, VkPipeli
             default: {
             } break;
             }
+            auto message = "VkPipeline " + uuid_to_string(pipelineInfo->uuid, 18) + " successfully compiled";
+            mIpcMessenger.write(message.c_str());
         }
     } gvk_result_scope_end;
     return gvkResult;
@@ -940,9 +1000,9 @@ VkResult PipelineExplorer::create_replacement_shader_binding_table(const gvk::De
 VkResult PipelineExplorer::create_replacement_shader_binding_tables(pipeline_explorer::QueueInfo queueInfo, pipeline_explorer::PipelineInfo pipelineInfo, const gvk::ShaderGroupHandleMap& shaderGroupHandleMap, GvkCommandStructureCmdTraceRaysKHR* pCmd)
 {
     gvk_result_scope_begin(VK_SUCCESS) {
-        gvk_result(queueInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-        gvk_result(pipelineInfo ? VK_SUCCESS : VK_ERROR_UNKNOWN);
-        gvk_result(pCmd ? VK_SUCCESS : VK_ERROR_UNKNOWN);
+        gvk_result_assert(queueInfo);
+        gvk_result_assert(pipelineInfo);
+        gvk_result_assert(pCmd);
         gvk::Device gvkDevice = queueInfo->deviceInfo->vkHandle;
         gvk_result(gvkDevice ? VK_SUCCESS : VK_ERROR_UNKNOWN);
         gvk_result(create_replacement_shader_binding_table(gvkDevice, queueInfo, pCmd->commandBuffer, pipelineInfo, shaderGroupHandleMap, const_cast<VkStridedDeviceAddressRegionKHR*>(pCmd->pRaygenShaderBindingTable)));
@@ -960,6 +1020,10 @@ VkResult PipelineExplorer::create_experiment_pipeline(VkDevice device, VkPipelin
         gvk::Device gvkDevice = device;
         assert(gvkDevice);
         std::unordered_map<pipeline_explorer::UUID, std::string> shaderSource;
+        if (path.empty() || !std::filesystem::exists(path)) {
+            decompile_pipeline(device, pipeline);
+            write_pipeline_info(device, pipeline, path);
+        }
         read_pipeline_info(device, pipeline, path, &shaderSource);
         if (shaderSource.size() == pipelineInfo->shaderModuleInfos.size()) {
             (void)create_replacement_pipeline(device, pipeline, shaderSource, &pipelineInfo->experimentPipeline);

@@ -26,23 +26,31 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
-#include "gvk-pipeline-explorer/backend/tool.hpp"
-#include "gvk-command-structures.hpp"
+#include "gvk-pipeline-explorer/backend/query-managers/query-manager.hpp"
 
 #include <filesystem>
+#include <map>
 
 namespace gvk {
 namespace pipeline_explorer {
 
-class CommandCollectionRequestManager final
-    : public gvk::pipeline_explorer::Tool
+class PipelineStatisticsQueryManager final
+    : public gvk::pipeline_explorer::QueryManager
 {
 public:
-    CommandCollectionRequestManager() = default;
-    const GvkPipelineExplorerCommandCollectionRequestInfo& get_request() const;
-    void process_incoming_requests(const std::filesystem::path& workspace);
+    PipelineStatisticsQueryManager() = default;
+    uint64_t get_type_id() const override final;
+    void reset() override final;
+    const GvkPipelineExplorerPipelineStatisticsQueryRequestInfo& get_request() const;
+    VkResult submit_request(const std::filesystem::path& workspace, gvk::Auto<GvkPipelineExplorerPipelineStatisticsQueryRequestInfo>&& request);
+    bool collect_metrics(VkDevice device, VkPipeline pipeline) const;
 
 protected:
+    bool tool_command(const GvkCommandBaseStructure* pCommand, VkDevice vkDevice, VkQueue vkQueue, VkPipeline vkPipeline) const override final;
+    uint32_t get_query_count(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo) const override final;
+    uint32_t get_query_count(const GvkPipelineExplorerToolQueueInfoEx& toolInfo) const override final;
+    VkResult validate_query_resources(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo) override final;
+    VkResult reset_query_resources(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo) override final;
     VkResult pre_process_range() override final;
     VkResult pre_process_command_buffers(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo) override final;
     VkResult pre_process_cmd(const GvkPipelineExplorerToolCommandBufferInfoEx& toolInfo) override final;
@@ -51,16 +59,15 @@ protected:
     VkResult pre_process_queue_submission(const GvkPipelineExplorerToolQueueInfoEx& toolInfo) override final;
     VkResult post_process_queue_submission(const GvkPipelineExplorerToolQueueInfoEx& toolInfo) override final;
     VkResult post_process_range() override final;
+    VkResult generate_report() override final;
 
 private:
-    VkResult publish_result() const;
-
     std::filesystem::path mWorkspace;
-    gvk::Auto<GvkPipelineExplorerCommandCollectionRequestInfo> mRequest;
-    gvk::BasicCommandRecorder mCommandRecorder;
+    gvk::Auto<GvkPipelineExplorerPipelineStatisticsQueryRequestInfo> mRequest;
+    std::vector<std::map<VkQueryPipelineStatisticFlagBits, double>> mResults;
 
-    CommandCollectionRequestManager(const CommandCollectionRequestManager&) = delete;
-    CommandCollectionRequestManager& operator=(const CommandCollectionRequestManager&) = delete;
+    PipelineStatisticsQueryManager(const PipelineStatisticsQueryManager&) = delete;
+    PipelineStatisticsQueryManager& operator=(const PipelineStatisticsQueryManager&) = delete;
 };
 
 } // namespace pipeline_explorer

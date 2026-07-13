@@ -17,8 +17,10 @@ gvk_add_static_library(
     INCLUDE_FILES
         "${infoGeneratedIncludeFiles}"
         "${includeDirectory}/gvk-pipeline-explorer.hpp"
+        "${includeDirectory}/gvk-pipeline-explorer.hpp"
     SOURCE_FILES
         "${infoGeneratedSourceFiles}"
+        "${sourcePath}/detail/to-string-manual.cpp"
         "${sourcePath}/detail/to-string-manual.cpp"
 )
 if(MSVC)

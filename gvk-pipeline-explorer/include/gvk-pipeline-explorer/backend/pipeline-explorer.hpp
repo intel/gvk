@@ -41,22 +41,32 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gvk-pipeline-explorer/generated/pipeline-explorer-structure-to-string.hpp"
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "gvk-pipeline-explorer/generated/basic-pipeline-explorer.hpp"
-#include "gvk-pipeline-explorer/backend/command-collection-request-manager.hpp"
+#include "gvk-pipeline-explorer/backend/query-managers/command-collection-request-manager.hpp"
+#include "gvk-pipeline-explorer/backend/query-managers/performance-query-manager.hpp"
+#include "gvk-pipeline-explorer/backend/query-managers/pipeline-statistics-query-manager.hpp"
+#include "gvk-pipeline-explorer/backend/query-managers/timeline-query-manager.hpp"
+#include "gvk-pipeline-explorer/backend/query-managers/timestamp-query-manager.hpp"
 #include "gvk-pipeline-explorer/backend/handle-info.hpp"
-#include "gvk-pipeline-explorer/backend/performance-query-manager.hpp"
-#include "gvk-pipeline-explorer/backend/pipeline-statistics-query-manager.hpp"
-#include "gvk-pipeline-explorer/backend/timestamp-query-manager.hpp"
+#include "gvk-pipeline-explorer/backend/ipc-messenger.hpp"
+#include "gvk-pipeline-explorer/backend/tool-dispatch-manager.hpp"
+#include "gvk-pipeline-explorer/generated/basic-pipeline-explorer.hpp"
 #include "gvk-pipeline-explorer/plugin-factory/plugin-manager.hpp"
 #include "gvk-pipeline-explorer.hpp"
 
+#include "gvk-containers/streambuf.hpp"
 #include "gvk-containers/thread-safe-unordered-map.hpp"
+#include "gvk-system/time.hpp"
 #include "gvk-command-structures.hpp"
 #include "gvk-defines.hpp"
 #include "gvk-handles.hpp"
 #include "gvk-layer.hpp"
+#include "gvk-runtime.hpp"
 #include "gvk-spirv.hpp"
 #include "gvk-structures.hpp"
+
+#include "asio/executor_work_guard.hpp"
+#include "asio/io_context.hpp"
+#include "asio/steady_timer.hpp"
 
 #include <array>
 #include <filesystem>
@@ -64,6 +74,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <mutex>
 #include <set>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -111,6 +122,8 @@ class PipelineExplorer final
     : public pipeline_explorer::BasicPipelineExplorer
 {
 public:
+    VkResult post_execute_vkSetDebugUtilsObjectNameEXT(VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo) override final;
+
     ////////////////////////////////////////////////////////////////////////////////
     // VkInstance
     VkResult execute_vkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance) override final;
@@ -129,9 +142,11 @@ public:
     VkResult execute_vkQueueSubmit2(VkQueue queue, uint32_t submitCount, const VkSubmitInfo2* pSubmits, VkFence fence) override final;
     VkResult execute_vkQueueSubmit2KHR(VkQueue queue, uint32_t submitCount, const VkSubmitInfo2* pSubmits, VkFence fence) override final;
     VkResult execute_vkQueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPresentInfo) override final;
+#if 0
     VkResult reset_timestamp_query_pool(pipeline_explorer::QueueInfo& queueInfo, VkCommandBuffer commandBuffer, uint32_t queryCount);
     void write_timestamp(pipeline_explorer::QueueInfo& queueInfo, VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage);
     VkResult get_timestamp_results(const pipeline_explorer::QueueInfo& queueInfo, std::vector<uint64_t>& results);
+#endif
 
     ////////////////////////////////////////////////////////////////////////////////
     // VkCommandPool and VkCommandBuffer
@@ -159,6 +174,8 @@ public:
     VkResult execute_vkCreateRayTracingPipelinesKHR(VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkRayTracingPipelineCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) override final;
     void execute_vkDestroyPipeline(VkDevice device, VkPipeline pipeline, const VkAllocationCallbacks* pAllocator) override final;
 
+    void report_pipeline_creation(const pipeline_explorer::PipelineInfo& pipelineInfo);
+    void report_pipeline_destruction(const pipeline_explorer::PipelineInfo& pipelineInfo);
     VkResult get_pipeline_executable_properties(pipeline_explorer::PipelineInfo pipelineInfo);
     void decompile_pipeline(VkDevice device, VkPipeline pipeline);
     void write_pipeline_info(VkDevice device, VkPipeline pipeline, const std::filesystem::path& path);
@@ -215,35 +232,51 @@ public:
     void execute_vkFreeMemory(VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator) override final;
 
     VkResult launch_gui(const std::filesystem::path& layerPath);
+    void start_ipc_thread();
+    void stop_ipc_thread();
+    void enable_timeline_query();
+    void disable_timeline_query();
+    void process_incoming_messages();
     void process_end_of_frame_and_outgoing_messages();
     void process_beginning_of_frame_and_incoming_messages();
     std::vector<std::string> add_metric_result_to_report(VkDevice device, VkPipeline pipeline, GvkPipelineExplorerMetricId metricId, double value);
     std::vector<std::string> publish_metrics_report();
     ////////////////////////////////////////////////////////////////////////////////
-    VkResult handle_pre_process_command_buffers_callback(GvkPipelineExplorerToolCommandBufferInfo toolCommandBufferInfo);
-    VkResult handle_pre_process_cmd_callback(GvkPipelineExplorerToolCommandBufferInfo toolCommandBufferInfo);
-    VkResult handle_post_process_cmd_callback(GvkPipelineExplorerToolCommandBufferInfo toolCommandBufferInfo);
-    VkResult handle_post_process_command_buffers_callback(GvkPipelineExplorerToolCommandBufferInfo toolCommandBufferInfo);
-    VkResult handle_pre_process_queue_submission_callback(GvkPipelineExplorerToolQueueInfo toolQueueInfo);
-    VkResult handle_post_process_queue_submission_callback(GvkPipelineExplorerToolQueueInfo toolQueueInfo);
-    ////////////////////////////////////////////////////////////////////////////////
-    VkResult handle_pre_process_range_callback_ex();
-    VkResult handle_pre_process_command_buffers_callback_ex(GvkPipelineExplorerToolCommandBufferInfoEx toolInfo);
-    VkResult handle_pre_process_cmd_callback_ex(GvkPipelineExplorerToolCommandBufferInfoEx toolInfo);
-    VkResult handle_post_process_cmd_callback_ex(GvkPipelineExplorerToolCommandBufferInfoEx toolInfo);
-    VkResult handle_post_process_command_buffers_callback_ex(GvkPipelineExplorerToolCommandBufferInfoEx toolInfo);
-    VkResult handle_pre_process_queue_submission_callback_ex(GvkPipelineExplorerToolQueueInfoEx toolInfo);
-    VkResult handle_post_process_queue_submission_callback_ex(GvkPipelineExplorerToolQueueInfoEx toolInfo);
-    VkResult handle_post_process_range_callback_ex();
+    VkResult pre_process_range();
+    VkResult pre_process_command_buffers(GvkPipelineExplorerToolCommandBufferInfoEx toolInfo);
+    VkResult pre_process_cmd(GvkPipelineExplorerToolCommandBufferInfoEx toolInfo);
+    VkResult post_process_cmd(GvkPipelineExplorerToolCommandBufferInfoEx toolInfo);
+    VkResult post_process_command_buffers(GvkPipelineExplorerToolCommandBufferInfoEx toolInfo);
+    VkResult pre_process_queue_submission(GvkPipelineExplorerToolQueueInfoEx toolInfo);
+    VkResult post_process_queue_submission(GvkPipelineExplorerToolQueueInfoEx toolInfo);
+    VkResult pre_process_queue_present(GvkPipelineExplorerToolQueueInfoEx toolInfo);
+    VkResult post_process_queue_present(GvkPipelineExplorerToolQueueInfoEx toolInfo);
+    VkResult post_process_range();
     ////////////////////////////////////////////////////////////////////////////////
     void reset();
 
     bool vkLayer{ };
-    gvk::Instance gvkInstance;
-    std::set<gvk::Device> gvkDevices;
-    gvk::spirv::Context spirvContext;
+    gvk::Instance mGvkInstance;
+    std::set<gvk::Device> mGvkDevices;
+    gvk::spirv::Context mSpirvContext;
+#ifdef GVK_PLATFORM_WINDOWS
+    gvk::NamedPipe mIpcPipe;
+#endif
+    gvk::pipeline_explorer::IpcMessenger mIpcMessenger;
+    bool mTimelineQuery{ };
 
+    asio::io_context mIpcContext;
+    std::unique_ptr<asio::executor_work_guard<asio::io_context::executor_type>> mupIpcWorkGuard;
+    std::unique_ptr<asio::steady_timer> mupIpcTimer;
+    std::thread mIpcThread;
+
+    gvk::system::Timer mFrameTimer;
+
+    bool mHeadless{ };
+    std::filesystem::path mReportPath;
+#if 0
     bool autoQuery{ };
+#endif
     bool requestQuery{ };
     std::mutex queueSubmissionMutex;
     std::string applicationName;
@@ -254,16 +287,22 @@ public:
     PROCESS_INFORMATION guiProcessInformation{ };
 #endif
     gvk::Auto<GvkPipelineExplorerRequestInfo> requestInfo;
-    gvk::pipeline_explorer::PerformanceQueryManager performanceQueryManager;
-    gvk::pipeline_explorer::PipelineStatisticsQueryManager pipelineStatisticsQueryManager;
-    gvk::pipeline_explorer::TimestampQueryManager timestampQueryManager;
-    gvk::pipeline_explorer::CommandCollectionRequestManager commandCollectionRequestManager;
+    gvk::pipeline_explorer::PerformanceQueryManager mPerformanceQueryManager;
+    gvk::pipeline_explorer::PipelineStatisticsQueryManager mPipelineStatisticsQueryManager;
+    gvk::pipeline_explorer::TimelineQueryManager mTimelineQueryManager;
+    gvk::pipeline_explorer::TimestampQueryManager mTimestampQueryManager;
+    gvk::pipeline_explorer::Tool::DispatchManager mToolDispatchManager;
+    gvk::pipeline_explorer::CommandCollectionRequestManager mCommandCollectionRequestManager;
     std::unordered_map<gvk::HandleId<VkDevice, VkPipeline>, uint32_t> pipelineExecutionCounts;
+#if 0
     std::unordered_map<gvk::HandleId<VkDevice, VkPipeline>, double> pipelineTimestampQueryResults;
+#endif
     std::unordered_map<gvk::HandleId<VkDevice, VkPipeline>, std::map<GvkPipelineExplorerMetricId, std::vector<double>>> metricsReport;
     std::map<GvkPipelineExplorerMetricId, gvk::Auto<GvkPipelineExplorerMetricInfo>> availableMetrics;
     GvkPipelineExplorerToolCommandBufferCallbackInfo toolCommandBufferCallbackInfo{ };
+#if 0
     GvkPipelineExplorerToolCallbackInfoEx toolCallbackInfo{ };
+#endif
     pipeline_explorer::PluginManager pluginManager;
 
     pipeline_explorer::InstanceInfo instanceInfo;

@@ -58,6 +58,15 @@ set(implot_SOURCE_FILES
     "${implot_SOURCE_DIR}/implot_items.cpp"
 )
 ################################################################################
+# https://github.com/FortAwesome/Font-Awesome/blob/6.x/webfonts/fa-brands-400.ttf
+FetchContent_Declare(
+    Font-Awesome
+    URL https://github.com/FortAwesome/Font-Awesome/raw/6.x/webfonts/fa-solid-900.ttf
+    DOWNLOAD_NO_EXTRACT TRUE
+    DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/fonts/
+)
+FetchContent_MakeAvailable(Font-Awesome)
+################################################################################
 
 gvk_add_static_library(
     TARGET imgui
@@ -106,6 +115,7 @@ target_compile_options(imgui PRIVATE -w)
 
 if(imgui_INSTALL_ARTIFACTS)
     gvk_install_artifacts(TARGET imgui VERSION ${imgui_VERSION})
+    install(FILES "${CMAKE_BINARY_DIR}/fonts/fa-solid-900.ttf" DESTINATION bin/$<CONFIG>/)
 endif()
 if(imgui_INSTALL_HEADERS)
     install(

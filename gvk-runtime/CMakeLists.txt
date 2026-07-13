@@ -37,7 +37,9 @@ gvk_add_code_generator(
 ################################################################################
 # gvk-runtime
 set(includeDirectory "${CMAKE_CURRENT_LIST_DIR}/include/")
+set(includePath "${includeDirectory}/gvk-runtime/")
 set(sourceDirectory "${CMAKE_CURRENT_LIST_DIR}/source/")
+set(sourcePath "${sourceDirectory}/gvk-runtime/")
 gvk_add_static_library(
     TARGET
         gvk-runtime
@@ -52,12 +54,20 @@ gvk_add_static_library(
         "${includeDirectory}"
     INCLUDE_FILES
         "${generatedIncludeFiles}"
+        "${includePath}/child-process.hpp"
+        "${includePath}/io-pipe.hpp"
+        "${includePath}/io-thread.hpp"
+        "${includePath}/ipc-messenger.hpp"
         "${includeDirectory}/gvk-defines.hpp"
         "${includeDirectory}/gvk-dispatch-table.hpp"
         "${includeDirectory}/gvk-environment.hpp"
         "${includeDirectory}/gvk-runtime.hpp"
     SOURCE_FILES
         "${generatedSourceFiles}"
+        "${sourcePath}/child-process.cpp"
+        "${sourcePath}/io-pipe.cpp"
+        "${sourcePath}/io-thread.cpp"
+        "${sourcePath}/ipc-messenger.cpp"
         "${sourceDirectory}/gvk-defines.cpp"
         "${sourceDirectory}/gvk-environment.cpp"
         "${sourceDirectory}/gvk-runtime.cpp"

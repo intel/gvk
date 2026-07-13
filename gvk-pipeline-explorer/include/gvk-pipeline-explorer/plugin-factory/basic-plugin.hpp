@@ -73,6 +73,7 @@ public:
     virtual VkResult pre_process_queue_submission(const GvkPipelineExplorerToolQueueInfoEx& toolInfo);
     virtual VkResult post_process_queue_submission(const GvkPipelineExplorerToolQueueInfoEx& toolInfo);
     virtual VkResult post_process_range();
+    virtual void destroy();
 
     std::filesystem::path workspace;
     PFN_vkGetInstanceProcAddr pfnGetInstanceProcAddr{ };
@@ -94,6 +95,7 @@ private:
     static VkResult pre_process_queue_submission(const GvkPipelineExplorerToolQueueInfoEx* pToolInfo, void* pPlugin);
     static VkResult post_process_queue_submission(const GvkPipelineExplorerToolQueueInfoEx* pToolInfo, void* pPlugin);
     static VkResult post_process_range(void* pPlugin);
+    static void destroy(void* pPlugin);
 
     BasicPlugin(const BasicPlugin&) = delete;
     BasicPlugin& operator=(const BasicPlugin&) = delete;

@@ -106,7 +106,7 @@ void PluginMetricsTab::submit_metrics_query_request(GuiInfo& guiInfo)
         set_uuid_indices<VK_UUID_SIZE>(counter.uuid, mSelectedGroup, selectedSetItr->second, 0, 0);
 
         auto queryRequestInfo = gvk::get_default<GvkPipelineExplorerPerformanceQueryRequestInfo>();
-        std::string reportPath = guiInfo.reportEnabled ? (std::filesystem::path(guiInfo.workspaceInfo.workspace) / "reports").string() : std::string();
+        std::string reportPath = guiInfo.reportEnabled ? (std::filesystem::path(guiInfo.workspace) / "reports").string() : std::string();
         queryRequestInfo.pReportPath = !reportPath.empty() ? reportPath.c_str() : nullptr;
         queryRequestInfo.device = guiInfo.selectedPipeline.get_dispatchable_handle();
         queryRequestInfo.pipeline = guiInfo.selectedPipeline.get_handle();
@@ -114,26 +114,21 @@ void PluginMetricsTab::submit_metrics_query_request(GuiInfo& guiInfo)
         queryRequestInfo.queryRangeCount = guiInfo.requestInfo.queryRangeCount;
         queryRequestInfo.counterCount = 1;
         queryRequestInfo.pCounters = &counter;
-        (void)mRequestResult.submit_request(guiInfo.workspaceInfo.workspace, queryRequestInfo, "MDAPI_REQUEST", "MDAPI_RESULT");
+        (void)mRequestResult.submit_request(guiInfo.workspace, queryRequestInfo, "MDAPI_REQUEST", "MDAPI_RESULT");
     }
 }
 
 #define DEBUG_QUERY_RESULTS 0
 void PluginMetricsTab::on_update(GuiInfo& guiInfo)
 {
-    // TODO : Documentation
-    gvk::Auto<GvkPipelineExplorerPluginCounterInfo> pluginCounterInfo;
-    switch (gvk::read_serialized_structure(std::filesystem::path(guiInfo.workspaceInfo.workspace) / ".data", pluginCounterInfo)) {
-    case VK_SUCCESS: {
-        guiInfo.pluginPerformanceCounterInfo.available = pluginCounterInfo;
-
-        #if 0
-        std::cout << "GvkPipelineExplorerPluginCounterInfo" << std::endl;
-        std::cout << gvk::to_string(guiInfo.pluginPerformanceCounterInfo.available, gvk::Printer::Default & ~gvk::Printer::EnumValue) << std::endl;
-        std::ofstream counterFile(guiInfo.workspaceInfo.workspace + "/GvkPipelineExplorerPluginCounterInfoEx.json");
-        counterFile << gvk::to_string(guiInfo.pluginPerformanceCounterInfo.available, gvk::Printer::Default & ~gvk::Printer::EnumValue) << std::endl;
-        #endif
-
+    (void)guiInfo;
+#ifdef GVK_PLATFORM_WINDOWS
+    // Process available counters reported from backend
+    const auto& messageItr = guiInfo.incomingIpcMessages.find("PluginCounterCollection");
+    if (messageItr != guiInfo.incomingIpcMessages.end() && !messageItr->second.empty()) {
+        const auto& message = messageItr->second.back();
+        std::istringstream istrm(std::string((char*)message.data.data(), message.data.size()));
+        gvk::deserialize(istrm, nullptr, guiInfo.pluginPerformanceCounterInfo.available);
         mCategories.clear();
         for (uint32_t group_i = 0; group_i < guiInfo.pluginPerformanceCounterInfo.available->groupCount; ++group_i) {
             const auto& group = guiInfo.pluginPerformanceCounterInfo.available->pGroups[group_i];
@@ -148,22 +143,14 @@ void PluginMetricsTab::on_update(GuiInfo& guiInfo)
                 }
             }
         }
-
         filter_counters(guiInfo);
         sort_counters(guiInfo);
-    } break;
-    case VK_INCOMPLETE: {
-        // assert(false && "TODO : Error handling");
-    } break;
-    case VK_NOT_READY:
-    default: {
-        // NOOP : No file to process
-    } break;
     }
+#endif // GVK_PLATFORM_WINDOWS
 
     // Check request/result
     if (mRequestResult.pending()) {
-        mRequestResult.check_result(guiInfo.workspaceInfo.workspace);
+        mRequestResult.check_result(guiInfo.workspace);
     }
 
     // Process request/result

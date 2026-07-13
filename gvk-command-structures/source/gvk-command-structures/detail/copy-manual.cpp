@@ -224,6 +224,22 @@ void destroy_structure_copy<GvkCommandStructureCmdSetSampleMaskEXT>(const GvkCom
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// GvkCommandStructureCmdUpdateBuffer
+template <>
+GvkCommandStructureCmdUpdateBuffer create_structure_copy<GvkCommandStructureCmdUpdateBuffer>(const GvkCommandStructureCmdUpdateBuffer& obj, const VkAllocationCallbacks* pAllocator)
+{
+    auto result = obj;
+    result.pData = create_dynamic_array_copy((size_t)obj.dataSize, (const uint8_t*)obj.pData, pAllocator);
+    return result;
+}
+
+template <>
+void destroy_structure_copy<GvkCommandStructureCmdUpdateBuffer>(const GvkCommandStructureCmdUpdateBuffer& obj, const VkAllocationCallbacks* pAllocator)
+{
+    destroy_dynamic_array_copy((size_t)obj.dataSize, (const uint8_t*)obj.pData, pAllocator);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // GvkCommandStructureGetAccelerationStructureBuildSizesKHR
 template <>
 GvkCommandStructureGetAccelerationStructureBuildSizesKHR create_structure_copy<GvkCommandStructureGetAccelerationStructureBuildSizesKHR>(const GvkCommandStructureGetAccelerationStructureBuildSizesKHR& obj, const VkAllocationCallbacks* pAllocator)

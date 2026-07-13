@@ -42,6 +42,15 @@ MetricsTab::~MetricsTab()
 {
 }
 
+void MetricsTab::reset()
+{
+    mAutoQuery = true;
+    mCategories.clear();
+    mMinTimestamp = std::numeric_limits<double>::max();
+    mMaxTimestamp = std::numeric_limits<double>::min();
+    mPlotResults.clear();
+}
+
 MetricsWindow& MetricsTab::get_metrics_window()
 {
     return mMetricsWindow;
@@ -58,18 +67,28 @@ bool MetricsTab::idle(GuiInfo& guiInfo) const
     return true;
 }
 
-void MetricsTab::submit_metrics_query_request(GuiInfo& guiInfo)
-{
-    (void)guiInfo;
-}
-
 bool MetricsTab::enabled(GuiInfo& guiInfo) const
 {
     (void)guiInfo;
     return false;
 }
 
+void MetricsTab::submit_metrics_query_request(GuiInfo& guiInfo)
+{
+    (void)guiInfo;
+}
+
+void MetricsTab::reset_query_requests(GuiInfo& guiInfo)
+{
+    (void)guiInfo;
+}
+
 void MetricsTab::on_update(GuiInfo& guiInfo)
+{
+    (void)guiInfo;
+}
+
+void MetricsTab::on_plot(GuiInfo& guiInfo)
 {
     (void)guiInfo;
 }
@@ -111,7 +130,7 @@ void MetricsTab::on_gui(GuiInfo& guiInfo)
         }
     }
 
-    // Draw query metrics button
+    // Draw query controls
     ImGui::BeginDisabled(!guiInfo.selectedPipeline.get_handle());
     {
         ImGui::BeginDisabled(!idle(guiInfo));
@@ -133,6 +152,34 @@ void MetricsTab::filter_counters(GuiInfo& guiInfo)
 void MetricsTab::sort_counters(GuiInfo& guiInfo)
 {
     (void)guiInfo;
+}
+
+void MetricsTab::draw_plot(GuiInfo& guiInfo, const char* pLabel)
+{
+    assert(pLabel);
+    if (ImGui::BeginChild(("##" + std::string(pLabel)).c_str(), { 0, 116 })) {
+        if (ImPlot::BeginPlot(pLabel, { -1, 116 }, ImPlotFlags_NoInputs)) {
+            auto axisFlags = ImPlotAxisFlags_NoGridLines;
+            ImPlot::SetupAxes(nullptr, nullptr, axisFlags | ImPlotAxisFlags_NoDecorations, axisFlags);
+            ImPlot::SetupAxisLimits(ImAxis_X1, mMinTimestamp, mMaxTimestamp, ImPlotCond_Always);
+            auto selectedPipelineInfo = guiInfo.pipelineInfos[guiInfo.selectedPipeline];
+            const auto& pipelinePlotResultsItr = mPlotResults.find(selectedPipelineInfo.pipeline);
+            if (pipelinePlotResultsItr != mPlotResults.end()) {
+                const auto& metricPlotResultsItr = pipelinePlotResultsItr->second.find(pLabel);
+                if (metricPlotResultsItr != pipelinePlotResultsItr->second.end()) {
+                    const auto& plotResults = metricPlotResultsItr->second;
+                    auto minValue = plotResults.minValue - plotResults.minValue * 0.1;
+                    auto maxValue = plotResults.maxValue + plotResults.maxValue * 0.1;
+                    ImPlot::SetupAxisLimits(ImAxis_Y1, minValue, maxValue, ImPlotCond_Always);
+                    ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(selectedPipelineInfo.highlightColor));
+                    ImPlot::PlotLine(pLabel, plotResults.timestamps.data(), plotResults.values.data(), (int)plotResults.values.size());
+                    ImPlot::PopStyleColor();
+                }
+            }
+            ImPlot::EndPlot();
+        }
+    }
+    ImGui::EndChild();
 }
 
 } // namespace gui

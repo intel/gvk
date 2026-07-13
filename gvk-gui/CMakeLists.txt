@@ -12,6 +12,7 @@ gvk_add_static_library(
     LINK_LIBRARIES
         gvk-handles
         gvk-spirv
+        gvk-string
         gvk-system
         imgui
     INCLUDE_DIRECTORIES

@@ -39,6 +39,8 @@ PluginManager::PluginManager()
 PluginManager::~PluginManager()
 {
     for (const auto& pluginItr : mPlugins) {
+        assert(pluginItr.second->pfnDestroyPlugin);
+        pluginItr.second->pfnDestroyPlugin(pluginItr.second->pUserData);
         gvk_dlclose(pluginItr.first);
     }
 }

@@ -70,6 +70,16 @@ std::string uuid_to_string(const uint8_t bytes[GVK_PIPELINE_EXPLORER_UUID_SIZE],
     return uuid_to_string(uuid, count);
 }
 
+std::filesystem::path get_pipeline_path(const std::filesystem::path& workspace, const std::string& uuidStr)
+{
+    return std::filesystem::path(workspace) / ("VkPipeline-UUID-" + uuidStr);
+}
+
+std::filesystem::path get_pipeline_path(const std::filesystem::path& workspace, const UUID& uuid)
+{
+    return (!workspace.empty() && uuid) ? get_pipeline_path(workspace, gvk::uuid_to_string(uuid, 18)) : std::filesystem::path{ };
+}
+
 std::string get_shader_stage_file_extension(VkShaderStageFlagBits shaderStage)
 {
     static const std::map<VkShaderStageFlagBits, std::string> scShaderStageFileExtensions{
@@ -174,41 +184,6 @@ VkResult read_shader_binding_table(const gvk::Device& gvkDevice, const gvk::Buff
 }
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-BOOL get_this_module_handle(HMODULE* phModule)
-{
-    assert(phModule);
-    return GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&get_this_module_handle, phModule);
-}
-
-DWORD get_module_path(HMODULE hModule, std::filesystem::path* pPath)
-{
-    assert(pPath);
-    const size_t CharBufferSize = 16384;
-    std::vector<wchar_t> wcharBuffer(CharBufferSize);
-    auto result = GetModuleFileNameW(hModule, wcharBuffer.data(), (DWORD)wcharBuffer.size());
-    if (result && wcharBuffer[0]) {
-        *pPath = wcharBuffer.data();
-    }
-    return result;
-}
-
-DWORD get_this_module_path(std::filesystem::path* pPath)
-{
-    HMODULE hModule = NULL;
-    return get_this_module_handle(&hModule) ? get_module_path(hModule, pPath) : 0;
-}
-
-std::string get_win32_error_str(DWORD errorCode)
-{
-    std::string errorStr = "Win32 [" + std::to_string(errorCode) + "]";
-    LPSTR pErrorStr = NULL;
-    auto dwFlags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
-    if (FormatMessage(dwFlags, NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&pErrorStr, 0, NULL)) {
-        errorStr += " " + std::string(pErrorStr);
-    }
-    LocalFree(pErrorStr);
-    return errorStr;
-}
 
 BOOL CALLBACK enumerate_windows_processes(HWND hwnd, LPARAM lParam)
 {
@@ -231,7 +206,7 @@ HWND find_window_by_pid(DWORD pid)
 }
 
 //Will return pixels in BGRA format
-ImageData capture_window_pixels(HWND hwnd)
+ImageData capture_window_pixels(HWND hWnd)
 {
     HBITMAP hBitmap = HBITMAP(0);
     HDC hMemDC = HDC(0);
@@ -241,14 +216,14 @@ ImageData capture_window_pixels(HWND hwnd)
     int height = 0;
 
     gvk_result_scope_begin(VK_SUCCESS) {
-        gvk_result_assert(hwnd && "invalid hwnd given to capture_window_pixels");
+        gvk_result_assert(hWnd && "invalid HWND given to capture_window_pixels");
 
         RECT rc = { 0,0,0,0 };
-        GetClientRect(hwnd, &rc);
+        GetClientRect(hWnd, &rc);
         width = rc.right - rc.left;
         height = rc.bottom - rc.top;
 
-        hWindowDC = GetDC(hwnd);
+        hWindowDC = GetDC(hWnd);
         hMemDC = CreateCompatibleDC(hWindowDC);
 
         // Create a 32-bit bitmap (BGRA). We specify this so we can convert it easily into a pixel array after
@@ -263,7 +238,7 @@ ImageData capture_window_pixels(HWND hwnd)
         void* pPixels = nullptr;
 
         hBitmap = CreateDIBSection(hMemDC, &bmi, DIB_RGB_COLORS, &pPixels, nullptr, 0);
-        gvk_result_assert(hBitmap && "bitmap window capture unsuccesfull"); //we should configure this bitmap gvk_result_assert to not assert on failure here
+        gvk_result_assert(hBitmap && "bitmap window capture unsuccessful"); //we should configure this bitmap gvk_result_assert to not assert on failure here
 
         SelectObject(hMemDC, hBitmap);
 
@@ -297,7 +272,7 @@ ImageData capture_window_pixels(HWND hwnd)
         DeleteDC(hMemDC);
     }
     if (hWindowDC) {
-        ReleaseDC(hwnd, hWindowDC);
+        ReleaseDC(hWnd, hWindowDC);
     }
 
     return { std::move(pixels), width, height };

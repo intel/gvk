@@ -178,9 +178,9 @@ void output_function_counts(std::ostream& ostrm, const std::vector<std::string>&
 void output_help_text()
 {
     std::cout << "-f : Filepath to the log to parse; required" << std::endl;
-    std::cout << "-i : Comma seperated list of strings to include" << std::endl;
-    std::cout << "-x : Comma seperated list of strings to exclude" << std::endl;
-    std::cout << "-u : Comma seperated list of strings to include once" << std::endl;
+    std::cout << "-i : Comma separated list of strings to include" << std::endl;
+    std::cout << "-x : Comma separated list of strings to exclude" << std::endl;
+    std::cout << "-u : Comma separated list of strings to include once" << std::endl;
     std::cout << "-o : Output filepath" << std::endl;
     std::cout << std::endl;
     std::cout << "If any of -i, -x, or -u is specified, output will consist of all log entries matching the given includes/excludes" << std::endl;
@@ -189,10 +189,10 @@ void output_help_text()
     std::cout << std::endl;
     std::cout << "The following cmd line parses api_dump output looking for references to VkCommandBuffer" << std::endl;
     std::cout << "0xCDBF, it will exclude anything including the string \"Cmd\", and only show the first" << std::endl;
-    std::cout << "occurances of the strings \"Begin\", \"End\".  This can be useful for narrowing in on the" << std::endl;
-    std::cout << "ifetime of VkCommandBuffer 0xCDBF." << std::endl;
+    std::cout << "occurrences of the strings \"Begin\", \"End\".  This can be useful for narrowing in on the" << std::endl;
+    std::cout << "lifetime of VkCommandBuffer 0xCDBF." << std::endl;
     std::cout << std::endl;
-    std::cout << "    gvk-log-parser -f path/to/api_dump/output.log -o path/to/api_dump/filtered.log -i 0xCDBF -x Cmd -u Begin,End" << std::endl;
+    std::cout << "    gvk-log-parser -f path/to/api_dump/output.log -o path/to/api_dump/filtered.log -i \"0xCDBF\" -x \"Cmd\" -u \"Begin,End\"" << std::endl;
 }
 
 using CmdLine = std::map<std::string, std::string>;

@@ -407,12 +407,23 @@ VkResult initialize_control_block<Device>(Device& device)
         //  chaining them so that internally GVK can use any alias without having to
         //  check for API version (still need to check if the entry point is available)
         // TODO : Promotion chaining should be generated for several entry points
+#if 0
         if (deviceControlBlock.mDispatchTable.gvkGetBufferDeviceAddress && !deviceControlBlock.mDispatchTable.gvkGetBufferDeviceAddressKHR) {
             deviceControlBlock.mDispatchTable.gvkGetBufferDeviceAddressKHR = deviceControlBlock.mDispatchTable.gvkGetBufferDeviceAddress;
         }
         if (deviceControlBlock.mDispatchTable.gvkGetBufferDeviceAddressKHR && !deviceControlBlock.mDispatchTable.gvkGetBufferDeviceAddressEXT) {
             deviceControlBlock.mDispatchTable.gvkGetBufferDeviceAddressEXT = deviceControlBlock.mDispatchTable.gvkGetBufferDeviceAddressKHR;
         }
+#else
+        // NOTE : The above logic usually works, but it doesn't work when api_dump is loaded
+        // TODO : Automate this
+        if (deviceControlBlock.mDispatchTable.gvkGetBufferDeviceAddress) {
+            deviceControlBlock.mDispatchTable.gvkGetBufferDeviceAddressKHR = deviceControlBlock.mDispatchTable.gvkGetBufferDeviceAddress;
+        }
+        if (deviceControlBlock.mDispatchTable.gvkGetBufferDeviceAddressKHR) {
+            deviceControlBlock.mDispatchTable.gvkGetBufferDeviceAddressEXT = deviceControlBlock.mDispatchTable.gvkGetBufferDeviceAddressKHR;
+        }
+#endif
 
         const auto& deviceCreateInfo = *deviceControlBlock.mDeviceCreateInfo;
         for (uint32_t queueCreateInfo_i = 0; queueCreateInfo_i < deviceCreateInfo.queueCreateInfoCount; ++queueCreateInfo_i) {
@@ -491,6 +502,11 @@ VkResult initialize_control_block<Device>(Device& device)
             } break;
             case gvk::get_stype<VkPhysicalDeviceBufferDeviceAddressFeatures>(): {
                 if (((const VkPhysicalDeviceBufferDeviceAddressFeatures*)pNext)->bufferDeviceAddress) {
+                    allocatorCreateInfo.flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+                }
+            } break;
+            case gvk::get_stype<VkPhysicalDeviceVulkan12Features>(): {
+                if (((const VkPhysicalDeviceVulkan12Features*)pNext)->bufferDeviceAddress) {
                     allocatorCreateInfo.flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
                 }
             } break;

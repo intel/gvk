@@ -40,34 +40,36 @@ MetricsWindow::MetricsWindow(Window::Manager& windowManager)
 {
 }
 
+void MetricsWindow::reset()
+{
+    mPipelineStatisticsMetricsTab.reset();
+    mPerformanceQueryMetricsTab.reset();
+    mPluginMetricsTab.reset();
+}
+
+MetricsTab* MetricsWindow::get_active_metrics_tab()
+{
+    return mpActiveMetricsTab;
+}
+
+void MetricsWindow::on_update(GuiInfo& guiInfo)
+{
+    // Update metrics tabs
+    mPipelineStatisticsMetricsTab.on_update(guiInfo);
+    mPerformanceQueryMetricsTab.on_update(guiInfo);
+    mPluginMetricsTab.on_update(guiInfo);
+}
+
 void MetricsWindow::on_gui(GuiInfo& guiInfo)
 {
-    ImGui::BeginDisabled(!guiInfo.applicationInfo.running && !guiInfo.cliProvidedWorkspace);
-    guiInfo.requestInfo.refreshAvailableMetrics = ImGui::Button("Refresh Available Metrics");
-    ImGui::EndDisabled();
-
-    // TODO : This shouldn't really live here
-    gvk::Auto<GvkPipelineExplorerPerformanceCounterCollection> pipelineStatisticsCounterCollection;
-    switch (gvk::read_serialized_structure(std::filesystem::path(guiInfo.workspaceInfo.workspace) / ".data", "PipelineStatisticsCounterCollection", pipelineStatisticsCounterCollection)) {
-    case VK_SUCCESS: {
-        guiInfo.pipelineStatisticsQueryInfo.available = pipelineStatisticsCounterCollection;
-    } break;
-    case VK_INCOMPLETE: {
-        // assert(false && "TODO : Error handling");
-    } break;
-    case VK_NOT_READY:
-    default: {
-        // NOOP : No file to process
-    } break;
-    }
-
+#if 0
     // Draw report info
     ImGui::Text("Write Metrics Report");
     ImGui::Checkbox("##Report Enabled", &guiInfo.reportEnabled);
     ImGui::SameLine();
     ImGui::PushItemWidth(-FLT_MIN);
     ImGui::BeginDisabled();
-    auto reportPath = gvk::string::scrub_path((std::filesystem::path(guiInfo.workspaceInfo.workspace) / "reports").string());
+    auto reportPath = gvk::string::scrub_path((std::filesystem::path(guiInfo.workspace) / "reports").string());
     GvkGui::InputPath("##Report Path", &reportPath);
     ImGui::EndDisabled();
     ImGui::PopItemWidth();
@@ -81,17 +83,15 @@ void MetricsWindow::on_gui(GuiInfo& guiInfo)
     auto queryRangeCount = (int)guiInfo.requestInfo.queryRangeCount;
     ImGui::InputInt("Query Range Count", &queryRangeCount, 1, 4);
     guiInfo.requestInfo.queryRangeCount = (uint32_t)std::min(std::max(1, queryRangeCount), 128);
-
-    // Update metrics tabs
-    mPipelineStatisticsMetricsTab.on_update(guiInfo);
-    mPerformanceQueryMetricsTab.on_update(guiInfo);
-    mPluginMetricsTab.on_update(guiInfo);
+#endif
 
     // Draw metrics tab bar
     if (ImGui::BeginTabBar("Metrics Collectors Tab Bar")) {
         draw_tab(guiInfo, mPipelineStatisticsMetricsTab);
         draw_tab(guiInfo, mPerformanceQueryMetricsTab);
+        #if 0
         draw_tab(guiInfo, mPluginMetricsTab);
+        #endif
         ImGui::EndTabBar();
     }
 }
@@ -100,6 +100,7 @@ void MetricsWindow::draw_tab(GuiInfo& guiInfo, MetricsTab& metricsTab)
 {
     if (metricsTab.enabled(guiInfo)) {
         if (ImGui::BeginTabItem(metricsTab.get_name().c_str())) {
+            mpActiveMetricsTab = &metricsTab;
             metricsTab.on_gui(guiInfo);
             ImGui::EndTabItem();
         }

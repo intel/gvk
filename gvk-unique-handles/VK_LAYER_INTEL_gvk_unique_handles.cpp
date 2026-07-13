@@ -33,8 +33,14 @@ namespace layer {
 
 void on_load(const VkInstanceCreateInfo* pInstanceCreateInfo, Registry& registry)
 {
+    ////////////////////////////////////////////////////////////////////////////////
+    // NOTE : Duplicated from "gvk/gvk-state-tracker/source/gvk-state-tracker/state-tracker.cpp"
+    // TODO : Move this logic to gvk-layer so that any/all layers have access to it
+
     // Check if VK_LAYER_KHRONOS_validation is enabled
-    bool validationEnabled = gvk::string::contains("VK_INSTANCE_LAYERS", "validation") || gvk::string::contains("VK_LOADER_LAYERS_ENABLE", "validation");
+    bool validationEnabled =
+        gvk::string::contains(gvk::get_env_var("VK_INSTANCE_LAYERS"), "validation") ||
+        gvk::string::contains(gvk::get_env_var("VK_LOADER_LAYERS_ENABLE"), "validation");
     if (!validationEnabled && pInstanceCreateInfo) {
         for (uint32_t layer_i = 0; layer_i < pInstanceCreateInfo->enabledLayerCount; ++layer_i) {
             if (!strcmp(pInstanceCreateInfo->ppEnabledLayerNames[layer_i], "VK_LAYER_KHRONOS_validation")) {
@@ -55,6 +61,7 @@ void on_load(const VkInstanceCreateInfo* pInstanceCreateInfo, Registry& registry
     // TODO : Option to disable all besides VK_KHRONOS_VALIDATION_UNIQUE_HANDLES
 
     // TODO : Validate that validation layer is closest to driver
+    ////////////////////////////////////////////////////////////////////////////////
 }
 
 } // namespace layer
